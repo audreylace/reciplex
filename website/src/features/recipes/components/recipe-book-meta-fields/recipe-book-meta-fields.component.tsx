@@ -53,7 +53,6 @@ export function RecipeBookMetaFields<
           )}
         ></textarea>
       </label>
-      <input type="submit" value="Create" />
       {errors.bookDescription?.type === "maxLength" && (
         <span>
           Description has a max length of {RecipeBookShortDescriptionMaxLength}
