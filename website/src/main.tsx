@@ -14,6 +14,7 @@ import { LocalRecipeBookStoreImplementation } from "./services/recipe-store/Loca
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RecipeStore } from "./features/recipes/hooks/useRecipeStoreContext.hook.ts";
 import { DeleteRecipePage } from "./pages/delete-recipe/delete-recipe-page.tsx";
+import { DeleteRecipeBookPage } from "./pages/delete-recipe-book/delete-recipe-book-page.tsx";
 
 const router = createBrowserRouter([
   {
@@ -55,6 +56,10 @@ const router = createBrowserRouter([
       {
         path: "/delete-recipe/:recipeId",
         element: <DeleteRecipePage />,
+      },
+      {
+        path: "/delete-recipe-book/:bookId",
+        element: <DeleteRecipeBookPage />,
       },
     ],
   },

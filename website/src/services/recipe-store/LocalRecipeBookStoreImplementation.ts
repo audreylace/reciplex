@@ -75,6 +75,22 @@ export class LocalRecipeBookStoreImplementation implements IRecipeBookStore {
       };
     }
   }
+  deleteRecipeBook(bookId: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const bookEntry = this._books[bookId];
+        if (bookEntry) {
+          if (!bookEntry.book.hasWriteAccess) {
+            reject();
+            return;
+          }
+          delete this._books[bookId];
+        }
+
+        resolve();
+      }, this.latency);
+    });
+  }
 
   createRecipeBook(args: ICreateRecipeBookArgs): Promise<IRecipeBookModel> {
     return new Promise((resolve) => {

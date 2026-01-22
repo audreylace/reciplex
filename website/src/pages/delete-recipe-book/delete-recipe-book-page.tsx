@@ -1,0 +1,92 @@
+import { useNavigate, useParams } from "react-router";
+import { BadPathBanner } from "../../features/recipes/components/bad-path-banner/bad-path-banner.component";
+import { ActionBanner } from "../../features/recipes/components/action-banner/action-banner.component";
+import {
+  makeBookListPath,
+  makeViewRecipeBookPath,
+} from "../../features/recipes/route-utils";
+import { useForm, type SubmitHandler } from "react-hook-form";
+import { useGetRecipeBookById } from "../../features/recipes/hooks/useGetRecipeBookById.hook";
+import { FetchingRecipeBookBanner } from "../../features/recipes/components/fetching-recipe-book-banner/fetching-recipe-book-banner.component";
+import { FetchingRecipeBookFailedBanner } from "../../features/recipes/components/fetching-recipe-book-failed-banner/fetching-recipe-book-failed-banner.component";
+import { RecipeBookNotFoundBanner } from "../../features/recipes/components/recipe-book-not-found-banner/recipe-book-not-found-banner.component";
+import { useDeleteRecipeBookMutation } from "../../features/recipes/hooks/useDeleteRecipeBookMutation";
+
+export function DeleteRecipeBookPage({}: {}) {
+  const navigate = useNavigate();
+  const { bookId } = useParams<{ bookId: string }>();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormFields>();
+
+  const recipeBookQuery = useGetRecipeBookById(bookId ?? "");
+  const deleteRecipeBookMutation = useDeleteRecipeBookMutation();
+  const notFound = recipeBookQuery.isSuccess && !recipeBookQuery.data;
+  const recipeBookData = recipeBookQuery.data;
+
+  const onSubmit: SubmitHandler<FormFields> = async (data) => {
+    if (!bookId || !recipeBookData || !deleteRecipeBookMutation.isIdle) {
+      return;
+    }
+
+    if (data.bookTitle != recipeBookData.name) {
+      return;
+    }
+    await deleteRecipeBookMutation.mutateAsync(bookId);
+    navigate(makeBookListPath());
+  };
+
+  return (
+    <main>
+      {!bookId && <BadPathBanner />}
+      {bookId && (
+        <>
+          {recipeBookQuery.isLoading && <FetchingRecipeBookBanner />}
+          {recipeBookQuery.isError && <FetchingRecipeBookFailedBanner />}
+          {notFound && <RecipeBookNotFoundBanner />}
+          {recipeBookData && !recipeBookData.hasWriteAccess && (
+            <>
+              <ActionBanner
+                to={makeViewRecipeBookPath(bookId)}
+                message="You may not edit this recipe book"
+                linkText="View recipe book"
+              />
+            </>
+          )}
+          {recipeBookData && recipeBookData.hasWriteAccess && (
+            <>
+              <form onSubmit={handleSubmit(onSubmit)}>
+                <fieldset disabled={!deleteRecipeBookMutation.isIdle}>
+                  <legend>Delete Recipe Book {recipeBookData.name}?</legend>
+                  <label>
+                    Type: `{recipeBookData.name}`
+                    <input
+                      type="text"
+                      {...register("bookTitle", {
+                        required: true,
+                        validate: (value) => {
+                          return (
+                            recipeBookData.name === value ||
+                            `please type ${recipeBookData.name}`
+                          );
+                        },
+                      })}
+                    />
+                  </label>
+                  {errors.bookTitle && <span>{errors.bookTitle.message}</span>}
+                </fieldset>
+                <input type="submit" value="Delete" />
+              </form>
+            </>
+          )}
+        </>
+      )}
+    </main>
+  );
+}
+
+type FormFields = {
+  bookTitle: string;
+};

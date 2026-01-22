@@ -41,7 +41,14 @@ export function ViewRecipeBookPage({}: {}) {
               </h4>
               <p>{bookQuery.data.shortDescription}</p>
               {bookQuery.data.hasWriteAccess && (
-                <NavLink to={makeCreateRecipePath(bookId)}>Add Recipe</NavLink>
+                <>
+                  <NavLink to={makeCreateRecipePath(bookId)}>
+                    Add Recipe
+                  </NavLink>
+                  <NavLink to={`/delete-recipe-book/${bookId}`}>
+                    Delete Recipe Book
+                  </NavLink>
+                </>
               )}
               {bookQuery.isFetching && (
                 <p>Checking the cloud for updates ...</p>

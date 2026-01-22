@@ -236,10 +236,10 @@ export interface IUpdateRecipeArgs {
 export interface IRecipeBookStore {
   /**
    * Gets information for a user by id
-   * @param id the user id
+   * @param userId the user id
    * @returns a promise that resolves either to null or with user information
    */
-  getUserById(id: string): Promise<IUserModel | null>;
+  getUserById(userId: string): Promise<IUserModel | null>;
 
   /**
    * Returns information about the current session.
@@ -250,10 +250,10 @@ export interface IRecipeBookStore {
 
   /**
    * Gets recipe book by id
-   * @param id the recipe book id
+   * @param bookId the recipe book id
    * @returns a promise that resolves to the book or null if the book does not exist or the user does not have access
    */
-  getRecipeBook(id: string): Promise<IRecipeBookModel | null>;
+  getRecipeBook(bookId: string): Promise<IRecipeBookModel | null>;
 
   getRecipeBooks(
     args?: IGetRecipeBooksArgs,
@@ -268,11 +268,11 @@ export interface IRecipeBookStore {
 
   /**
    * get a recipe by id
-   * @param id the recipe id
+   * @param recipeId the recipe id
    * @returns promise that resolves to a `IRecipeModel`
    * or null if the recipe does not exist (or user does not have access).
    */
-  getRecipeById(id: string): Promise<IRecipeModel | null>;
+  getRecipeById(recipeId: string): Promise<IRecipeModel | null>;
 
   /**
    * Creates a recipe
@@ -282,9 +282,15 @@ export interface IRecipeBookStore {
 
   /**
    * Deletes a recipe
-   * @param id the recipe id
+   * @param recipeId the recipe id
    */
-  deleteRecipe(id: string): Promise<void>;
+  deleteRecipe(recipeId: string): Promise<void>;
+
+  /**
+   * Deletes a recipe book
+   * @param bookId the recipe book id
+   */
+  deleteRecipeBook(bookId: string): Promise<void>;
 
   /**
    * Updates a recipe
