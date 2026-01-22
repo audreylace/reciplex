@@ -35,9 +35,14 @@ export function ViewRecipePage({}: {}) {
               <h1>{recipeData.name}</h1>
               <p>{recipeData.shortDescription}</p>
               {recipeData.hasWriteAccess && (
-                <NavLink to={makeEditRecipePath(recipeData.id)}>
-                  Edit Recipe
-                </NavLink>
+                <>
+                  <NavLink to={makeEditRecipePath(recipeData.id)}>
+                    Edit Recipe
+                  </NavLink>
+                  <NavLink to={`/delete-recipe/${recipeId}`}>
+                    Delete Recipe
+                  </NavLink>
+                </>
               )}
               <Markdown
                 rehypePlugins={[rehypeSanitize]}

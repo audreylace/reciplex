@@ -281,6 +281,12 @@ export interface IRecipeBookStore {
   createRecipe(args: ICreateRecipeArgs): Promise<IRecipeModel>;
 
   /**
+   * Deletes a recipe
+   * @param id the recipe id
+   */
+  deleteRecipe(id: string): Promise<void>;
+
+  /**
    * Updates a recipe
    * @param args recipe update args
    */

@@ -277,4 +277,29 @@ export class LocalRecipeBookStoreImplementation implements IRecipeBookStore {
       }, this.latency);
     });
   }
+
+  deleteRecipe(recipeId: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        for (var bookKey in this._books) {
+          const recipe = this._books[bookKey].recipes[recipeId];
+          if (!recipe) {
+            continue;
+          }
+
+          if (!recipe.hasWriteAccess) {
+            reject();
+            return;
+          }
+
+          delete this._books[bookKey].recipes[recipeId];
+
+          resolve();
+          return;
+        }
+
+        reject();
+      }, this.latency);
+    });
+  }
 }

@@ -13,6 +13,7 @@ import { DefaultLayout } from "./layouts/default/default-layout.tsx";
 import { LocalRecipeBookStoreImplementation } from "./services/recipe-store/LocalRecipeBookStoreImplementation.ts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RecipeStore } from "./features/recipes/hooks/useRecipeStoreContext.hook.ts";
+import { DeleteRecipePage } from "./pages/delete-recipe/delete-recipe-page.tsx";
 
 const router = createBrowserRouter([
   {
@@ -50,6 +51,10 @@ const router = createBrowserRouter([
       {
         path: "/edit-recipe/:recipeId",
         element: <EditRecipePage />,
+      },
+      {
+        path: "/delete-recipe/:recipeId",
+        element: <DeleteRecipePage />,
       },
     ],
   },
