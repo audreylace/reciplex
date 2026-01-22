@@ -11,9 +11,8 @@ export function useDeleteRecipeMutation() {
   const recipeStore = useRecipeStoreContext();
   return useMutation({
     mutationFn: async (id: string) => {
-      const result = await recipeStore.deleteRecipe(id);
+      await recipeStore.deleteRecipe(id);
       queryClient.invalidateQueries({ queryKey: recipeByIdCacheKey(id) });
-      return result;
     },
   });
 }
