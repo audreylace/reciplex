@@ -36,9 +36,9 @@ export function CreateRecipePage({}: {}) {
 
   const bookData = bookQuery.data;
   const notFound = bookQuery.isSuccess && !bookData;
-  const hasWriteAccess = bookData && bookData.hasWriteAccess;
+  const canCreateRecipe = bookData && bookData.canAddRecipesToBook;
   const showReadonlyBanner =
-    bookQuery.isSuccess && bookData && !bookData.hasWriteAccess;
+    bookQuery.isSuccess && bookData && !bookData.canAddRecipesToBook;
 
   return (
     <main>
@@ -49,7 +49,7 @@ export function CreateRecipePage({}: {}) {
           {bookQuery.isLoading && <FetchingRecipeBookBanner />}
           {notFound && <RecipeBookNotFoundBanner />}
           {showReadonlyBanner && <BookIsReadonlyBanner bookId={bookData.id} />}
-          {hasWriteAccess && (
+          {canCreateRecipe && (
             <CreateRecipeForm
               bookId={bookId}
               bookName={bookData.name}

@@ -39,9 +39,18 @@ export interface IRecipeBookModel {
    */
   ownerId: string;
   /**
-   * True when the user has write access
+   * True when the user can delete the recipe book and all of its data.
    */
-  hasWriteAccess: boolean;
+  canDeleteBook?: boolean;
+  /**
+   * True when the user can edit the recipe book's top level
+   * fields.
+   */
+  canEditBookInformation?: boolean;
+  /**
+   * True when the user may add recipes to the book
+   */
+  canAddRecipesToBook?: boolean;
 }
 
 /**
@@ -82,9 +91,13 @@ export interface IRecipeModel {
    */
   shortDescription: string;
   /**
-   * True when the user has write access
+   * True when the user may edit the recipe
    */
-  hasWriteAccess: boolean;
+  canEditRecipe: boolean;
+  /**
+   * True when the user may delete the recipe
+   */
+  canDeleteRecipe: boolean;
   /**
    * version of the model for optimistic concurrency
    */

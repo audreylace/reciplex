@@ -43,8 +43,8 @@ export function EditRecipePage({}: {}) {
       setDataLoaded(true);
       if (data) {
         setVersionString(data.versionTag);
-        setHasWriteAccess(data.hasWriteAccess);
-        if (data.hasWriteAccess) {
+        setHasWriteAccess(data.canEditRecipe);
+        if (data.canEditRecipe) {
           reset({
             recipeName: data.name,
             recipeDescription: data.shortDescription,

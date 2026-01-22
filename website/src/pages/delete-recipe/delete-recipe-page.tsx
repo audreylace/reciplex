@@ -27,7 +27,12 @@ export function DeleteRecipePage({}: {}) {
   const recipeData = recipeQuery.data;
 
   const onSubmit: SubmitHandler<FormFields> = async (data) => {
-    if (!recipeData?.bookId || !recipeId || !deleteRecipeMutation.isIdle) {
+    if (
+      !recipeData?.bookId ||
+      !recipeId ||
+      !deleteRecipeMutation.isIdle ||
+      !recipeData.canDeleteRecipe
+    ) {
       return;
     }
 
@@ -46,7 +51,7 @@ export function DeleteRecipePage({}: {}) {
           {recipeQuery.isLoading && <FetchingRecipeBanner />}
           {recipeQuery.isError && <FetchingRecipeFailedBanner />}
           {notFound && <RecipeNotFoundBanner />}
-          {recipeData && !recipeData.hasWriteAccess && (
+          {recipeData && !recipeData.canDeleteRecipe && (
             <>
               <ActionBanner
                 to={makeViewRecipePath(recipeId)}
@@ -55,7 +60,7 @@ export function DeleteRecipePage({}: {}) {
               />
             </>
           )}
-          {recipeData && recipeData.hasWriteAccess && (
+          {recipeData && recipeData.canDeleteRecipe && (
             <>
               <form onSubmit={handleSubmit(onSubmit)}>
                 <fieldset disabled={!deleteRecipeMutation.isIdle}>
@@ -77,6 +82,9 @@ export function DeleteRecipePage({}: {}) {
                   </label>
                   {errors.recipeTitle && (
                     <span>{errors.recipeTitle.message}</span>
+                  )}
+                  {errors.recipeTitle?.type === "required" && (
+                    <span>Field is Required</span>
                   )}
                 </fieldset>
                 <input type="submit" value="Delete" />

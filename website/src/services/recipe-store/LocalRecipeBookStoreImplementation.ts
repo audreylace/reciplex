@@ -53,7 +53,9 @@ export class LocalRecipeBookStoreImplementation implements IRecipeBookStore {
           id: key,
           shortDescription: "fake recipe book that is owned by logged in user",
           ownerId: this.whoAmI,
-          hasWriteAccess: true,
+          canAddRecipesToBook: true,
+          canDeleteBook: true,
+          canEditBookInformation: true,
         },
         recipes: {},
       };
@@ -69,7 +71,7 @@ export class LocalRecipeBookStoreImplementation implements IRecipeBookStore {
           shortDescription:
             "fake recipe book that is may be owned by logged in user but maybe not",
           ownerId: userKeys[i % userKeys.length],
-          hasWriteAccess: nextOwner === this.whoAmI || i % 3 === 0,
+          canAddRecipesToBook: nextOwner === this.whoAmI || i % 3 === 0,
         },
         recipes: {},
       };
@@ -80,7 +82,7 @@ export class LocalRecipeBookStoreImplementation implements IRecipeBookStore {
       setTimeout(() => {
         const bookEntry = this._books[bookId];
         if (bookEntry) {
-          if (!bookEntry.book.hasWriteAccess) {
+          if (!bookEntry.book.canDeleteBook) {
             reject();
             return;
           }
@@ -103,7 +105,9 @@ export class LocalRecipeBookStoreImplementation implements IRecipeBookStore {
             ownerId: this.whoAmI,
             name: args.name,
             shortDescription: args.shortDescription ?? "",
-            hasWriteAccess: true,
+            canAddRecipesToBook: true,
+            canEditBookInformation: true,
+            canDeleteBook: true,
           },
           recipes: {},
         };
@@ -248,7 +252,8 @@ export class LocalRecipeBookStoreImplementation implements IRecipeBookStore {
           bookId: book.book.id,
           name: args.name,
           shortDescription: args.shortDescription ?? "",
-          hasWriteAccess: book.book.hasWriteAccess,
+          canDeleteRecipe: true,
+          canEditRecipe: true,
           details: "",
           versionTag: `__version_${this._idCounter++}`,
         };
@@ -270,7 +275,7 @@ export class LocalRecipeBookStoreImplementation implements IRecipeBookStore {
             continue;
           }
 
-          if (!recipe.hasWriteAccess || recipe.versionTag !== args.versionTag) {
+          if (!recipe.canEditRecipe || recipe.versionTag !== args.versionTag) {
             reject();
             return;
           }
@@ -280,7 +285,8 @@ export class LocalRecipeBookStoreImplementation implements IRecipeBookStore {
             bookId: recipe.bookId,
             name: args.name,
             shortDescription: args.shortDescription ?? "",
-            hasWriteAccess: true,
+            canDeleteRecipe: true,
+            canEditRecipe: true,
             details: args.details,
             versionTag: `__version_${this._idCounter++}`,
           };
@@ -303,7 +309,7 @@ export class LocalRecipeBookStoreImplementation implements IRecipeBookStore {
             continue;
           }
 
-          if (!recipe.hasWriteAccess) {
+          if (!recipe.canDeleteRecipe) {
             reject();
             return;
           }

@@ -46,7 +46,7 @@ export function DeleteRecipeBookPage({}: {}) {
           {recipeBookQuery.isLoading && <FetchingRecipeBookBanner />}
           {recipeBookQuery.isError && <FetchingRecipeBookFailedBanner />}
           {notFound && <RecipeBookNotFoundBanner />}
-          {recipeBookData && !recipeBookData.hasWriteAccess && (
+          {recipeBookData && !recipeBookData.canDeleteBook && (
             <>
               <ActionBanner
                 to={makeViewRecipeBookPath(bookId)}
@@ -55,7 +55,7 @@ export function DeleteRecipeBookPage({}: {}) {
               />
             </>
           )}
-          {recipeBookData && recipeBookData.hasWriteAccess && (
+          {recipeBookData && recipeBookData.canDeleteBook && (
             <>
               <form onSubmit={handleSubmit(onSubmit)}>
                 <fieldset disabled={!deleteRecipeBookMutation.isIdle}>
@@ -76,6 +76,9 @@ export function DeleteRecipeBookPage({}: {}) {
                     />
                   </label>
                   {errors.bookTitle && <span>{errors.bookTitle.message}</span>}
+                  {errors.bookTitle?.type === "required" && (
+                    <span>Field is Required</span>
+                  )}
                 </fieldset>
                 <input type="submit" value="Delete" />
               </form>
