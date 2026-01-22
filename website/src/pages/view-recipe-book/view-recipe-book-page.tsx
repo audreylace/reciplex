@@ -2,7 +2,7 @@ import { NavLink, useParams } from "react-router";
 import { makeCreateRecipePath } from "../../features/recipes/route-utils";
 import { useGetRecipeBookById } from "../../features/recipes/hooks/useGetRecipeBookById.hook";
 import { useGetUserById } from "../../features/users/hooks/getUserById.hook";
-import { RecipeBookNotFoundBanner } from "../../features/recipes/components/recipe-book-not-found-banner copy/recipe-book-not-found-banner.component";
+import { RecipeBookNotFoundBanner } from "../../features/recipes/components/recipe-book-not-found-banner/recipe-book-not-found-banner.component";
 import { FetchingRecipeBookBanner } from "../../features/recipes/components/fetching-recipe-book-banner/fetching-recipe-book-banner.component";
 import { FetchingRecipeBookFailedBanner } from "../../features/recipes/components/fetching-recipe-book-failed-banner/fetching-recipe-failed-banner.component";
 import { BadPathBanner } from "../../features/recipes/components/bad-path-banner/bad-path-banner.component";
