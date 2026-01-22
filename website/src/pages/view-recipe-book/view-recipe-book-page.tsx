@@ -4,7 +4,7 @@ import { useGetRecipeBookById } from "../../features/recipes/hooks/useGetRecipeB
 import { useGetUserById } from "../../features/users/hooks/getUserById.hook";
 import { RecipeBookNotFoundBanner } from "../../features/recipes/components/recipe-book-not-found-banner/recipe-book-not-found-banner.component";
 import { FetchingRecipeBookBanner } from "../../features/recipes/components/fetching-recipe-book-banner/fetching-recipe-book-banner.component";
-import { FetchingRecipeBookFailedBanner } from "../../features/recipes/components/fetching-recipe-book-failed-banner/fetching-recipe-failed-banner.component";
+import { FetchingRecipeBookFailedBanner } from "../../features/recipes/components/fetching-recipe-book-failed-banner/fetching-recipe-book-failed-banner.component";
 import { BadPathBanner } from "../../features/recipes/components/bad-path-banner/bad-path-banner.component";
 
 /**
