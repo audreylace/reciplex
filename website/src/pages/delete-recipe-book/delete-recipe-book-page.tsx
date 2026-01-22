@@ -50,7 +50,7 @@ export function DeleteRecipeBookPage({}: {}) {
             <>
               <ActionBanner
                 to={makeViewRecipeBookPath(bookId)}
-                message="You may not edit this recipe book"
+                message="You may not delete this recipe book"
                 linkText="View recipe book"
               />
             </>
