@@ -48,6 +48,11 @@ export function ViewRecipeBookPage({}: {}) {
                   Delete Recipe Book
                 </NavLink>
               )}
+              {bookQuery.data.canEditBookInformation && (
+                <NavLink to={`/edit-recipe-book/${bookId}`}>
+                  Edit Recipe Book Information
+                </NavLink>
+              )}
               {bookQuery.isFetching && (
                 <p>Checking the cloud for updates ...</p>
               )}
