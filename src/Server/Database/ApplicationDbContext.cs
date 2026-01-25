@@ -1,0 +1,42 @@
+using Microsoft.EntityFrameworkCore;
+using Recipe.Database.DbObjects;
+
+namespace Recipe.Database;
+
+/// <summary>
+/// EF Core database context for the Recipe Application
+/// </summary>
+public class ApplicationDbContext : DbContext
+{
+    /// <summary>
+    /// User DB objects
+    /// </summary>
+    public DbSet<UserDbObject> Users { get; set; }
+
+    /// <summary>
+    /// Recipe book DB objects
+    /// </summary>
+    public DbSet<RecipeBookDbObject> RecipeBooks { get; set; }
+
+    /// <summary>
+    /// Recipe DB objects
+    /// </summary>
+    public DbSet<RecipeDbObject> Recipes { get; set; }
+
+    /// <summary>
+    /// Constructor for ASP.NET
+    /// </summary>
+    /// <param name="options">Application settings</param>
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options) { }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder
+            .Entity<RecipeDbObject>()
+            .OwnsOne( // configure json serialization for object into database
+                recipe => recipe.JsonData,
+                ownedNavigationBuilder => ownedNavigationBuilder.ToJson()
+            );
+    }
+}
