@@ -48,4 +48,14 @@ public class NavigationDirection : IParsable<NavigationDirection>
 
         return false;
     }
+
+    public static string ToQueryStringParameterValue(DirectionValue directionValue)
+    {
+        return directionValue switch
+        {
+            DirectionValue.Forwards => "forward",
+            DirectionValue.Backwards => "backward",
+            _ => throw new ArgumentException("bad enum value", nameof(directionValue)),
+        };
+    }
 }

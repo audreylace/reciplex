@@ -54,26 +54,14 @@ public interface IRecipeBookService
     );
 
     Task<CreateRecipeBookResult> CreateRecipeBookAsync(
+        string userId,
         CreateRecipeBookArgs args,
         CancellationToken cancellationToken
     );
 
     Task<IAsyncEnumerable<RecipeBookDao>?> ListRecipeBooksAsync(
+        string userId,
         ListRecipeBooksArgs args,
         CancellationToken cancellationToken
     );
-}
-
-public class ListRecipeBooksArgs
-{
-    public string? BeforeBookId { get; set; }
-    public string? AfterBookId { get; set; }
-    public ListRecipeBooksOrdering? ResultOrder { get; set; }
-    public required int ResultCount { get; set; }
-}
-
-public enum ListRecipeBooksOrdering
-{
-    ByIdIncreasing,
-    ByIdDecreasing,
 }

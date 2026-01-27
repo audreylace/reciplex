@@ -3,8 +3,10 @@ namespace Reciplex.Server.Host.Models.Responses;
 /// <summary>
 /// A page of recipe books
 /// </summary>
-public class RecipeBookPageResponseJson
+public class RecipePageResponseJson
 {
+    public required IList<RecipeJson> Recipes { get; init; }
+
     /// <summary>
     /// Books in the response
     /// </summary>
@@ -18,10 +20,10 @@ public class RecipeBookPageResponseJson
     /// <summary>
     /// If there is a next page, use this cursor to get it
     /// </summary>
-    public required RecipeBookPageCursor? NextPage { get; init; }
+    public required RecipePageCursor? NextPage { get; init; }
 
     /// <summary>
     /// If there is a previous page, use this cursor to get it
     /// </summary>
-    public required RecipeBookPageCursor? PreviousPage { get; init; }
+    public required RecipePageCursor? PreviousPage { get; init; }
 }

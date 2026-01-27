@@ -35,7 +35,7 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
     /// <param name="cancellationToken">token cancelled when the remote closes their connection</param>
     /// <returns>A HTTP response indicating the outcome of the operation</returns>
     [HttpGet("{bookId}")]
-    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any, NoStore = false)]
+    [ResponseCache(Duration = 15 * 60, Location = ResponseCacheLocation.Any, NoStore = false)]
     public async Task<
         Results<
             Ok<SingleRecipeBookResponseJson>,
@@ -93,9 +93,7 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
         >
     > UpdateBookById(
         [RequiredAndNotEmpty(ErrorMessage = "A recipe book id must be supplied")] string bookId,
-        [RequiredAndNotEmpty(ErrorMessage = "An If-Match header must be supplied")]
-        [FromHeader(Name = "if-match")]
-            string ifMatch,
+        [RequiredAndValidIfMatch] [FromHeader(Name = "if-match")] string ifMatch,
         User user,
         [FromBody] RecipeBookJsonBody requestBody,
         CancellationToken cancellationToken
@@ -220,12 +218,8 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
         // The service layer will do all of our validation for us. We can just call it and then transform its
         // result back into the correct HTTP code and response.
         var createResult = await recipeBookService.CreateRecipeBookAsync(
-            new()
-            {
-                Name = requestBody.Name,
-                ShortDescription = requestBody.ShortDescription,
-                OwningUserId = user.UserId,
-            },
+            user.UserId,
+            new() { Name = requestBody.Name, ShortDescription = requestBody.ShortDescription },
             cancellationToken
         );
 
@@ -259,39 +253,29 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
     /// </code></pre>
     /// </summary>
     /// <param name="user">Information about the authenticated user</param>
-    /// <param name="pageId">The page ID</param>
-    /// <param name="navigationDirection">The navigation direction</param>
+    /// <param name="cursor">The page cursor</param>
     /// <param name="cancellationToken">token that cancels when the connection is closed</param>
     /// <returns>Task that resolves to the HTTP response</returns>
     [HttpGet]
+    [ResponseCache(Duration = 15 * 60, Location = ResponseCacheLocation.Any, NoStore = false)]
     public async Task<
         Results<ValidationProblem, ProblemHttpResult, Ok<RecipeBookPageResponseJson>>
-    > GetBooks(
-        User user,
-        [FromQuery(Name = "page-id")] string? pageId,
-        [FromQuery(Name = "going")] NavigationDirection? navigationDirection,
-        CancellationToken cancellationToken
-    )
+    > GetBooks(User user, PageCursor cursor, CancellationToken cancellationToken)
     {
-        ValidationProblem? hasValidationError = ValidateListParameters(pageId, navigationDirection);
-        if (hasValidationError is not null)
-        {
-            return hasValidationError;
-        }
-
         var pageIterator = await recipeBookService.ListRecipeBooksAsync(
+            user.UserId,
             new()
             {
                 AfterBookId =
-                    navigationDirection?.Direction == NavigationDirection.DirectionValue.Forwards
-                        ? pageId
+                    cursor.Going?.Direction == NavigationDirection.DirectionValue.Forwards
+                        ? cursor.Index
                         : null,
                 BeforeBookId =
-                    navigationDirection?.Direction == NavigationDirection.DirectionValue.Backwards
-                        ? pageId
+                    cursor.Going?.Direction == NavigationDirection.DirectionValue.Backwards
+                        ? cursor.Index
                         : null,
                 ResultOrder =
-                    navigationDirection?.Direction == NavigationDirection.DirectionValue.Backwards
+                    cursor.Going?.Direction == NavigationDirection.DirectionValue.Backwards
                         ? ListRecipeBooksOrdering.ByIdDecreasing
                         : ListRecipeBooksOrdering.ByIdIncreasing,
                 ResultCount = 10,
@@ -308,20 +292,16 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
             .OrderBy(book => book.Id)
             .ToListAsync(cancellationToken);
 
-        List<string> userIdsToFetch =
-        [
-            .. pageData.GroupBy(book => book.OwnerUserId).Select(g => g.Key),
-        ];
-
         bool? hasNextPage;
-        string? idForNextPage =
-            pageData.Count > 0 ? pageData[^1].Id
-            : navigationDirection?.Direction == NavigationDirection.DirectionValue.Backwards
-                ? pageId
-            : null;
-        if (idForNextPage is not null)
+        string? idForNextPage = cursor.ComputeIdForNextPage(r => r.Id, pageData);
+        if (cursor.ShouldRunNextPageQuery(idForNextPage))
         {
-            hasNextPage = await HasResultsBeyondPageQuery(idForNextPage, false, cancellationToken);
+            hasNextPage = await HasResultsBeyondPageQuery(
+                idForNextPage,
+                false,
+                user,
+                cancellationToken
+            );
             if (hasNextPage is null)
             {
                 return CustomProblemHttpResults.InternalServerError();
@@ -329,15 +309,13 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
         }
 
         bool? hasPreviousPage;
-        string? idForPreviousPage =
-            pageData.Count > 0 ? pageData[0].Id
-            : navigationDirection?.Direction == NavigationDirection.DirectionValue.Forwards ? pageId
-            : null;
-        if (idForPreviousPage is not null)
+        string? idForPreviousPage = cursor.ComputeIdForPreviousPage(r => r.Id, pageData);
+        if (cursor.ShouldRunPreviousPageQuery(idForPreviousPage))
         {
             hasPreviousPage = await HasResultsBeyondPageQuery(
                 idForPreviousPage,
                 true,
+                user,
                 cancellationToken
             );
             if (hasPreviousPage is null)
@@ -346,24 +324,38 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
             }
         }
 
-        List<UserJson> users = [];
-        foreach (string userId in userIdsToFetch)
-        {
-            IUserDao? userDao = await userService.GetUserAsync(userId, cancellationToken);
-            if (userDao is null)
-            {
-                return CustomProblemHttpResults.InternalServerError();
-            }
-            users.Add(FromUserDao(userDao));
-        }
-
         return TypedResults.Ok(
             new RecipeBookPageResponseJson()
             {
-                RecipeBooks = [.. pageData.Select(FromBookDao)],
-                Users = users,
-                IdForNextPage = idForNextPage,
-                IdForPreviousPage = idForPreviousPage,
+                RecipeBooks = [.. pageData.Select(b => new RecipeBookJson(b))],
+                Users = await CommonQueries
+                    .FetchUsersAsync(
+                        pageData.GroupBy(book => book.OwnerUserId).Select(g => g.Key),
+                        userService,
+                        cancellationToken
+                    )
+                    .Select(u => new UserJson(u))
+                    .ToListAsync(cancellationToken),
+                NextPage =
+                    idForNextPage != null
+                        ? new()
+                        {
+                            GoingQueryParam = NavigationDirection.ToQueryStringParameterValue(
+                                NavigationDirection.DirectionValue.Forwards
+                            ),
+                            PageIndex = idForNextPage,
+                        }
+                        : null,
+                PreviousPage =
+                    idForPreviousPage != null
+                        ? new()
+                        {
+                            GoingQueryParam = NavigationDirection.ToQueryStringParameterValue(
+                                NavigationDirection.DirectionValue.Backwards
+                            ),
+                            PageIndex = idForPreviousPage,
+                        }
+                        : null,
             }
         );
     }
@@ -382,12 +374,14 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
     /// <param name="cancellationToken">Cancels the operation</param>
     /// <returns>Task that resolves to the result of the query or null if the query fails</returns>
     private async Task<bool?> HasResultsBeyondPageQuery(
-        string bookId,
+        string? bookId,
         bool isBack,
+        User user,
         CancellationToken cancellationToken
     )
     {
         var pageIterator = await recipeBookService.ListRecipeBooksAsync(
+            user.UserId,
             new()
             {
                 AfterBookId = isBack ? null : bookId,
@@ -407,60 +401,6 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
             return true;
         }
         return false;
-    }
-
-    /// <summary>
-    /// Validates list parameters
-    /// </summary>
-    /// <param name="pageId">The page ID</param>
-    /// <param name="navigationDirection">the navigation direction</param>
-    /// <returns>Validation problem on failure otherwise null if the inputs are valid</returns>
-    private static ValidationProblem? ValidateListParameters(
-        string? pageId,
-        NavigationDirection? navigationDirection
-    )
-    {
-        if (
-            (!string.IsNullOrWhiteSpace(pageId) && navigationDirection is null)
-            || (string.IsNullOrWhiteSpace(pageId) && navigationDirection is not null)
-        )
-        {
-            Dictionary<string, string[]> errors = [];
-            if (navigationDirection is null)
-            {
-                errors["going"] =
-                [
-                    "\"going\" query parameter is required when query parameter \"page-id\" is present",
-                ];
-            }
-
-            if (string.IsNullOrWhiteSpace(pageId))
-            {
-                errors["page-id"] =
-                [
-                    "\"page-id\" query parameter is required and must not be null or whitespace when query parameter \"going\" is present",
-                ];
-            }
-
-            return BookPageValidationProblem(errors);
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Returns a validation problem for a page request
-    /// </summary>
-    /// <param name="errors">Map of validation errors</param>
-    /// <returns>The validation problem</returns>
-    private static ValidationProblem BookPageValidationProblem(Dictionary<string, string[]> errors)
-    {
-        return TypedResults.ValidationProblem(
-            type: "https://datatracker.ietf.org/doc/html/rfc9110#name-400-bad-request",
-            title: "Validation Problem",
-            detail: "Requested book list operation failed because one or more validation errors",
-            errors: errors
-        );
     }
 
     /// <summary>
@@ -526,7 +466,7 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
     /// </summary>
     /// <param name="bookId">the recipe book id</param>
     /// <returns>the 404 result</returns>
-    private static ProblemHttpResult OperationOnBookForbidden(string bookId)
+    public static ProblemHttpResult OperationOnBookForbidden(string bookId)
     {
         return TypedResults.Problem(
             statusCode: 403,
@@ -542,7 +482,7 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
     /// </summary>
     /// <param name="bookId">the recipe book id</param>
     /// <returns>the 404 result</returns>
-    private static ProblemHttpResult BookNotFoundResult(string bookId)
+    public static ProblemHttpResult BookNotFoundResult(string bookId)
     {
         return TypedResults.Problem(
             statusCode: 404,
@@ -597,8 +537,8 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
 
         var jsonData = new SingleRecipeBookResponseJson()
         {
-            RecipeBook = FromBookDao(book),
-            Owner = FromUserDao(owningUser),
+            RecipeBook = new(book),
+            Owner = new(owningUser),
         };
 
         if (isCreate)
@@ -612,37 +552,4 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
             return TypedResults.Ok(jsonData);
         }
     }
-
-    /// <summary>
-    /// Converts a <see cref="RecipeBookDao"/> into <see cref="RecipeBookJson"/>
-    /// </summary>
-    /// <param name="book">The <see cref="RecipeBookDao"/> that will be converted into <see cref="RecipeBookJson"/></param>
-    /// <returns>The resulting <see cref="RecipeBookJson"/></returns>
-    private static RecipeBookJson FromBookDao(RecipeBookDao book) =>
-        new()
-        {
-            BookId = book.Id,
-            Name = book.Name,
-            ShortDescription = book.ShortDescription,
-            OwnerUserId = book.OwnerUserId,
-            Created = book.CreateTime.ToString("o"),
-            LastModified = book.LastUpdated.ToString("o"),
-            ConcurrencyTag = book.ConcurrencyTag,
-            Permissions = new()
-            {
-                EditInformation = book.AccessPermissions.HasFlag(
-                    RecipeBookAccessPermissions.EditBookInformation
-                ),
-                AddRecipe = book.AccessPermissions.HasFlag(RecipeBookAccessPermissions.AddRecipes),
-                Delete = book.AccessPermissions.HasFlag(RecipeBookAccessPermissions.DeleteBook),
-            },
-        };
-
-    /// <summary>
-    /// Converts a <see cref="IUserDao"/> into <see cref="UserJson"/>
-    /// </summary>
-    /// <param name="user">The <see cref="IUserDao"/> that will be converted into <see cref="UserJson"/></param>
-    /// <returns>The resulting <see cref="UserJson"/></returns>
-    private static UserJson FromUserDao(IUserDao user) =>
-        new() { DisplayName = user.DisplayName, UserId = user.Id };
 }
