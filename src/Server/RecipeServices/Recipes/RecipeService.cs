@@ -9,6 +9,7 @@ using Reciplex.Server.RecipeServices.Recipes.Results.CreateRecipe;
 using Reciplex.Server.RecipeServices.Recipes.Results.DeleteRecipeById;
 using Reciplex.Server.RecipeServices.Recipes.Results.UpdateRecipe;
 using Reciplex.Server.RecipeServices.Utils;
+using Reciplex.Server.UserServices;
 
 namespace Reciplex.Server.RecipeServices.Recipes;
 
@@ -21,15 +22,15 @@ public class RecipeService(
 {
     /// <inheritdoc />
     public async Task<CreateRecipeResult> CreateRecipeAsync(
-        long bookId,
-        long userId,
+        RecipeBookKey bookKey,
+        UserKey userKey,
         CreateRecipeArgs args,
         CancellationToken cancellationToken
     )
     {
         RecipeBookDao? bookLookup = await recipeBookService.GetRecipeBookAsync(
-            bookId,
-            userId,
+            bookKey,
+            userKey,
             cancellationToken
         );
 
@@ -46,7 +47,7 @@ public class RecipeService(
         long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
         RecipeDbObject recipeDbObject = new()
         {
-            RecipeBookFk = bookId,
+            RecipeBookFk = bookKey.SurrogateKey,
             Name = args.Name,
             ShortDescription = args.ShortDescription,
             Details = args.Details,
@@ -60,14 +61,14 @@ public class RecipeService(
         return new(DbObjectToRecipeDao(recipeDbObject, true));
     }
 
-    public async Task<DeleteRecipeByIdResult> DeleteRecipeByIdAsync(
-        long recipeId,
-        long userId,
+    public async Task<DeleteRecipeByIdResult> DeleteRecipeAsync(
+        RecipeKey recipeKey,
+        UserKey userKey,
         string concurrencyTag,
         CancellationToken cancellationToken
     )
     {
-        var query = await RetrieveRecipeDbObject(recipeId, userId, cancellationToken);
+        var query = await RetrieveRecipeDbObject(recipeKey, userKey, cancellationToken);
         if (query is null)
         {
             return new(DeleteRecipeByIdResultOutcome.NotFound);
@@ -98,15 +99,15 @@ public class RecipeService(
         return new(DeleteRecipeByIdResultOutcome.Success);
     }
 
-    public async Task<RecipeDao?> GetRecipeByIdAsync(
-        long recipeId,
-        long userId,
+    public async Task<RecipeDao?> GetRecipeAsync(
+        RecipeKey recipeKey,
+        UserKey userKey,
         CancellationToken cancellationToken
     )
     {
         var query = await RetrieveRecipeDbObject(
-            recipeId,
-            userId,
+            recipeKey,
+            userKey,
             cancellationToken,
             noTrack: true
         );
@@ -120,8 +121,8 @@ public class RecipeService(
     }
 
     private async Task<(RecipeDbObject, bool)?> RetrieveRecipeDbObject(
-        long recipeId,
-        long userId,
+        RecipeKey recipeKey,
+        UserKey userKey,
         CancellationToken cancellationToken,
         bool? noTrack = false
     )
@@ -129,7 +130,7 @@ public class RecipeService(
         RecipeDbObject? recipe = await (
             noTrack == true ? dbContext.Recipes.AsNoTracking() : dbContext.Recipes
         )
-            .Where(r => r.Id == recipeId && r.Deleted == false)
+            .Where(r => r.Id == recipeKey.SurrogateKey && r.Deleted == false)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (recipe is null)
@@ -138,8 +139,8 @@ public class RecipeService(
         }
 
         RecipeBookDao? bookLookup = await recipeBookService.GetRecipeBookAsync(
-            recipe.RecipeBookFk,
-            userId,
+            new(recipe.RecipeBookFk),
+            userKey,
             cancellationToken
         );
 
@@ -152,15 +153,15 @@ public class RecipeService(
     }
 
     public async Task<IAsyncEnumerable<RecipeDao>?> ListRecipesAsync(
-        long bookId,
-        long userId,
+        RecipeBookKey bookKey,
+        UserKey userKey,
         ListRecipesArgs args,
         CancellationToken cancellationToken
     )
     {
         RecipeBookDao? bookLookup = await recipeBookService.GetRecipeBookAsync(
-            bookId,
-            userId,
+            bookKey,
+            userKey,
             cancellationToken
         );
 
@@ -169,22 +170,46 @@ public class RecipeService(
             return null;
         }
 
-        return dbContext
+        var query = dbContext
             .Recipes.AsNoTracking()
-            .Where(r => r.Deleted == false && r.RecipeBookFk == bookId)
+            .Where(r => r.Deleted == false && r.RecipeBookFk == bookKey.SurrogateKey);
+
+        if (args.ResultOrder == ListRecipesOrdering.ByIdDecreasing)
+        {
+            query = query.OrderByDescending(r => r.Id);
+        }
+        else
+        {
+            query = query.OrderBy(r => r.Id);
+        }
+
+        if (args.AfterRecipeId is not null)
+        {
+            long afterRecipeId = args.AfterRecipeId.Value.SurrogateKey;
+            query = query.Where(r => r.Id > afterRecipeId);
+        }
+
+        if (args.BeforeRecipeId is not null)
+        {
+            long beforeRecipeId = args.BeforeRecipeId.Value.SurrogateKey;
+            query = query.Where(r => r.Id < beforeRecipeId);
+        }
+
+        return query
+            .Take(args.ResultCount)
             .AsAsyncEnumerable()
             .Select(r => DbObjectToRecipeDao(r, bookLookup.MayEditBook));
     }
 
     public async Task<UpdateRecipeResult> UpdateRecipeAsync(
-        long recipeId,
-        long userId,
+        RecipeKey recipeKey,
+        UserKey userKey,
         string concurrencyTag,
         UpdateRecipeArgs args,
         CancellationToken cancellationToken
     )
     {
-        var query = await RetrieveRecipeDbObject(recipeId, userId, cancellationToken);
+        var query = await RetrieveRecipeDbObject(recipeKey, userKey, cancellationToken);
         if (query is null)
         {
             return new(UpdateRecipeResultOutcome.NotFound);
@@ -221,13 +246,13 @@ public class RecipeService(
     private static RecipeDao DbObjectToRecipeDao(RecipeDbObject recipeDbObject, bool mayEdit) =>
         new()
         {
-            Id = recipeDbObject.Id,
+            Id = new(recipeDbObject.Id),
             Name = recipeDbObject.Name,
             ShortDescription = recipeDbObject.ShortDescription,
             ConcurrencyTag = recipeDbObject.ConcurrencyTag,
             LastModified = Instant.FromUnixTimeSeconds(recipeDbObject.LastModified),
             Created = Instant.FromUnixTimeSeconds(recipeDbObject.Created),
-            BookId = recipeDbObject.RecipeBookFk,
+            BookId = new(recipeDbObject.RecipeBookFk),
             Details = recipeDbObject.Details,
             MayEdit = mayEdit,
         };
