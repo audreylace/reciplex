@@ -7,10 +7,10 @@ namespace Reciplex.Server.Host.Models.RecipeBook;
 
 public class RecipeBookJson
 {
-    public required RecipeBookKey BookId { get; init; }
+    public required RecipeBookKey BookKey { get; init; }
     public required string Name { get; init; }
     public required string ShortDescription { get; init; }
-    public required UserKey OwnerUserId { get; init; }
+    public required UserKey OwningUserKey { get; init; }
     public required NodaTime.Instant Created { get; init; }
     public required NodaTime.Instant LastModified { get; init; }
     public required string ConcurrencyTag { get; init; }
@@ -29,10 +29,10 @@ public class RecipeBookJson
     [SetsRequiredMembers]
     public RecipeBookJson(RecipeBookDao book)
     {
-        BookId = book.Id;
+        BookKey = book.Id;
         Name = book.Name;
         ShortDescription = book.ShortDescription;
-        OwnerUserId = book.OwningUserKey;
+        OwningUserKey = book.OwningUserKey;
         Created = book.Created;
         LastModified = book.LastModified;
         ConcurrencyTag = book.ConcurrencyTag;

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.Extensions.Options;
 
-namespace Reciplex.Server.Host.UserKeyUtils;
+namespace Reciplex.Server.Host.Utils.UserKeyUtils;
 
 public class ConfigureUserKeyJsonHandling(IStringUserKeyInterop userKeyInterop)
     : IConfigureOptions<JsonOptions>

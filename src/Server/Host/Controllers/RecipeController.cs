@@ -3,10 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Reciplex.Server.Host.Models.PagingUtils;
 using Reciplex.Server.Host.Models.Recipe;
-using Reciplex.Server.Host.Models.RecipeBook;
-using Reciplex.Server.Host.Models.User;
-using Reciplex.Server.Host.UserKeyUtils;
 using Reciplex.Server.Host.Utils.HttpResults;
+using Reciplex.Server.Host.Utils.UserKeyUtils;
 using Reciplex.Server.Host.Validation;
 using Reciplex.Server.RecipeServices.RecipeBooks;
 using Reciplex.Server.RecipeServices.RecipeBooks.Models;
@@ -318,31 +316,31 @@ public class RecipesController(
             return recipeBookProblemFactory.BookNotFoundResult(bookId);
         }
 
-        List<RecipeDao> pageData = await pageIterator
-            .OrderBy(recipe => recipe.Id)
+        List<RecipeJson> pageData = await pageIterator
+            .Select(r => new RecipeJson(r))
+            .OrderBy(recipe => recipe.RecipeKey)
             .ToListAsync(cancellationToken);
 
-        List<RecipeBookDao> books = [];
-        HashSet<UserKey> userIdsToFetch = [];
-        foreach (
-            RecipeBookKey idOfBookToFetch in pageData.GroupBy(r => r.BookId).Select(g => g.Key)
-        )
+        RecipeBookDao? book = await recipeBookService.GetRecipeBookAsync(
+            bookId,
+            userClaimsPrincipal.UserKey,
+            cancellationToken
+        );
+
+        if (book is null)
         {
-            RecipeBookDao? book = await recipeBookService.GetRecipeBookAsync(
-                idOfBookToFetch,
-                userClaimsPrincipal.UserKey,
-                cancellationToken
-            );
-            if (book is null)
-            {
-                continue;
-            }
-            books.Add(book);
-            userIdsToFetch.Add(book.OwningUserKey);
+            return CustomProblemHttpResults.InternalServerError();
+        }
+
+        UserDao? owningUser = await userService.GetUserAsync(book.OwningUserKey, cancellationToken);
+
+        if (owningUser is null)
+        {
+            return CustomProblemHttpResults.InternalServerError();
         }
 
         (bool hasNextPage, RecipeKey? idForNextPage) = await cursor.QueryForNextPage(
-            r => r.Id,
+            r => r.RecipeKey,
             pageData,
             (id, cancellationToken) =>
                 HasResultsBeyondPageQuery(
@@ -356,7 +354,7 @@ public class RecipesController(
         );
 
         (bool hasPreviousPage, RecipeKey? idForPreviousPage) = await cursor.QueryForPreviousPage(
-            r => r.Id,
+            r => r.RecipeKey,
             pageData,
             (id, cancellationToken) =>
                 HasResultsBeyondPageQuery(
@@ -372,12 +370,9 @@ public class RecipesController(
         return TypedResults.Ok(
             new RecipePageResponseJson()
             {
-                Recipes = [.. pageData.Select(r => new RecipeJson(r))],
-                RecipeBooks = [.. books.Select(b => new RecipeBookJson(b))],
-                Users = await userService
-                    .FetchUsersAsync(userIdsToFetch, cancellationToken)
-                    .Select(u => new UserJson(u))
-                    .ToListAsync(cancellationToken),
+                Recipes = pageData,
+                RecipeBooks = [new(book)],
+                Users = [new(owningUser)],
                 NextPage =
                     idForNextPage != null
                         ? new()

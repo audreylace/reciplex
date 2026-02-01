@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.Extensions.Options;
 
-namespace Reciplex.Server.Host.RecipeBookKeyUtils;
+namespace Reciplex.Server.Host.Utils.RecipeBookKeyUtils;
 
 public class ConfigureRecipeBookKeyJsonHandling(IStringRecipeBookKeyInterop recipeKeyInterop)
     : IConfigureOptions<JsonOptions>

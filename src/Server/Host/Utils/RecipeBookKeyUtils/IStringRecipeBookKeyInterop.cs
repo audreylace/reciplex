@@ -1,6 +1,6 @@
 using Reciplex.Server.RecipeServices.RecipeBooks;
 
-namespace Reciplex.Server.Host.RecipeBookKeyUtils;
+namespace Reciplex.Server.Host.Utils.RecipeBookKeyUtils;
 
 /// <summary>
 /// Interop services for marshalling <see cref="RecipeBookKey"/> to and from strings

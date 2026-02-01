@@ -6,7 +6,7 @@ namespace Reciplex.Server.Host.Models.User;
 public class UserJson
 {
     public required string DisplayName { get; init; }
-    public required UserKey UserId { get; init; }
+    public required UserKey UserKey { get; init; }
 
     /// <summary>
     /// Converts a <see cref="IUserDao"/> into <see cref="UserJson"/>
@@ -17,7 +17,7 @@ public class UserJson
     public UserJson(UserDao user)
     {
         DisplayName = user.DisplayName;
-        UserId = user.Id;
+        UserKey = user.Id;
     }
 
     /// <summary>

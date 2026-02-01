@@ -1,6 +1,6 @@
 using Reciplex.Server.UserServices;
 
-namespace Reciplex.Server.Host.UserKeyUtils;
+namespace Reciplex.Server.Host.Utils.UserKeyUtils;
 
 /// <summary>
 /// Interop services for marshalling <see cref="UserKey"/> to and from strings

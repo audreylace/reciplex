@@ -1,7 +1,7 @@
 using Reciplex.Server.Host.Services.StringIdInterop;
 using Reciplex.Server.RecipeServices.Recipes;
 
-namespace Reciplex.Server.Host.RecipeKeyUtils;
+namespace Reciplex.Server.Host.Utils.RecipeKeyUtils;
 
 /// <summary>
 /// Implements <see cref="IStringRecipeKeyInterop"/> using <see cref="IStringIdInterop"/>

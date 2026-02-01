@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Reciplex.Server.RecipeServices.RecipeBooks;
 
-namespace Reciplex.Server.Host.RecipeBookKeyUtils;
+namespace Reciplex.Server.Host.Utils.RecipeBookKeyUtils;
 
 /// <summary>
 /// Binds <see cref="RecipeBookKey"/> using <see cref="IStringRecipeBookKeyInterop"/> from strings

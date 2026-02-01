@@ -1,11 +1,12 @@
 using NodaTime;
 using Recipe.Database;
 using Reciplex.Server.Host.AccessControl;
-using Reciplex.Server.Host.RecipeBookKeyUtils;
-using Reciplex.Server.Host.RecipeKeyUtils;
 using Reciplex.Server.Host.Services.StringIdInterop;
-using Reciplex.Server.Host.UserKeyUtils;
 using Reciplex.Server.Host.Utils.HttpResults;
+using Reciplex.Server.Host.Utils.NodaJsonUtils;
+using Reciplex.Server.Host.Utils.RecipeBookKeyUtils;
+using Reciplex.Server.Host.Utils.RecipeKeyUtils;
+using Reciplex.Server.Host.Utils.UserKeyUtils;
 using Reciplex.Server.RecipeServices;
 using Sqids;
 
@@ -51,6 +52,9 @@ builder.Services.AddAuthentication();
 
 builder.Services.AddSingleton<IClock>(SystemClock.Instance);
 builder.Services.AddRecipeServices();
+
+// add json handling for noda instant
+builder.Services.ConfigureOptions<ConfigureNodaInstantJsonHandling>();
 
 if (builder.Environment.IsDevelopment())
 {

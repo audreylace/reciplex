@@ -1,7 +1,7 @@
 using Reciplex.Server.Host.Services.StringIdInterop;
 using Reciplex.Server.UserServices;
 
-namespace Reciplex.Server.Host.UserKeyUtils;
+namespace Reciplex.Server.Host.Utils.UserKeyUtils;
 
 /// <summary>
 /// Implements <see cref="IStringUserKeyInterop"/> using <see cref="IStringIdInterop"/>

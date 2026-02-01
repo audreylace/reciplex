@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Reciplex.Server.Host.Models.PagingUtils;
 using Reciplex.Server.Host.Models.RecipeBook;
 using Reciplex.Server.Host.Models.User;
-using Reciplex.Server.Host.UserKeyUtils;
 using Reciplex.Server.Host.Utils.HttpResults;
+using Reciplex.Server.Host.Utils.UserKeyUtils;
 using Reciplex.Server.Host.Validation;
 using Reciplex.Server.RecipeServices.RecipeBooks;
 using Reciplex.Server.RecipeServices.RecipeBooks.Models;
@@ -247,7 +247,7 @@ public class RecipeBooksController(
     /// <br />
     /// Path to get previous or next page:
     /// <pre><code>
-    /// GET /recipe-books?page-id={bookId}&amp;going={forward | backward}
+    /// GET /recipe-books?index={bookId}&amp;going={forward | backward}
     /// </code></pre>
     /// <br />
     /// Path to get first page:
@@ -290,12 +290,13 @@ public class RecipeBooksController(
             cancellationToken
         );
 
-        List<RecipeBookDao> pageData = await pageIterator
-            .OrderBy(book => book.Id)
+        List<RecipeBookJson> pageData = await pageIterator
+            .Select(b => new RecipeBookJson(b))
+            .OrderBy(book => book.BookKey)
             .ToListAsync(cancellationToken);
 
         (bool hasNextPage, RecipeBookKey? idForNextPage) = await cursor.QueryForNextPage(
-            r => r.Id,
+            r => r.BookKey,
             pageData,
             (id, cancellationToken) =>
                 HasResultsBeyondPageQuery(id, false, appClaimsPrincipal.UserKey, cancellationToken),
@@ -304,7 +305,7 @@ public class RecipeBooksController(
 
         (bool hasPreviousPage, RecipeBookKey? idForPreviousPage) =
             await cursor.QueryForPreviousPage(
-                r => r.Id,
+                r => r.BookKey,
                 pageData,
                 (id, cancellationToken) =>
                     HasResultsBeyondPageQuery(
@@ -319,7 +320,7 @@ public class RecipeBooksController(
         return TypedResults.Ok(
             new RecipeBookPageResponseJson()
             {
-                RecipeBooks = [.. pageData.Select(b => new RecipeBookJson(b))],
+                RecipeBooks = pageData,
                 Users = await userService
                     .FetchUsersAsync(
                         pageData.GroupBy(book => book.OwningUserKey).Select(g => g.Key),

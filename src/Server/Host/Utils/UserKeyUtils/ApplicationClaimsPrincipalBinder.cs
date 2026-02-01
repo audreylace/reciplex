@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-namespace Reciplex.Server.Host.UserKeyUtils;
+namespace Reciplex.Server.Host.Utils.UserKeyUtils;
 
 /// <summary>
 /// Binds data to <see cref="ApplicationClaimsPrincipal"/>

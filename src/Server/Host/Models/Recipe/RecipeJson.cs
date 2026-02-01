@@ -5,31 +5,76 @@ using Reciplex.Server.RecipeServices.Recipes.Models;
 
 namespace Reciplex.Server.Host.Models.Recipe;
 
+/// <summary>
+/// Information about a recipe
+/// </summary>
 public class RecipeJson
 {
-    public required RecipeKey RecipeId { get; init; }
+    /// <summary>
+    /// The unique key identifying this recipe
+    /// </summary>
+    public required RecipeKey RecipeKey { get; init; }
+
+    /// <summary>
+    /// The recipes name
+    /// </summary>
     public required string Name { get; init; }
+
+    /// <summary>
+    /// A short plain text description of the recipe
+    /// </summary>
     public required string ShortDescription { get; init; }
+
+    /// <summary>
+    /// The recipes details stored as a markdown document
+    /// </summary>
     public required string Details { get; init; }
-    public required RecipeBookKey BookId { get; init; }
+
+    /// <summary>
+    /// The unique key of the book that stores this recipe
+    /// </summary>
+    public required RecipeBookKey BookKey { get; init; }
+
+    /// <summary>
+    /// When the recipe was created
+    /// </summary>
     public required NodaTime.Instant Created { get; init; }
+
+    /// <summary>
+    /// When the recipe was last modified
+    /// </summary>
     public required NodaTime.Instant LastModified { get; init; }
+
+    /// <summary>
+    /// Tag for optimistic concurrency
+    /// </summary>
     public required string ConcurrencyTag { get; init; }
+
+    /// <summary>
+    /// True when the end user may edit this recipe. This implies the ability to delete this recipe from the book.
+    /// </summary>
     public required bool MayEdit { get; init; }
 
+    /// <summary>
+    /// Constructor for creating a recipe json model from a <see cref="RecipeDao"/>
+    /// </summary>
+    /// <param name="recipe">the source recipe data used to populate this model</param>
     [SetsRequiredMembers]
     public RecipeJson(RecipeDao recipe)
     {
-        RecipeId = recipe.Id;
+        RecipeKey = recipe.Id;
         Name = recipe.Name;
         ShortDescription = recipe.ShortDescription;
         Details = recipe.Details;
-        BookId = recipe.BookId;
+        BookKey = recipe.BookId;
         Created = recipe.Created;
         LastModified = recipe.LastModified;
         ConcurrencyTag = recipe.ConcurrencyTag;
         MayEdit = recipe.MayEdit;
     }
 
+    /// <summary>
+    /// Default constructor
+    /// </summary>
     public RecipeJson() { }
 }

@@ -2,7 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Reciplex.Server.RecipeServices.Recipes;
 
-namespace Reciplex.Server.Host.RecipeKeyUtils;
+namespace Reciplex.Server.Host.Utils.RecipeKeyUtils;
 
 public class RecipeKeyJsonConverter(IStringRecipeKeyInterop recipeKeyInterop)
     : JsonConverter<RecipeKey>

@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Http.HttpResults;
-using Reciplex.Server.Host.RecipeBookKeyUtils;
+using Reciplex.Server.Host.Utils.RecipeBookKeyUtils;
 using Reciplex.Server.RecipeServices.RecipeBooks;
 
 namespace Reciplex.Server.Host.Utils.HttpResults;
