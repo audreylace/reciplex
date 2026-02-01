@@ -1,3 +1,4 @@
+using NodaTime;
 using Recipe.Database;
 using Reciplex.Server.Host.AccessControl;
 using Reciplex.Server.Host.RecipeBookKeyUtils;
@@ -5,6 +6,7 @@ using Reciplex.Server.Host.RecipeKeyUtils;
 using Reciplex.Server.Host.Services.StringIdInterop;
 using Reciplex.Server.Host.UserKeyUtils;
 using Reciplex.Server.Host.Utils.HttpResults;
+using Reciplex.Server.RecipeServices;
 using Sqids;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,7 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 // base abstraction for marshaling ids to and from long values
-builder.Services.AddTransient<IStringIdInterop, SquidsStringIdInterop>();
+builder.Services.AddSingleton<IStringIdInterop, SquidsStringIdInterop>();
 builder.Services.AddSingleton(
     new SqidsEncoder<long>(
         new()
@@ -25,9 +27,9 @@ builder.Services.AddSingleton(
 );
 
 // service for marshalling keys to and from strings
-builder.Services.AddTransient<IStringRecipeKeyInterop, StringRecipeKeyInterop>();
-builder.Services.AddTransient<IStringRecipeBookKeyInterop, StringRecipeBookKeyInterop>();
-builder.Services.AddTransient<IStringUserKeyInterop, StringUserKeyInterop>();
+builder.Services.AddSingleton<IStringRecipeKeyInterop, StringRecipeKeyInterop>();
+builder.Services.AddSingleton<IStringRecipeBookKeyInterop, StringRecipeBookKeyInterop>();
+builder.Services.AddSingleton<IStringUserKeyInterop, StringUserKeyInterop>();
 
 // add key marshaling to the json layer
 builder.Services.ConfigureOptions<ConfigureRecipeKeyJsonHandling>();
@@ -35,8 +37,8 @@ builder.Services.ConfigureOptions<ConfigureRecipeBookKeyJsonHandling>();
 builder.Services.ConfigureOptions<ConfigureUserKeyJsonHandling>();
 
 // response factories for controllers
-builder.Services.AddTransient<IRecipeProblemFactory, RecipeProblemFactory>();
-builder.Services.AddTransient<IRecipeBookProblemFactory, RecipeBookProblemFactory>();
+builder.Services.AddSingleton<IRecipeProblemFactory, RecipeProblemFactory>();
+builder.Services.AddSingleton<IRecipeBookProblemFactory, RecipeBookProblemFactory>();
 
 builder.Services.AddControllers(o =>
 {
@@ -46,6 +48,9 @@ builder.Services.AddControllers(o =>
 });
 
 builder.Services.AddAuthentication();
+
+builder.Services.AddSingleton<IClock>(SystemClock.Instance);
+builder.Services.AddRecipeServices();
 
 if (builder.Environment.IsDevelopment())
 {
