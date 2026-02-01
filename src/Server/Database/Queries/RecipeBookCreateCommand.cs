@@ -1,4 +1,5 @@
-using Recipe.Database.DbObjects;
+using Reciplex.Server.Database;
+using Reciplex.Server.Database.DbObjects;
 
 namespace Recipe.Database.Queries;
 
@@ -36,7 +37,7 @@ public class RecipeCreateCommand(ApplicationDbContext applicationDbContext)
     {
         RecipeDbObject recipe = new()
         {
-            Title = name,
+            Name = name,
             ShortDescription = description,
             RecipeBookFk = recipeBookId,
         };

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Recipe.Database.DbObjects;
+using Reciplex.Server.Database;
+using Reciplex.Server.Database.DbObjects;
 
 namespace Recipe.Database;
 
@@ -47,13 +48,13 @@ class ConfigureSqliteDbForDevelopment(IServiceProvider rootServices) : IHostedSe
             ShortDescription = "Drinks that will make your knees wobble and your insides warm",
         };
 
-        mixDrinks.Recipes.Add(new() { Title = "Liquor", ShortDescription = "Alcoholic liquor" });
+        mixDrinks.Recipes.Add(new() { Name = "Liquor", ShortDescription = "Alcoholic liquor" });
 
         for (int i = 0; i < 40; i++)
         {
             RecipeDbObject fakeRecipe = new()
             {
-                Title = "Fake Recipe " + i,
+                Name = "Fake Recipe " + i,
                 ShortDescription = "Fake recipe number " + i,
             };
             mixDrinks.Recipes.Add(fakeRecipe);

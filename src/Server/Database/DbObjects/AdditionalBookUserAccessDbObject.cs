@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 
-namespace Recipe.Database.DbObjects;
+namespace Reciplex.Server.Database.DbObjects;
 
 /// <summary>
 /// Controls access to a recipe book. Allows other users to access someones recipe book.
@@ -48,12 +48,13 @@ public class AdditionalBookUserAccessDbObject
     public long UserFk { get; set; }
 
     /// <summary>
-    /// User has write access. Ignored if <see cref="ReadAccess"/> is false.
+    /// User has access to the book. If false
+    /// then all other permissions are ignored.
     /// </summary>
-    public bool WriteAccess { get; set; }
+    public bool MayViewBook { get; set; }
 
     /// <summary>
-    /// User has read access. If false then <see cref="WriteAccess"/> has no meaning.
+    /// User can edit book information
     /// </summary>
-    public bool ReadAccess { get; set; }
+    public bool MayEditBook { get; set; }
 }

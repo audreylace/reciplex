@@ -1,3 +1,5 @@
+using NodaTime;
+
 namespace Reciplex.Server.RecipeServices.RecipeBooks.Models;
 
 /// <summary>
@@ -6,9 +8,9 @@ namespace Reciplex.Server.RecipeServices.RecipeBooks.Models;
 public class RecipeBookDao
 {
     /// <summary>
-    /// Books primary key. Must be URL transportable.
+    /// Books primary key.
     /// </summary>
-    public required string Id { get; init; }
+    public required RecipeBookKey Id { get; init; }
 
     /// <summary>
     /// Name of the book
@@ -21,9 +23,9 @@ public class RecipeBookDao
     public required string ShortDescription { get; init; }
 
     /// <summary>
-    /// Id of the user that owns this book. Must be URL transportable.
+    /// Id of the user that owns this book.
     /// </summary>
-    public required string OwnerUserId { get; init; }
+    public required long OwnerUserId { get; init; }
 
     /// <summary>
     /// The concurrency tag. MUST be transportable via ETAG header.
@@ -33,15 +35,20 @@ public class RecipeBookDao
     /// <summary>
     /// Last time in UTC the recipe book details were updated
     /// </summary>
-    public required DateTime LastUpdated { get; init; }
+    public required Instant LastModified { get; init; }
 
     /// <summary>
     /// The time in UTC the recipe book was created
     /// </summary>
-    public required DateTime CreateTime { get; init; }
+    public required Instant CreateTime { get; init; }
 
     /// <summary>
-    /// Book access permissions
+    /// User can edit book information
     /// </summary>
-    public required RecipeBookAccessPermissions AccessPermissions { get; init; }
+    public bool MayEditBook { get; set; }
+
+    /// <summary>
+    /// User can delete book
+    /// </summary>
+    public bool MayDeleteBook { get; set; }
 }

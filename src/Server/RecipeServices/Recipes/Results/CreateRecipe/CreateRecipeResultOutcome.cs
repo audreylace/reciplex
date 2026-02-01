@@ -6,14 +6,9 @@ namespace Reciplex.Server.RecipeServices.Recipes.Results.CreateRecipe;
 public enum CreateRecipeResultOutcome
 {
     /// <summary>
-    /// Some other error
-    /// </summary>
-    InternalError,
-
-    /// <summary>
     /// User does not have permission to add recipes to the recipe book
     /// </summary>
-    LacksPermission,
+    LacksPermission = 1,
 
     /// <summary>
     /// Book does not exist or the user does not have any permissions to know the book exists

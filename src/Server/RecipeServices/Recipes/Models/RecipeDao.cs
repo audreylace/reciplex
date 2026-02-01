@@ -1,3 +1,6 @@
+using NodaTime;
+using Reciplex.Server.RecipeServices.RecipeBooks;
+
 namespace Reciplex.Server.RecipeServices.Recipes.Models;
 
 /// <summary>
@@ -6,9 +9,9 @@ namespace Reciplex.Server.RecipeServices.Recipes.Models;
 public class RecipeDao
 {
     /// <summary>
-    /// Recipe primary key. Must be URL transportable.
+    /// Recipe primary key.
     /// </summary>
-    public required string Id { get; init; }
+    public required RecipeKey Id { get; init; }
 
     /// <summary>
     /// Name of the recipe
@@ -28,23 +31,22 @@ public class RecipeDao
     /// <summary>
     /// Last time in UTC the recipe book details were updated
     /// </summary>
-    public required DateTime LastUpdated { get; init; }
+    public required Instant LastModified { get; init; }
 
     /// <summary>
     /// The time in UTC the recipe book was created
     /// </summary>
-    public required DateTime CreateTime { get; init; }
+    public required Instant Created { get; init; }
 
     /// <summary>
-    /// Recipe access permissions for this user. May or may not align with the permission
-    /// in <see cref="RecipeBookDao"/>.
+    /// User can edit and delete recipe
     /// </summary>
-    public required RecipeAccessPermissions AccessPermissions { get; init; }
+    public required bool MayEdit { get; set; }
 
     /// <summary>
     /// The book this recipe is contained in
     /// </summary>
-    public required string BookId { get; init; }
+    public required RecipeBookKey BookId { get; init; }
 
     /// <summary>
     /// The long, freeform, markdown recipe data

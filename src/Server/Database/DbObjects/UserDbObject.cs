@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Recipe.Database.DbObjects;
+namespace Reciplex.Server.Database.DbObjects;
 
 /// <summary>
 /// Top level user db object

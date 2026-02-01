@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 
-namespace Recipe.Database.DbObjects;
+namespace Reciplex.Server.Database.DbObjects;
 
 /// <summary>
 /// Recipe book database object

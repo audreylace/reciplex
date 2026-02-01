@@ -6,14 +6,9 @@ namespace Reciplex.Server.RecipeServices.Recipes.Results.UpdateRecipe;
 public enum UpdateRecipeResultOutcome
 {
     /// <summary>
-    /// Failure inside the service resulted in the update failing
-    /// </summary>
-    InternalError,
-
-    /// <summary>
     /// Recipe was updated
     /// </summary>
-    Success,
+    Success = 1,
 
     /// <summary>
     /// User does not have permission to update this recipe

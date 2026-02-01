@@ -1,4 +1,4 @@
-namespace Recipe.Database.DbObjects;
+namespace Reciplex.Server.Database.DbObjects;
 
 /// <summary>
 /// Json model holding the recipe data

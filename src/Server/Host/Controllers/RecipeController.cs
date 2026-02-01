@@ -1,10 +1,13 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using Reciplex.Server.Host.AccessControl;
-using Reciplex.Server.Host.Models.Requests;
-using Reciplex.Server.Host.Models.Responses;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Reciplex.Server.Host.Models.Authnz;
+using Reciplex.Server.Host.Models.PagingUtils;
+using Reciplex.Server.Host.Models.Recipe;
+using Reciplex.Server.Host.Models.RecipeBook;
+using Reciplex.Server.Host.Models.User;
 using Reciplex.Server.Host.Services;
-using Reciplex.Server.Host.Utils;
+using Reciplex.Server.Host.Utils.HttpResults;
 using Reciplex.Server.Host.Validation;
 using Reciplex.Server.RecipeServices.RecipeBooks;
 using Reciplex.Server.RecipeServices.RecipeBooks.Models;
@@ -21,43 +24,50 @@ using SendRecipeResults = Results<ProblemHttpResult, Ok<SingleRecipeResponseJson
 /// <summary>
 /// Endpoints for working with a recipes
 /// </summary>
-/// <param name="userService">Provides services for getting user data</param>
+/// <param name="recipeService">Provides services for getting recipe data</param>
+/// <param name="recipeBookService">Provides services for get recipe books</param>
+/// <param name="userService">Provides services for get user data</param>
+/// <param name="recipeBookProblemFactory">factory for creating recipe book problem results</param>
+/// <param name="recipeProblemFactory">factory for creating recipe problem results</param>
 [ApiController]
 [Route("recipes")]
+[TypeFilter(typeof(InternalServerErrorOnException))]
 public class RecipesController(
     IRecipeService recipeService,
     IRecipeBookService recipeBookService,
-    IUserService userService
+    IUserService userService,
+    IRecipeProblemFactory recipeProblemFactory,
+    IRecipeBookProblemFactory recipeBookProblemFactory
 ) : ControllerBase
 {
     /// <summary>
     /// Gets a recipe by id
     /// <br />
     /// <pre><code>
-    /// GET /recipes/{recipeId}
+    /// GET /recipes/{recipeKey}
     ///
     /// </code></pre>
     /// </summary>
-    /// <param name="recipeId">the recipe ID from the request</param>
+    /// <param name="recipeKey">the recipe key from the request</param>
     /// <param name="user">information about the authenticated user</param>
     /// <param name="cancellationToken">token that cancels when the user closes the connection</param>
     /// <returns>Task resolving to the response to send back</returns>
-    [HttpGet("{recipeId}")]
+    [HttpGet("{recipeKey}")]
     [ResponseCache(Duration = 15 * 60, Location = ResponseCacheLocation.Any, NoStore = false)]
     public async Task<SendRecipeResults> GetRecipeById(
-        [RequireRecipeId] string recipeId,
+        [BindRequired] RecipeKey recipeKey,
         User user,
         CancellationToken cancellationToken
     )
     {
-        RecipeDao? recipe = await recipeService.GetRecipeByIdAsync(
-            recipeId,
+        RecipeDao? recipe = await recipeService.GetRecipeAsync(
+            recipeKey,
             user.UserId,
             cancellationToken
         );
         if (recipe is null)
         {
-            return RecipeNotFoundResult(recipeId);
+            return recipeProblemFactory.RecipeNotFoundResult(recipeKey);
         }
 
         return await SendRecipe(recipe, user, cancellationToken);
@@ -67,26 +77,26 @@ public class RecipesController(
     /// Deletes a recipe by id
     /// <br />
     /// <pre><code>
-    /// DELETE /recipes/{recipeId}
+    /// DELETE /recipes/{recipeKeys}
     /// If-Match: {ifMatch}
     ///
     /// </code></pre>
     /// </summary>
-    /// <param name="recipeId">the recipe ID from the request</param>
+    /// <param name="recipeKey">the recipe ID from the request</param>
     /// <param name="ifMatch">The recipe book etag</param>
     /// <param name="user">information about the authenticated user</param>
     /// <param name="cancellationToken">token that cancels when the user closes the connection</param>
     /// <returns>Task resolving to the response to send back</returns>
-    [HttpDelete("{recipeId}")]
+    [HttpDelete("{recipeKey}")]
     public async Task<Results<NoContent, ProblemHttpResult>> DeleteRecipeById(
-        [RequireRecipeId] string recipeId,
+        [BindRequired] RecipeKey recipeKey,
         [RequiredAndValidIfMatch] [FromHeader(Name = "If-Match")] string ifMatch,
         User user,
         CancellationToken cancellationToken
     )
     {
-        var deleteResult = await recipeService.DeleteRecipeByIdAsync(
-            recipeId,
+        var deleteResult = await recipeService.DeleteRecipeAsync(
+            recipeKey,
             user.UserId,
             ifMatch,
             cancellationToken
@@ -95,13 +105,16 @@ public class RecipesController(
         return deleteResult.Outcome switch
         {
             DeleteRecipeByIdResultOutcome.Success => TypedResults.NoContent(),
-            DeleteRecipeByIdResultOutcome.NotFound => RecipeNotFoundResult(recipeId),
-            DeleteRecipeByIdResultOutcome.LacksPermission => OperationOnRecipeForbidden(recipeId),
-            DeleteRecipeByIdResultOutcome.ConcurrencyConflict => RecipePreconditionFailed(
-                recipeId,
-                "If-Match"
+            DeleteRecipeByIdResultOutcome.NotFound => recipeProblemFactory.RecipeNotFoundResult(
+                recipeKey
             ),
-            _ => CustomProblemHttpResults.InternalServerError(),
+            DeleteRecipeByIdResultOutcome.LacksPermission =>
+                recipeProblemFactory.OperationOnRecipeForbidden(recipeKey),
+            DeleteRecipeByIdResultOutcome.ConcurrencyConflict =>
+                recipeProblemFactory.RecipePreconditionFailed(recipeKey, "If-Match"),
+            _ => throw new NotImplementedException(
+                $"unhandled {nameof(DeleteRecipeByIdResultOutcome)} branch {deleteResult.Outcome}"
+            ),
         };
     }
 
@@ -109,7 +122,7 @@ public class RecipesController(
     /// Updates a recipe by id
     /// <br />
     /// <pre><code>
-    /// PUT /recipes/{recipeId}
+    /// PUT /recipes/{recipeKey}
     /// If-Match: {ifMatch}
     ///
     /// {
@@ -119,25 +132,25 @@ public class RecipesController(
     /// }
     /// </code></pre>
     /// </summary>
-    /// <param name="recipeId">the recipe ID from the request</param>
+    /// <param name="recipeKey">the recipe key from the request</param>
     /// <param name="ifMatch">The recipe book etag</param>
     /// <param name="body">Request body with new recipe data</param>
     /// <param name="user">information about the authenticated user</param>
     /// <param name="cancellationToken">token that cancels when the user closes the connection</param>
     /// <returns>Task resolving to the response to send back</returns>
-    [HttpPut("{recipeId}")]
+    [HttpPut("{recipeKey}")]
     public async Task<
         Results<NoContent, ProblemHttpResult, ValidationProblem, SendRecipeResults>
     > UpdateRecipeById(
-        [RequireRecipeId] string recipeId,
+        [BindRequired] RecipeKey recipeKey,
         [RequiredAndValidIfMatch] [FromHeader(Name = "If-Match")] string ifMatch,
-        [FromBody] RecipeJsonBody body,
+        [FromBody] CreateOrUpdateRecipeJsonBody body,
         User user,
         CancellationToken cancellationToken
     )
     {
         UpdateRecipeResult updateResult = await recipeService.UpdateRecipeAsync(
-            recipeId,
+            recipeKey,
             user.UserId,
             ifMatch,
             new()
@@ -151,20 +164,21 @@ public class RecipesController(
 
         return updateResult.Outcome switch
         {
-            UpdateRecipeResultOutcome.NotFound => RecipeNotFoundResult(recipeId),
-            UpdateRecipeResultOutcome.LacksPermission => OperationOnRecipeForbidden(recipeId),
-            UpdateRecipeResultOutcome.InternalError =>
-                CustomProblemHttpResults.InternalServerError(),
-            UpdateRecipeResultOutcome.ValidationFailure => RecipeValidationProblem(
-                recipeId,
-                updateResult.Errors
+            UpdateRecipeResultOutcome.NotFound => recipeProblemFactory.RecipeNotFoundResult(
+                recipeKey
             ),
+            UpdateRecipeResultOutcome.LacksPermission =>
+                recipeProblemFactory.OperationOnRecipeForbidden(recipeKey),
+            UpdateRecipeResultOutcome.ValidationFailure =>
+                recipeProblemFactory.RecipeValidationProblem(recipeKey, updateResult.Errors),
             UpdateRecipeResultOutcome.Success => await SendRecipe(
                 updateResult.Recipe,
                 user,
                 cancellationToken
             ),
-            _ => CustomProblemHttpResults.InternalServerError(),
+            _ => throw new NotImplementedException(
+                $"unhandled {nameof(UpdateRecipeResultOutcome)} branch {updateResult.Outcome}"
+            ),
         };
     }
 
@@ -172,10 +186,9 @@ public class RecipesController(
     /// Creates a recipe
     /// <br />
     /// <pre><code>
-    /// POST /recipes
+    /// POST /recipes?book={book id}
     ///
     /// {
-    ///     "bookId": "... the book id the recipe is getting added to ... ",
     ///     "name": "... recipe name ...",
     ///     "shortDescription": " ... recipe short description ... ",
     ///     "details": " ... recipe instructions and other details in markdown ... "
@@ -190,13 +203,14 @@ public class RecipesController(
     public async Task<
         Results<ProblemHttpResult, ValidationProblem, SendRecipeResults>
     > CreateRecipe(
-        [FromBody] CreateRecipeJsonBody body,
+        [FromBody] CreateOrUpdateRecipeJsonBody body,
+        [BindRequired] [FromQuery(Name = "book")] RecipeBookKey bookKey,
         User user,
         CancellationToken cancellationToken
     )
     {
         CreateRecipeResult createRecipeResult = await recipeService.CreateRecipeAsync(
-            body.BookId,
+            bookKey,
             user.UserId,
             new()
             {
@@ -209,21 +223,21 @@ public class RecipesController(
 
         return createRecipeResult.Outcome switch
         {
-            CreateRecipeResultOutcome.NotFound => RecipeBooksController.BookNotFoundResult(
-                body.BookId
+            CreateRecipeResultOutcome.NotFound => recipeBookProblemFactory.BookNotFoundResult(
+                bookKey
             ),
             CreateRecipeResultOutcome.LacksPermission =>
-                RecipeBooksController.OperationOnBookForbidden(body.BookId),
-            CreateRecipeResultOutcome.ValidationFailure => RecipeValidationProblem(
-                null,
-                createRecipeResult.Errors
-            ),
+                recipeBookProblemFactory.OperationOnBookForbidden(bookKey),
+            CreateRecipeResultOutcome.ValidationFailure =>
+                recipeProblemFactory.RecipeValidationProblem(null, createRecipeResult.Errors),
             CreateRecipeResultOutcome.Success => await SendRecipe(
                 createRecipeResult.Recipe,
                 user,
                 cancellationToken
             ),
-            _ => CustomProblemHttpResults.InternalServerError(),
+            _ => throw new NotImplementedException(
+                $"unhandled {nameof(CreateRecipeResultOutcome)} branch {createRecipeResult.Outcome}"
+            ),
         };
     }
 
@@ -233,22 +247,15 @@ public class RecipesController(
         CancellationToken cancellationToken
     )
     {
-        var book = await recipeBookService.GetRecipeBookAsync(
-            recipe.BookId,
-            user.UserId,
-            cancellationToken
-        );
-
-        if (book is null)
-        {
-            return CustomProblemHttpResults.InternalServerError();
-        }
-
-        var userDao = await userService.GetUserAsync(user.UserId, cancellationToken);
-        if (userDao is null)
-        {
-            return CustomProblemHttpResults.InternalServerError();
-        }
+        var book =
+            await recipeBookService.GetRecipeBookAsync(
+                recipe.BookId,
+                user.UserId,
+                cancellationToken
+            ) ?? throw new Exception($"expected book {recipe.BookId} to exist for {recipe.Id}");
+        var userDao =
+            await userService.GetUserAsync(user.UserId, cancellationToken)
+            ?? throw new Exception($"expected user {user.UserId} to exist for {book.Id}");
 
         return TypedResults.Ok(
             new SingleRecipeResponseJson()
@@ -263,12 +270,12 @@ public class RecipesController(
     /// <summary>
     /// Path to get previous or next page:
     /// <pre><code>
-    /// GET /recipes?index={page index from last query}&amp;going={forward | backward}&amp;book-id={book id, optional to scope the list to a book}
+    /// GET /recipes?index={page index from last query}&amp;going={forward | backward}&amp;book-id={book id}
     /// </code></pre>
     /// <br />
     /// Path to get first page:
     /// <pre><code>
-    /// GET /recipes?book-id={book id, optional to scope the list to a book}
+    /// GET /recipes?book-id={book id}
     /// </code></pre>
     /// </summary>
     /// <param name="user"></param>
@@ -282,12 +289,13 @@ public class RecipesController(
         Results<ValidationProblem, ProblemHttpResult, Ok<RecipePageResponseJson>>
     > GetRecipes(
         User user,
-        PageCursor cursor,
-        [NotEmptyNorWhitespace] [FromQuery(Name = "book-id")] string? bookId,
+        PageCursor<RecipeKey> cursor,
+        [BindRequired] [FromQuery(Name = "book-id")] RecipeBookKey bookId,
         CancellationToken cancellationToken
     )
     {
         var pageIterator = await recipeService.ListRecipesAsync(
+            bookId,
             user.UserId,
             new()
             {
@@ -304,14 +312,13 @@ public class RecipesController(
                         ? ListRecipesOrdering.ByIdDecreasing
                         : ListRecipesOrdering.ByIdIncreasing,
                 ResultCount = 10,
-                BookId = bookId,
             },
             cancellationToken
         );
 
         if (pageIterator is null)
         {
-            return CustomProblemHttpResults.InternalServerError();
+            return recipeBookProblemFactory.BookNotFoundResult(bookId);
         }
 
         List<RecipeDao> pageData = await pageIterator
@@ -319,8 +326,10 @@ public class RecipesController(
             .ToListAsync(cancellationToken);
 
         List<RecipeBookDao> books = [];
-        HashSet<string> userIdsToFetch = [];
-        foreach (string idOfBookToFetch in pageData.GroupBy(r => r.BookId).Select(g => g.Key))
+        HashSet<long> userIdsToFetch = [];
+        foreach (
+            RecipeBookKey idOfBookToFetch in pageData.GroupBy(r => r.BookId).Select(g => g.Key)
+        )
         {
             RecipeBookDao? book = await recipeBookService.GetRecipeBookAsync(
                 idOfBookToFetch,
@@ -335,57 +344,40 @@ public class RecipesController(
             userIdsToFetch.Add(book.OwnerUserId);
         }
 
-        bool? hasNextPage;
-        string? idForNextPage = cursor.ComputeIdForNextPage(r => r.Id, pageData);
-        if (cursor.ShouldRunNextPageQuery(idForNextPage))
-        {
-            hasNextPage = await HasResultsBeyondPageQuery(
-                idForNextPage,
-                bookId,
-                false,
-                user,
-                cancellationToken
-            );
-            if (hasNextPage is null)
-            {
-                return CustomProblemHttpResults.InternalServerError();
-            }
-        }
+        (bool hasNextPage, RecipeKey? idForNextPage) = await cursor.QueryForNextPage(
+            r => r.Id,
+            pageData,
+            (id, cancellationToken) =>
+                HasResultsBeyondPageQuery(id, bookId, false, user, cancellationToken),
+            cancellationToken
+        );
 
-        bool? hasPreviousPage;
-        string? idForPreviousPage = cursor.ComputeIdForPreviousPage(r => r.Id, pageData);
-        if (cursor.ShouldRunPreviousPageQuery(idForPreviousPage))
-        {
-            hasPreviousPage = await HasResultsBeyondPageQuery(
-                idForPreviousPage,
-                bookId,
-                true,
-                user,
-                cancellationToken
-            );
-            if (hasPreviousPage is null)
-            {
-                return CustomProblemHttpResults.InternalServerError();
-            }
-        }
+        (bool hasPreviousPage, RecipeKey? idForPreviousPage) = await cursor.QueryForPreviousPage(
+            r => r.Id,
+            pageData,
+            (id, cancellationToken) =>
+                HasResultsBeyondPageQuery(id, bookId, true, user, cancellationToken),
+            cancellationToken
+        );
 
         return TypedResults.Ok(
             new RecipePageResponseJson()
             {
                 Recipes = [.. pageData.Select(r => new RecipeJson(r))],
                 RecipeBooks = [.. books.Select(b => new RecipeBookJson(b))],
-                Users = await CommonQueries
-                    .FetchUsersAsync(userIdsToFetch, userService, cancellationToken)
+                Users = await userService
+                    .FetchUsersAsync(userIdsToFetch, cancellationToken)
                     .Select(u => new UserJson(u))
                     .ToListAsync(cancellationToken),
                 NextPage =
                     idForNextPage != null
                         ? new()
                         {
-                            GoingQueryParam = NavigationDirection.ToQueryStringParameterValue(
-                                NavigationDirection.DirectionValue.Forwards
-                            ),
-                            PageIndex = idForNextPage,
+                            GoingQueryParam = new NavigationDirection()
+                            {
+                                Direction = NavigationDirection.DirectionValue.Forwards,
+                            },
+                            PageIndex = idForNextPage.Value,
                             BookId = bookId,
                         }
                         : null,
@@ -393,10 +385,11 @@ public class RecipesController(
                     idForPreviousPage != null
                         ? new()
                         {
-                            GoingQueryParam = NavigationDirection.ToQueryStringParameterValue(
-                                NavigationDirection.DirectionValue.Backwards
-                            ),
-                            PageIndex = idForPreviousPage,
+                            GoingQueryParam = new NavigationDirection()
+                            {
+                                Direction = NavigationDirection.DirectionValue.Backwards,
+                            },
+                            PageIndex = idForPreviousPage.Value,
                             BookId = bookId,
                         }
                         : null,
@@ -419,114 +412,34 @@ public class RecipesController(
     /// </c></param>
     /// <param name="cancellationToken">Cancels the operation</param>
     /// <returns>Task that resolves to the result of the query or null if the query fails</returns>
-    private async Task<bool?> HasResultsBeyondPageQuery(
-        string? recipeId,
-        string? bookId,
+    private async Task<bool> HasResultsBeyondPageQuery(
+        RecipeKey? recipeId,
+        RecipeBookKey bookId,
         bool isBack,
         User user,
         CancellationToken cancellationToken
     )
     {
-        var pageIterator = await recipeService.ListRecipesAsync(
-            user.UserId,
-            new()
-            {
-                AfterRecipeId = isBack ? null : recipeId,
-                BeforeRecipeId = isBack ? recipeId : null,
-                ResultCount = 1,
-                BookId = bookId,
-            },
-            cancellationToken
-        );
-
-        if (pageIterator is null)
-        {
-            return null;
-        }
+        var pageIterator =
+            await recipeService.ListRecipesAsync(
+                bookId,
+                user.UserId,
+                new()
+                {
+                    AfterRecipeId = isBack ? null : recipeId,
+                    BeforeRecipeId = isBack ? recipeId : null,
+                    ResultCount = 1,
+                },
+                cancellationToken
+            )
+            ?? throw new InvalidOperationException(
+                $"expects {bookId} to exist and user {user.UserId} to have access"
+            );
 
         await foreach (var _ in pageIterator)
         {
             return true;
         }
         return false;
-    }
-
-    /// <summary>
-    /// Generates a 404 error
-    /// </summary>
-    /// <param name="recipeId">the recipe id</param>
-    /// <returns>the 404 result</returns>
-    private static ProblemHttpResult RecipeNotFoundResult(string recipeId)
-    {
-        return TypedResults.Problem(
-            statusCode: 404,
-            type: "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.5",
-            title: "Recipe Not Found",
-            detail: $"Recipe \"{recipeId}\" was either not found or caller does not have access.",
-            extensions: [new KeyValuePair<string, object?>("recipeId", recipeId)]
-        );
-    }
-
-    /// <summary>
-    /// Generates a 403 forbidden error
-    /// </summary>
-    /// <param name="recipeId">the recipe id</param>
-    /// <returns>the 404 result</returns>
-    private static ProblemHttpResult OperationOnRecipeForbidden(string recipeId)
-    {
-        return TypedResults.Problem(
-            statusCode: 403,
-            type: "https://datatracker.ietf.org/doc/html/rfc9110#name-403-forbidden",
-            title: "Operation on Recipe Forbidden",
-            detail: $"Caller lacks required permissions to perform requested action on recipe \"{recipeId}\".",
-            extensions: [new KeyValuePair<string, object?>("recipeId", recipeId)]
-        );
-    }
-
-    /// <summary>
-    /// Generates a 412 pre-condition failure
-    /// </summary>
-    /// <param name="recipeId">the recipe id</param>
-    /// <param name="failedHeader">The header that triggered the failure</param>
-    /// <returns>the 412 result</returns>
-    private static ProblemHttpResult RecipePreconditionFailed(string recipeId, string failedHeader)
-    {
-        return TypedResults.Problem(
-            statusCode: 412,
-            type: "https://datatracker.ietf.org/doc/html/rfc9110#name-412-precondition-failed",
-            title: "Pre-Condition Failure",
-            detail: $"Requested operation against recipe \"{recipeId}\" failed because one or more conditions in the request headers could not be satisfied.",
-            extensions:
-            [
-                new KeyValuePair<string, object?>("recipeId", recipeId),
-                new KeyValuePair<string, object?>("failedHeader", failedHeader),
-            ]
-        );
-    }
-
-    /// <summary>
-    /// Returns a validation problem scoped to a recipe
-    /// </summary>
-    /// <param name="recipeId">The recipe ID</param>
-    /// <param name="errors">Map of validation errors</param>
-    /// <returns>The validation problem</returns>
-    private static ValidationProblem RecipeValidationProblem(
-        string? recipeId,
-        IDictionary<string, string[]>? errors
-    )
-    {
-        List<KeyValuePair<string, object?>> extensions = [];
-        if (recipeId is not null)
-        {
-            extensions.Add(new KeyValuePair<string, object?>("recipeId", recipeId));
-        }
-        string recipeIdPart = recipeId is not null ? $"\"{recipeId}\" " : "";
-        return TypedResults.ValidationProblem(
-            type: "https://datatracker.ietf.org/doc/html/rfc9110#name-400-bad-request",
-            title: "Validation Problem",
-            detail: $"Requested operation against recipe {recipeIdPart}failed because one or more validation errors",
-            errors: errors ?? new Dictionary<string, string[]>(),
-            extensions: extensions
-        );
     }
 }

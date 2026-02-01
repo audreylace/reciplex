@@ -1,7 +1,10 @@
+using System.Security.Cryptography;
+using Reciplex.Server.RecipeServices.RecipeBooks;
 using Reciplex.Server.RecipeServices.Recipes.Models;
 using Reciplex.Server.RecipeServices.Recipes.Results.CreateRecipe;
 using Reciplex.Server.RecipeServices.Recipes.Results.DeleteRecipeById;
 using Reciplex.Server.RecipeServices.Recipes.Results.UpdateRecipe;
+using Sqids;
 
 namespace Reciplex.Server.RecipeServices.Recipes;
 
@@ -17,9 +20,9 @@ public interface IRecipeService
     /// <param name="userId">id of the requesting user for access control</param>
     /// <param name="cancellationToken">cancels the async action</param>
     /// <returns>the recipe if found. null if not found or if the user does not have access</returns>
-    public Task<RecipeDao?> GetRecipeByIdAsync(
-        string recipeId,
-        string userId,
+    public Task<RecipeDao?> GetRecipeAsync(
+        RecipeKey recipeId,
+        long userId,
         CancellationToken cancellationToken
     );
 
@@ -31,9 +34,9 @@ public interface IRecipeService
     /// <param name="concurrencyTag">recipe concurrency tag to ensure the remote is deleting the recipe they observed</param>
     /// <param name="cancellationToken">cancels the async action</param>
     /// <returns>task that resolves to the outcome of the async operation</returns>
-    public Task<DeleteRecipeByIdResult> DeleteRecipeByIdAsync(
-        string recipeId,
-        string userId,
+    public Task<DeleteRecipeByIdResult> DeleteRecipeAsync(
+        RecipeKey recipeId,
+        long userId,
         string concurrencyTag,
         CancellationToken cancellationToken
     );
@@ -48,8 +51,8 @@ public interface IRecipeService
     /// <param name="cancellationToken">cancels the async action</param>
     /// <returns>task that resolves to the outcome of the async operation</returns>
     public Task<UpdateRecipeResult> UpdateRecipeAsync(
-        string recipeId,
-        string userId,
+        RecipeKey recipeId,
+        long userId,
         string concurrencyTag,
         UpdateRecipeArgs args,
         CancellationToken cancellationToken
@@ -64,13 +67,14 @@ public interface IRecipeService
     /// <param name="cancellationToken">cancels the async action</param>
     /// <returns>task that resolves to the outcome of the async operation</returns>
     public Task<CreateRecipeResult> CreateRecipeAsync(
-        string bookId,
-        string userId,
+        RecipeBookKey bookId,
+        long userId,
         CreateRecipeArgs args,
         CancellationToken cancellationToken
     );
     Task<IAsyncEnumerable<RecipeDao>?> ListRecipesAsync(
-        string userid,
+        RecipeBookKey bookId,
+        long userid,
         ListRecipesArgs args,
         CancellationToken cancellationToken
     );

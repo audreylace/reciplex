@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Reciplex.Server.Database;
 
 namespace Recipe.Database.Queries;
 
@@ -39,7 +40,7 @@ public class RecipeBookRecipesListQuery(ApplicationDbContext applicationDbContex
             .Select(r => new RecipeSummaryDao()
             {
                 Id = r.Id,
-                Title = r.Title,
+                Title = r.Name,
                 ShortDescription = r.ShortDescription,
             })
             .ToListAsync(cancellationToken);

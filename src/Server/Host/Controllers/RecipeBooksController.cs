@@ -1,10 +1,13 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using Reciplex.Server.Host.AccessControl;
-using Reciplex.Server.Host.Models.Requests;
-using Reciplex.Server.Host.Models.Responses;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Reciplex.Server.Host.Models.Authnz;
+using Reciplex.Server.Host.Models.PagingUtils;
+using Reciplex.Server.Host.Models.RecipeBook;
+using Reciplex.Server.Host.Models.User;
 using Reciplex.Server.Host.Services;
-using Reciplex.Server.Host.Utils;
+using Reciplex.Server.Host.Utils.HttpResults;
 using Reciplex.Server.Host.Validation;
 using Reciplex.Server.RecipeServices.RecipeBooks;
 using Reciplex.Server.RecipeServices.RecipeBooks.Models;
@@ -19,22 +22,27 @@ namespace Reciplex.Server.Host.Controllers;
 /// </summary>
 /// <param name="recipeBookService">Provides services for manipulating recipe books</param>
 /// <param name="userService">Provides services for getting user data</param>
+/// <param name="bookProblemFactory">factory for creating recipe book problem results</param>
 [ApiController]
 [Route("recipe-books")]
-public class RecipeBooksController(IRecipeBookService recipeBookService, IUserService userService)
-    : ControllerBase
+[TypeFilter(typeof(InternalServerErrorOnException))]
+public class RecipeBooksController(
+    IRecipeBookService recipeBookService,
+    IUserService userService,
+    IRecipeBookProblemFactory bookProblemFactory
+) : ControllerBase
 {
     /// <summary>
     /// Gets a book by ID
     /// <pre><code>
-    /// GET /recipe-books/{bookId}
+    /// GET /recipe-books/{bookKey}
     /// </code></pre>
     /// </summary>
-    /// <param name="bookId">The id of the book</param>
+    /// <param name="bookKey">The key of the book</param>
     /// <param name="user">The authenticated user</param>
     /// <param name="cancellationToken">token cancelled when the remote closes their connection</param>
     /// <returns>A HTTP response indicating the outcome of the operation</returns>
-    [HttpGet("{bookId}")]
+    [HttpGet("{bookKey}")]
     [ResponseCache(Duration = 15 * 60, Location = ResponseCacheLocation.Any, NoStore = false)]
     public async Task<
         Results<
@@ -43,20 +51,20 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
             ProblemHttpResult
         >
     > GetBookById(
-        [RequiredAndNotEmpty(ErrorMessage = "A recipe book id must be supplied")] string bookId,
+        [BindRequired] RecipeBookKey bookKey,
         User user,
         CancellationToken cancellationToken
     )
     {
         RecipeBookDao? book = await recipeBookService.GetRecipeBookAsync(
-            bookId,
+            bookKey,
             user.UserId,
             cancellationToken
         );
 
         if (book is null)
         {
-            return BookNotFoundResult(bookId);
+            return bookProblemFactory.BookNotFoundResult(bookKey);
         }
 
         return await SendRecipeBookResponseAsync(book, cancellationToken);
@@ -65,7 +73,7 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
     /// <summary>
     /// Updates a recipe book <br />
     /// <pre><code>
-    /// PUT /recipe-books/{bookId}
+    /// PUT /recipe-books/{bookKey}
     /// If-Match: {ifMatch}
     ///
     /// {
@@ -74,13 +82,13 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
     /// }
     /// </code></pre>
     /// </summary>
-    /// <param name="bookId">The id of the recipe book</param>
+    /// <param name="bookKey">The key of the recipe book</param>
     /// <param name="ifMatch">The recipe book etag</param>
     /// <param name="user">Information about the authenticated user</param>
     /// <param name="requestBody">Incoming data in the body</param>
     /// <param name="cancellationToken">token that cancels when the connection is closed</param>
     /// <returns>Task that resolves to the http response</returns>
-    [HttpPut("{bookId}")]
+    [HttpPut("{bookKey}")]
     public async Task<
         Results<
             Results<
@@ -92,7 +100,7 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
             ValidationProblem
         >
     > UpdateBookById(
-        [RequiredAndNotEmpty(ErrorMessage = "A recipe book id must be supplied")] string bookId,
+        [BindRequired] RecipeBookKey bookKey,
         [RequiredAndValidIfMatch] [FromHeader(Name = "if-match")] string ifMatch,
         User user,
         [FromBody] RecipeBookJsonBody requestBody,
@@ -102,7 +110,7 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
         // The service layer will do all of our validation for us. We can just call it and then transform its
         // result back into the correct HTTP code and response.
         var updateResult = await recipeBookService.UpdateRecipeBookDetailsAsync(
-            bookId,
+            bookKey,
             user.UserId,
             new()
             {
@@ -113,49 +121,42 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
             cancellationToken
         );
 
-        if (updateResult is UpdateRecipeBookDetailsSuccess success)
+        return updateResult.Reason switch
         {
-            return await SendRecipeBookResponseAsync(success.RecipeBook, cancellationToken);
-        }
-
-        if (updateResult is not UpdateRecipeBookDetailsFailure failure)
-        {
-            return InternalServerError(bookId);
-        }
-
-        return failure.Reason switch
-        {
-            UpdateRecipeBookDetailsFailureReason.NotFound => BookNotFoundResult(bookId),
-            UpdateRecipeBookDetailsFailureReason.DoesNotHaveAccess => OperationOnBookForbidden(
-                bookId
+            UpdateRecipeBookDetailsOutcome.Success => await SendRecipeBookResponseAsync(
+                updateResult.RecipeBook,
+                cancellationToken
             ),
-            UpdateRecipeBookDetailsFailureReason.ConcurrencyConflict => BookPreconditionFailed(
-                bookId,
-                "If-Match"
+            UpdateRecipeBookDetailsOutcome.NotFound => bookProblemFactory.BookNotFoundResult(
+                bookKey
             ),
-            UpdateRecipeBookDetailsFailureReason.ValidationFailure => BookValidationProblem(
-                bookId,
-                failure.Errors
+            UpdateRecipeBookDetailsOutcome.DoesNotHaveAccess =>
+                bookProblemFactory.OperationOnBookForbidden(bookKey),
+            UpdateRecipeBookDetailsOutcome.ConcurrencyConflict =>
+                bookProblemFactory.BookPreconditionFailed(bookKey, "If-Match"),
+            UpdateRecipeBookDetailsOutcome.ValidationFailure =>
+                bookProblemFactory.BookValidationProblem(bookKey, updateResult.Errors),
+            _ => throw new NotImplementedException(
+                $"unhandled {nameof(UpdateRecipeBookDetailsOutcome)} branch {updateResult.Reason}"
             ),
-            _ => InternalServerError(bookId),
         };
     }
 
     /// <summary>
     /// Deletes a recipe book <br />
     /// <pre><code>
-    /// DELETE /recipe-books/{bookId}
+    /// DELETE /recipe-books/{bookKey}
     /// If-Match: {ifMatch}
     /// </code></pre>
     /// </summary>
-    /// <param name="bookId">The id of the recipe book</param>
+    /// <param name="bookKey">The id of the recipe book</param>
     /// <param name="ifMatch">The recipe book etag</param>
     /// <param name="user">Information about the authenticated user</param>
     /// <param name="cancellationToken">token that cancels when the connection is closed</param>
     /// <returns>Task that resolves to the http response</returns>
-    [HttpDelete("{bookId}")]
+    [HttpDelete("{bookKey}")]
     public async Task<Results<NoContent, ProblemHttpResult>> DeleteRecipeBookById(
-        [RequiredAndNotEmpty(ErrorMessage = "A recipe book id must be supplied")] string bookId,
+        [BindRequired] RecipeBookKey bookKey,
         [RequiredAndNotEmpty(ErrorMessage = "An If-Match header must be supplied")]
         [FromHeader(Name = "if-match")]
             string ifMatch,
@@ -164,7 +165,7 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
     )
     {
         DeleteRecipeBookResult deleteResult = await recipeBookService.DeleteRecipeBookAsync(
-            bookId,
+            bookKey,
             user.UserId,
             ifMatch,
             cancellationToken
@@ -173,13 +174,16 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
         return deleteResult.Outcome switch
         {
             DeleteRecipeBookResultOutcome.Success => TypedResults.NoContent(),
-            DeleteRecipeBookResultOutcome.NotFound => BookNotFoundResult(bookId),
-            DeleteRecipeBookResultOutcome.DoesNotHaveAccess => OperationOnBookForbidden(bookId),
-            DeleteRecipeBookResultOutcome.ConcurrencyConflict => BookPreconditionFailed(
-                bookId,
-                "If-Match"
+            DeleteRecipeBookResultOutcome.NotFound => bookProblemFactory.BookNotFoundResult(
+                bookKey
             ),
-            _ => InternalServerError(bookId),
+            DeleteRecipeBookResultOutcome.DoesNotHaveAccess =>
+                bookProblemFactory.OperationOnBookForbidden(bookKey),
+            DeleteRecipeBookResultOutcome.ConcurrencyConflict =>
+                bookProblemFactory.BookPreconditionFailed(bookKey, "If-Match"),
+            _ => throw new NotImplementedException(
+                $"unhandled {nameof(DeleteRecipeBookResultOutcome)} branch {deleteResult.Outcome}"
+            ),
         };
     }
 
@@ -231,10 +235,11 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
             ),
             CreateRecipeBookResultOutcome.PermissionFailure =>
                 CustomProblemHttpResults.OperationForbidden(),
-            CreateRecipeBookResultOutcome.ValidationErrors => BookCreateValidationProblem(
-                createResult.ValidationErrors
+            CreateRecipeBookResultOutcome.ValidationErrors =>
+                bookProblemFactory.BookValidationProblem(null, createResult.ValidationErrors),
+            _ => throw new NotImplementedException(
+                $"unhandled {nameof(CreateRecipeBookResultOutcome)} branch {createResult.Outcome}"
             ),
-            _ => CustomProblemHttpResults.InternalServerError(),
         };
     }
 
@@ -260,22 +265,22 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
     [ResponseCache(Duration = 15 * 60, Location = ResponseCacheLocation.Any, NoStore = false)]
     public async Task<
         Results<ValidationProblem, ProblemHttpResult, Ok<RecipeBookPageResponseJson>>
-    > GetBooks(User user, PageCursor cursor, CancellationToken cancellationToken)
+    > GetBooks(User user, PageCursor<RecipeBookKey> cursor, CancellationToken cancellationToken)
     {
-        var pageIterator = await recipeBookService.ListRecipeBooksAsync(
+        IAsyncEnumerable<RecipeBookDao> pageIterator = await recipeBookService.ListRecipeBooksAsync(
             user.UserId,
             new()
             {
                 AfterBookId =
-                    cursor.Going?.Direction == NavigationDirection.DirectionValue.Forwards
+                    cursor.GoingDirection == NavigationDirection.DirectionValue.Forwards
                         ? cursor.Index
                         : null,
                 BeforeBookId =
-                    cursor.Going?.Direction == NavigationDirection.DirectionValue.Backwards
+                    cursor.GoingDirection == NavigationDirection.DirectionValue.Backwards
                         ? cursor.Index
                         : null,
                 ResultOrder =
-                    cursor.Going?.Direction == NavigationDirection.DirectionValue.Backwards
+                    cursor.GoingDirection == NavigationDirection.DirectionValue.Backwards
                         ? ListRecipeBooksOrdering.ByIdDecreasing
                         : ListRecipeBooksOrdering.ByIdIncreasing,
                 ResultCount = 10,
@@ -283,55 +288,34 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
             cancellationToken
         );
 
-        if (pageIterator is null)
-        {
-            return CustomProblemHttpResults.InternalServerError();
-        }
-
         List<RecipeBookDao> pageData = await pageIterator
             .OrderBy(book => book.Id)
             .ToListAsync(cancellationToken);
 
-        bool? hasNextPage;
-        string? idForNextPage = cursor.ComputeIdForNextPage(r => r.Id, pageData);
-        if (cursor.ShouldRunNextPageQuery(idForNextPage))
-        {
-            hasNextPage = await HasResultsBeyondPageQuery(
-                idForNextPage,
-                false,
-                user,
-                cancellationToken
-            );
-            if (hasNextPage is null)
-            {
-                return CustomProblemHttpResults.InternalServerError();
-            }
-        }
+        (bool hasNextPage, RecipeBookKey? idForNextPage) = await cursor.QueryForNextPage(
+            r => r.Id,
+            pageData,
+            (id, cancellationToken) =>
+                HasResultsBeyondPageQuery(id, false, user, cancellationToken),
+            cancellationToken
+        );
 
-        bool? hasPreviousPage;
-        string? idForPreviousPage = cursor.ComputeIdForPreviousPage(r => r.Id, pageData);
-        if (cursor.ShouldRunPreviousPageQuery(idForPreviousPage))
-        {
-            hasPreviousPage = await HasResultsBeyondPageQuery(
-                idForPreviousPage,
-                true,
-                user,
+        (bool hasPreviousPage, RecipeBookKey? idForPreviousPage) =
+            await cursor.QueryForPreviousPage(
+                r => r.Id,
+                pageData,
+                (id, cancellationToken) =>
+                    HasResultsBeyondPageQuery(id, true, user, cancellationToken),
                 cancellationToken
             );
-            if (hasPreviousPage is null)
-            {
-                return CustomProblemHttpResults.InternalServerError();
-            }
-        }
 
         return TypedResults.Ok(
             new RecipeBookPageResponseJson()
             {
                 RecipeBooks = [.. pageData.Select(b => new RecipeBookJson(b))],
-                Users = await CommonQueries
+                Users = await userService
                     .FetchUsersAsync(
                         pageData.GroupBy(book => book.OwnerUserId).Select(g => g.Key),
-                        userService,
                         cancellationToken
                     )
                     .Select(u => new UserJson(u))
@@ -340,20 +324,22 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
                     idForNextPage != null
                         ? new()
                         {
-                            GoingQueryParam = NavigationDirection.ToQueryStringParameterValue(
-                                NavigationDirection.DirectionValue.Forwards
-                            ),
-                            PageIndex = idForNextPage,
+                            GoingQueryParam = new NavigationDirection()
+                            {
+                                Direction = NavigationDirection.DirectionValue.Forwards,
+                            },
+                            PageIndex = idForNextPage.Value,
                         }
                         : null,
                 PreviousPage =
                     idForPreviousPage != null
                         ? new()
                         {
-                            GoingQueryParam = NavigationDirection.ToQueryStringParameterValue(
-                                NavigationDirection.DirectionValue.Backwards
-                            ),
-                            PageIndex = idForPreviousPage,
+                            GoingQueryParam = new NavigationDirection()
+                            {
+                                Direction = NavigationDirection.DirectionValue.Backwards,
+                            },
+                            PageIndex = idForPreviousPage.Value,
                         }
                         : null,
             }
@@ -373,8 +359,8 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
     /// </c></param>
     /// <param name="cancellationToken">Cancels the operation</param>
     /// <returns>Task that resolves to the result of the query or null if the query fails</returns>
-    private async Task<bool?> HasResultsBeyondPageQuery(
-        string? bookId,
+    private async Task<bool> HasResultsBeyondPageQuery(
+        RecipeBookKey? bookId,
         bool isBack,
         User user,
         CancellationToken cancellationToken
@@ -391,122 +377,11 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
             cancellationToken
         );
 
-        if (pageIterator is null)
-        {
-            return null;
-        }
-
         await foreach (var _ in pageIterator)
         {
             return true;
         }
         return false;
-    }
-
-    /// <summary>
-    /// Returns a validation problem scoped to a book
-    /// </summary>
-    /// <param name="bookId">The book ID</param>
-    /// <param name="errors">Map of validation errors</param>
-    /// <returns>The validation problem</returns>
-    private static ValidationProblem BookValidationProblem(
-        string bookId,
-        IDictionary<string, string[]>? errors
-    )
-    {
-        return TypedResults.ValidationProblem(
-            type: "https://datatracker.ietf.org/doc/html/rfc9110#name-400-bad-request",
-            title: "Validation Problem",
-            detail: $"Requested operation against recipe book \"{bookId}\" failed because one or more validation errors",
-            errors: errors ?? new Dictionary<string, string[]>(),
-            extensions: [new KeyValuePair<string, object?>("bookId", bookId)]
-        );
-    }
-
-    /// <summary>
-    /// Returns a validation problem scoped to a book creation request
-    /// </summary>
-    /// <param name="errors">Map of validation errors</param>
-    /// <returns>The validation problem</returns>
-    private static ValidationProblem BookCreateValidationProblem(
-        IDictionary<string, string[]> errors
-    )
-    {
-        return TypedResults.ValidationProblem(
-            type: "https://datatracker.ietf.org/doc/html/rfc9110#name-400-bad-request",
-            title: "Validation Problem",
-            detail: "Creating recipe book failed because of one or more validation errors",
-            errors: errors
-        );
-    }
-
-    /// <summary>
-    /// Generates a 412 pre-condition failure
-    /// </summary>
-    /// <param name="bookId">the recipe book id</param>
-    /// <param name="failedHeader">The header that triggered the failure</param>
-    /// <returns>the 412 result</returns>
-    private static ProblemHttpResult BookPreconditionFailed(string bookId, string failedHeader)
-    {
-        return TypedResults.Problem(
-            statusCode: 412,
-            type: "https://datatracker.ietf.org/doc/html/rfc9110#name-412-precondition-failed",
-            title: "Pre-Condition Failure",
-            detail: $"Requested operation against recipe book \"{bookId}\" failed because one or more conditions in the request headers could not be satisfied.",
-            extensions:
-            [
-                new KeyValuePair<string, object?>("bookId", bookId),
-                new KeyValuePair<string, object?>("failedHeader", failedHeader),
-            ]
-        );
-    }
-
-    /// <summary>
-    /// Generates a 403 forbidden error
-    /// </summary>
-    /// <param name="bookId">the recipe book id</param>
-    /// <returns>the 404 result</returns>
-    public static ProblemHttpResult OperationOnBookForbidden(string bookId)
-    {
-        return TypedResults.Problem(
-            statusCode: 403,
-            type: "https://datatracker.ietf.org/doc/html/rfc9110#name-403-forbidden",
-            title: "Operation on Recipe Book Forbidden",
-            detail: $"Caller lacks required permissions to perform requested action on recipe book \"{bookId}\".",
-            extensions: [new KeyValuePair<string, object?>("bookId", bookId)]
-        );
-    }
-
-    /// <summary>
-    /// Generates a 404 error
-    /// </summary>
-    /// <param name="bookId">the recipe book id</param>
-    /// <returns>the 404 result</returns>
-    public static ProblemHttpResult BookNotFoundResult(string bookId)
-    {
-        return TypedResults.Problem(
-            statusCode: 404,
-            type: "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.5",
-            title: "Recipe Book Not Found",
-            detail: $"Recipe book \"{bookId}\" was either not found or caller does not have access.",
-            extensions: [new KeyValuePair<string, object?>("bookId", bookId)]
-        );
-    }
-
-    /// <summary>
-    /// Generates an internal server error
-    /// </summary>
-    /// <param name="bookId">the recipe book id</param>
-    /// <returns>the 500 error</returns>
-    private static ProblemHttpResult InternalServerError(string bookId)
-    {
-        return TypedResults.Problem(
-            statusCode: 500,
-            type: "https://datatracker.ietf.org/doc/html/rfc9110#name-500-internal-server-error",
-            title: "Server Error Retrieving Recipe Book",
-            detail: $"The server was unable to full fill the request for recipe book \"{bookId}\" because something went wrong.",
-            extensions: [new KeyValuePair<string, object?>("bookId", bookId)]
-        );
     }
 
     /// <summary>
@@ -529,12 +404,11 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
     {
         // All recipe books should have an owner. If this one lacks one, then we can't full fill
         // our API contracts so return 500 error.
-        IUserDao? owningUser = await userService.GetUserAsync(book.OwnerUserId, cancellationToken);
-        if (owningUser is null)
-        {
-            return InternalServerError(book.Id);
-        }
-
+        IUserDao? owningUser =
+            await userService.GetUserAsync(book.OwnerUserId, cancellationToken)
+            ?? throw new InvalidOperationException(
+                $"expects {book.OwnerUserId} to exist for book {book.Id}"
+            );
         var jsonData = new SingleRecipeBookResponseJson()
         {
             RecipeBook = new(book),
@@ -548,7 +422,10 @@ public class RecipeBooksController(IRecipeBookService recipeBookService, IUserSe
         else
         {
             Response.Headers.ETag = book.ConcurrencyTag;
-            Response.Headers.LastModified = book.LastUpdated.ToString("R");
+            Response.Headers.LastModified = book.LastModified.ToString(
+                "R",
+                CultureInfo.InvariantCulture
+            );
             return TypedResults.Ok(jsonData);
         }
     }

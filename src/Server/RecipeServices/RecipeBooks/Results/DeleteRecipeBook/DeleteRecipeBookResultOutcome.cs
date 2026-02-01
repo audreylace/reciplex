@@ -8,7 +8,7 @@ public enum DeleteRecipeBookResultOutcome
     /// <summary>
     /// Recipe book was deleted
     /// </summary>
-    Success,
+    Success = 1,
 
     /// <summary>
     /// User does not have delete access
@@ -24,9 +24,4 @@ public enum DeleteRecipeBookResultOutcome
     /// Book does not exist or the user does not have any permissions to know the book exists
     /// </summary>
     NotFound,
-
-    /// <summary>
-    /// Some other error
-    /// </summary>
-    InternalError,
 }

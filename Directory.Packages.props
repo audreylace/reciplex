@@ -5,5 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.1" />
+    <PackageVersion Include="NodaTime" Version="3.3.0" />
+    <PackageVersion Include="Sqids" Version="3.2.0" />
   </ItemGroup>
 </Project>

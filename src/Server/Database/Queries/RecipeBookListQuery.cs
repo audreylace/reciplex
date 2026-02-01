@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Recipe.Database.DbObjects;
+using Reciplex.Server.Database;
+using Reciplex.Server.Database.DbObjects;
 
 namespace Recipe.Database.Queries;
 

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 
-namespace Recipe.Database.DbObjects;
+namespace Reciplex.Server.Database.DbObjects;
 
 /// <summary>
 /// A recipe held inside of a <see cref="RecipeBookDbObject"/>
@@ -18,16 +18,38 @@ public class RecipeDbObject
     public long Id { get; set; }
 
     /// <summary>
-    /// Title of the recipe
+    /// Name of the recipe
     /// </summary>
     [MaxLength(127)]
-    public string Title { get; set; } = "";
+    public string Name { get; set; } = "";
 
     /// <summary>
     /// Recipe short description
     /// </summary>
     [MaxLength(255)]
     public string ShortDescription { get; set; } = "";
+
+    /// <summary>
+    /// Recipe markdown details
+    /// </summary>
+    [MaxLength(1024 * 1024)]
+    public string Details { get; set; } = "";
+
+    /// <summary>
+    /// When the recipe was modified
+    /// </summary>
+    public required long LastModified { get; set; }
+
+    /// <summary>
+    /// When the recipe was created
+    /// </summary>
+    public required long Created { get; init; }
+
+    /// <summary>
+    /// The concurrency tag
+    /// </summary>
+    [ConcurrencyCheck]
+    public required string ConcurrencyTag { get; set; } = "";
 
     /// <summary>
     /// The book holding this recipe
@@ -41,10 +63,15 @@ public class RecipeDbObject
     /// <summary>
     /// Database FK to <see cref="RecipeBookDbObject"/> for property <see cref="RecipeBook"/>
     /// </summary>
-    public long RecipeBookFk { get; set; }
+    public long RecipeBookFk { get; init; }
 
     /// <summary>
     /// The stored json model
     /// </summary>
     public RecipeDbJsonObject JsonData { get; set; } = new();
+
+    /// <summary>
+    /// True if the recipe is deleted
+    /// </summary>
+    public bool Deleted { get; set; }
 }

@@ -6,14 +6,9 @@ namespace Reciplex.Server.RecipeServices.Recipes.Results.DeleteRecipeById;
 public enum DeleteRecipeByIdResultOutcome
 {
     /// <summary>
-    /// An internal error occurred inside the API preventing the operation from completing.
-    /// </summary>
-    InternalError,
-
-    /// <summary>
     /// Recipe deleted
     /// </summary>
-    Success,
+    Success = 1,
 
     /// <summary>
     /// Recipe does not exist or the user does not have any access to the recipe so the API

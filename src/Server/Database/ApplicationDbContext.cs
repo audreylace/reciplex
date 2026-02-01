@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using Recipe.Database.DbObjects;
+using Reciplex.Server.Database.DbObjects;
 
-namespace Recipe.Database;
+namespace Reciplex.Server.Database;
 
 /// <summary>
 /// EF Core database context for the Recipe Application
