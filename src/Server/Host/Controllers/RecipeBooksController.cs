@@ -130,7 +130,7 @@ public class RecipeBooksController(
             UpdateRecipeBookDetailsOutcome.NotFound => bookProblemFactory.BookNotFoundResult(
                 bookKey
             ),
-            UpdateRecipeBookDetailsOutcome.DoesNotHaveAccess =>
+            UpdateRecipeBookDetailsOutcome.LacksPermission =>
                 bookProblemFactory.OperationOnBookForbidden(bookKey),
             UpdateRecipeBookDetailsOutcome.ConcurrencyConflict =>
                 bookProblemFactory.BookPreconditionFailed(bookKey, "If-Match"),
@@ -175,7 +175,7 @@ public class RecipeBooksController(
             DeleteRecipeBookResultOutcome.NotFound => bookProblemFactory.BookNotFoundResult(
                 bookKey
             ),
-            DeleteRecipeBookResultOutcome.DoesNotHaveAccess =>
+            DeleteRecipeBookResultOutcome.LacksPermission =>
                 bookProblemFactory.OperationOnBookForbidden(bookKey),
             DeleteRecipeBookResultOutcome.ConcurrencyConflict =>
                 bookProblemFactory.BookPreconditionFailed(bookKey, "If-Match"),
@@ -231,8 +231,6 @@ public class RecipeBooksController(
                 createResult.Book,
                 cancellationToken
             ),
-            CreateRecipeBookResultOutcome.PermissionFailure =>
-                CustomProblemHttpResults.OperationForbidden(),
             CreateRecipeBookResultOutcome.ValidationErrors =>
                 bookProblemFactory.BookValidationProblem(null, createResult.ValidationErrors),
             _ => throw new NotImplementedException(

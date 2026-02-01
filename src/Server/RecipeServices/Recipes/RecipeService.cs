@@ -85,7 +85,9 @@ public class RecipeService(
             return new(DeleteRecipeByIdResultOutcome.ConcurrencyConflict);
         }
 
-        recipe.Deleted = true;
+        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        recipe.LastModified = now;
+        recipe.Deleted = now;
         recipe.ConcurrencyTag = concurrencyTagProvider.Next();
         try
         {
@@ -130,7 +132,7 @@ public class RecipeService(
         RecipeDbObject? recipe = await (
             noTrack == true ? dbContext.Recipes.AsNoTracking() : dbContext.Recipes
         )
-            .Where(r => r.Id == recipeKey.SurrogateKey && r.Deleted == false)
+            .Where(r => r.Id == recipeKey.SurrogateKey && r.Deleted == null)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (recipe is null)
@@ -172,7 +174,7 @@ public class RecipeService(
 
         var query = dbContext
             .Recipes.AsNoTracking()
-            .Where(r => r.Deleted == false && r.RecipeBookFk == bookKey.SurrogateKey);
+            .Where(r => r.Deleted == null && r.RecipeBookFk == bookKey.SurrogateKey);
 
         if (args.ResultOrder == ListRecipesOrdering.ByIdDecreasing)
         {

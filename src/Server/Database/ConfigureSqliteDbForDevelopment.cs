@@ -36,17 +36,17 @@ class ConfigureSqliteDbForDevelopment(IServiceProvider rootServices, IClock cloc
 
         RecipeBookDbObject bakeBook = new()
         {
-            Title = "Baking",
+            Name = "Baking",
             ShortDescription = "Banking goods and other yummy recipes",
         };
         RecipeBookDbObject texMex = new()
         {
-            Title = "TextMex Explosion",
+            Name = "TextMex Explosion",
             ShortDescription = "Cheese, Salt, Hot Sauce, all the yummies",
         };
         RecipeBookDbObject mixDrinks = new()
         {
-            Title = "Mixed Drinks",
+            Name = "Mixed Drinks",
             ShortDescription = "Drinks that will make your knees wobble and your insides warm",
         };
 
@@ -82,7 +82,7 @@ class ConfigureSqliteDbForDevelopment(IServiceProvider rootServices, IClock cloc
         {
             RecipeBookDbObject fakeRecipe = new()
             {
-                Title = "Fake Recipe " + i,
+                Name = "Fake Recipe " + i,
                 ShortDescription = "Fake recipe number " + i,
             };
             testUser.RecipeBooks.Add(fakeRecipe);

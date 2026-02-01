@@ -71,7 +71,7 @@ public class RecipeDbObject
     public RecipeDbJsonObject JsonData { get; set; } = new();
 
     /// <summary>
-    /// True if the recipe is deleted
+    /// Populated if the recipe is deleted. The value is the time of deletion.
     /// </summary>
-    public bool Deleted { get; set; }
+    public long? Deleted { get; set; }
 }

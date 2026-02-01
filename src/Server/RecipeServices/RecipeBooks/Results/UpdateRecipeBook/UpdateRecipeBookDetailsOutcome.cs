@@ -10,7 +10,7 @@ public enum UpdateRecipeBookDetailsOutcome
     /// <summary>
     /// User does not have write access
     /// </summary>
-    DoesNotHaveAccess,
+    LacksPermission,
 
     /// <summary>
     /// Concurrency conflict

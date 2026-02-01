@@ -21,13 +21,29 @@ public class RecipeBookDbObject
     /// Title of the recipe book
     /// </summary>
     [MaxLength(127)]
-    public string Title { get; set; } = "";
+    public string Name { get; set; } = "";
 
     /// <summary>
     /// Recipe book short description
     /// </summary>
     [MaxLength(255)]
     public string ShortDescription { get; set; } = "";
+
+    /// <summary>
+    /// When the recipe book was modified
+    /// </summary>
+    public required long LastModified { get; set; }
+
+    /// <summary>
+    /// When the recipe book was created
+    /// </summary>
+    public required long Created { get; init; }
+
+    /// <summary>
+    /// The concurrency tag
+    /// </summary>
+    [ConcurrencyCheck]
+    public required string ConcurrencyTag { get; set; } = "";
 
     /// <summary>
     /// Owner of this book
@@ -52,4 +68,9 @@ public class RecipeBookDbObject
     /// Users with additional access
     /// </summary>
     public ICollection<AdditionalBookUserAccessDbObject> AdditionalUsers { get; set; } = [];
+
+    /// <summary>
+    /// Populated if the recipe book is deleted. The value is the time of deletion.
+    /// </summary>
+    public long? Deleted { get; set; }
 }

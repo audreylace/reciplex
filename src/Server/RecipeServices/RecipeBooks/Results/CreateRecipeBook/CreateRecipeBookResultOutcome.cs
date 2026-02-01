@@ -14,9 +14,4 @@ public enum CreateRecipeBookResultOutcome
     /// Book creation rejected because inputs were bad
     /// </summary>
     ValidationErrors,
-
-    /// <summary>
-    /// Book creation failed because the user does not have required permissions
-    /// </summary>
-    PermissionFailure,
 }

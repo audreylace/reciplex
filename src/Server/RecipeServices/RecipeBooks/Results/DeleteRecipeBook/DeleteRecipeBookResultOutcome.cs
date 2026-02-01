@@ -13,7 +13,7 @@ public enum DeleteRecipeBookResultOutcome
     /// <summary>
     /// User does not have delete access
     /// </summary>
-    DoesNotHaveAccess,
+    LacksPermission,
 
     /// <summary>
     /// Concurrency conflict
