@@ -1,12 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
-using Reciplex.Server.Host.Services;
+using Reciplex.Server.UserServices;
 
 namespace Reciplex.Server.Host.Models.User;
 
 public class UserJson
 {
     public required string DisplayName { get; init; }
-    public required string UserId { get; init; }
+    public required UserKey UserId { get; init; }
 
     /// <summary>
     /// Converts a <see cref="IUserDao"/> into <see cref="UserJson"/>
@@ -14,7 +14,7 @@ public class UserJson
     /// <param name="user">The <see cref="IUserDao"/> that will be converted into <see cref="UserJson"/></param>
     /// <returns>The resulting <see cref="UserJson"/></returns>
     [SetsRequiredMembers]
-    public UserJson(IUserDao user)
+    public UserJson(UserDao user)
     {
         DisplayName = user.DisplayName;
         UserId = user.Id;

@@ -2,11 +2,10 @@ using System.Globalization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Reciplex.Server.Host.Models.Authnz;
 using Reciplex.Server.Host.Models.PagingUtils;
 using Reciplex.Server.Host.Models.RecipeBook;
 using Reciplex.Server.Host.Models.User;
-using Reciplex.Server.Host.Services;
+using Reciplex.Server.Host.UserKeyUtils;
 using Reciplex.Server.Host.Utils.HttpResults;
 using Reciplex.Server.Host.Validation;
 using Reciplex.Server.RecipeServices.RecipeBooks;
@@ -14,6 +13,7 @@ using Reciplex.Server.RecipeServices.RecipeBooks.Models;
 using Reciplex.Server.RecipeServices.RecipeBooks.Results.CreateRecipeBook;
 using Reciplex.Server.RecipeServices.RecipeBooks.Results.DeleteRecipeBook;
 using Reciplex.Server.RecipeServices.RecipeBooks.Results.UpdateRecipeBook;
+using Reciplex.Server.UserServices;
 
 namespace Reciplex.Server.Host.Controllers;
 
@@ -39,7 +39,7 @@ public class RecipeBooksController(
     /// </code></pre>
     /// </summary>
     /// <param name="bookKey">The key of the book</param>
-    /// <param name="user">The authenticated user</param>
+    /// <param name="appClaimsPrincipal">The authenticated user</param>
     /// <param name="cancellationToken">token cancelled when the remote closes their connection</param>
     /// <returns>A HTTP response indicating the outcome of the operation</returns>
     [HttpGet("{bookKey}")]
@@ -52,13 +52,13 @@ public class RecipeBooksController(
         >
     > GetBookById(
         [BindRequired] RecipeBookKey bookKey,
-        User user,
+        ApplicationClaimsPrincipal appClaimsPrincipal,
         CancellationToken cancellationToken
     )
     {
         RecipeBookDao? book = await recipeBookService.GetRecipeBookAsync(
             bookKey,
-            user.UserId,
+            appClaimsPrincipal.UserKey,
             cancellationToken
         );
 
@@ -84,7 +84,7 @@ public class RecipeBooksController(
     /// </summary>
     /// <param name="bookKey">The key of the recipe book</param>
     /// <param name="ifMatch">The recipe book etag</param>
-    /// <param name="user">Information about the authenticated user</param>
+    /// <param name="appClaimsPrincipal">Information about the authenticated user</param>
     /// <param name="requestBody">Incoming data in the body</param>
     /// <param name="cancellationToken">token that cancels when the connection is closed</param>
     /// <returns>Task that resolves to the http response</returns>
@@ -102,7 +102,7 @@ public class RecipeBooksController(
     > UpdateBookById(
         [BindRequired] RecipeBookKey bookKey,
         [RequiredAndValidIfMatch] [FromHeader(Name = "if-match")] string ifMatch,
-        User user,
+        ApplicationClaimsPrincipal appClaimsPrincipal,
         [FromBody] RecipeBookJsonBody requestBody,
         CancellationToken cancellationToken
     )
@@ -111,7 +111,7 @@ public class RecipeBooksController(
         // result back into the correct HTTP code and response.
         var updateResult = await recipeBookService.UpdateRecipeBookDetailsAsync(
             bookKey,
-            user.UserId,
+            appClaimsPrincipal.UserKey,
             new()
             {
                 Name = requestBody.Name,
@@ -121,7 +121,7 @@ public class RecipeBooksController(
             cancellationToken
         );
 
-        return updateResult.Reason switch
+        return updateResult.Outcome switch
         {
             UpdateRecipeBookDetailsOutcome.Success => await SendRecipeBookResponseAsync(
                 updateResult.RecipeBook,
@@ -137,7 +137,7 @@ public class RecipeBooksController(
             UpdateRecipeBookDetailsOutcome.ValidationFailure =>
                 bookProblemFactory.BookValidationProblem(bookKey, updateResult.Errors),
             _ => throw new NotImplementedException(
-                $"unhandled {nameof(UpdateRecipeBookDetailsOutcome)} branch {updateResult.Reason}"
+                $"unhandled {nameof(UpdateRecipeBookDetailsOutcome)} branch {updateResult.Outcome}"
             ),
         };
     }
@@ -151,22 +151,20 @@ public class RecipeBooksController(
     /// </summary>
     /// <param name="bookKey">The id of the recipe book</param>
     /// <param name="ifMatch">The recipe book etag</param>
-    /// <param name="user">Information about the authenticated user</param>
+    /// <param name="appClaimsPrincipal">Information about the authenticated user</param>
     /// <param name="cancellationToken">token that cancels when the connection is closed</param>
     /// <returns>Task that resolves to the http response</returns>
     [HttpDelete("{bookKey}")]
     public async Task<Results<NoContent, ProblemHttpResult>> DeleteRecipeBookById(
         [BindRequired] RecipeBookKey bookKey,
-        [RequiredAndNotEmpty(ErrorMessage = "An If-Match header must be supplied")]
-        [FromHeader(Name = "if-match")]
-            string ifMatch,
-        User user,
+        [RequiredAndValidIfMatch] [FromHeader(Name = "if-match")] string ifMatch,
+        ApplicationClaimsPrincipal appClaimsPrincipal,
         CancellationToken cancellationToken
     )
     {
         DeleteRecipeBookResult deleteResult = await recipeBookService.DeleteRecipeBookAsync(
             bookKey,
-            user.UserId,
+            appClaimsPrincipal.UserKey,
             ifMatch,
             cancellationToken
         );
@@ -198,7 +196,7 @@ public class RecipeBooksController(
     /// }
     /// </code></pre>
     /// </summary>
-    /// <param name="user">Information about the authenticated user</param>
+    /// <param name="appClaimsPrincipal">Information about the authenticated user</param>
     /// <param name="requestBody">Incoming data in the body</param>
     /// <param name="cancellationToken">token that cancels when the connection is closed</param>
     /// <returns>Task that resolves to the http response</returns>
@@ -214,7 +212,7 @@ public class RecipeBooksController(
             ValidationProblem
         >
     > CreateBook(
-        User user,
+        ApplicationClaimsPrincipal appClaimsPrincipal,
         [FromBody] RecipeBookJsonBody requestBody,
         CancellationToken cancellationToken
     )
@@ -222,7 +220,7 @@ public class RecipeBooksController(
         // The service layer will do all of our validation for us. We can just call it and then transform its
         // result back into the correct HTTP code and response.
         var createResult = await recipeBookService.CreateRecipeBookAsync(
-            user.UserId,
+            appClaimsPrincipal.UserKey,
             new() { Name = requestBody.Name, ShortDescription = requestBody.ShortDescription },
             cancellationToken
         );
@@ -257,7 +255,7 @@ public class RecipeBooksController(
     /// GET /recipe-books
     /// </code></pre>
     /// </summary>
-    /// <param name="user">Information about the authenticated user</param>
+    /// <param name="appClaimsPrincipal">Information about the authenticated user</param>
     /// <param name="cursor">The page cursor</param>
     /// <param name="cancellationToken">token that cancels when the connection is closed</param>
     /// <returns>Task that resolves to the HTTP response</returns>
@@ -265,10 +263,14 @@ public class RecipeBooksController(
     [ResponseCache(Duration = 15 * 60, Location = ResponseCacheLocation.Any, NoStore = false)]
     public async Task<
         Results<ValidationProblem, ProblemHttpResult, Ok<RecipeBookPageResponseJson>>
-    > GetBooks(User user, PageCursor<RecipeBookKey> cursor, CancellationToken cancellationToken)
+    > GetBooks(
+        ApplicationClaimsPrincipal appClaimsPrincipal,
+        PageCursor<RecipeBookKey> cursor,
+        CancellationToken cancellationToken
+    )
     {
         IAsyncEnumerable<RecipeBookDao> pageIterator = await recipeBookService.ListRecipeBooksAsync(
-            user.UserId,
+            appClaimsPrincipal.UserKey,
             new()
             {
                 AfterBookId =
@@ -296,7 +298,7 @@ public class RecipeBooksController(
             r => r.Id,
             pageData,
             (id, cancellationToken) =>
-                HasResultsBeyondPageQuery(id, false, user, cancellationToken),
+                HasResultsBeyondPageQuery(id, false, appClaimsPrincipal.UserKey, cancellationToken),
             cancellationToken
         );
 
@@ -305,7 +307,12 @@ public class RecipeBooksController(
                 r => r.Id,
                 pageData,
                 (id, cancellationToken) =>
-                    HasResultsBeyondPageQuery(id, true, user, cancellationToken),
+                    HasResultsBeyondPageQuery(
+                        id,
+                        true,
+                        appClaimsPrincipal.UserKey,
+                        cancellationToken
+                    ),
                 cancellationToken
             );
 
@@ -315,7 +322,7 @@ public class RecipeBooksController(
                 RecipeBooks = [.. pageData.Select(b => new RecipeBookJson(b))],
                 Users = await userService
                     .FetchUsersAsync(
-                        pageData.GroupBy(book => book.OwnerUserId).Select(g => g.Key),
+                        pageData.GroupBy(book => book.OwningUserKey).Select(g => g.Key),
                         cancellationToken
                     )
                     .Select(u => new UserJson(u))
@@ -362,12 +369,12 @@ public class RecipeBooksController(
     private async Task<bool> HasResultsBeyondPageQuery(
         RecipeBookKey? bookId,
         bool isBack,
-        User user,
+        UserKey userKey,
         CancellationToken cancellationToken
     )
     {
         var pageIterator = await recipeBookService.ListRecipeBooksAsync(
-            user.UserId,
+            userKey,
             new()
             {
                 AfterBookId = isBack ? null : bookId,
@@ -404,10 +411,10 @@ public class RecipeBooksController(
     {
         // All recipe books should have an owner. If this one lacks one, then we can't full fill
         // our API contracts so return 500 error.
-        IUserDao? owningUser =
-            await userService.GetUserAsync(book.OwnerUserId, cancellationToken)
+        UserDao? owningUser =
+            await userService.GetUserAsync(book.OwningUserKey, cancellationToken)
             ?? throw new InvalidOperationException(
-                $"expects {book.OwnerUserId} to exist for book {book.Id}"
+                $"expects {book.OwningUserKey} to exist for book {book.Id}"
             );
         var jsonData = new SingleRecipeBookResponseJson()
         {

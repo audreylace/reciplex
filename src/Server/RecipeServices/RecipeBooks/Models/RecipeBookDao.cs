@@ -1,4 +1,5 @@
 using NodaTime;
+using Reciplex.Server.UserServices;
 
 namespace Reciplex.Server.RecipeServices.RecipeBooks.Models;
 
@@ -25,7 +26,7 @@ public class RecipeBookDao
     /// <summary>
     /// Id of the user that owns this book.
     /// </summary>
-    public required long OwnerUserId { get; init; }
+    public required UserKey OwningUserKey { get; init; }
 
     /// <summary>
     /// The concurrency tag. MUST be transportable via ETAG header.
@@ -40,7 +41,7 @@ public class RecipeBookDao
     /// <summary>
     /// The time in UTC the recipe book was created
     /// </summary>
-    public required Instant CreateTime { get; init; }
+    public required Instant Created { get; init; }
 
     /// <summary>
     /// User can edit book information

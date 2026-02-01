@@ -1,12 +1,12 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-namespace Reciplex.Server.Host.Models.Authnz;
+namespace Reciplex.Server.Host.UserKeyUtils;
 
 /// <summary>
-/// Binds data to <see cref="User"/>
+/// Binds data to <see cref="ApplicationClaimsPrincipal"/>
 /// </summary>
-public class UserBinder : IModelBinder
+public class ApplicationClaimsPrincipalBinder : IModelBinder
 {
     public Task BindModelAsync(ModelBindingContext bindingContext)
     {
@@ -30,7 +30,9 @@ public class UserBinder : IModelBinder
             return Task.CompletedTask;
         }
 
-        bindingContext.Result = ModelBindingResult.Success(new User() { UserId = userId });
+        bindingContext.Result = ModelBindingResult.Success(
+            new ApplicationClaimsPrincipal() { UserKey = new(userId) }
+        );
         return Task.CompletedTask;
     }
 }

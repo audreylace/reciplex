@@ -7,5 +7,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Database\Reciplex.Server.Database.csproj" />
     <ProjectReference Include="..\RecipeServices\Reciplex.Server.RecipeServices.csproj" />
+    <ProjectReference Include="..\UserServices\Reciplex.Server.UserServices.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="NodaTime" />
+    <PackageReference Include="Sqids" />
   </ItemGroup>
 </Project>

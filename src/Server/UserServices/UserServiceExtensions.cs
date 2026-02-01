@@ -1,28 +1,28 @@
 using System.Runtime.CompilerServices;
 
-namespace Reciplex.Server.Host.Services;
+namespace Reciplex.Server.UserServices;
 
 /// <summary>
-/// Common query patterns on application services
+/// Extensions for <see cref="IUserService"/>
 /// </summary>
-static class UserServiceExtensions
+public static class UserServiceExtensions
 {
     /// <summary>
     /// Fetches a set of users skipping any that fail
     /// </summary>
-    /// <param name="userIdsToFetch">The key set</param>
+    /// <param name="userKeys">The key set</param>
     /// <param name="userService">user service</param>
     /// <param name="cancellationToken">async cancellation token</param>
     /// <returns>List of users that could be resolved using <paramref name="userService"/></returns>
-    internal static async IAsyncEnumerable<IUserDao> FetchUsersAsync(
+    public static async IAsyncEnumerable<UserDao> FetchUsersAsync(
         this IUserService userService,
-        IEnumerable<long> userIdsToFetch,
+        IEnumerable<UserKey> userKeys,
         [EnumeratorCancellation] CancellationToken cancellationToken
     )
     {
-        foreach (long userId in userIdsToFetch)
+        foreach (UserKey userKey in userKeys)
         {
-            IUserDao? userDao = await userService.GetUserAsync(userId, cancellationToken);
+            UserDao? userDao = await userService.GetUserAsync(userKey, cancellationToken);
             if (userDao is null)
             {
                 continue;

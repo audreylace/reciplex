@@ -4,6 +4,7 @@ using Reciplex.Server.RecipeServices.Recipes.Models;
 using Reciplex.Server.RecipeServices.Recipes.Results.CreateRecipe;
 using Reciplex.Server.RecipeServices.Recipes.Results.DeleteRecipeById;
 using Reciplex.Server.RecipeServices.Recipes.Results.UpdateRecipe;
+using Reciplex.Server.UserServices;
 using Sqids;
 
 namespace Reciplex.Server.RecipeServices.Recipes;
@@ -22,7 +23,7 @@ public interface IRecipeService
     /// <returns>the recipe if found. null if not found or if the user does not have access</returns>
     public Task<RecipeDao?> GetRecipeAsync(
         RecipeKey recipeId,
-        long userId,
+        UserKey userId,
         CancellationToken cancellationToken
     );
 
@@ -36,7 +37,7 @@ public interface IRecipeService
     /// <returns>task that resolves to the outcome of the async operation</returns>
     public Task<DeleteRecipeByIdResult> DeleteRecipeAsync(
         RecipeKey recipeId,
-        long userId,
+        UserKey userId,
         string concurrencyTag,
         CancellationToken cancellationToken
     );
@@ -52,7 +53,7 @@ public interface IRecipeService
     /// <returns>task that resolves to the outcome of the async operation</returns>
     public Task<UpdateRecipeResult> UpdateRecipeAsync(
         RecipeKey recipeId,
-        long userId,
+        UserKey userId,
         string concurrencyTag,
         UpdateRecipeArgs args,
         CancellationToken cancellationToken
@@ -68,13 +69,13 @@ public interface IRecipeService
     /// <returns>task that resolves to the outcome of the async operation</returns>
     public Task<CreateRecipeResult> CreateRecipeAsync(
         RecipeBookKey bookId,
-        long userId,
+        UserKey userId,
         CreateRecipeArgs args,
         CancellationToken cancellationToken
     );
     Task<IAsyncEnumerable<RecipeDao>?> ListRecipesAsync(
         RecipeBookKey bookId,
-        long userid,
+        UserKey userid,
         ListRecipesArgs args,
         CancellationToken cancellationToken
     );

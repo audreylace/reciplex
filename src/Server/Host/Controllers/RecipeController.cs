@@ -1,12 +1,11 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Reciplex.Server.Host.Models.Authnz;
 using Reciplex.Server.Host.Models.PagingUtils;
 using Reciplex.Server.Host.Models.Recipe;
 using Reciplex.Server.Host.Models.RecipeBook;
 using Reciplex.Server.Host.Models.User;
-using Reciplex.Server.Host.Services;
+using Reciplex.Server.Host.UserKeyUtils;
 using Reciplex.Server.Host.Utils.HttpResults;
 using Reciplex.Server.Host.Validation;
 using Reciplex.Server.RecipeServices.RecipeBooks;
@@ -16,6 +15,7 @@ using Reciplex.Server.RecipeServices.Recipes.Models;
 using Reciplex.Server.RecipeServices.Recipes.Results.CreateRecipe;
 using Reciplex.Server.RecipeServices.Recipes.Results.DeleteRecipeById;
 using Reciplex.Server.RecipeServices.Recipes.Results.UpdateRecipe;
+using Reciplex.Server.UserServices;
 
 namespace Reciplex.Server.Host.Controllers;
 
@@ -49,20 +49,20 @@ public class RecipesController(
     /// </code></pre>
     /// </summary>
     /// <param name="recipeKey">the recipe key from the request</param>
-    /// <param name="user">information about the authenticated user</param>
+    /// <param name="userClaimsPrincipal">information about the authenticated user</param>
     /// <param name="cancellationToken">token that cancels when the user closes the connection</param>
     /// <returns>Task resolving to the response to send back</returns>
     [HttpGet("{recipeKey}")]
     [ResponseCache(Duration = 15 * 60, Location = ResponseCacheLocation.Any, NoStore = false)]
     public async Task<SendRecipeResults> GetRecipeById(
         [BindRequired] RecipeKey recipeKey,
-        User user,
+        ApplicationClaimsPrincipal userClaimsPrincipal,
         CancellationToken cancellationToken
     )
     {
         RecipeDao? recipe = await recipeService.GetRecipeAsync(
             recipeKey,
-            user.UserId,
+            userClaimsPrincipal.UserKey,
             cancellationToken
         );
         if (recipe is null)
@@ -70,7 +70,7 @@ public class RecipesController(
             return recipeProblemFactory.RecipeNotFoundResult(recipeKey);
         }
 
-        return await SendRecipe(recipe, user, cancellationToken);
+        return await SendRecipe(recipe, userClaimsPrincipal.UserKey, cancellationToken);
     }
 
     /// <summary>
@@ -91,13 +91,13 @@ public class RecipesController(
     public async Task<Results<NoContent, ProblemHttpResult>> DeleteRecipeById(
         [BindRequired] RecipeKey recipeKey,
         [RequiredAndValidIfMatch] [FromHeader(Name = "If-Match")] string ifMatch,
-        User user,
+        ApplicationClaimsPrincipal userClaimsPrincipal,
         CancellationToken cancellationToken
     )
     {
         var deleteResult = await recipeService.DeleteRecipeAsync(
             recipeKey,
-            user.UserId,
+            userClaimsPrincipal.UserKey,
             ifMatch,
             cancellationToken
         );
@@ -145,13 +145,13 @@ public class RecipesController(
         [BindRequired] RecipeKey recipeKey,
         [RequiredAndValidIfMatch] [FromHeader(Name = "If-Match")] string ifMatch,
         [FromBody] CreateOrUpdateRecipeJsonBody body,
-        User user,
+        ApplicationClaimsPrincipal userClaimsPrincipal,
         CancellationToken cancellationToken
     )
     {
         UpdateRecipeResult updateResult = await recipeService.UpdateRecipeAsync(
             recipeKey,
-            user.UserId,
+            userClaimsPrincipal.UserKey,
             ifMatch,
             new()
             {
@@ -173,7 +173,7 @@ public class RecipesController(
                 recipeProblemFactory.RecipeValidationProblem(recipeKey, updateResult.Errors),
             UpdateRecipeResultOutcome.Success => await SendRecipe(
                 updateResult.Recipe,
-                user,
+                userClaimsPrincipal.UserKey,
                 cancellationToken
             ),
             _ => throw new NotImplementedException(
@@ -205,13 +205,13 @@ public class RecipesController(
     > CreateRecipe(
         [FromBody] CreateOrUpdateRecipeJsonBody body,
         [BindRequired] [FromQuery(Name = "book")] RecipeBookKey bookKey,
-        User user,
+        ApplicationClaimsPrincipal userClaimsPrincipal,
         CancellationToken cancellationToken
     )
     {
         CreateRecipeResult createRecipeResult = await recipeService.CreateRecipeAsync(
             bookKey,
-            user.UserId,
+            userClaimsPrincipal.UserKey,
             new()
             {
                 Name = body.Name,
@@ -232,7 +232,7 @@ public class RecipesController(
                 recipeProblemFactory.RecipeValidationProblem(null, createRecipeResult.Errors),
             CreateRecipeResultOutcome.Success => await SendRecipe(
                 createRecipeResult.Recipe,
-                user,
+                userClaimsPrincipal.UserKey,
                 cancellationToken
             ),
             _ => throw new NotImplementedException(
@@ -243,19 +243,16 @@ public class RecipesController(
 
     private async Task<SendRecipeResults> SendRecipe(
         RecipeDao recipe,
-        User user,
+        UserKey userKey,
         CancellationToken cancellationToken
     )
     {
         var book =
-            await recipeBookService.GetRecipeBookAsync(
-                recipe.BookId,
-                user.UserId,
-                cancellationToken
-            ) ?? throw new Exception($"expected book {recipe.BookId} to exist for {recipe.Id}");
+            await recipeBookService.GetRecipeBookAsync(recipe.BookId, userKey, cancellationToken)
+            ?? throw new Exception($"expected book {recipe.BookId} to exist for {recipe.Id}");
         var userDao =
-            await userService.GetUserAsync(user.UserId, cancellationToken)
-            ?? throw new Exception($"expected user {user.UserId} to exist for {book.Id}");
+            await userService.GetUserAsync(userKey, cancellationToken)
+            ?? throw new Exception($"expected user {userKey} to exist for {book.Id}");
 
         return TypedResults.Ok(
             new SingleRecipeResponseJson()
@@ -288,15 +285,15 @@ public class RecipesController(
     public async Task<
         Results<ValidationProblem, ProblemHttpResult, Ok<RecipePageResponseJson>>
     > GetRecipes(
-        User user,
+        ApplicationClaimsPrincipal userClaimsPrincipal,
         PageCursor<RecipeKey> cursor,
-        [BindRequired] [FromQuery(Name = "book-id")] RecipeBookKey bookId,
+        [BindRequired] [FromQuery(Name = "book")] RecipeBookKey bookId,
         CancellationToken cancellationToken
     )
     {
         var pageIterator = await recipeService.ListRecipesAsync(
             bookId,
-            user.UserId,
+            userClaimsPrincipal.UserKey,
             new()
             {
                 AfterRecipeId =
@@ -326,14 +323,14 @@ public class RecipesController(
             .ToListAsync(cancellationToken);
 
         List<RecipeBookDao> books = [];
-        HashSet<long> userIdsToFetch = [];
+        HashSet<UserKey> userIdsToFetch = [];
         foreach (
             RecipeBookKey idOfBookToFetch in pageData.GroupBy(r => r.BookId).Select(g => g.Key)
         )
         {
             RecipeBookDao? book = await recipeBookService.GetRecipeBookAsync(
                 idOfBookToFetch,
-                user.UserId,
+                userClaimsPrincipal.UserKey,
                 cancellationToken
             );
             if (book is null)
@@ -341,14 +338,20 @@ public class RecipesController(
                 continue;
             }
             books.Add(book);
-            userIdsToFetch.Add(book.OwnerUserId);
+            userIdsToFetch.Add(book.OwningUserKey);
         }
 
         (bool hasNextPage, RecipeKey? idForNextPage) = await cursor.QueryForNextPage(
             r => r.Id,
             pageData,
             (id, cancellationToken) =>
-                HasResultsBeyondPageQuery(id, bookId, false, user, cancellationToken),
+                HasResultsBeyondPageQuery(
+                    id,
+                    bookId,
+                    false,
+                    userClaimsPrincipal.UserKey,
+                    cancellationToken
+                ),
             cancellationToken
         );
 
@@ -356,7 +359,13 @@ public class RecipesController(
             r => r.Id,
             pageData,
             (id, cancellationToken) =>
-                HasResultsBeyondPageQuery(id, bookId, true, user, cancellationToken),
+                HasResultsBeyondPageQuery(
+                    id,
+                    bookId,
+                    true,
+                    userClaimsPrincipal.UserKey,
+                    cancellationToken
+                ),
             cancellationToken
         );
 
@@ -406,7 +415,7 @@ public class RecipesController(
     /// </summary>
     /// <param name="recipeId">The page boundary</param>
     /// <param name="bookId">The book ID to scope the recipe list to</param>
-    /// <param name="user">The user running the query for access checks</param>
+    /// <param name="userKey">The user running the query for access checks</param>
     /// <param name="isBack">True to check if there are results before a page <c>
     /// WHERE RECIPE.ID LESS THEN recipeId
     /// </c></param>
@@ -416,14 +425,14 @@ public class RecipesController(
         RecipeKey? recipeId,
         RecipeBookKey bookId,
         bool isBack,
-        User user,
+        UserKey userKey,
         CancellationToken cancellationToken
     )
     {
         var pageIterator =
             await recipeService.ListRecipesAsync(
                 bookId,
-                user.UserId,
+                userKey,
                 new()
                 {
                     AfterRecipeId = isBack ? null : recipeId,
@@ -433,7 +442,7 @@ public class RecipesController(
                 cancellationToken
             )
             ?? throw new InvalidOperationException(
-                $"expects {bookId} to exist and user {user.UserId} to have access"
+                $"expects {bookId} to exist and user {userKey} to have access"
             );
 
         await foreach (var _ in pageIterator)

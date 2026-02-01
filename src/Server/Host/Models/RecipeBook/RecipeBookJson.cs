@@ -1,18 +1,21 @@
 using System.Diagnostics.CodeAnalysis;
+using Reciplex.Server.RecipeServices.RecipeBooks;
 using Reciplex.Server.RecipeServices.RecipeBooks.Models;
+using Reciplex.Server.UserServices;
 
 namespace Reciplex.Server.Host.Models.RecipeBook;
 
 public class RecipeBookJson
 {
-    public required string BookId { get; init; }
+    public required RecipeBookKey BookId { get; init; }
     public required string Name { get; init; }
     public required string ShortDescription { get; init; }
-    public required string OwnerUserId { get; init; }
-    public required RecipeBookPermissionsJson Permissions { get; init; }
-    public required string Created { get; init; }
-    public required string LastModified { get; init; }
+    public required UserKey OwnerUserId { get; init; }
+    public required NodaTime.Instant Created { get; init; }
+    public required NodaTime.Instant LastModified { get; init; }
     public required string ConcurrencyTag { get; init; }
+    public required bool MayEdit { get; init; }
+    public required bool MayDelete { get; init; }
 
     /// <summary>
     /// Default constructor
@@ -29,17 +32,11 @@ public class RecipeBookJson
         BookId = book.Id;
         Name = book.Name;
         ShortDescription = book.ShortDescription;
-        OwnerUserId = book.OwnerUserId;
-        Created = book.CreateTime.ToString("o");
-        LastModified = book.LastUpdated.ToString("o");
+        OwnerUserId = book.OwningUserKey;
+        Created = book.Created;
+        LastModified = book.LastModified;
         ConcurrencyTag = book.ConcurrencyTag;
-        Permissions = new()
-        {
-            EditInformation = book.AccessPermissions.HasFlag(
-                RecipeBookAccessPermissions.EditBookInformation
-            ),
-            AddRecipe = book.AccessPermissions.HasFlag(RecipeBookAccessPermissions.AddRecipes),
-            Delete = book.AccessPermissions.HasFlag(RecipeBookAccessPermissions.DeleteBook),
-        };
+        MayEdit = book.MayEditBook;
+        MayDelete = book.MayDeleteBook;
     }
 }
