@@ -1,12 +1,14 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using NodaTime;
+using NodaTime.Extensions;
 using Reciplex.Server.Database;
 using Reciplex.Server.Database.DbObjects;
 
 namespace Recipe.Database;
 
 #if DEBUG
-class ConfigureSqliteDbForDevelopment(IServiceProvider rootServices) : IHostedService
+class ConfigureSqliteDbForDevelopment(IServiceProvider rootServices, IClock clock) : IHostedService
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -24,7 +26,7 @@ class ConfigureSqliteDbForDevelopment(IServiceProvider rootServices) : IHostedSe
         return Task.CompletedTask;
     }
 
-    private static async Task SeedDataAsync(
+    private async Task SeedDataAsync(
         ApplicationDbContext applicationDbContext,
         CancellationToken cancellationToken
     )
@@ -48,7 +50,16 @@ class ConfigureSqliteDbForDevelopment(IServiceProvider rootServices) : IHostedSe
             ShortDescription = "Drinks that will make your knees wobble and your insides warm",
         };
 
-        mixDrinks.Recipes.Add(new() { Name = "Liquor", ShortDescription = "Alcoholic liquor" });
+        mixDrinks.Recipes.Add(
+            new()
+            {
+                Name = "Liquor",
+                ShortDescription = "Alcoholic liquor",
+                LastModified = clock.GetCurrentInstant().ToUnixTimeSeconds(),
+                Created = clock.GetCurrentInstant().ToUnixTimeSeconds(),
+                ConcurrencyTag = "abcd",
+            }
+        );
 
         for (int i = 0; i < 40; i++)
         {
@@ -56,6 +67,9 @@ class ConfigureSqliteDbForDevelopment(IServiceProvider rootServices) : IHostedSe
             {
                 Name = "Fake Recipe " + i,
                 ShortDescription = "Fake recipe number " + i,
+                LastModified = clock.GetCurrentInstant().ToUnixTimeSeconds(),
+                Created = clock.GetCurrentInstant().ToUnixTimeSeconds(),
+                ConcurrencyTag = "abcd",
             };
             mixDrinks.Recipes.Add(fakeRecipe);
         }
