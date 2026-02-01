@@ -105,7 +105,7 @@ public class RecipeBookService(
     )
     {
         long userId = userKey.SurrogateKey;
-        return dbContext
+        var query = dbContext
             .RecipeBooks.AsNoTracking()
             .Where(b =>
                 (
@@ -115,7 +115,30 @@ public class RecipeBookService(
                     )
                 )
                 && b.Deleted == null
-            )
+            );
+
+        if (args.AfterBookId is not null)
+        {
+            long afterRecipeId = args.AfterBookId.Value.SurrogateKey;
+            query = query.Where(r => r.Id > afterRecipeId);
+        }
+
+        if (args.BeforeBookId is not null)
+        {
+            long beforeRecipeId = args.BeforeBookId.Value.SurrogateKey;
+            query = query.Where(r => r.Id < beforeRecipeId);
+        }
+
+        if (args.ResultOrder == ListRecipeBooksOrdering.ByIdDecreasing)
+        {
+            query = query.OrderByDescending(r => r.Id);
+        }
+        else
+        {
+            query = query.OrderBy(r => r.Id);
+        }
+
+        return query
             .Include(b => b.AdditionalUsers.Where(u => u.UserFk == userId))
             .AsAsyncEnumerable()
             .Select(book =>

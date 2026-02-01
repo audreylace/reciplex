@@ -1,15 +1,12 @@
-using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Reciplex.Server.Database;
 
-namespace Recipe.Database;
+namespace Reciplex.Server.Host;
 
 /// <summary>
 /// Configures application DB access for the program
 /// </summary>
-public static partial class WebApplicationBuilderExtensions
+public static class WebApplicationBuilderExtensions
 {
     /// <summary>
     /// Configures the application in development mode

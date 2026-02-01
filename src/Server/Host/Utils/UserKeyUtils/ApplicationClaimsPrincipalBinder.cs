@@ -6,7 +6,7 @@ namespace Reciplex.Server.Host.Utils.UserKeyUtils;
 /// <summary>
 /// Binds data to <see cref="ApplicationClaimsPrincipal"/>
 /// </summary>
-public class ApplicationClaimsPrincipalBinder : IModelBinder
+public class ApplicationClaimsPrincipalBinder : IModelBinder, IModelBinderProvider
 {
     public Task BindModelAsync(ModelBindingContext bindingContext)
     {
@@ -34,5 +34,16 @@ public class ApplicationClaimsPrincipalBinder : IModelBinder
             new ApplicationClaimsPrincipal() { UserKey = new(userId) }
         );
         return Task.CompletedTask;
+    }
+
+    public IModelBinder? GetBinder(ModelBinderProviderContext context)
+    {
+        Type targetType = context.Metadata.ModelType;
+        if (targetType != typeof(ApplicationClaimsPrincipal))
+        {
+            return null;
+        }
+
+        return this;
     }
 }

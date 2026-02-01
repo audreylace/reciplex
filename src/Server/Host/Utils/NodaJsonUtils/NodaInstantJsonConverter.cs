@@ -21,6 +21,8 @@ public class NodaInstantJsonConverter : JsonConverter<Instant>
 
     public override void Write(Utf8JsonWriter writer, Instant value, JsonSerializerOptions options)
     {
-        writer.WriteStringValue(value.ToString("o", CultureInfo.InvariantCulture));
+        writer.WriteStringValue(
+            value.ToString(InstantPattern.General.PatternText, CultureInfo.InvariantCulture)
+        );
     }
 }

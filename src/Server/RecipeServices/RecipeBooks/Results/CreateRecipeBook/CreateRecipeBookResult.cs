@@ -32,4 +32,12 @@ public class CreateRecipeBookResult
         }
         Outcome = outcome;
     }
+
+    public void EnsureSuccess()
+    {
+        if (Outcome != CreateRecipeBookResultOutcome.Success)
+        {
+            throw new Exception($"Create recipe book operation failed with outcome {Outcome}");
+        }
+    }
 }

@@ -1,7 +1,9 @@
 using NodaTime;
 using Recipe.Database;
+using Reciplex.Server.Host;
 using Reciplex.Server.Host.AccessControl;
 using Reciplex.Server.Host.Services.StringIdInterop;
+using Reciplex.Server.Host.Utils;
 using Reciplex.Server.Host.Utils.HttpResults;
 using Reciplex.Server.Host.Utils.NodaJsonUtils;
 using Reciplex.Server.Host.Utils.RecipeBookKeyUtils;
@@ -34,6 +36,7 @@ builder.Services.AddSingleton<IStringRecipeBookKeyInterop, StringRecipeBookKeyIn
 builder.Services.AddSingleton<IStringUserKeyInterop, StringUserKeyInterop>();
 
 // add key marshaling to the json layer
+builder.Services.ConfigureOptions<ConfigureGlobalJsonHandling>();
 builder.Services.ConfigureOptions<ConfigureRecipeKeyJsonHandling>();
 builder.Services.ConfigureOptions<ConfigureRecipeBookKeyJsonHandling>();
 builder.Services.ConfigureOptions<ConfigureUserKeyJsonHandling>();
@@ -44,9 +47,12 @@ builder.Services.AddSingleton<IRecipeBookProblemFactory, RecipeBookProblemFactor
 
 builder.Services.AddControllers(o =>
 {
-    // custom binders for marshalling keys inside requests
-    o.ModelBinderProviders.Add(new RecipeKeysBinder());
-    o.ModelBinderProviders.Add(new RecipeBookKeysBinder());
+    // Custom binders for marshalling keys inside requests
+    // Need to be first otherwise the default binders
+    // will try to bind these types which is undesirable.
+    o.ModelBinderProviders.Insert(0, new RecipeKeysBinder());
+    o.ModelBinderProviders.Insert(0, new RecipeBookKeysBinder());
+    o.ModelBinderProviders.Insert(0, new ApplicationClaimsPrincipalBinder());
 });
 
 builder.Services.AddAuthentication();

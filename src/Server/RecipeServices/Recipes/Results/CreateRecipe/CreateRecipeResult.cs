@@ -61,4 +61,12 @@ public class CreateRecipeResult
         }
         Outcome = outcome;
     }
+
+    public void EnsureSuccess()
+    {
+        if (Outcome != CreateRecipeResultOutcome.Success)
+        {
+            throw new Exception($"Create recipe operation failed with outcome {Outcome}");
+        }
+    }
 }

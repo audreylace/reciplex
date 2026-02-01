@@ -2,9 +2,11 @@ using System.Globalization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using NodaTime.Text;
 using Reciplex.Server.Host.Models.PagingUtils;
 using Reciplex.Server.Host.Models.RecipeBook;
 using Reciplex.Server.Host.Models.User;
+using Reciplex.Server.Host.Utils;
 using Reciplex.Server.Host.Utils.HttpResults;
 using Reciplex.Server.Host.Utils.UserKeyUtils;
 using Reciplex.Server.Host.Validation;
@@ -51,8 +53,8 @@ public class RecipeBooksController(
             ProblemHttpResult
         >
     > GetBookById(
-        [BindRequired] RecipeBookKey bookKey,
-        ApplicationClaimsPrincipal appClaimsPrincipal,
+        [FromRoute] [BindRequired] RecipeBookKey bookKey,
+        [UseModelBinderProvider] ApplicationClaimsPrincipal appClaimsPrincipal,
         CancellationToken cancellationToken
     )
     {
@@ -100,9 +102,9 @@ public class RecipeBooksController(
             ValidationProblem
         >
     > UpdateBookById(
-        [BindRequired] RecipeBookKey bookKey,
+        [FromRoute] [BindRequired] RecipeBookKey bookKey,
         [RequiredAndValidIfMatch] [FromHeader(Name = "if-match")] string ifMatch,
-        ApplicationClaimsPrincipal appClaimsPrincipal,
+        [UseModelBinderProvider] ApplicationClaimsPrincipal appClaimsPrincipal,
         [FromBody] RecipeBookJsonBody requestBody,
         CancellationToken cancellationToken
     )
@@ -156,9 +158,9 @@ public class RecipeBooksController(
     /// <returns>Task that resolves to the http response</returns>
     [HttpDelete("{bookKey}")]
     public async Task<Results<NoContent, ProblemHttpResult>> DeleteRecipeBookById(
-        [BindRequired] RecipeBookKey bookKey,
+        [FromRoute] [BindRequired] RecipeBookKey bookKey,
         [RequiredAndValidIfMatch] [FromHeader(Name = "if-match")] string ifMatch,
-        ApplicationClaimsPrincipal appClaimsPrincipal,
+        [UseModelBinderProvider] ApplicationClaimsPrincipal appClaimsPrincipal,
         CancellationToken cancellationToken
     )
     {
@@ -212,7 +214,7 @@ public class RecipeBooksController(
             ValidationProblem
         >
     > CreateBook(
-        ApplicationClaimsPrincipal appClaimsPrincipal,
+        [UseModelBinderProvider] ApplicationClaimsPrincipal appClaimsPrincipal,
         [FromBody] RecipeBookJsonBody requestBody,
         CancellationToken cancellationToken
     )
@@ -262,8 +264,8 @@ public class RecipeBooksController(
     public async Task<
         Results<ValidationProblem, ProblemHttpResult, Ok<RecipeBookPageResponseJson>>
     > GetBooks(
-        ApplicationClaimsPrincipal appClaimsPrincipal,
-        PageCursor<RecipeBookKey> cursor,
+        [UseModelBinderProvider] ApplicationClaimsPrincipal appClaimsPrincipal,
+        [FromQuery] PageCursor<RecipeBookKey> cursor,
         CancellationToken cancellationToken
     )
     {
@@ -290,7 +292,7 @@ public class RecipeBooksController(
 
         List<RecipeBookJson> pageData = await pageIterator
             .Select(b => new RecipeBookJson(b))
-            .OrderBy(book => book.BookKey)
+            .OrderBy(book => book.BookKey.SurrogateKey)
             .ToListAsync(cancellationToken);
 
         (bool hasNextPage, RecipeBookKey? idForNextPage) = await cursor.QueryForNextPage(
@@ -327,7 +329,7 @@ public class RecipeBooksController(
                     .Select(u => new UserJson(u))
                     .ToListAsync(cancellationToken),
                 NextPage =
-                    idForNextPage != null
+                    hasNextPage && idForNextPage != null
                         ? new()
                         {
                             GoingQueryParam = new NavigationDirection()
@@ -338,7 +340,7 @@ public class RecipeBooksController(
                         }
                         : null,
                 PreviousPage =
-                    idForPreviousPage != null
+                    hasPreviousPage && idForPreviousPage != null
                         ? new()
                         {
                             GoingQueryParam = new NavigationDirection()
@@ -427,11 +429,10 @@ public class RecipeBooksController(
         }
         else
         {
-            Response.Headers.ETag = book.ConcurrencyTag;
-            Response.Headers.LastModified = book.LastModified.ToString(
-                "R",
-                CultureInfo.InvariantCulture
-            );
+            var pattern = InstantPattern.CreateWithInvariantCulture("ddd, dd MMM yyyy HH:mm:ss");
+
+            Response.Headers.ETag = $"\"{book.ConcurrencyTag}\"";
+            Response.Headers.LastModified = $"{pattern.Format(book.LastModified)} GMT";
             return TypedResults.Ok(jsonData);
         }
     }

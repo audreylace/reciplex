@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using NodaTime.Text;
 using Reciplex.Server.Host.Models.PagingUtils;
 using Reciplex.Server.Host.Models.Recipe;
+using Reciplex.Server.Host.Utils;
 using Reciplex.Server.Host.Utils.HttpResults;
 using Reciplex.Server.Host.Utils.UserKeyUtils;
 using Reciplex.Server.Host.Validation;
@@ -53,8 +55,8 @@ public class RecipesController(
     [HttpGet("{recipeKey}")]
     [ResponseCache(Duration = 15 * 60, Location = ResponseCacheLocation.Any, NoStore = false)]
     public async Task<SendRecipeResults> GetRecipeById(
-        [BindRequired] RecipeKey recipeKey,
-        ApplicationClaimsPrincipal userClaimsPrincipal,
+        [FromRoute] [BindRequired] RecipeKey recipeKey,
+        [UseModelBinderProvider] ApplicationClaimsPrincipal userClaimsPrincipal,
         CancellationToken cancellationToken
     )
     {
@@ -87,9 +89,9 @@ public class RecipesController(
     /// <returns>Task resolving to the response to send back</returns>
     [HttpDelete("{recipeKey}")]
     public async Task<Results<NoContent, ProblemHttpResult>> DeleteRecipeById(
-        [BindRequired] RecipeKey recipeKey,
+        [FromRoute] [BindRequired] RecipeKey recipeKey,
         [RequiredAndValidIfMatch] [FromHeader(Name = "If-Match")] string ifMatch,
-        ApplicationClaimsPrincipal userClaimsPrincipal,
+        [UseModelBinderProvider] ApplicationClaimsPrincipal userClaimsPrincipal,
         CancellationToken cancellationToken
     )
     {
@@ -140,10 +142,10 @@ public class RecipesController(
     public async Task<
         Results<NoContent, ProblemHttpResult, ValidationProblem, SendRecipeResults>
     > UpdateRecipeById(
-        [BindRequired] RecipeKey recipeKey,
+        [FromRoute] [BindRequired] RecipeKey recipeKey,
         [RequiredAndValidIfMatch] [FromHeader(Name = "If-Match")] string ifMatch,
         [FromBody] CreateOrUpdateRecipeJsonBody body,
-        ApplicationClaimsPrincipal userClaimsPrincipal,
+        [UseModelBinderProvider] ApplicationClaimsPrincipal userClaimsPrincipal,
         CancellationToken cancellationToken
     )
     {
@@ -203,7 +205,7 @@ public class RecipesController(
     > CreateRecipe(
         [FromBody] CreateOrUpdateRecipeJsonBody body,
         [BindRequired] [FromQuery(Name = "book")] RecipeBookKey bookKey,
-        ApplicationClaimsPrincipal userClaimsPrincipal,
+        [UseModelBinderProvider] ApplicationClaimsPrincipal userClaimsPrincipal,
         CancellationToken cancellationToken
     )
     {
@@ -252,6 +254,11 @@ public class RecipesController(
             await userService.GetUserAsync(userKey, cancellationToken)
             ?? throw new Exception($"expected user {userKey} to exist for {book.Id}");
 
+        var pattern = InstantPattern.CreateWithInvariantCulture("ddd, dd MMM yyyy HH:mm:ss");
+
+        Response.Headers.ETag = $"\"{recipe.ConcurrencyTag}\"";
+        Response.Headers.LastModified = $"{pattern.Format(recipe.LastModified)} GMT";
+
         return TypedResults.Ok(
             new SingleRecipeResponseJson()
             {
@@ -283,8 +290,8 @@ public class RecipesController(
     public async Task<
         Results<ValidationProblem, ProblemHttpResult, Ok<RecipePageResponseJson>>
     > GetRecipes(
-        ApplicationClaimsPrincipal userClaimsPrincipal,
-        PageCursor<RecipeKey> cursor,
+        [UseModelBinderProvider] ApplicationClaimsPrincipal userClaimsPrincipal,
+        [FromQuery] PageCursor<RecipeKey> cursor,
         [BindRequired] [FromQuery(Name = "book")] RecipeBookKey bookId,
         CancellationToken cancellationToken
     )
@@ -318,7 +325,7 @@ public class RecipesController(
 
         List<RecipeJson> pageData = await pageIterator
             .Select(r => new RecipeJson(r))
-            .OrderBy(recipe => recipe.RecipeKey)
+            .OrderBy(recipe => recipe.RecipeKey.SurrogateKey)
             .ToListAsync(cancellationToken);
 
         RecipeBookDao? book = await recipeBookService.GetRecipeBookAsync(
