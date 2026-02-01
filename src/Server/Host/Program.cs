@@ -8,6 +8,7 @@ using Reciplex.Server.Host.Utils.RecipeBookKeyUtils;
 using Reciplex.Server.Host.Utils.RecipeKeyUtils;
 using Reciplex.Server.Host.Utils.UserKeyUtils;
 using Reciplex.Server.RecipeServices;
+using Reciplex.Server.UserServices;
 using Sqids;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -52,6 +53,7 @@ builder.Services.AddAuthentication();
 
 builder.Services.AddSingleton<IClock>(SystemClock.Instance);
 builder.Services.AddRecipeServices();
+builder.Services.AddScoped<IUserService, UserService>();
 
 // add json handling for noda instant
 builder.Services.ConfigureOptions<ConfigureNodaInstantJsonHandling>();

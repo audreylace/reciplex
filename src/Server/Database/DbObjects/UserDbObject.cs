@@ -18,9 +18,4 @@ public class UserDbObject
     /// </summary>
     [MaxLength(63)]
     public string DisplayName { get; set; } = "";
-
-    /// <summary>
-    /// Navigation property for all recipe books this user owns
-    /// </summary>
-    public ICollection<RecipeBookDbObject> RecipeBooks { get; set; } = [];
 }
