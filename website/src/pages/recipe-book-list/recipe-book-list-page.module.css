@@ -1,19 +1,15 @@
 .table {
-  border-collapse: collapse;
-  thead {
-    background: black;
-    color: white;
-  }
   tbody {
-    tr:nth-child(even) {
-      background: rgb(237, 237, 237);
-    }
-    td {
-      padding: 5px 10px;
-    }
     tr:hover {
-      background-color: rgb(205, 205, 255);
       cursor: pointer;
     }
   }
+}
+
+.grow {
+  flex: 1 1 auto;
+}
+
+.center {
+  text-align: center;
 }

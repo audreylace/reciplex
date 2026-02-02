@@ -86,3 +86,26 @@ render(
   </RecipeStore.Provider>,
   document.getElementById("app")!,
 );
+
+// Flip theme based on system state. Bootstrap uses a global attribute
+// instead of a media query. Hence, we will simulate the behavior of the media query with
+// javascript.
+const getPreferredScheme = () =>
+  window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+
+// the window is by default in dark mode to prevent a flash
+if (getPreferredScheme() === "light") {
+  document.documentElement.setAttribute("data-bs-theme", "");
+}
+
+document.body.style.background = "";
+
+window
+  .matchMedia("(prefers-color-scheme: dark)")
+  .addEventListener("change", () => {
+    if (getPreferredScheme() === "light") {
+      document.documentElement.setAttribute("data-bs-theme", "");
+    } else {
+      document.documentElement.setAttribute("data-bs-theme", "dark");
+    }
+  });

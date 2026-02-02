@@ -85,45 +85,120 @@ export function RecipeBookListPage({}: {}) {
       </p>
     );
   }
+
+  const hasPrevious = data.previousCursor;
+  const hasNext = data.nextCursor;
   return (
     <main>
-      {(data.previousCursor || data.nextCursor) && (
-        <ul>
-          {data.previousCursor && (
-            <>
-              <li>
-                <Link to={makeBookListPath()}>First</Link>
+      <h2>Recipes Books</h2>
+      {(data.page.length > 0 || hasPrevious || hasNext) && (
+        <>
+          <div class="table-responsive">
+            <table className={`table table-hover table-striped ${style.table}`}>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th aria-description="column with links to the recipe book"></th>
+                </tr>
+              </thead>
+              <tbody className="table-group-divider">
+                {data.page.length === 0 && (
+                  <tr className={style.center}>
+                    <td colspan={3}>No results for this page</td>
+                  </tr>
+                )}
+                {data.page.map((key) => {
+                  const book = data.recipeBooks[key];
+                  if (!book) {
+                    return null;
+                  }
+                  const path = makeViewRecipeBookPath(book.id);
+                  return (
+                    <tr key={key} onClick={() => navigate(path)}>
+                      <td>{book.name}</td>
+                      <td>{book.shortDescription}</td>
+                      <td>
+                        <Link to={path}>View</Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <nav aria-label="Page navigation for the list of recipe books">
+            <ul className="pagination">
+              <li
+                className={`page-item ${hasPrevious ? "" : "disabled"}`}
+                aria-disabled={hasPrevious ? false : true}
+              >
+                <Link className="page-link" to={makeBookListPath()}>
+                  First
+                </Link>
               </li>
-              <li>
+              <li
+                className={`page-item ${hasPrevious ? "" : "disabled"}`}
+                aria-disabled={hasPrevious ? false : true}
+              >
                 <Link
-                  to={makeBookListPath({
-                    cursor: {
-                      order: BookListNavigationAction.previous,
-                      index: data.previousCursor.position,
-                    },
-                  })}
+                  className="page-link"
+                  to={
+                    hasPrevious && data.previousCursor
+                      ? makeBookListPath({
+                          cursor: {
+                            order: BookListNavigationAction.previous,
+                            index: data.previousCursor.position,
+                          },
+                        })
+                      : "#"
+                  }
                 >
                   Previous
                 </Link>
               </li>
-            </>
-          )}
-          {data.nextCursor && (
-            <>
-              <li>
+              <li
+                className={`page-item ${style.grow} disabled`}
+                aria-disabled={true}
+                aria-hidden={true}
+              >
+                <a
+                  className="page-link"
+                  role="presentation"
+                  aria-disabled={true}
+                  aria-hidden={true}
+                  href="#"
+                  onClick={(e) => e.preventDefault()}
+                >
+                  &nbsp;
+                </a>
+              </li>
+              <li
+                className={`page-item ${hasNext ? "" : "disabled"}`}
+                aria-disabled={hasPrevious ? false : true}
+              >
                 <Link
-                  to={makeBookListPath({
-                    cursor: {
-                      order: BookListNavigationAction.next,
-                      index: data.nextCursor.position,
-                    },
-                  })}
+                  className="page-link"
+                  to={
+                    hasNext && data.nextCursor
+                      ? makeBookListPath({
+                          cursor: {
+                            order: BookListNavigationAction.next,
+                            index: data.nextCursor.position,
+                          },
+                        })
+                      : "#"
+                  }
                 >
                   Next
                 </Link>
               </li>
-              <li>
+              <li
+                className={`page-item ${hasNext ? "" : "disabled"}`}
+                aria-disabled={hasPrevious ? false : true}
+              >
                 <Link
+                  className="page-link"
                   to={makeBookListPath({
                     cursor: {
                       order: BookListNavigationAction.previous,
@@ -133,41 +208,11 @@ export function RecipeBookListPage({}: {}) {
                   Last
                 </Link>
               </li>
-            </>
-          )}
-        </ul>
+            </ul>
+          </nav>
+        </>
       )}
-
-      {data.page.length > 0 && (
-        <table className={style.table}>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Description</th>
-              <th aria-description="column with links to the recipe book"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.page.map((key) => {
-              const book = data.recipeBooks[key];
-              if (!book) {
-                return null;
-              }
-              const path = makeViewRecipeBookPath(book.id);
-              return (
-                <tr key={key} onClick={() => navigate(path)}>
-                  <td>{book.name}</td>
-                  <td>{book.shortDescription}</td>
-                  <td>
-                    <Link to={path}>View</Link>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
-      {data.page.length <= 0 && (
+      {data.page.length <= 0 && !hasPrevious && !hasNext && (
         <p>
           <Link to={makeCreateRecipeBookPath()}>
             Create your first recipe book
