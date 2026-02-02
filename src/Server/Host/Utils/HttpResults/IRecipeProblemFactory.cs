@@ -28,7 +28,7 @@ public interface IRecipeProblemFactory
     /// Generates a 403 forbidden error
     /// </summary>
     /// <param name="recipeId">the recipe id</param>
-    /// <returns>the 404 result</returns>
+    /// <returns>the 403 result</returns>
     public ProblemHttpResult OperationOnRecipeForbidden(RecipeKey recipeId);
 
     /// <summary>

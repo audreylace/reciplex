@@ -13,6 +13,6 @@ public class RecipePageCursor
     [JsonPropertyName("index")]
     public required RecipeKey PageIndex { get; init; }
 
-    [JsonPropertyName("book-id")]
+    [JsonPropertyName("book")]
     public required RecipeBookKey BookId { get; init; }
 }

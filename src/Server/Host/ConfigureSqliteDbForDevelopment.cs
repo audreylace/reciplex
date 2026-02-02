@@ -93,6 +93,17 @@ class ConfigureSqliteDbForDevelopment(IServiceProvider rootServices) : IHostedSe
             );
             recipe.EnsureSuccess();
         }
+
+        for (int i = 0; i < 40; i++)
+        {
+            (
+                await bookService.CreateRecipeBookAsync(
+                    userKey,
+                    new() { Name = "Empty book " + i, ShortDescription = "Description" },
+                    cancellationToken
+                )
+            ).EnsureSuccess();
+        }
     }
 }
 #endif

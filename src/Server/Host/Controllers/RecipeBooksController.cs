@@ -1,15 +1,14 @@
-using System.Globalization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using NodaTime.Text;
+using Reciplex.Server.Host.Models.HttpPrimitives;
 using Reciplex.Server.Host.Models.PagingUtils;
 using Reciplex.Server.Host.Models.RecipeBook;
 using Reciplex.Server.Host.Models.User;
 using Reciplex.Server.Host.Utils;
 using Reciplex.Server.Host.Utils.HttpResults;
 using Reciplex.Server.Host.Utils.UserKeyUtils;
-using Reciplex.Server.Host.Validation;
 using Reciplex.Server.RecipeServices.RecipeBooks;
 using Reciplex.Server.RecipeServices.RecipeBooks.Models;
 using Reciplex.Server.RecipeServices.RecipeBooks.Results.CreateRecipeBook;
@@ -103,7 +102,7 @@ public class RecipeBooksController(
         >
     > UpdateBookById(
         [FromRoute] [BindRequired] RecipeBookKey bookKey,
-        [RequiredAndValidIfMatch] [FromHeader(Name = "if-match")] string ifMatch,
+        [BindRequired] [FromHeader(Name = "If-Match")] EtagValue ifMatch,
         [UseModelBinderProvider] ApplicationClaimsPrincipal appClaimsPrincipal,
         [FromBody] RecipeBookJsonBody requestBody,
         CancellationToken cancellationToken
@@ -118,7 +117,7 @@ public class RecipeBooksController(
             {
                 Name = requestBody.Name,
                 ShortDescription = requestBody.ShortDescription,
-                ConcurrencyTag = ifMatch,
+                ConcurrencyTag = ifMatch.Value,
             },
             cancellationToken
         );
@@ -159,7 +158,7 @@ public class RecipeBooksController(
     [HttpDelete("{bookKey}")]
     public async Task<Results<NoContent, ProblemHttpResult>> DeleteRecipeBookById(
         [FromRoute] [BindRequired] RecipeBookKey bookKey,
-        [RequiredAndValidIfMatch] [FromHeader(Name = "if-match")] string ifMatch,
+        [BindRequired] [FromHeader(Name = "If-Match")] EtagValue ifMatch,
         [UseModelBinderProvider] ApplicationClaimsPrincipal appClaimsPrincipal,
         CancellationToken cancellationToken
     )
@@ -167,7 +166,7 @@ public class RecipeBooksController(
         DeleteRecipeBookResult deleteResult = await recipeBookService.DeleteRecipeBookAsync(
             bookKey,
             appClaimsPrincipal.UserKey,
-            ifMatch,
+            ifMatch.Value,
             cancellationToken
         );
 
@@ -265,10 +264,13 @@ public class RecipeBooksController(
         Results<ValidationProblem, ProblemHttpResult, Ok<RecipeBookPageResponseJson>>
     > GetBooks(
         [UseModelBinderProvider] ApplicationClaimsPrincipal appClaimsPrincipal,
-        [FromQuery] PageCursor<RecipeBookKey> cursor,
+        [FromQuery] PageCursor<RecipeBookKey?> cursor,
+        [FromQuery(Name = "page-size")] int? pageSize,
         CancellationToken cancellationToken
     )
     {
+        pageSize = Math.Min(20, Math.Max(1, pageSize ?? 10));
+
         IAsyncEnumerable<RecipeBookDao> pageIterator = await recipeBookService.ListRecipeBooksAsync(
             appClaimsPrincipal.UserKey,
             new()
@@ -285,7 +287,7 @@ public class RecipeBooksController(
                     cursor.GoingDirection == NavigationDirection.DirectionValue.Backwards
                         ? ListRecipeBooksOrdering.ByIdDecreasing
                         : ListRecipeBooksOrdering.ByIdIncreasing,
-                ResultCount = 10,
+                ResultCount = pageSize.Value,
             },
             cancellationToken
         );
@@ -420,7 +422,7 @@ public class RecipeBooksController(
         var jsonData = new SingleRecipeBookResponseJson()
         {
             RecipeBook = new(book),
-            Owner = new(owningUser),
+            RecipeBookOwner = new(owningUser),
         };
 
         if (isCreate)
@@ -429,10 +431,6 @@ public class RecipeBooksController(
         }
         else
         {
-            var pattern = InstantPattern.CreateWithInvariantCulture("ddd, dd MMM yyyy HH:mm:ss");
-
-            Response.Headers.ETag = $"\"{book.ConcurrencyTag}\"";
-            Response.Headers.LastModified = $"{pattern.Format(book.LastModified)} GMT";
             return TypedResults.Ok(jsonData);
         }
     }

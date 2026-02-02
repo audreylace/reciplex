@@ -12,5 +12,6 @@
   <ItemGroup>
     <PackageReference Include="NodaTime" />
     <PackageReference Include="Sqids" />
+    <PackageReference Include="Swashbuckle.AspNetCore" />
   </ItemGroup>
 </Project>

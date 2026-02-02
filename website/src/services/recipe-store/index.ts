@@ -25,6 +25,10 @@ export interface IRecipeBookModel {
    */
   id: string;
   /**
+   * version of the model for optimistic concurrency
+   */
+  versionTag: string;
+  /**
    * name of the recipe book
    * @see RecipeBookNameMaxLength Max length of this property
    */
@@ -124,9 +128,9 @@ export interface IGetRecipeBooksResult {
    */
   users?: Record<string, IUserModel>;
   /**
-   * recipes indexed by key
+   * recipe books indexed by key
    */
-  recipes: Record<string, IRecipeBookModel>;
+  recipeBooks: Record<string, IRecipeBookModel>;
 }
 
 /**
@@ -135,6 +139,13 @@ export interface IGetRecipeBooksResult {
 export interface IPageCursor {
   /** The cursor's position */
   position: string;
+  /** The type of the cursor */
+  type: CursorTypes;
+}
+
+export interface IPageRequestCursor {
+  /** The cursor's position */
+  position?: string;
   /** The type of the cursor */
   type: CursorTypes;
 }
@@ -156,17 +167,11 @@ export interface IGetRecipeBooksArgs {
   /**
    * Cursor for getting the next page of data
    */
-  cursor?: IPageCursor;
+  cursor?: IPageRequestCursor;
   /**
    * Limit the number of results
    */
   limit?: number;
-  /**
-   * Set to true to include information about user who have shared recipe books
-   * with the current logged in user. This will not fetch results about the current logged in
-   * user.
-   */
-  fetchUserData?: boolean;
 }
 /**
  * result from `getCurrentUser` @see IRecipeBookStore
@@ -250,9 +255,13 @@ export interface IRecipeBookStore {
   /**
    * Gets information for a user by id
    * @param userId the user id
+   * @param args optional args for the request
    * @returns a promise that resolves either to null or with user information
    */
-  getUserById(userId: string): Promise<IUserModel | null>;
+  getUserById(
+    userId: string,
+    args?: { noCache?: boolean },
+  ): Promise<IUserModel | null>;
 
   /**
    * Returns information about the current session.
@@ -264,9 +273,13 @@ export interface IRecipeBookStore {
   /**
    * Gets recipe book by id
    * @param bookId the recipe book id
+   * @param args optional args for the request
    * @returns a promise that resolves to the book or null if the book does not exist or the user does not have access
    */
-  getRecipeBook(bookId: string): Promise<IRecipeBookModel | null>;
+  getRecipeBook(
+    bookId: string,
+    args?: { noCache?: boolean },
+  ): Promise<IRecipeBookModel | null>;
 
   getRecipeBooks(
     args?: IGetRecipeBooksArgs,
@@ -282,10 +295,14 @@ export interface IRecipeBookStore {
   /**
    * get a recipe by id
    * @param recipeId the recipe id
+   * @param args optional args for the request
    * @returns promise that resolves to a `IRecipeModel`
    * or null if the recipe does not exist (or user does not have access).
    */
-  getRecipeById(recipeId: string): Promise<IRecipeModel | null>;
+  getRecipeById(
+    recipeId: string,
+    args?: { noCache?: boolean },
+  ): Promise<IRecipeModel | null>;
 
   /**
    * Creates a recipe
@@ -296,14 +313,16 @@ export interface IRecipeBookStore {
   /**
    * Deletes a recipe
    * @param recipeId the recipe id
+   * @param versionTag the version tag for optimistic concurrency
    */
-  deleteRecipe(recipeId: string): Promise<void>;
+  deleteRecipe(recipeId: string, versionTag: string): Promise<void>;
 
   /**
    * Deletes a recipe book
    * @param bookId the recipe book id
+   * @param versionTag the version tag for optimistic concurrency
    */
-  deleteRecipeBook(bookId: string): Promise<void>;
+  deleteRecipeBook(bookId: string, versionTag: string): Promise<void>;
 
   /**
    * Updates a recipe
@@ -313,4 +332,16 @@ export interface IRecipeBookStore {
     recipeId: string,
     args: IUpdateRecipeArgs,
   ): Promise<IRecipeModel>;
+}
+
+export class ConcurrencyConflict extends Error {
+  constructor() {
+    super("request failed because of concurrency conflict");
+  }
+}
+
+export class OperationForbidden extends Error {
+  constructor() {
+    super("request failed because the operation is forbidden");
+  }
 }

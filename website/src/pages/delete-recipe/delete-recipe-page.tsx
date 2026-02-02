@@ -39,7 +39,10 @@ export function DeleteRecipePage({}: {}) {
     if (data.recipeTitle != recipeData.name) {
       return;
     }
-    await deleteRecipeMutation.mutateAsync(recipeId);
+    await deleteRecipeMutation.mutateAsync({
+      id: recipeId,
+      versionTag: recipeData.versionTag,
+    });
     navigate(makeViewRecipeBookPath(recipeData.bookId));
   };
 

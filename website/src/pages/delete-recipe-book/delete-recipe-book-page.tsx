@@ -34,7 +34,10 @@ export function DeleteRecipeBookPage({}: {}) {
     if (data.bookTitle != recipeBookData.name) {
       return;
     }
-    await deleteRecipeBookMutation.mutateAsync(bookId);
+    await deleteRecipeBookMutation.mutateAsync({
+      bookId: bookId,
+      versionTag: recipeBookData.versionTag,
+    });
     navigate(makeBookListPath());
   };
 

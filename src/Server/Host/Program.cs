@@ -67,6 +67,8 @@ builder.Services.ConfigureOptions<ConfigureNodaInstantJsonHandling>();
 if (builder.Environment.IsDevelopment())
 {
     builder.AddApplicationDbContextForDebug();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen();
 }
 else
 {
@@ -78,6 +80,8 @@ var app = builder.Build();
 app.UseAuthentication();
 if (builder.Environment.IsDevelopment())
 {
+    app.UseSwagger();
+    app.UseSwaggerUI();
     app.UseUserDebugMocking();
 }
 else

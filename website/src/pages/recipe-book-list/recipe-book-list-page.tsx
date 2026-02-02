@@ -43,7 +43,6 @@ export function RecipeBookListPage({}: {}) {
       const args: IGetRecipeBooksArgs = {};
       if (
         source &&
-        index &&
         (source === BookListNavigationAction.next ||
           source === BookListNavigationAction.previous)
       ) {
@@ -110,18 +109,31 @@ export function RecipeBookListPage({}: {}) {
             </>
           )}
           {data.nextCursor && (
-            <li>
-              <Link
-                to={makeBookListPath({
-                  cursor: {
-                    order: BookListNavigationAction.next,
-                    index: data.nextCursor.position,
-                  },
-                })}
-              >
-                Next
-              </Link>
-            </li>
+            <>
+              <li>
+                <Link
+                  to={makeBookListPath({
+                    cursor: {
+                      order: BookListNavigationAction.next,
+                      index: data.nextCursor.position,
+                    },
+                  })}
+                >
+                  Next
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to={makeBookListPath({
+                    cursor: {
+                      order: BookListNavigationAction.previous,
+                    },
+                  })}
+                >
+                  Last
+                </Link>
+              </li>
+            </>
           )}
         </ul>
       )}
@@ -137,7 +149,7 @@ export function RecipeBookListPage({}: {}) {
           </thead>
           <tbody>
             {data.page.map((key) => {
-              const book = data.recipes[key];
+              const book = data.recipeBooks[key];
               if (!book) {
                 return null;
               }

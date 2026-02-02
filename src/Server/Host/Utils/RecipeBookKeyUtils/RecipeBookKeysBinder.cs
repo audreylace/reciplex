@@ -35,7 +35,10 @@ public class RecipeBookKeysBinder : IModelBinder, IModelBinderProvider
         if (recipeKey is null)
         {
             // Non-integer arguments result in model state errors
-            bindingContext.ModelState.TryAddModelError(modelName, "not a valid recipe book id");
+            bindingContext.ModelState.TryAddModelError(
+                modelName,
+                $"Value '{value}' for property or parameter '{modelName}' does not resolve to a valid {nameof(RecipeBookKey)}."
+            );
             return Task.CompletedTask;
         }
 

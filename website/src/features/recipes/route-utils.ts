@@ -23,7 +23,7 @@ export type BookListNavigationAction =
  */
 export function makeBookListPath(args?: {
   cursor: {
-    index: string;
+    index?: string;
     order: BookListNavigationAction;
   };
 }): string {
@@ -32,10 +32,18 @@ export function makeBookListPath(args?: {
   }
 
   if (
+    (args.cursor.order === BookListNavigationAction.previous ||
+      args.cursor.order === BookListNavigationAction.next) &&
+    args.cursor.index
+  ) {
+    return `/recipe-books/${args.cursor.order}/${encodeURIComponent(args.cursor.index)}`;
+  }
+
+  if (
     args.cursor.order === BookListNavigationAction.previous ||
     args.cursor.order === BookListNavigationAction.next
   ) {
-    return `/recipe-books/${args.cursor.order}/${encodeURIComponent(args.cursor.index)}`;
+    return `/recipe-books/${args.cursor.order}`;
   }
 
   throw Error("unable to create book list path");

@@ -10,8 +10,14 @@ export function useDeleteRecipeBookMutation() {
   const queryClient = useQueryClient();
   const recipeStore = useRecipeStoreContext();
   return useMutation({
-    mutationFn: async (bookId: string) => {
-      await recipeStore.deleteRecipeBook(bookId);
+    mutationFn: async ({
+      bookId,
+      versionTag,
+    }: {
+      bookId: string;
+      versionTag: string;
+    }) => {
+      await recipeStore.deleteRecipeBook(bookId, versionTag);
       queryClient.invalidateQueries({
         queryKey: recipeBookByIdCacheKey(bookId),
       });

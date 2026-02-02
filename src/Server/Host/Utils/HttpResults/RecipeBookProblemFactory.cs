@@ -56,7 +56,7 @@ public class RecipeBookProblemFactory(IStringRecipeBookKeyInterop stringIdIntero
     /// Generates a 403 forbidden error
     /// </summary>
     /// <param name="bookKey">the recipe book key</param>
-    /// <returns>the 404 result</returns>
+    /// <returns>the 403 result</returns>
     public ProblemHttpResult OperationOnBookForbidden(RecipeBookKey bookKey)
     {
         string bookId = stringIdInterop.AsString(bookKey);

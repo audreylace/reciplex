@@ -16,6 +16,7 @@ import { RecipeStore } from "./features/recipes/hooks/useRecipeStoreContext.hook
 import { DeleteRecipePage } from "./pages/delete-recipe/delete-recipe-page.tsx";
 import { DeleteRecipeBookPage } from "./pages/delete-recipe-book/delete-recipe-book-page.tsx";
 import { EditRecipeBookPage } from "./pages/edit-recipe-book/edit-recipe-book-page.tsx";
+import { RecipeHttpBookStore } from "./features/recipes/services/recipe-http-book-store.service.ts";
 
 const router = createBrowserRouter([
   {
@@ -32,6 +33,10 @@ const router = createBrowserRouter([
       },
       {
         path: "/recipe-books/:source/:index",
+        element: <RecipeBookListPage />,
+      },
+      {
+        path: "/recipe-books/:source",
         element: <RecipeBookListPage />,
       },
       {
@@ -71,9 +76,10 @@ const router = createBrowserRouter([
 ]);
 
 const queryClient = new QueryClient();
-const localOnlyStore = new LocalRecipeBookStoreImplementation();
+//const localOnlyStore = new LocalRecipeBookStoreImplementation();
+const serverStore = new RecipeHttpBookStore("/api");
 render(
-  <RecipeStore.Provider value={localOnlyStore}>
+  <RecipeStore.Provider value={serverStore}>
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
     </QueryClientProvider>

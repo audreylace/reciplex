@@ -140,6 +140,7 @@ public class RecipeBookService(
 
         return query
             .Include(b => b.AdditionalUsers.Where(u => u.UserFk == userId))
+            .Take(args.ResultCount)
             .AsAsyncEnumerable()
             .Select(book =>
             {
