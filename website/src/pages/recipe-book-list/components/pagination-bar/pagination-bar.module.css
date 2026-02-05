@@ -1,0 +1,10 @@
+.componentWrapper {
+  padding: 5px 10px;
+  width: 100vw;
+  position: fixed;
+  bottom: 0;
+}
+
+.grow {
+  flex: 1 1 auto;
+}

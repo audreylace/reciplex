@@ -3,6 +3,7 @@ import { useCallback } from "preact/hooks";
 import { makeViewRecipeBookPath } from "../../features/recipes/route-utils";
 import { CreateRecipeBookForm } from "../../features/recipes/components/create-recipe-book-form/create-recipe-book-form.component";
 import type { IRecipeBookModel } from "../../services/recipe-store";
+import { useSetTitle } from "../../layouts/default/default-layout.state";
 
 /**
  * Entry point for create recipe book page component
@@ -11,6 +12,8 @@ import type { IRecipeBookModel } from "../../services/recipe-store";
  */
 export function CreateRecipeBookPage({}: {}) {
   const navigate = useNavigate();
+
+  useSetTitle("Create Recipe Book");
 
   /**
    * Runs action on form submit creating a new recipe book

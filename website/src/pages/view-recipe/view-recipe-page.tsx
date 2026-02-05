@@ -7,6 +7,7 @@ import { RecipeNotFoundBanner } from "../../features/recipes/components/recipe-n
 import { FetchingRecipeBanner } from "../../features/recipes/components/fetching-recipe-banner/fetching-recipe-banner.component";
 import { FetchingRecipeFailedBanner } from "../../features/recipes/components/fetching-recipe-failed-banner/fetching-recipe-failed-banner.component";
 import { BadPathBanner } from "../../features/recipes/components/bad-path-banner/bad-path-banner.component";
+import { useSetTitle } from "../../layouts/default/default-layout.state";
 
 /**
  * page for viewing a recipe
@@ -21,6 +22,7 @@ export function ViewRecipePage({}: {}) {
 
   const notFound = recipeQuery.isSuccess && !recipeQuery.data;
   const recipeData = recipeQuery.data;
+  useSetTitle("Viewing Recipe");
 
   return (
     <main>

@@ -12,7 +12,31 @@
     list-style: none;
   }
   width: 100%;
+  flex: 0 0 auto;
 }
 .grow {
   flex: 1;
+}
+.mainWrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.pageTitle {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .appTitle {
+    display: none;
+  }
+  .pageTitle {
+    display: block;
+  }
+}
+
+.appNavigationDiv {
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }

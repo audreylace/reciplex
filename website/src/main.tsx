@@ -18,6 +18,8 @@ import { DeleteRecipeBookPage } from "./pages/delete-recipe-book/delete-recipe-b
 import { EditRecipeBookPage } from "./pages/edit-recipe-book/edit-recipe-book-page.tsx";
 import { RecipeHttpBookStore } from "./features/recipes/services/recipe-http-book-store.service.ts";
 
+import "./index.css";
+
 const router = createBrowserRouter([
   {
     path: "/",

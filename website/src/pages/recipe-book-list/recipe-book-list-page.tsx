@@ -1,4 +1,4 @@
-import { useContext } from "preact/hooks";
+import { useContext, useLayoutEffect, useState } from "preact/hooks";
 import {
   CursorTypes,
   type IGetRecipeBooksArgs,
@@ -8,11 +8,24 @@ import style from "./recipe-book-list-page.module.css";
 import { useQuery } from "@tanstack/react-query";
 import {
   BookListNavigationAction,
-  makeBookListPath,
   makeCreateRecipeBookPath,
   makeViewRecipeBookPath,
 } from "../../features/recipes/route-utils";
 import { RecipeStore } from "../../features/recipes/hooks/useRecipeStoreContext.hook";
+import { useSetTitle } from "../../layouts/default/default-layout.state";
+import { TableMessage } from "./components/table-message/table-message.component";
+import { TableRowsSkeleton } from "./components/table-rows-skeleton";
+import { PaginationBar } from "./components/pagination-bar/pagination-bar.component";
+
+/**
+ * route parameters
+ */
+type RouteParams = {
+  /** the source of the route navigation */
+  source: BookListNavigationAction;
+  /** the navigation index */
+  index: string;
+};
 
 /**
  * Entry point for recipe book list page component
@@ -20,21 +33,105 @@ import { RecipeStore } from "../../features/recipes/hooks/useRecipeStoreContext.
  * @returns jsx tree for rendering by react
  */
 export function RecipeBookListPage({}: {}) {
-  const recipeStore = useContext(RecipeStore);
   const navigate = useNavigate();
-
-  /**
-   * route parameters
-   */
-  type RouteParams = {
-    /** the source of the route navigation */
-    source: BookListNavigationAction;
-    /** the navigation index */
-    index: string;
-  };
+  useSetTitle("Recipe Books");
   const { source, index } = useParams<RouteParams>();
+  const query = useRecipeBookListQuery(source, index);
+  const [fakeLoading, setFakeLoading] = useState(true);
 
-  const query = useQuery({
+  useLayoutEffect(() => {
+    setFakeLoading(true);
+    const handle = setTimeout(() => setFakeLoading(false), 200); // reduce flicker on page change
+    return () => {
+      clearTimeout(handle);
+    };
+  }, [setFakeLoading, source, index]);
+
+  const data = fakeLoading ? null : query.data;
+  const hasPrevious = data?.previousCursor;
+  const hasNext = data?.nextCursor;
+  const failed = !fakeLoading && query.isError;
+  const showPause = !fakeLoading && query.isPaused && !query.isSuccess;
+  const showSkeleton =
+    fakeLoading || (!failed && query.isPending && !showPause);
+  const emptyPage = data && data.page.length <= 0;
+  const noBooks = emptyPage && !hasPrevious && !hasNext;
+
+  return (
+    <>
+      <main>
+        <h2 className={style.topLevelHeader}>Recipes Books</h2>
+        <div class={`table-responsive ${style.tableWrapper}`}>
+          <table className={`table table-hover table-striped ${style.table}`}>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th aria-description="column with links to the recipe book"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {showSkeleton && <TableRowsSkeleton count={20} />}
+              {showPause && (
+                <TableMessage>
+                  Loading paused because device is offline
+                </TableMessage>
+              )}
+              {emptyPage && (
+                <TableMessage>No results for this page</TableMessage>
+              )}
+              {failed && (
+                <TableMessage>
+                  Retrieving list of recipe books failed.{" "}
+                  <a
+                    href="#"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      navigate(0);
+                    }}
+                  >
+                    Try again?
+                  </a>
+                </TableMessage>
+              )}
+              {noBooks && (
+                <Link to={makeCreateRecipeBookPath()}>
+                  Create your first recipe book
+                </Link>
+              )}
+              {data?.page.map((key) => {
+                const book = data.recipeBooks[key];
+                if (!book) {
+                  return null;
+                }
+                const path = makeViewRecipeBookPath(book.id);
+                return (
+                  <tr key={key} onClick={() => navigate(path)}>
+                    <td>{book.name}</td>
+                    <td>{book.shortDescription}</td>
+                    <td>
+                      <Link to={path}>
+                        <i class="bi bi-arrow-right-circle"></i>
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </main>
+      <PaginationBar
+        nextCursor={data?.nextCursor?.position}
+        previousCursor={data?.previousCursor?.position}
+      />
+    </>
+  );
+}
+
+function useRecipeBookListQuery(source?: string, index?: string) {
+  const recipeStore = useContext(RecipeStore);
+  return useQuery({
     queryKey: ["recipe-book-list", { source, index }],
     queryFn: async () => {
       if (!recipeStore) {
@@ -63,164 +160,4 @@ export function RecipeBookListPage({}: {}) {
       return result;
     },
   });
-
-  if (query.isLoading) {
-    return <p>fetching recipe books from the cloud ... </p>;
-  }
-
-  const data = query.data;
-  if (!data || query.isError) {
-    return (
-      <p>
-        Retrieving list of recipe books failed.{" "}
-        <a
-          href="#"
-          onClick={(event) => {
-            event.preventDefault();
-            navigate(0);
-          }}
-        >
-          Try again?
-        </a>
-      </p>
-    );
-  }
-
-  const hasPrevious = data.previousCursor;
-  const hasNext = data.nextCursor;
-  return (
-    <main>
-      <h2>Recipes Books</h2>
-      {(data.page.length > 0 || hasPrevious || hasNext) && (
-        <>
-          <div class="table-responsive">
-            <table className={`table table-hover table-striped ${style.table}`}>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Description</th>
-                  <th aria-description="column with links to the recipe book"></th>
-                </tr>
-              </thead>
-              <tbody className="table-group-divider">
-                {data.page.length === 0 && (
-                  <tr className={style.center}>
-                    <td colspan={3}>No results for this page</td>
-                  </tr>
-                )}
-                {data.page.map((key) => {
-                  const book = data.recipeBooks[key];
-                  if (!book) {
-                    return null;
-                  }
-                  const path = makeViewRecipeBookPath(book.id);
-                  return (
-                    <tr key={key} onClick={() => navigate(path)}>
-                      <td>{book.name}</td>
-                      <td>{book.shortDescription}</td>
-                      <td>
-                        <Link to={path}>View</Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <nav aria-label="Page navigation for the list of recipe books">
-            <ul className="pagination">
-              <li
-                className={`page-item ${hasPrevious ? "" : "disabled"}`}
-                aria-disabled={hasPrevious ? false : true}
-              >
-                <Link className="page-link" to={makeBookListPath()}>
-                  First
-                </Link>
-              </li>
-              <li
-                className={`page-item ${hasPrevious ? "" : "disabled"}`}
-                aria-disabled={hasPrevious ? false : true}
-              >
-                <Link
-                  className="page-link"
-                  to={
-                    hasPrevious && data.previousCursor
-                      ? makeBookListPath({
-                          cursor: {
-                            order: BookListNavigationAction.previous,
-                            index: data.previousCursor.position,
-                          },
-                        })
-                      : "#"
-                  }
-                >
-                  Previous
-                </Link>
-              </li>
-              <li
-                className={`page-item ${style.grow} disabled`}
-                aria-disabled={true}
-                aria-hidden={true}
-              >
-                <a
-                  className="page-link"
-                  role="presentation"
-                  aria-disabled={true}
-                  aria-hidden={true}
-                  href="#"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  &nbsp;
-                </a>
-              </li>
-              <li
-                className={`page-item ${hasNext ? "" : "disabled"}`}
-                aria-disabled={hasPrevious ? false : true}
-              >
-                <Link
-                  className="page-link"
-                  to={
-                    hasNext && data.nextCursor
-                      ? makeBookListPath({
-                          cursor: {
-                            order: BookListNavigationAction.next,
-                            index: data.nextCursor.position,
-                          },
-                        })
-                      : "#"
-                  }
-                >
-                  Next
-                </Link>
-              </li>
-              <li
-                className={`page-item ${hasNext ? "" : "disabled"}`}
-                aria-disabled={hasPrevious ? false : true}
-              >
-                <Link
-                  className="page-link"
-                  to={makeBookListPath({
-                    cursor: {
-                      order: BookListNavigationAction.previous,
-                    },
-                  })}
-                >
-                  Last
-                </Link>
-              </li>
-            </ul>
-          </nav>
-        </>
-      )}
-      {data.page.length <= 0 && !hasPrevious && !hasNext && (
-        <p>
-          <Link to={makeCreateRecipeBookPath()}>
-            Create your first recipe book
-          </Link>
-        </p>
-      )}
-
-      {query.isFetching && <p>Checking cloud for new data ... </p>}
-    </main>
-  );
 }
