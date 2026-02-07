@@ -130,7 +130,7 @@ export function RecipeBookListPage({}: {}) {
                         to={path}
                         aria-description="navigate to recipe book"
                       >
-                        <i class="bi bi-pencil-square"></i>
+                        <i class="bi bi-eye"></i>
                       </Link>
                     </td>
                   </tr>
