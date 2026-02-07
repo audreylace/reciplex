@@ -1,4 +1,5 @@
 import styles from "./table-rows-skeleton.module.css";
+import tableRowStyles from "../table-row/table-row.module.css";
 
 /**
  * Renders a set of table rows as a skeleton
@@ -26,11 +27,17 @@ export function TableRowsSkeleton({
  */
 function TableRow() {
   return (
-    <tr role="structure" aria-label="loading placeholder">
-      <td>
+    <tr
+      className={`${tableRowStyles.bookCell} ${tableRowStyles.bookRow}`}
+      role="structure"
+      aria-label="loading placeholder"
+    >
+      <td className={`${tableRowStyles.bookCell} ${tableRowStyles.bookName}`}>
         <span class={styles.glowingShimmerSkeleton}></span>
       </td>
-      <td>
+      <td
+        className={`${tableRowStyles.bookCell} ${tableRowStyles.bookDescription}`}
+      >
         <span
           class={`${styles.glowingShimmerSkeleton} ${styles.fourFifthSkeleton}`}
         ></span>
@@ -38,7 +45,9 @@ function TableRow() {
           class={`${styles.glowingShimmerSkeleton} ${styles.threeFourSkeleton}`}
         ></span>
       </td>
-      <td>
+      <td
+        className={`${tableRowStyles.bookCell} ${tableRowStyles.bookIconLink}`}
+      >
         <span
           class={`${styles.glowingShimmerSkeleton} ${styles.boxSkeleton}`}
         ></span>

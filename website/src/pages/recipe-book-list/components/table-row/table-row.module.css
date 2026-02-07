@@ -1,0 +1,68 @@
+.bookRow {
+  border-bottom: solid 1px oklch(80.8% 0.114 19.571);
+  display: grid;
+  background-color: oklch(93.6% 0.032 17.717);
+
+  /* zebra stripe the table */
+  &:nth-child(even) {
+    background-color: oklch(95.4% 0.038 75.164);
+  }
+
+  &:hover {
+    cursor: pointer;
+    background-color: oklch(89.2% 0.058 10.001);
+
+    &:nth-child(even) {
+      background-color: oklch(92.4% 0.12 95.746);
+    }
+  }
+}
+.bookCell {
+  padding: 10px 10px;
+}
+
+.bookName {
+  padding-left: 0.6em;
+}
+
+.bookDescription {
+  font-size: 0.9em;
+}
+
+.bookIconLink {
+  text-align: right;
+  font-size: 0.8em;
+  padding-right: 1.3em;
+}
+
+/* Phone styling  for switching to a stacked layout */
+@media (max-width: 768px) {
+  .bookRow {
+    /* since entries are stacked, we need to hide the border between them */
+    border: none;
+    padding: 0.3em;
+  }
+
+  /* 
+   * Make the header bigger then the text 
+   * and hide the icon on the right 
+   */
+  .bookName {
+    font-size: 1.1em;
+  }
+
+  .bookDescription {
+    font-size: 0.9em;
+  }
+
+  .bookIconLink {
+    display: none;
+  }
+}
+
+/** styling for regular computers */
+@media (min-width: 768px) {
+  .bookRow {
+    grid-template-columns: 20% calc(80% - 2em) 2em;
+  }
+}

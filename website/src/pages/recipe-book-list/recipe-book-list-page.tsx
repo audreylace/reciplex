@@ -4,21 +4,22 @@ import {
   type IGetRecipeBooksArgs,
 } from "../../services/recipe-store";
 import { Link, useNavigate, useParams } from "react-router";
-import style from "./recipe-book-list-page.module.css";
+import styles from "./recipe-book-list-page.module.css";
 import { useQuery } from "@tanstack/react-query";
 import {
   BookListNavigationAction,
   makeCreateRecipeBookPath,
-  makeViewRecipeBookPath,
 } from "../../features/recipes/route-utils";
 import { RecipeStore } from "../../features/recipes/hooks/useRecipeStoreContext.hook";
 import { useSetTitle } from "../../layouts/default/default-layout.state";
 import { TableMessage } from "./components/table-message/table-message.component";
 import { TableRowsSkeleton } from "./components/table-rows-skeleton/table-rows-skeleton";
 import { PaginationBar } from "./components/pagination-bar/pagination-bar.component";
+import { TableRow } from "./components/table-row/table-row.component";
+import { TableHeader } from "./components/table-header/table-header.component";
 
 /**
- * route parameters
+ * Route parameters
  */
 type RouteParams = {
   /** the source of the route navigation */
@@ -59,30 +60,15 @@ export function RecipeBookListPage({}: {}) {
 
   return (
     <>
-      <main>
-        <h2 className={style.topLevelHeader}>Recipes Books</h2>
-        <div class={style.tableWrapper}>
-          <table aria-description="list of recipes books">
-            <thead>
-              <tr>
-                <th>
-                  <h4 className={style.tableHeaderWrappers}>Name</h4>
-                </th>
-                <th>
-                  <h4 className={style.tableHeaderWrappers}>Description</h4>
-                </th>
-                <th aria-description="column with links to the recipe book">
-                  <h4
-                    className={style.tableHeaderWrappers}
-                    role="structure"
-                    aria-hidden
-                  >
-                    &#8203;
-                  </h4>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+      <main className={styles.pageMain}>
+        <h2 className={styles.topLevelHeader}>Recipes Books</h2>
+        <div className={styles.recipeBookList}>
+          <table
+            className={styles.recipeBookListTable}
+            aria-description="list of recipes books"
+          >
+            <TableHeader />
+            <tbody className={styles.recipeBookListTableBody}>
               {showSkeleton && <TableRowsSkeleton count={20} />}
               {showPause && <TableMessage>Offline</TableMessage>}
               {emptyPage && (
@@ -114,27 +100,7 @@ export function RecipeBookListPage({}: {}) {
                 if (!book) {
                   return null;
                 }
-                const path = makeViewRecipeBookPath(book.id);
-                return (
-                  <tr key={key} onClick={() => navigate(path)}>
-                    <td>{book.name}</td>
-                    <td
-                      aria-description={
-                        book.shortDescription ? undefined : "no description"
-                      }
-                    >
-                      {book.shortDescription || <>&mdash;</>}
-                    </td>
-                    <td>
-                      <Link
-                        to={path}
-                        aria-description="navigate to recipe book"
-                      >
-                        <i class="bi bi-eye"></i>
-                      </Link>
-                    </td>
-                  </tr>
-                );
+                return <TableRow book={book} key={key} />;
               })}
             </tbody>
           </table>

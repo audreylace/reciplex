@@ -1,44 +1,16 @@
-/* Force links to inherit color from parent */
-a {
-  color: inherit;
+.recipeBookListTable {
+  width: 100%;
 }
 
-/* common styling */
-.tableWrapper {
-  table {
-    width: 100%;
-
-    tbody {
-      width: inherit;
-      display: block;
-
-      tr {
-        border-bottom: solid 1px oklch(80.8% 0.114 19.571);
-        display: grid;
-        background-color: oklch(93.6% 0.032 17.717);
-
-        /* zebra stripe the table */
-        &:nth-child(even) {
-          background-color: oklch(95.4% 0.038 75.164);
-        }
-
-        &:hover {
-          cursor: pointer;
-          background-color: oklch(89.2% 0.058 10.001);
-
-          &:nth-child(even) {
-            background-color: oklch(92.4% 0.12 95.746);
-          }
-        }
-      }
-    }
-  }
+.recipeBookListTableBody {
+  width: inherit;
+  display: block;
 }
 
 /** styling for regular computers */
 @media (min-width: 768px) {
   /* only table is allowed to scroll */
-  main {
+  .pageMain {
     display: flex;
     flex-direction: column;
     height: inherit;
@@ -46,6 +18,7 @@ a {
     max-height: inherit;
     overflow: hidden;
   }
+
   .topLevelHeader {
     margin-top: 0.4em;
     margin-bottom: 0.6em;
@@ -58,7 +31,7 @@ a {
     overflow: hidden;
   }
 
-  .tableWrapper {
+  .recipeBookList {
     /* 
      * Set a height and enable scroll on the table wrapper.
      * This is needed so the table header is stick
@@ -72,57 +45,12 @@ a {
 
     /* extra padding since we have a floating nav bar */
     padding-bottom: 8em;
-
-    /* display table as a grid */
-    tr {
-      display: grid;
-      grid-template-columns: 20% calc(80% - 2em) 2em;
-    }
-
-    thead {
-      width: inherit;
-      display: block;
-      position: sticky;
-      box-shadow: 0px 0px 13px 0px oklch(70.7% 0.022 261.325);
-      top: 0;
-      background: oklch(88.5% 0.062 18.334);
-      font-size: 1.2em;
-
-      th {
-        .tableHeaderWrappers {
-          border-bottom: 3px solid oklch(70.4% 0.191 22.216);
-          height: inherit;
-          padding: 5px;
-          margin: 0;
-        }
-        padding: 0;
-        margin: 0;
-      }
-    }
-
-    td {
-      padding: 10px 10px;
-
-      &:nth-child(1) {
-        padding-left: 0.6em;
-      }
-
-      &:nth-child(2) {
-        font-size: 0.9em;
-      }
-
-      &:nth-child(3) {
-        text-align: right;
-        font-size: 0.8em;
-        padding-right: 1.3em;
-      }
-    }
   }
 }
 
 /* Phone styling */
 @media (max-width: 768px) {
-  .tableWrapper {
+  .recipeBookList {
     /* extra padding since we have a floating nav bar */
     padding-bottom: 3em;
   }
@@ -130,29 +58,5 @@ a {
   /* High the top level title */
   .topLevelHeader {
     display: none;
-  }
-
-  /* Hide the table header */
-  table {
-    thead {
-      display: none;
-    }
-    /* switch table to stacked layout */
-    td {
-      /* since entries are stacked, we need to hide the border between them */
-      border: none;
-      padding: 0.3em;
-
-      /* make the header bigger then the text and hide the icon on the right */
-      &:nth-child(1) {
-        font-size: 1.1em;
-      }
-      &:nth-child(2) {
-        font-size: 0.9em;
-      }
-      &:nth-child(3) {
-        display: none;
-      }
-    }
   }
 }

@@ -10,3 +10,13 @@ body {
   background: oklch(96.9% 0.015 12.422);
   color: oklch(20.5% 0 0);
 }
+
+/* Make links behave like any other element */
+a {
+  color: inherit;
+  text-decoration: inherit;
+  &:hover {
+    color: inherit;
+    text-decoration: inherit;
+  }
+}
