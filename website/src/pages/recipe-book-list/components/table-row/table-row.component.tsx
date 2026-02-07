@@ -20,7 +20,12 @@ export function TableRow({ book }: { book: IRecipeBookModel }) {
       </td>
       <td className={`${styles.bookCell} ${styles.bookIconLink}`}>
         <Link to={path} aria-description="navigate to recipe book">
-          <i class="bi bi-eye"></i>
+          <span className={styles.emptyEye}>
+            <i class="bi bi-eye"></i>
+          </span>
+          <span className={styles.filledEye}>
+            <i class="bi bi-eye-fill"></i>
+          </span>
         </Link>
       </td>
     </tr>

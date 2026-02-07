@@ -8,9 +8,17 @@
     background-color: oklch(95.4% 0.038 75.164);
   }
 
-  &:hover {
+  &:not([data-disabled="true"]):hover {
     cursor: pointer;
     background-color: oklch(89.2% 0.058 10.001);
+
+    .emptyEye {
+      display: none;
+    }
+
+    .filledEye {
+      display: inline;
+    }
 
     &:nth-child(even) {
       background-color: oklch(92.4% 0.12 95.746);
@@ -58,6 +66,10 @@
   .bookIconLink {
     display: none;
   }
+}
+
+.filledEye {
+  display: none;
 }
 
 /** styling for regular computers */

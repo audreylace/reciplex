@@ -10,7 +10,7 @@ export function useBookData(data: IGetRecipeBooksResult | undefined) {
       return null;
     }
     const orderedBooks: IRecipeBookModel[] = [];
-    for (const key in data.page) {
+    for (const key of data.page) {
       const book = data.recipeBooks[key];
       if (!book) {
         return null;

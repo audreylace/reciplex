@@ -9,7 +9,7 @@ export function useFakeLoading(
 
   useLayoutEffect(() => {
     setFakeLoading(true);
-    const handle = setTimeout(() => setFakeLoading(false), 200); // reduce flicker on page change
+    const handle = setTimeout(() => setFakeLoading(false), 400); // reduce flicker on page change
     return () => {
       clearTimeout(handle);
     };

@@ -28,6 +28,7 @@ export function TableRowsSkeleton({
 function TableRow() {
   return (
     <tr
+      data-disabled={"true"}
       className={`${tableRowStyles.bookCell} ${tableRowStyles.bookRow}`}
       role="structure"
       aria-label="loading placeholder"
@@ -48,9 +49,9 @@ function TableRow() {
       <td
         className={`${tableRowStyles.bookCell} ${tableRowStyles.bookIconLink}`}
       >
-        <span
-          class={`${styles.glowingShimmerSkeleton} ${styles.boxSkeleton}`}
-        ></span>
+        <span className={styles.hourglass}>
+          <i class="bi bi-hourglass"></i>
+        </span>
       </td>
     </tr>
   );

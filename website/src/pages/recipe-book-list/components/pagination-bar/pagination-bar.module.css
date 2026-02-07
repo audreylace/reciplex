@@ -13,6 +13,7 @@
     padding: 0;
     margin: 0;
     display: flex;
+    flex-wrap: wrap;
     flex-direction: row;
     font-size: 0.8em;
     border-radius: 10px;

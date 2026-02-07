@@ -37,3 +37,16 @@
     background-position: 200% 0; /* Move the gradient off-screen to the right */
   }
 }
+
+.hourglass {
+  background: linear-gradient(
+    90deg,
+    oklch(64.6% 0.222 41.116),
+    oklch(90.5% 0.182 98.111),
+    oklch(64.6% 0.222 41.116)
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  font-size: 1.6em;
+}

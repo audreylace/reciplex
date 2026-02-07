@@ -14,6 +14,18 @@
   flex: 0 0 auto;
 }
 
+.topLevelHeaderWrapper {
+  display: flex;
+  align-items: center;
+  padding-right: 20px;
+  flex-wrap: wrap;
+  flex-direction: row;
+}
+
+.topLevelHeaderSpacer {
+  flex: 1;
+}
+
 /** styling for regular computers */
 @media (min-width: 768px) {
   /* only table is allowed to scroll */
@@ -23,6 +35,7 @@
     height: inherit;
     min-height: inherit;
     max-height: inherit;
+    min-width: 100dvw;
     overflow: hidden;
   }
 
@@ -39,6 +52,7 @@
     overflow: scroll;
     height: 100dvh;
     max-height: 100dvh;
+    min-height: 100dvh;
 
     /* fill remaining space below `.topLevelHeader` */
     flex: 1;
@@ -52,6 +66,6 @@
 @media (max-width: 768px) {
   .recipeBookList {
     /* extra padding since we have a floating nav bar */
-    padding-bottom: 3em;
+    padding-bottom: 10em;
   }
 }

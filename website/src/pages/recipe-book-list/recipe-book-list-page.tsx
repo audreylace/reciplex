@@ -3,6 +3,7 @@ import { PaginationBar } from "./components/pagination-bar/pagination-bar.compon
 import { TableHeader } from "./components/table-header/table-header.component";
 import { TableBodyContent } from "./components/table-body-content.component";
 import { useRecipeBookListPageControl } from "./hooks/useRecipeBookListPageControl.hook";
+import { CreateRecipeBookButton } from "./components/create-recipe-book-button/create-recipe-book-button.component";
 
 /**
  * Entry point for recipe book list page component
@@ -13,7 +14,11 @@ export function RecipeBookListPage({}: {}) {
   return (
     <>
       <main className={styles.pageMain}>
-        <h2 className={styles.topLevelHeader}>Recipes Books</h2>
+        <div className={styles.topLevelHeaderWrapper}>
+          <h2 className={styles.topLevelHeader}>Recipes Books</h2>
+          <div className={styles.topLevelHeaderSpacer}></div>
+          <CreateRecipeBookButton />
+        </div>
         <div className={styles.recipeBookList}>
           <table
             className={styles.recipeBookListTable}

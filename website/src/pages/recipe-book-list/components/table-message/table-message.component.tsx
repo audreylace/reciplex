@@ -6,8 +6,8 @@ import styles from "./table-message.module.css";
  */
 export function TableMessage({ children }: PropsWithChildren<{}>) {
   return (
-    <tr className={styles.loadingMessage}>
-      <td colspan={3} className={styles.outerWrapper}>
+    <tr className={styles.row}>
+      <td colspan={3} className={styles.cell}>
         {children}
       </td>
     </tr>
