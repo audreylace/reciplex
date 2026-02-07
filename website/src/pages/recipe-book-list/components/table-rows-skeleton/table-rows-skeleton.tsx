@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import styles from "./table-rows-skeleton.module.css";
 
 /**
  * Renders a set of table rows as a skeleton
@@ -26,18 +26,22 @@ export function TableRowsSkeleton({
  */
 function TableRow() {
   return (
-    <tr className="placeholder-glow">
+    <tr role="structure" aria-label="loading placeholder">
       <td>
-        <span class="placeholder placeholder-lg col-6"></span>
+        <span class={styles.glowingShimmerSkeleton}></span>
       </td>
       <td>
-        <span class="placeholder col-12"></span>
-        <span class="placeholder col-8"></span>
+        <span
+          class={`${styles.glowingShimmerSkeleton} ${styles.fourFifthSkeleton}`}
+        ></span>
+        <span
+          class={`${styles.glowingShimmerSkeleton} ${styles.threeFourSkeleton}`}
+        ></span>
       </td>
       <td>
-        <Link to="#">
-          <i class="bi bi-arrow-right-circle"></i>
-        </Link>
+        <span
+          class={`${styles.glowingShimmerSkeleton} ${styles.boxSkeleton}`}
+        ></span>
       </td>
     </tr>
   );

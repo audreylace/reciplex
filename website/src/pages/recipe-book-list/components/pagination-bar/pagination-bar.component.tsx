@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import {
   BookListNavigationAction,
   makeBookListPath,
@@ -17,90 +17,112 @@ export function PaginationBar({
 }) {
   return (
     <nav
-      aria-label="Page navigation for the list of recipe books"
-      className={`${styles.componentWrapper}`}
+      aria-label="page navigation for the list of recipe books"
+      className={`${styles.navBar}`}
     >
-      <ul className="pagination">
-        <li
-          className={`page-item ${previousCursor ? "" : "disabled"}`}
-          aria-disabled={previousCursor ? false : true}
+      <ul>
+        <NavLink
+          title="go to first page"
+          screenReaderLabel={
+            !previousCursor
+              ? "go to fist page disabled because at first page of books"
+              : "go to first page of books"
+          }
+          direction={BookListNavigationAction.next}
+          disabled={previousCursor ? false : true}
         >
-          <Link className="page-link" to={makeBookListPath()}>
-            First
-          </Link>
-        </li>
-        <li
-          className={`page-item ${previousCursor ? "" : "disabled"}`}
-          aria-disabled={previousCursor ? false : true}
+          <i class="bi bi-chevron-double-left"></i>
+        </NavLink>
+        <NavLink
+          title="go to previous page"
+          index={previousCursor}
+          direction={BookListNavigationAction.previous}
+          disabled={previousCursor ? false : true}
+          screenReaderLabel={
+            !previousCursor
+              ? "go to previous page disabled because on first page of books"
+              : "go to previous page of books"
+          }
         >
-          <Link
-            className="page-link"
-            to={
-              previousCursor
-                ? makeBookListPath({
-                    cursor: {
-                      order: BookListNavigationAction.previous,
-                      index: previousCursor,
-                    },
-                  })
-                : "#"
-            }
-          >
-            Previous
-          </Link>
-        </li>
+          <i class="bi bi-chevron-left"></i>
+        </NavLink>
         <li
-          className={`page-item ${styles.grow} disabled`}
+          className={`${styles.expander}`}
           aria-disabled={true}
           aria-hidden={true}
+        ></li>
+        <NavLink
+          title="go to next page"
+          index={nextCursor}
+          direction={BookListNavigationAction.next}
+          disabled={nextCursor ? false : true}
+          screenReaderLabel={
+            !nextCursor
+              ? "go to next disabled because on last page of books"
+              : "go to next page of books"
+          }
         >
-          <a
-            className="page-link"
-            role="presentation"
-            aria-disabled={true}
-            aria-hidden={true}
-            href="#"
-            onClick={(e) => e.preventDefault()}
-          >
-            &nbsp;
-          </a>
-        </li>
-        <li
-          className={`page-item ${nextCursor ? "" : "disabled"}`}
-          aria-disabled={nextCursor ? false : true}
+          <i class="bi bi-chevron-right"></i>
+        </NavLink>
+        <NavLink
+          title="go to last page"
+          direction={BookListNavigationAction.previous}
+          disabled={nextCursor ? false : true}
+          screenReaderLabel={
+            !nextCursor
+              ? "go to last disabled because on final page of books"
+              : "go to last page of books"
+          }
         >
-          <Link
-            className="page-link"
-            to={
-              nextCursor
-                ? makeBookListPath({
-                    cursor: {
-                      order: BookListNavigationAction.next,
-                      index: nextCursor,
-                    },
-                  })
-                : "#"
-            }
-          >
-            Next
-          </Link>
-        </li>
-        <li
-          className={`page-item ${nextCursor ? "" : "disabled"}`}
-          aria-disabled={nextCursor ? false : true}
-        >
-          <Link
-            className="page-link"
-            to={makeBookListPath({
-              cursor: {
-                order: BookListNavigationAction.previous,
-              },
-            })}
-          >
-            Last
-          </Link>
-        </li>
+          <i class="bi bi-chevron-double-right"></i>
+        </NavLink>
       </ul>
     </nav>
+  );
+}
+
+/**
+ * Single nav link in the nav bar
+ */
+function NavLink({
+  index,
+  direction,
+  children,
+  disabled,
+  screenReaderLabel,
+  title,
+}: React.PropsWithChildren<{
+  /** navigation index */
+  index?: string;
+  /** if the link is disabled */
+  disabled: boolean;
+  /** navigation direction */
+  direction: BookListNavigationAction;
+  screenReaderLabel: string;
+  title: string;
+}>) {
+  const navigation = useNavigate();
+  const path = makeBookListPath({
+    cursor: {
+      order: direction,
+      index: index,
+    },
+  });
+  return (
+    <li
+      onClick={() => {
+        // make the whole li clickable for navigation actions
+        if (!disabled) {
+          navigation(path);
+        }
+      }}
+      title={title}
+      data-disabled={disabled}
+      aria-disabled={disabled}
+      aria-description={screenReaderLabel}
+    >
+      {!disabled && <Link to={path}>{children}</Link>}
+      {disabled && <>{children}</>}
+    </li>
   );
 }

@@ -1,3 +1,14 @@
-.center {
+.loadingMessage {
+  padding: 1.5em;
+  &:hover {
+    /* use !important anti-pattern to override the outer styling */
+    cursor: default !important;
+    background-color: oklch(93.6% 0.032 17.717) !important;
+  }
+}
+
+.outerWrapper {
+  grid-column-start: 1;
+  grid-column-end: 3;
   text-align: center;
 }

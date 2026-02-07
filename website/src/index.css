@@ -5,3 +5,8 @@ body,
   height: 100dvh;
   font-size: 1.1em;
 }
+
+body {
+  background: oklch(96.9% 0.015 12.422);
+  color: oklch(20.5% 0 0);
+}

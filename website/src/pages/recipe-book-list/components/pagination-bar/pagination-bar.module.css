@@ -1,10 +1,59 @@
-.componentWrapper {
+.navBar {
   padding: 5px 10px;
-  width: 100vw;
+  width: 100%;
   position: fixed;
   bottom: 0;
+  left: 0;
+  right: 0;
+  font-size: 1em;
+
+  ul {
+    box-shadow: 0px 0px 13px 0px oklch(70.7% 0.022 261.325);
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: row;
+    font-size: 0.8em;
+    border-radius: 10px;
+
+    li:nth-child(1) {
+      border-top-left-radius: 10px;
+      border-bottom-left-radius: 10px;
+    }
+    li:last-child {
+      border-top-right-radius: 10px;
+      border-bottom-right-radius: 10px;
+      border-right: 1px solid transparent;
+    }
+  }
+
+  li {
+    padding: 0.5em;
+    background: oklch(88.5% 0.062 18.334);
+    border-right: 1px solid oklch(80.8% 0.114 19.571);
+    color: oklch(21% 0.034 264.665);
+    padding-left: 1.2em;
+    padding-right: 1.2em;
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+  }
+
+  li[data-disabled="true"] {
+    background: oklch(93.6% 0.032 17.717);
+    color: oklch(70.8% 0 0);
+  }
+
+  li[data-disabled="false"]:hover {
+    background: oklch(50.5% 0.213 27.518);
+    color: oklch(87% 0 0);
+    cursor: pointer;
+  }
 }
 
-.grow {
+.expander {
   flex: 1 1 auto;
+  cursor: default;
 }

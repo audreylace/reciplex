@@ -8,7 +8,6 @@ import { useLayoutTitle } from "./default-layout.state";
 export function DefaultLayout({}: {}) {
   return (
     <div className={styles.mainWrapper}>
-      <AppNavigation />
       <Outlet />
     </div>
   );

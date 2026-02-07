@@ -14,7 +14,7 @@ import {
 import { RecipeStore } from "../../features/recipes/hooks/useRecipeStoreContext.hook";
 import { useSetTitle } from "../../layouts/default/default-layout.state";
 import { TableMessage } from "./components/table-message/table-message.component";
-import { TableRowsSkeleton } from "./components/table-rows-skeleton";
+import { TableRowsSkeleton } from "./components/table-rows-skeleton/table-rows-skeleton";
 import { PaginationBar } from "./components/pagination-bar/pagination-bar.component";
 
 /**
@@ -61,22 +61,30 @@ export function RecipeBookListPage({}: {}) {
     <>
       <main>
         <h2 className={style.topLevelHeader}>Recipes Books</h2>
-        <div class={`table-responsive ${style.tableWrapper}`}>
-          <table className={`table table-hover table-striped ${style.table}`}>
+        <div class={style.tableWrapper}>
+          <table aria-description="list of recipes books">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Description</th>
-                <th aria-description="column with links to the recipe book"></th>
+                <th>
+                  <h4 className={style.tableHeaderWrappers}>Name</h4>
+                </th>
+                <th>
+                  <h4 className={style.tableHeaderWrappers}>Description</h4>
+                </th>
+                <th aria-description="column with links to the recipe book">
+                  <h4
+                    className={style.tableHeaderWrappers}
+                    role="structure"
+                    aria-hidden
+                  >
+                    &#8203;
+                  </h4>
+                </th>
               </tr>
             </thead>
             <tbody>
               {showSkeleton && <TableRowsSkeleton count={20} />}
-              {showPause && (
-                <TableMessage>
-                  Loading paused because device is offline
-                </TableMessage>
-              )}
+              {showPause && <TableMessage>Offline</TableMessage>}
               {emptyPage && (
                 <TableMessage>No results for this page</TableMessage>
               )}
@@ -95,9 +103,11 @@ export function RecipeBookListPage({}: {}) {
                 </TableMessage>
               )}
               {noBooks && (
-                <Link to={makeCreateRecipeBookPath()}>
-                  Create your first recipe book
-                </Link>
+                <TableMessage>
+                  <Link to={makeCreateRecipeBookPath()}>
+                    Create your first recipe book
+                  </Link>
+                </TableMessage>
               )}
               {data?.page.map((key) => {
                 const book = data.recipeBooks[key];
@@ -108,10 +118,19 @@ export function RecipeBookListPage({}: {}) {
                 return (
                   <tr key={key} onClick={() => navigate(path)}>
                     <td>{book.name}</td>
-                    <td>{book.shortDescription}</td>
+                    <td
+                      aria-description={
+                        book.shortDescription ? undefined : "no description"
+                      }
+                    >
+                      {book.shortDescription || <>&mdash;</>}
+                    </td>
                     <td>
-                      <Link to={path}>
-                        <i class="bi bi-arrow-right-circle"></i>
+                      <Link
+                        to={path}
+                        aria-description="navigate to recipe book"
+                      >
+                        <i class="bi bi-pencil-square"></i>
                       </Link>
                     </td>
                   </tr>

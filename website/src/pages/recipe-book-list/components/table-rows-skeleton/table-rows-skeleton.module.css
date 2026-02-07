@@ -1,0 +1,39 @@
+.glowingShimmerSkeleton {
+  background: linear-gradient(
+    90deg,
+    oklch(83.7% 0.128 66.29),
+    oklch(90.5% 0.182 98.111),
+    oklch(83.7% 0.128 66.29)
+  );
+  background-size: 200% 100%;
+  animation: shimmer-glow 4s linear infinite;
+  border-radius: 4px;
+  overflow: hidden;
+  display: block;
+  width: calc(55%);
+  height: 1.1em;
+  margin: 0.2em;
+}
+.fourFifthSkeleton {
+  width: 85%;
+  animation: shimmer-glow 3.3s linear infinite;
+}
+
+.threeFourSkeleton {
+  width: 66%;
+  animation: shimmer-glow 2.7s linear infinite;
+}
+
+.boxSkeleton {
+  width: 1.2em;
+  animation: shimmer-glow 2.9s linear infinite;
+}
+
+@keyframes shimmer-glow {
+  0% {
+    background-position: -200% 0; /* Start the gradient off-screen to the left */
+  }
+  100% {
+    background-position: 200% 0; /* Move the gradient off-screen to the right */
+  }
+}
