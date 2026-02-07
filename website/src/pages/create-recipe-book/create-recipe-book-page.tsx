@@ -1,9 +1,12 @@
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { useCallback } from "preact/hooks";
-import { makeViewRecipeBookPath } from "../../features/recipes/route-utils";
+import {
+  makeBookListPath,
+  makeViewRecipeBookPath,
+} from "../../features/recipes/route-utils";
 import { CreateRecipeBookForm } from "../../features/recipes/components/create-recipe-book-form/create-recipe-book-form.component";
 import type { IRecipeBookModel } from "../../services/recipe-store";
-import { useSetTitle } from "../../layouts/default/default-layout.state";
+import styles from "./create-recipe-book.module.css";
 
 /**
  * Entry point for create recipe book page component
@@ -12,8 +15,8 @@ import { useSetTitle } from "../../layouts/default/default-layout.state";
  */
 export function CreateRecipeBookPage({}: {}) {
   const navigate = useNavigate();
-
-  useSetTitle("Create Recipe Book");
+  const location = useLocation();
+  const { goBack } = location.state || {};
 
   /**
    * Runs action on form submit creating a new recipe book
@@ -27,9 +30,16 @@ export function CreateRecipeBookPage({}: {}) {
     [navigate],
   );
 
+  const onCancel = useCallback(async () => {
+    if (goBack) {
+      navigate(-1);
+    }
+    navigate(makeBookListPath());
+  }, [navigate, goBack]);
+
   return (
-    <main>
-      <CreateRecipeBookForm onCreated={onCreated} />
+    <main className={styles.pageWrapper}>
+      <CreateRecipeBookForm onCreated={onCreated} onCancel={onCancel} />
     </main>
   );
 }

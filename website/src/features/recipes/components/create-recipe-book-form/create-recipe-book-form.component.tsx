@@ -2,11 +2,15 @@ import { useForm, type SubmitHandler } from "react-hook-form";
 import { useCreateRecipeBookMutation } from "../../hooks/useCreateRecipeBookMutation";
 import { RecipeBookMetaFields } from "../recipe-book-meta-fields/recipe-book-meta-fields.component";
 import type { IRecipeBookModel } from "../../../../services/recipe-store";
+import styles from "./create-recipe-book-form.module.css";
+import { RetryBannerComponent } from "../retry-banner/retry-banner.component";
 
 export function CreateRecipeBookForm({
   onCreated,
+  onCancel,
 }: {
   onCreated: (recipe: IRecipeBookModel) => void;
+  onCancel: () => void;
 }) {
   const {
     register,
@@ -51,7 +55,25 @@ export function CreateRecipeBookForm({
         legend="Create New Recipe Book"
         errors={errors}
       />
-      <input type="submit" value="Create" />
+
+      <div className={styles.buttonGroup}>
+        <input className={styles.submitButton} type="submit" value="Create" />
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            onCancel();
+          }}
+          className={styles.cancelButton}
+        >
+          Cancel
+        </button>
+      </div>
+
+      {mutation.status === "error" && (
+        <div className={styles.errorBannerWrapper}>
+          <RetryBannerComponent message="Creating recipe book failed." />
+        </div>
+      )}
     </form>
   );
 }

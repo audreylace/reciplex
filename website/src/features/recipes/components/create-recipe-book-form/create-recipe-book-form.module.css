@@ -1,0 +1,34 @@
+.submitButton {
+  border: 1px solid oklch(80.8% 0.114 19.571);
+  color: oklch(97.1% 0.013 17.38);
+  background-color: oklch(64.8% 0.2 131.684);
+  &:hover {
+    background-color: oklch(45.3% 0.124 130.933);
+  }
+}
+
+.cancelButton {
+  border: 1px solid oklch(80.8% 0.114 19.571);
+  color: oklch(97.1% 0.013 17.38);
+  background-color: oklch(80.8% 0.114 19.571);
+  &:hover {
+    background-color: oklch(63.7% 0.237 25.331);
+  }
+}
+
+.submitButton,
+.cancelButton {
+  border-radius: 5px;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 0.3em;
+  flex-wrap: wrap;
+  flex-direction: row;
+  margin-top: 1em;
+}
+
+.errorBannerWrapper {
+  margin: 2em 0;
+}

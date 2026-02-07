@@ -3,7 +3,11 @@ import styles from "./create-recipe-book-button.module.css";
 
 export function CreateRecipeBookButton() {
   return (
-    <NavLink to="/create-recipe-book" className={styles.createButton}>
+    <NavLink
+      to="/create-recipe-book"
+      state={{ goBack: true }}
+      className={styles.createButton}
+    >
       <span className={styles.dottedCircle}>
         <i class="bi bi-plus-circle-dotted"></i>
       </span>

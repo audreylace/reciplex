@@ -20,7 +20,7 @@ export function RecipeBookMetaFields<
 }) {
   return (
     <fieldset disabled={disabled}>
-      <legend>{legend}</legend>
+      <legend className={style.formLegend}>{legend}</legend>
       <label className={style.inputGroup}>
         <span>Name of Book</span>
         <input
