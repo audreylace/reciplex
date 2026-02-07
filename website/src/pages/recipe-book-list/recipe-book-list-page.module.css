@@ -7,6 +7,13 @@
   display: block;
 }
 
+.topLevelHeader {
+  margin-top: 0.4em;
+  margin-bottom: 0.6em;
+  margin-left: 0.2em;
+  flex: 0 0 auto;
+}
+
 /** styling for regular computers */
 @media (min-width: 768px) {
   /* only table is allowed to scroll */
@@ -17,13 +24,6 @@
     min-height: inherit;
     max-height: inherit;
     overflow: hidden;
-  }
-
-  .topLevelHeader {
-    margin-top: 0.4em;
-    margin-bottom: 0.6em;
-    margin-left: 0.2em;
-    flex: 0 0 auto;
   }
 
   /* ensure the table scrolls not the body */
@@ -53,10 +53,5 @@
   .recipeBookList {
     /* extra padding since we have a floating nav bar */
     padding-bottom: 3em;
-  }
-
-  /* High the top level title */
-  .topLevelHeader {
-    display: none;
   }
 }
