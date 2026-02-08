@@ -68,7 +68,6 @@ export function CreateRecipeBookForm({
             e.preventDefault();
             onCancel();
           }}
-          className={styles.cancelButton}
         >
           <i class="bi bi-arrow-left-circle"></i> Cancel
         </DangerButton>

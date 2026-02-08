@@ -3,7 +3,7 @@ import {
   RecipeBookNameMaxLength,
   RecipeBookShortDescriptionMaxLength,
 } from "../../../../services/recipe-store";
-import style from "./recipe-book-meta-fields.module.css";
+import fieldStyles from "../../../core/form-common/form-common.module.css";
 import {
   Field,
   Fieldset,
@@ -28,13 +28,13 @@ export function RecipeBookMetaFields<
 }) {
   return (
     <Fieldset disabled={disabled}>
-      <Legend className={style.formLegend}>
+      <Legend className={fieldStyles.formLegend}>
         <h2>{legend}</h2>
       </Legend>
-      <Field className={style.inputGroup}>
+      <Field className={fieldStyles.inputGroup}>
         <Label>Name of Book</Label>
         <Input
-          className={style.fieldControl}
+          className={fieldStyles.fieldControl}
           type="text"
           required
           maxLength={RecipeBookNameMaxLength}
@@ -51,10 +51,10 @@ export function RecipeBookMetaFields<
       {errors.bookName?.type === "maxLength" && (
         <span>Name has a max length of {RecipeBookNameMaxLength}</span>
       )}
-      <Field className={style.inputGroup}>
+      <Field className={fieldStyles.inputGroup}>
         <Label>Book Description</Label>
         <Textarea
-          className={style.fieldControl}
+          className={fieldStyles.fieldControl}
           maxLength={RecipeBookShortDescriptionMaxLength}
           {...(register as unknown as UseFormRegister<RecipeBookMetaFormModel>)(
             "bookDescription",
