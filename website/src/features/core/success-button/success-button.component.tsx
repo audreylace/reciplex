@@ -1,12 +1,20 @@
 import { type ButtonProps } from "@headlessui/react";
 import styles from "./success-button.module.css";
-import { ButtonCommon } from "../button-common/button-common";
+import { ButtonCommon, type ButtonType } from "../button-common/button-common";
 
 export function SuccessButton({
   className,
+  buttonType,
   ...props
-}: ButtonProps & { className?: string }) {
+}: ButtonProps & { className?: string; buttonType?: ButtonType }) {
+  const extendedStyle =
+    (buttonType ?? "solid") === "solid" ? styles.success : styles.successHidden;
+
   return (
-    <ButtonCommon classArray={[className ?? "", styles.success]} {...props} />
+    <ButtonCommon
+      buttonType={buttonType}
+      classArray={[className ?? "", extendedStyle]}
+      {...props}
+    />
   );
 }

@@ -6,3 +6,15 @@
 .formLegend {
   margin-bottom: 1em;
 }
+
+.fieldControl {
+  box-shadow: 0px 0px 2px 0px oklch(70.7% 0.022 261.325);
+  border: 2px;
+  border-radius: 0.2em;
+  padding: 0.2em 0.3em;
+}
+
+.fieldControl[data-focus] {
+  box-shadow: 0px 0px 5px 0px oklch(70.7% 0.022 261.325);
+  outline: 0;
+}

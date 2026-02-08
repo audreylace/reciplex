@@ -48,7 +48,7 @@
   }
 
   li[data-disabled="false"]:hover {
-    background: oklch(50.5% 0.213 27.518);
+    background: oklch(63.7% 0.237 25.331);
     color: oklch(87% 0 0);
     cursor: pointer;
   }

@@ -1,12 +1,11 @@
 import { useForm, type SubmitHandler } from "react-hook-form";
-import { useCreateRecipeBookMutation } from "../../hooks/useCreateRecipeBookMutation";
-import { RecipeBookMetaFields } from "../recipe-book-meta-fields/recipe-book-meta-fields.component";
+import { useCreateRecipeBookMutation } from "../../../../features/recipes/hooks/useCreateRecipeBookMutation";
+import { RecipeBookMetaFields } from "../../../../features/recipes/components/recipe-book-meta-fields/recipe-book-meta-fields.component";
 import type { IRecipeBookModel } from "../../../../services/recipe-store";
 import styles from "./create-recipe-book-form.module.css";
-import { RetryBannerComponent } from "../retry-banner/retry-banner.component";
-import { DangerButton } from "../../../core/danger-button/danger-button.component";
-import { SuccessButton } from "../../../core/success-button/success-button.component";
-import { PrimaryButton } from "../../../core/primary-button/primary-button.component";
+import { RetryBannerComponent } from "../../../../features/recipes/components/retry-banner/retry-banner.component";
+import { DangerButton } from "../../../../features/core/danger-button/danger-button.component";
+import { SuccessButton } from "../../../../features/core/success-button/success-button.component";
 
 export function CreateRecipeBookForm({
   onCreated,

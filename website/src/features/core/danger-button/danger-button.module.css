@@ -1,9 +1,10 @@
 .danger[data-hover] {
   background-color: oklch(63.7% 0.237 25.331);
+  color: oklch(96.7% 0.001 286.375);
 }
 
 .danger[data-active] {
-  background-color: oklch(39.6% 0.141 25.723);
+  background-color: oklch(50.5% 0.213 27.518);
 }
 
 .danger[data-disabled] {

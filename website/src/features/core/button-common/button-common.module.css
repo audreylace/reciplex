@@ -7,7 +7,18 @@
   box-shadow: 0px 0px 2px 0px oklch(70.7% 0.022 261.325);
 }
 
-.commonButton[data-hover] {
+.commonButton[data-hover],
+.commonButtonHidden[data-hover] {
   box-shadow: 0px 0px 8px 0px oklch(70.7% 0.022 261.325);
   cursor: pointer;
+}
+
+.commonButtonHidden {
+  border: transparent;
+  background-color: transparent;
+  font-size: 1em;
+  padding: 0.1em 0.3em;
+  border-radius: 0.3em;
+  border-style: solid;
+  border-width: 1px;
 }

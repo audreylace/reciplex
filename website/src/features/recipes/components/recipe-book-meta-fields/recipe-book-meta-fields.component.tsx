@@ -4,6 +4,14 @@ import {
   RecipeBookShortDescriptionMaxLength,
 } from "../../../../services/recipe-store";
 import style from "./recipe-book-meta-fields.module.css";
+import {
+  Field,
+  Fieldset,
+  Input,
+  Label,
+  Legend,
+  Textarea,
+} from "@headlessui/react";
 
 export function RecipeBookMetaFields<
   TFormModel extends RecipeBookMetaFormModel,
@@ -19,13 +27,14 @@ export function RecipeBookMetaFields<
   errors: FieldErrors<TFormModel>;
 }) {
   return (
-    <fieldset disabled={disabled}>
-      <legend className={style.formLegend}>
+    <Fieldset disabled={disabled}>
+      <Legend className={style.formLegend}>
         <h2>{legend}</h2>
-      </legend>
-      <label className={style.inputGroup}>
-        <span>Name of Book</span>
-        <input
+      </Legend>
+      <Field className={style.inputGroup}>
+        <Label>Name of Book</Label>
+        <Input
+          className={style.fieldControl}
           type="text"
           required
           maxLength={RecipeBookNameMaxLength}
@@ -36,15 +45,16 @@ export function RecipeBookMetaFields<
               maxLength: RecipeBookNameMaxLength,
             },
           )}
-        ></input>
-        {errors.bookName?.type === "required" && <span>Name is Required</span>}
-        {errors.bookName?.type === "maxLength" && (
-          <span>Name has a max length of {RecipeBookNameMaxLength}</span>
-        )}
-      </label>
-      <label className={style.inputGroup}>
-        <span>Book Description</span>
-        <textarea
+        ></Input>
+      </Field>
+      {errors.bookName?.type === "required" && <span>Name is Required</span>}
+      {errors.bookName?.type === "maxLength" && (
+        <span>Name has a max length of {RecipeBookNameMaxLength}</span>
+      )}
+      <Field className={style.inputGroup}>
+        <Label>Book Description</Label>
+        <Textarea
+          className={style.fieldControl}
           maxLength={RecipeBookShortDescriptionMaxLength}
           {...(register as unknown as UseFormRegister<RecipeBookMetaFormModel>)(
             "bookDescription",
@@ -53,14 +63,14 @@ export function RecipeBookMetaFields<
               maxLength: RecipeBookShortDescriptionMaxLength,
             },
           )}
-        ></textarea>
-      </label>
+        ></Textarea>
+      </Field>
       {errors.bookDescription?.type === "maxLength" && (
         <span>
           Description has a max length of {RecipeBookShortDescriptionMaxLength}
         </span>
       )}
-    </fieldset>
+    </Fieldset>
   );
 }
 

@@ -1,8 +1,11 @@
-.success[data-hover] {
+.success[data-hover],
+.successHidden[data-hover] {
   background-color: oklch(70.5% 0.213 47.604);
+  color: oklch(96.7% 0.001 286.375);
 }
 
-.success[data-active] {
+.success[data-active],
+.successHidden[data-active] {
   background-color: oklch(66.6% 0.179 58.318);
 }
 

@@ -3,15 +3,9 @@
 }
 
 .createButton {
-  padding: 10px 20px;
   font-size: 0.9em;
 
   &:hover {
-    background: oklch(50.5% 0.213 27.518);
-    color: white;
-    cursor: pointer;
-    border-radius: 5px;
-
     .solidCircle {
       display: inline;
     }

@@ -4,7 +4,7 @@ import {
   makeBookListPath,
   makeViewRecipeBookPath,
 } from "../../features/recipes/route-utils";
-import { CreateRecipeBookForm } from "../../features/recipes/components/create-recipe-book-form/create-recipe-book-form.component";
+import { CreateRecipeBookForm } from "./components/create-recipe-book-form/create-recipe-book-form.component";
 import type { IRecipeBookModel } from "../../services/recipe-store";
 import styles from "./create-recipe-book.module.css";
 
