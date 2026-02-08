@@ -1,0 +1,19 @@
+.danger[data-hover] {
+  background-color: oklch(63.7% 0.237 25.331);
+}
+
+.danger[data-active] {
+  background-color: oklch(39.6% 0.141 25.723);
+}
+
+.danger[data-disabled] {
+  background-color: oklch(93.6% 0.032 17.717);
+  color: oklch(70.8% 0 0);
+  border-color: oklch(97.1% 0.013 17.38);
+}
+
+.danger {
+  border-color: oklch(80.8% 0.114 19.571);
+  color: oklch(21% 0.034 264.665);
+  background-color: oklch(88.5% 0.062 18.334);
+}

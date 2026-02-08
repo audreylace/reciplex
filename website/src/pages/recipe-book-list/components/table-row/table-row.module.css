@@ -27,6 +27,7 @@
 }
 .bookCell {
   padding: 10px 10px;
+  overflow-wrap: anywhere;
 }
 
 .bookName {

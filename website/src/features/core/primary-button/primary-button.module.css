@@ -1,0 +1,19 @@
+.primary[data-hover] {
+  background-color: oklch(71.4% 0.203 305.504);
+}
+
+.primary[data-active] {
+  background-color: oklch(38.1% 0.176 304.987);
+}
+
+.primary[data-disabled] {
+  background-color: oklch(94.6% 0.033 307.174);
+  color: oklch(70.8% 0 0);
+  border-color: oklch(97.7% 0.014 308.299);
+}
+
+.primary {
+  border-color: oklch(71.4% 0.203 305.504);
+  color: oklch(21% 0.034 264.665);
+  background-color: oklch(82.7% 0.119 306.383);
+}

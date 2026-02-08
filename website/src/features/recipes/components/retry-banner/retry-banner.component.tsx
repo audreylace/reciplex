@@ -1,12 +1,13 @@
 import { useNavigate } from "react-router";
 import styles from "./retry-banner.module.css";
+import { PrimaryButton } from "../../../core/primary-button/primary-button.component";
 
 export function RetryBannerComponent({ message }: { message: string }) {
   const navigate = useNavigate();
   return (
     <p>
       {message}{" "}
-      <button
+      <PrimaryButton
         className={styles.tryAgainButton}
         onClick={(event) => {
           event.preventDefault();
@@ -15,7 +16,7 @@ export function RetryBannerComponent({ message }: { message: string }) {
       >
         <i class="bi bi-arrow-clockwise"></i>
         Try again?
-      </button>
+      </PrimaryButton>
     </p>
   );
 }

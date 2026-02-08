@@ -4,6 +4,9 @@ import { RecipeBookMetaFields } from "../recipe-book-meta-fields/recipe-book-met
 import type { IRecipeBookModel } from "../../../../services/recipe-store";
 import styles from "./create-recipe-book-form.module.css";
 import { RetryBannerComponent } from "../retry-banner/retry-banner.component";
+import { DangerButton } from "../../../core/danger-button/danger-button.component";
+import { SuccessButton } from "../../../core/success-button/success-button.component";
+import { PrimaryButton } from "../../../core/primary-button/primary-button.component";
 
 export function CreateRecipeBookForm({
   onCreated,
@@ -57,18 +60,20 @@ export function CreateRecipeBookForm({
       />
 
       <div className={styles.buttonGroup}>
-        <input className={styles.submitButton} type="submit" value="Create" />
-        <button
+        <SuccessButton disabled={mutation.status !== "idle"} type="submit">
+          <i class="bi bi-check2-circle"></i> Create
+        </SuccessButton>
+        <DangerButton
+          disabled={mutation.status !== "idle"}
           onClick={(e) => {
             e.preventDefault();
             onCancel();
           }}
           className={styles.cancelButton}
         >
-          Cancel
-        </button>
+          <i class="bi bi-arrow-left-circle"></i> Cancel
+        </DangerButton>
       </div>
-
       {mutation.status === "error" && (
         <div className={styles.errorBannerWrapper}>
           <RetryBannerComponent message="Creating recipe book failed." />

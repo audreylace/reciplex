@@ -1,0 +1,19 @@
+.success[data-hover] {
+  background-color: oklch(70.5% 0.213 47.604);
+}
+
+.success[data-active] {
+  background-color: oklch(66.6% 0.179 58.318);
+}
+
+.success[data-disabled] {
+  background-color: oklch(95.4% 0.038 75.164);
+  color: oklch(70.8% 0 0);
+  border-color: oklch(98% 0.016 73.684);
+}
+
+.success {
+  border-color: oklch(75% 0.183 55.934);
+  color: oklch(26.9% 0 0);
+  background-color: oklch(83.7% 0.128 66.29);
+}

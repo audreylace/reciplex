@@ -26,6 +26,12 @@
   flex: 1;
 }
 
+.pageMain {
+  min-width: 100dvw;
+  max-width: 100dvh;
+  overflow-x: hidden;
+}
+
 /** styling for regular computers */
 @media (min-width: 768px) {
   /* only table is allowed to scroll */
