@@ -62,10 +62,3 @@
     cursor: pointer;
   }
 }
-
-/* Phone styling */
-@media (max-width: 768px) {
-  .navBar {
-    font-size: 0.8em;
-  }
-}
