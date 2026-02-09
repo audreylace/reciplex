@@ -296,13 +296,13 @@ export interface IRecipeBookStore {
    * get a recipe by id
    * @param recipeId the recipe id
    * @param args optional args for the request
-   * @returns promise that resolves to a `IRecipeModel`
+   * @returns promise that resolves to a `IGetRecipeByIdResult`
    * or null if the recipe does not exist (or user does not have access).
    */
   getRecipeById(
     recipeId: string,
     args?: { noCache?: boolean },
-  ): Promise<IRecipeModel | null>;
+  ): Promise<IGetRecipeByIdResult | null>;
 
   /**
    * Creates a recipe
@@ -344,4 +344,8 @@ export class OperationForbidden extends Error {
   constructor() {
     super("request failed because the operation is forbidden");
   }
+}
+export interface IGetRecipeByIdResult {
+  recipe: IRecipeModel;
+  book: IRecipeBookModel;
 }

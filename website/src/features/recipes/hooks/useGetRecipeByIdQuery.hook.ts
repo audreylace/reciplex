@@ -14,9 +14,9 @@ export type UseGetRecipeByIdQueryArgs = {
    */
   refetchInterval?: number | false;
   /**
-   * ttl of the data
+   * When true, data will be loaded directly from the remote
    */
-  staleTime?: number;
+  noCache?: boolean;
 };
 
 /**
@@ -33,14 +33,14 @@ export function useGetRecipeByIdQuery(
   return useQuery({
     queryKey: recipeByIdCacheKey(recipeId ?? ""),
     enabled: !!recipeId ? args?.enabled : false,
-    staleTime: args?.staleTime ?? 60 * 1000,
+    staleTime: args?.noCache ? 0 : undefined,
     refetchInterval: args?.refetchInterval,
     queryFn: async () => {
       if (!recipeId) {
         throw Error("invalid recipe id");
       }
 
-      return recipeStore.getRecipeById(recipeId);
+      return recipeStore.getRecipeById(recipeId, { noCache: args?.noCache });
     },
   });
 }

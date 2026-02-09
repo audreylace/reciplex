@@ -34,14 +34,14 @@ export function ViewRecipePage({}: {}) {
           {notFound && <RecipeNotFoundBanner />}
           {recipeData && (
             <>
-              <h1>{recipeData.name}</h1>
-              <p>{recipeData.shortDescription}</p>
-              {recipeData.canEditRecipe && (
-                <NavLink to={makeEditRecipePath(recipeData.id)}>
+              <h1>{recipeData.recipe.name}</h1>
+              <p>{recipeData.recipe.shortDescription}</p>
+              {recipeData.recipe.canEditRecipe && (
+                <NavLink to={makeEditRecipePath(recipeData.recipe.id)}>
                   Edit Recipe
                 </NavLink>
               )}
-              {recipeData.canDeleteRecipe && (
+              {recipeData.recipe.canDeleteRecipe && (
                 <NavLink to={`/delete-recipe/${recipeId}`}>
                   Delete Recipe
                 </NavLink>
@@ -54,7 +54,7 @@ export function ViewRecipePage({}: {}) {
                   },
                 }}
               >
-                {recipeData.details}
+                {recipeData.recipe.details}
               </Markdown>
             </>
           )}

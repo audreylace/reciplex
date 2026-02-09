@@ -1,7 +1,11 @@
 import { useNavigate, useParams } from "react-router";
 import { useEffect, useState } from "preact/hooks";
 import { useForm, type SubmitHandler } from "react-hook-form";
-import { RecipeDetailsMaxLength } from "../../../../services/recipe-store";
+import {
+  RecipeDetailsMaxLength,
+  type IRecipeBookModel,
+  type IRecipeModel,
+} from "../../../../services/recipe-store";
 import {
   RecipeMetaFields,
   type RecipeMetaFormModel,
@@ -14,8 +18,51 @@ import { RecipeNotFoundBanner } from "../../components/recipe-not-found-banner/r
 import { ActionBanner } from "../../components/action-banner/action-banner.component";
 import { RecipeMarkdownEditor } from "../../components/recipe-details-editor/recipe-details-editor.component";
 import { FetchingRecipeFailedBanner } from "../../components/fetching-recipe-failed-banner/fetching-recipe-failed-banner.component";
+import {
+  EditRecipePageLoadingState,
+  useGetInitialDataForRecipeEdit,
+} from "./hooks/useGetInitialDataForRecipeEdit.hook";
+import { BadPathBanner } from "../../components/bad-path-banner/bad-path-banner.component";
+import { RecipeIsReadonlyBanner } from "../../components/recipe-is-readonly-banner/RecipeIsReadonlyBanner.component";
+import { RecipeConcurrentEditBanner } from "./components/recipe-concurrent-edit-banner.component";
+import { EditRecipeControls } from "./components/edit-recipe-controls/edit-recipe-controls.component";
+import styles from "./edit-recipe-page.module.css";
 
 export function EditRecipePage({}: {}) {
+  const recipeData = useGetInitialDataForRecipeEdit();
+
+  return (
+    <main className={styles.main}>
+      {recipeData.tag === EditRecipePageLoadingState.badRoute && (
+        <BadPathBanner />
+      )}
+      {recipeData.tag === EditRecipePageLoadingState.notFound && (
+        <RecipeNotFoundBanner />
+      )}
+      {recipeData.tag === EditRecipePageLoadingState.loadingFailed && (
+        <FetchingRecipeFailedBanner />
+      )}
+      {recipeData.tag === EditRecipePageLoadingState.loading && (
+        <FetchingRecipeBanner />
+      )}
+      {recipeData.tag === EditRecipePageLoadingState.readonly && (
+        <RecipeIsReadonlyBanner recipeId={recipeData.recipe.id} />
+      )}
+      {recipeData.tag === EditRecipePageLoadingState.offline && <p>Offline</p>}
+      {(recipeData.tag === EditRecipePageLoadingState.conflict ||
+        recipeData.tag === EditRecipePageLoadingState.loaded) && (
+        <EditRecipeControls
+          key={recipeData.recipe.id}
+          recipe={recipeData.recipe}
+          book={recipeData.book}
+          conflicted={recipeData.tag === EditRecipePageLoadingState.conflict}
+        />
+      )}
+    </main>
+  );
+}
+
+function old() {
   const { recipeId } = useParams<{ recipeId: string }>();
   const navigate = useNavigate();
   const {
@@ -26,36 +73,31 @@ export function EditRecipePage({}: {}) {
     watch,
     reset,
   } = useForm<FormFields>();
+  // const recipeMutation = useUpdateRecipeMutation();
+  // const [hasWriteAccess, setHasWriteAccess] = useState<boolean | null>(null);
+  // const [versionString, setVersionString] = useState<string | null>(null);
+  // const [dataLoaded, setDataLoaded] = useState<boolean>(false);
+  // const [notFound, setNotFound] = useState<boolean>(false);
 
-  const recipeQuery = useGetRecipeByIdQuery(recipeId ?? "", {
-    refetchInterval: 10000, // refresh every 10 seconds to ensure user knows right away that there changes will be lost
-    staleTime: 0,
-  });
-  const recipeMutation = useUpdateRecipeMutation();
-  const [hasWriteAccess, setHasWriteAccess] = useState<boolean | null>(null);
-  const [versionString, setVersionString] = useState<string | null>(null);
-  const [dataLoaded, setDataLoaded] = useState<boolean>(false);
-  const [notFound, setNotFound] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (recipeQuery.isFetchedAfterMount && !dataLoaded) {
-      const data = recipeQuery.data;
-      setDataLoaded(true);
-      if (data) {
-        setVersionString(data.versionTag);
-        setHasWriteAccess(data.canEditRecipe);
-        if (data.canEditRecipe) {
-          reset({
-            recipeName: data.name,
-            recipeDescription: data.shortDescription,
-            recipeInstructions: data.details,
-          });
-        }
-      } else {
-        setNotFound(true);
-      }
-    }
-  }, [reset, recipeQuery.data, recipeQuery.isFetchedAfterMount, dataLoaded]);
+  // useEffect(() => {
+  //   if (recipeQuery.isFetchedAfterMount && !dataLoaded) {
+  //     const data = recipeQuery.data;
+  //     setDataLoaded(true);
+  //     if (data) {
+  //       setVersionString(data.versionTag);
+  //       setHasWriteAccess(data.canEditRecipe);
+  //       if (data.canEditRecipe) {
+  //         reset({
+  //           recipeName: data.name,
+  //           recipeDescription: data.shortDescription,
+  //           recipeInstructions: data.details,
+  //         });
+  //       }
+  //     } else {
+  //       setNotFound(true);
+  //     }
+  //   }
+  // }, [reset, recipeQuery.data, recipeQuery.isFetchedAfterMount, dataLoaded]);
 
   const isConflicted = versionString !== recipeQuery.data?.versionTag;
   const enableForm =

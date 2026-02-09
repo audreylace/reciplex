@@ -5,6 +5,7 @@ import {
   type ICreateRecipeBookArgs,
   type IGetRecipeBooksArgs,
   type IGetRecipeBooksResult,
+  type IGetRecipeByIdResult,
   type IGetSessionInformationResult,
   type IRecipeBookModel,
   type IRecipeBookStore,
@@ -192,7 +193,7 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
   async getRecipeById(
     recipeId: string,
     args?: { noCache?: boolean },
-  ): Promise<IRecipeModel | null> {
+  ): Promise<IGetRecipeByIdResult | null> {
     const response = await this.httpGet(
       `v1/recipes/${encodeURIComponent(recipeId)}`,
       undefined,
@@ -244,7 +245,7 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
 
       await this.throwUnexpectedHttpResult(response);
     }
-    return await this.decodeSingleRecipeResult(response);
+    return (await this.decodeSingleRecipeResult(response)).recipe;
   }
 
   /**
@@ -331,7 +332,7 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
 
       await this.throwUnexpectedHttpResult(response);
     }
-    return await this.decodeSingleRecipeResult(response);
+    return (await this.decodeSingleRecipeResult(response)).recipe;
   }
 
   /**
@@ -473,7 +474,9 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
    * @param response the fetch response
    * @returns the decoded `IRecipeModel`
    */
-  async decodeSingleRecipeResult(response: Response): Promise<IRecipeModel> {
+  async decodeSingleRecipeResult(
+    response: Response,
+  ): Promise<{ recipe: IRecipeModel; book: IRecipeBookModel }> {
     const json: ISingleRecipeJson | undefined | null = await response.json();
 
     if (!json) {
@@ -481,17 +484,19 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
     }
 
     this.decodeUserJson(json.recipeBookOwner);
-    this.decodeRecipeBookJson(json.recipeBook);
 
     return {
-      id: json.recipe.recipeKey,
-      name: json.recipe.name,
-      shortDescription: json.recipe.shortDescription,
-      details: json.recipe.details,
-      bookId: json.recipe.bookKey,
-      canEditRecipe: json.recipe.mayEdit ?? false,
-      canDeleteRecipe: json.recipe.mayEdit ?? false,
-      versionTag: json.recipe.concurrencyTag,
+      recipe: {
+        id: json.recipe.recipeKey,
+        name: json.recipe.name,
+        shortDescription: json.recipe.shortDescription,
+        details: json.recipe.details,
+        bookId: json.recipe.bookKey,
+        canEditRecipe: json.recipe.mayEdit ?? false,
+        canDeleteRecipe: json.recipe.mayEdit ?? false,
+        versionTag: json.recipe.concurrencyTag,
+      },
+      book: this.decodeRecipeBookJson(json.recipeBook),
     };
   }
 

@@ -26,16 +26,7 @@
   }
 }
 .bookCell {
-  padding: 10px 10px;
   overflow-wrap: anywhere;
-}
-
-.bookName {
-  padding-left: 0.6em;
-}
-
-.bookDescription {
-  font-size: 0.9em;
 }
 
 .bookIconLink {
@@ -77,5 +68,13 @@
 @media (min-width: 768px) {
   .bookRow {
     grid-template-columns: 20% calc(80% - 2em) 2em;
+  }
+
+  .bookName {
+    padding-left: 0.6em;
+  }
+
+  .bookCell {
+    padding: 10px 10px;
   }
 }

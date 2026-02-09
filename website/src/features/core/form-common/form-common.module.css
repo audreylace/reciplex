@@ -1,10 +1,18 @@
 .inputGroup {
   display: flex;
   flex-direction: column;
+  margin-bottom: 0.6em;
+}
+
+.label {
+  margin-bottom: 0.2em;
+  font-size: 0.9em;
 }
 
 .formLegend {
-  margin-bottom: 1em;
+  margin-bottom: min(1em, calc(0.3em + 0.6vw));
+  border-bottom: 1px solid oklch(80.8% 0.114 19.571);
+  font-size: 1.1em;
 }
 
 .fieldControl {
@@ -12,9 +20,14 @@
   border: 2px;
   border-radius: 0.2em;
   padding: 0.2em 0.3em;
+  font-size: 1em;
 }
 
 .fieldControl[data-focus] {
   box-shadow: 0px 0px 5px 0px oklch(70.7% 0.022 261.325);
   outline: 0;
+}
+
+.fieldSet {
+  border-radius: 0.3em;
 }

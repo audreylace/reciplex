@@ -20,6 +20,10 @@
   padding-right: 20px;
   flex-wrap: wrap;
   flex-direction: row;
+
+  h2 {
+    font-size: 1.6em;
+  }
 }
 
 .topLevelHeaderSpacer {
@@ -45,11 +49,6 @@
     overflow: hidden;
   }
 
-  /* ensure the table scrolls not the body */
-  body {
-    overflow: hidden;
-  }
-
   .recipeBookList {
     /* 
      * Set a height and enable scroll on the table wrapper.
@@ -72,6 +71,16 @@
 @media (max-width: 768px) {
   .recipeBookList {
     /* extra padding since we have a floating nav bar */
-    padding-bottom: 10em;
+    padding-bottom: 4em;
+  }
+
+  .topLevelHeaderWrapper {
+    display: block;
+    text-align: center;
+    h2 {
+      font-size: 1.2em;
+      text-align: left;
+    }
+    margin-bottom: 0.5em;
   }
 }

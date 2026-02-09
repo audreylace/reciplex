@@ -4,6 +4,15 @@ import {
   RecipeShortDescriptionMaxLength,
 } from "../../../../services/recipe-store";
 import style from "./recipe-meta-fields.module.css";
+import commonFormStyles from "../../../core/form-common/form-common.module.css";
+import {
+  Field,
+  Fieldset,
+  Input,
+  Label,
+  Legend,
+  Textarea,
+} from "@headlessui/react";
 
 /**
  * Renders a form component for modifying the name and short description of a recipe.
@@ -23,12 +32,13 @@ export function RecipeMetaFields<TFormModel extends RecipeMetaFormModel>({
   errors: FieldErrors<TFormModel>;
 }) {
   return (
-    <fieldset disabled={disabled}>
-      <legend>{legendText}</legend>
-      <label className={style.inputGroup}>
-        <span>Recipe Name</span>
-        <input
+    <Fieldset className={commonFormStyles.fieldSet} disabled={disabled}>
+      <Legend className={commonFormStyles.formLegend}>{legendText}</Legend>
+      <Field className={commonFormStyles.inputGroup}>
+        <Label className={commonFormStyles.label}>Recipe Name</Label>
+        <Input
           type="text"
+          className={commonFormStyles.fieldControl}
           required
           maxLength={RecipeNameMaxLength}
           {...(register as unknown as UseFormRegister<RecipeMetaFormModel>)(
@@ -38,17 +48,21 @@ export function RecipeMetaFields<TFormModel extends RecipeMetaFormModel>({
               maxLength: RecipeNameMaxLength,
             },
           )}
-        ></input>
+        ></Input>
         {errors.recipeName?.type === "required" && (
           <span>Name is Required</span>
         )}
         {errors.recipeName?.type === "maxLength" && (
           <span>Name has a max length of {RecipeNameMaxLength}</span>
         )}
-      </label>
-      <label className={style.inputGroup}>
-        <span>Short Recipe Description</span>
-        <textarea
+      </Field>
+      <Field className={commonFormStyles.inputGroup}>
+        <Label className={commonFormStyles.label}>
+          Short Recipe Description
+        </Label>
+        <Textarea
+          className={commonFormStyles.fieldControl}
+          rows={3}
           maxLength={RecipeShortDescriptionMaxLength}
           {...(register as unknown as UseFormRegister<RecipeMetaFormModel>)(
             "recipeDescription",
@@ -57,15 +71,15 @@ export function RecipeMetaFields<TFormModel extends RecipeMetaFormModel>({
               maxLength: RecipeShortDescriptionMaxLength,
             },
           )}
-        ></textarea>
-      </label>
-      {errors.recipeDescription?.type === "maxLength" && (
-        <span>
-          Short description has a max length of{" "}
-          {RecipeShortDescriptionMaxLength}
-        </span>
-      )}
-    </fieldset>
+        ></Textarea>
+        {errors.recipeDescription?.type === "maxLength" && (
+          <span>
+            Short description has a max length of{" "}
+            {RecipeShortDescriptionMaxLength}
+          </span>
+        )}
+      </Field>
+    </Fieldset>
   );
 }
 

@@ -2,13 +2,13 @@ html,
 body,
 #app {
   margin: 0;
-  height: 100dvh;
-  font-size: 1.1em;
 }
 
 body {
   background: oklch(96.9% 0.015 12.422);
   color: oklch(20.5% 0 0);
+  min-height: 100dvh;
+  font-size: calc(20px + 0.3vw);
 }
 
 /* Make links behave like any other element */
@@ -19,4 +19,11 @@ a {
     color: inherit;
     text-decoration: inherit;
   }
+}
+
+/** 
+* Swap Reboot's units for headers from rem to em
+*/
+h1 {
+  font-size: calc(1.375em + 1.5vw);
 }

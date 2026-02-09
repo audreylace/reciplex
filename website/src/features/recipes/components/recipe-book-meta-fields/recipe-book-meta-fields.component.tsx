@@ -46,11 +46,11 @@ export function RecipeBookMetaFields<
             },
           )}
         ></Input>
+        {errors.bookName?.type === "required" && <span>Name is Required</span>}
+        {errors.bookName?.type === "maxLength" && (
+          <span>Name has a max length of {RecipeBookNameMaxLength}</span>
+        )}
       </Field>
-      {errors.bookName?.type === "required" && <span>Name is Required</span>}
-      {errors.bookName?.type === "maxLength" && (
-        <span>Name has a max length of {RecipeBookNameMaxLength}</span>
-      )}
       <Field className={fieldStyles.inputGroup}>
         <Label>Book Description</Label>
         <Textarea
@@ -64,12 +64,13 @@ export function RecipeBookMetaFields<
             },
           )}
         ></Textarea>
+        {errors.bookDescription?.type === "maxLength" && (
+          <span>
+            Description has a max length of{" "}
+            {RecipeBookShortDescriptionMaxLength}
+          </span>
+        )}
       </Field>
-      {errors.bookDescription?.type === "maxLength" && (
-        <span>
-          Description has a max length of {RecipeBookShortDescriptionMaxLength}
-        </span>
-      )}
     </Fieldset>
   );
 }

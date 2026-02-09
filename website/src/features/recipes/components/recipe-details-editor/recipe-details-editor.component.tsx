@@ -1,4 +1,23 @@
-import MDEditor from "@uiw/react-md-editor";
+import {
+  bold,
+  getCommands,
+  handleKeyDown,
+  shortcuts,
+  TextAreaCommandOrchestrator,
+  heading1,
+  heading2,
+  heading3,
+  heading4,
+  heading5,
+  heading6,
+  italic,
+  unorderedListCommand,
+  orderedListCommand,
+  fullscreen,
+  divider,
+  code,
+  quote,
+} from "@uiw/react-md-editor/nohighlight";
 import rehypeSanitize from "rehype-sanitize";
 import {
   type FieldErrors,
@@ -9,12 +28,18 @@ import {
   type UseFormSetValue,
   type UseFormWatch,
 } from "react-hook-form";
-import { useCallback, useMemo } from "preact/hooks";
+import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
 type StringFormKey<
   TFormModel extends FieldValues,
   TFieldName extends FieldPath<TFormModel>,
 > = FieldPathValue<TFormModel, TFieldName> extends string ? TFieldName : never;
+
+import commonFormStyles from "../../../core/form-common/form-common.module.css";
+import { Field, Fieldset, Label, Legend, Textarea } from "@headlessui/react";
+
+import styles from "./recipe-details-editor.module.css";
+import { link } from "@uiw/react-md-editor";
 
 /**
  * Max length field constraint
@@ -137,29 +162,257 @@ function RecipeMarkdownEditorInternal<
       }),
     [setValue],
   );
+
+  const textareaRef = useRef(null);
+  const orchestratorRef = useRef<TextAreaCommandOrchestrator | null>(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      orchestratorRef.current = new TextAreaCommandOrchestrator(
+        textareaRef.current,
+      );
+    }
+  }, []);
+
+  const onKeyDown = (e: any) => {
+    handleKeyDown(e, 2, false);
+    if (orchestratorRef.current) {
+      shortcuts(e, getCommands(), orchestratorRef.current);
+    }
+  };
+
   return (
-    <fieldset disabled={disabled}>
-      <legend>{legendText}</legend>
-      {maxLength && errors[name]?.type === "maxLength" && (
-        <span>{maxLengthMessage}</span>
-      )}
-      <label>
-        {label}
-        <MDEditor
+    <Fieldset disabled={disabled} className={commonFormStyles.fieldSet}>
+      <Legend className={commonFormStyles.formLegend}>{legendText}</Legend>
+      <Field className={commonFormStyles.inputGroup}>
+        <Label className={commonFormStyles.label}>{label}</Label>
+        {maxLength && errors[name]?.type === "maxLength" && (
+          <span>{maxLengthMessage}</span>
+        )}
+        <ul className={styles.editorMenu}>
+          <li>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                orchestratorRef.current?.executeCommand(bold);
+              }}
+            >
+              <i class="bi bi-type-bold"></i>
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                orchestratorRef.current?.executeCommand(italic);
+              }}
+            >
+              <i class="bi bi-type-italic"></i>
+            </button>
+          </li>
+          <li className={styles.menuDivider}>&#8203;</li>
+          <li>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                orchestratorRef.current?.executeCommand(heading1);
+              }}
+            >
+              <i class="bi bi-type-h1"></i>
+            </button>
+          </li>
+
+          <li>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                orchestratorRef.current?.executeCommand(heading2);
+              }}
+            >
+              <i class="bi bi-type-h2"></i>
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                orchestratorRef.current?.executeCommand(heading3);
+              }}
+            >
+              <i class="bi bi-type-h3"></i>
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                orchestratorRef.current?.executeCommand(heading4);
+              }}
+            >
+              <i class="bi bi-type-h4"></i>
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                orchestratorRef.current?.executeCommand(heading5);
+              }}
+            >
+              <i class="bi bi-type-h5"></i>
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                orchestratorRef.current?.executeCommand(heading6);
+              }}
+            >
+              <i class="bi bi-type-h6"></i>
+            </button>
+          </li>
+          <li className={styles.menuDivider}>&#8203;</li>
+          <li>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                orchestratorRef.current?.executeCommand(code);
+              }}
+            >
+              <i class="bi bi-quote"></i>
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                orchestratorRef.current?.executeCommand(quote);
+              }}
+            >
+              <i class="bi bi-blockquote-left"></i>
+            </button>
+          </li>
+          <li className={styles.menuDivider}>&#8203;</li>
+          <li>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                orchestratorRef.current?.executeCommand(unorderedListCommand);
+              }}
+            >
+              <i class="bi bi-list-ul"></i>
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                orchestratorRef.current?.executeCommand(orderedListCommand);
+              }}
+            >
+              <i class="bi bi-list-ol"></i>
+            </button>
+          </li>
+          <li className={styles.menuDivider}>
+            <div>&#8203;</div>
+          </li>
+          <li>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                const orchestrator = orchestratorRef.current;
+                if (!orchestrator) {
+                  return;
+                }
+
+                const state = orchestrator.getState();
+                if (!state) {
+                  return;
+                }
+                let modifyText = "`{{@ingredient " + state.selectedText + "}}`";
+
+                //` ${state.selectedText}\n`;
+                if (!state.selectedText) {
+                  modifyText = `### `;
+                }
+                orchestrator.textApi.replaceSelection(modifyText);
+              }}
+            >
+              <i class="bi bi-cart4"></i>
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                const orchestrator = orchestratorRef.current;
+                if (!orchestrator) {
+                  return;
+                }
+
+                const state = orchestrator.getState();
+                if (!state) {
+                  return;
+                }
+                let modifyText = "`{{@section " + state.selectedText + "}}`";
+
+                //` ${state.selectedText}\n`;
+                if (!state.selectedText) {
+                  modifyText = `### `;
+                }
+                orchestrator.textApi.replaceSelection(modifyText);
+              }}
+            >
+              <i class="bi bi-puzzle-fill"></i>
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                const orchestrator = orchestratorRef.current;
+                if (!orchestrator) {
+                  return;
+                }
+
+                const state = orchestrator.getState();
+                if (!state) {
+                  return;
+                }
+                let modifyText = "`{{@recipe " + state.selectedText + "}}`";
+
+                //` ${state.selectedText}\n`;
+                if (!state.selectedText) {
+                  modifyText = `### `;
+                }
+                orchestrator.textApi.replaceSelection(modifyText);
+              }}
+            >
+              <i class="bi bi-fork-knife"></i>
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                orchestratorRef.current?.executeCommand(link);
+              }}
+            >
+              <i class="bi bi-link-45deg"></i>
+            </button>
+          </li>
+        </ul>
+
+        <Textarea
+          className={`${styles.detailsEditor}`}
+          ref={textareaRef}
           value={value}
-          onChange={onChange}
-          autoFocus={true}
-          preview="edit"
-          previewOptions={{
-            rehypePlugins: [[rehypeSanitize]],
-          }}
-          textareaProps={{
-            ...register(name, {
-              maxLength: maxLength,
-            }),
-          }}
+          onChange={(e: any) => onChange(e.target.value)}
+          onKeyDown={onKeyDown}
+          rows={8}
         />
-      </label>
-    </fieldset>
+      </Field>
+    </Fieldset>
   );
 }

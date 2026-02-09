@@ -6,11 +6,7 @@ import { RecipeStore } from "../../features/recipes/hooks/useRecipeStoreContext.
 import { useLayoutTitle } from "./default-layout.state";
 
 export function DefaultLayout({}: {}) {
-  return (
-    <div className={styles.mainWrapper}>
-      <Outlet />
-    </div>
-  );
+  return <Outlet />;
 }
 
 function User() {
