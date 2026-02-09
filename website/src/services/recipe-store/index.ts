@@ -308,7 +308,7 @@ export interface IRecipeBookStore {
    * Creates a recipe
    * @param args recipe creation args
    */
-  createRecipe(args: ICreateRecipeArgs): Promise<IRecipeModel>;
+  createRecipe(args: ICreateRecipeArgs): Promise<IGetRecipeByIdResult>;
 
   /**
    * Deletes a recipe
@@ -331,7 +331,7 @@ export interface IRecipeBookStore {
   updateRecipe(
     recipeId: string,
     args: IUpdateRecipeArgs,
-  ): Promise<IRecipeModel>;
+  ): Promise<IGetRecipeByIdResult>;
 }
 
 export class ConcurrencyConflict extends Error {

@@ -9,7 +9,7 @@ export function useCreateRecipeMutation() {
   return useMutation({
     mutationFn: async (data: ICreateRecipeArgs) => {
       const result = await recipeStore.createRecipe(data);
-      queryClient.setQueryData(recipeByIdCacheKey(result.id), result);
+      queryClient.setQueryData(recipeByIdCacheKey(result.recipe.id), result);
       return result;
     },
   });

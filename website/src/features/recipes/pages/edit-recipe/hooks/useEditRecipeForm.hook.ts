@@ -40,7 +40,7 @@ export function useEditRecipeForm(recipe: IRecipeModel, conflicted: boolean) {
         versionTag: recipe.versionTag,
       });
 
-      navigate(makeViewRecipePath(result.id));
+      navigate(makeViewRecipePath(result.recipe.id));
     }
   };
 

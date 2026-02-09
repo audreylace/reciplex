@@ -41,7 +41,7 @@ export function CreateRecipeForm({
       bookId: bookId,
     });
 
-    onCreated(recipe);
+    onCreated(recipe.recipe);
   };
   return (
     <form onSubmit={handleSubmit(onSubmit)}>

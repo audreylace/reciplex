@@ -227,7 +227,7 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
   /**
    * @inheritdoc
    */
-  async createRecipe(args: ICreateRecipeArgs): Promise<IRecipeModel> {
+  async createRecipe(args: ICreateRecipeArgs): Promise<IGetRecipeByIdResult> {
     const response = await this.httpPost(
       "v1/recipes",
       {
@@ -245,7 +245,7 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
 
       await this.throwUnexpectedHttpResult(response);
     }
-    return (await this.decodeSingleRecipeResult(response)).recipe;
+    return await this.decodeSingleRecipeResult(response);
   }
 
   /**
@@ -310,7 +310,7 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
   async updateRecipe(
     recipeId: string,
     args: IUpdateRecipeArgs,
-  ): Promise<IRecipeModel> {
+  ): Promise<IGetRecipeByIdResult> {
     const response = await this.httpPut(
       `v1/recipes/${encodeURIComponent(recipeId)}`,
       args.versionTag,
@@ -332,7 +332,7 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
 
       await this.throwUnexpectedHttpResult(response);
     }
-    return (await this.decodeSingleRecipeResult(response)).recipe;
+    return await this.decodeSingleRecipeResult(response);
   }
 
   /**
