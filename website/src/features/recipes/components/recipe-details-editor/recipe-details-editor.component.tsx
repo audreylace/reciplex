@@ -332,9 +332,8 @@ function RecipeMarkdownEditorInternal<
                 }
                 let modifyText = "`{{@ingredient " + state.selectedText + "}}`";
 
-                //` ${state.selectedText}\n`;
                 if (!state.selectedText) {
-                  modifyText = `### `;
+                  modifyText = "`{{@ingredient ###}}`";
                 }
                 orchestrator.textApi.replaceSelection(modifyText);
               }}
@@ -357,9 +356,8 @@ function RecipeMarkdownEditorInternal<
                 }
                 let modifyText = "`{{@section " + state.selectedText + "}}`";
 
-                //` ${state.selectedText}\n`;
                 if (!state.selectedText) {
-                  modifyText = `### `;
+                  modifyText = "`{{@selection ###}}`";
                 }
                 orchestrator.textApi.replaceSelection(modifyText);
               }}
@@ -380,11 +378,10 @@ function RecipeMarkdownEditorInternal<
                 if (!state) {
                   return;
                 }
-                let modifyText = "`{{@recipe " + state.selectedText + "}}`";
+                let modifyText = "(" + state.selectedText + ")[recipe://]";
 
-                //` ${state.selectedText}\n`;
                 if (!state.selectedText) {
-                  modifyText = `### `;
+                  modifyText = "()[recipe://]";
                 }
                 orchestrator.textApi.replaceSelection(modifyText);
               }}
