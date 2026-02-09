@@ -27,12 +27,10 @@ export function RecipeBookMetaFields<
   errors: FieldErrors<TFormModel>;
 }) {
   return (
-    <Fieldset disabled={disabled}>
-      <Legend className={fieldStyles.formLegend}>
-        <h2>{legend}</h2>
-      </Legend>
+    <Fieldset className={fieldStyles.fieldSet} disabled={disabled}>
+      <Legend className={fieldStyles.formLegend}>{legend}</Legend>
       <Field className={fieldStyles.inputGroup}>
-        <Label>Name of Book</Label>
+        <Label className={fieldStyles.label}>Name of Book</Label>
         <Input
           className={fieldStyles.fieldControl}
           type="text"
@@ -52,7 +50,7 @@ export function RecipeBookMetaFields<
         )}
       </Field>
       <Field className={fieldStyles.inputGroup}>
-        <Label>Book Description</Label>
+        <Label className={fieldStyles.label}>Book Description</Label>
         <Textarea
           className={fieldStyles.fieldControl}
           maxLength={RecipeBookShortDescriptionMaxLength}
