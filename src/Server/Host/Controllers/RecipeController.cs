@@ -164,6 +164,8 @@ public class RecipesController(
 
         return updateResult.Outcome switch
         {
+            UpdateRecipeResultOutcome.ConcurrencyConflict =>
+                recipeProblemFactory.RecipePreconditionFailed(recipeKey, "If-Match"),
             UpdateRecipeResultOutcome.NotFound => recipeProblemFactory.RecipeNotFoundResult(
                 recipeKey
             ),
