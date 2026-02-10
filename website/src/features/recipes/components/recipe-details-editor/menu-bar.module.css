@@ -1,0 +1,17 @@
+.menuBar {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+
+  background-color: var(--rcx-color-secondary-light);
+
+  border-top-left-radius: var(--rcx-border-radius);
+  border-top-right-radius: var(--rcx-border-radius);
+}
+
+.expandSpacer {
+  flex: 1;
+}

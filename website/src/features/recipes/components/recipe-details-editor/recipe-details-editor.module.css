@@ -1,37 +1,39 @@
-.editorMenu {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  flex-direction: row;
-  border: solid black;
-  border-width: 1px 1px 0px 1px;
-  background-color: white;
-
-  border-top-left-radius: 5px;
-  border-top-right-radius: 5px;
-  button {
-    border: 0;
-    background-color: transparent;
-    &:hover {
-      background: black;
-      color: white;
-    }
-  }
-}
-
-.menuDivider {
-  background: gray;
-  width: 1px;
-  height: 1.1em;
-  margin-top: 0.2em;
-}
-
-.detailsEditor {
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+.detailsEditor,
+.detailsEditorFullScreen {
   outline: none;
-  border-bottom-left-radius: 5px;
-  border-bottom-right-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--rcx-color-lightest);
+}
+
+.textArea {
+  outline: none;
+  border: var(--rcx-form-control-border);
+  border-bottom-left-radius: var(--rcx-border-radius);
+  border-bottom-right-radius: var(--rcx-border-radius);
+}
+
+.detailsEditorFullScreen {
+  width: 100dvw;
+  height: 100dvh;
+  z-index: 1000;
+  overflow: scroll;
+  position: fixed;
+  display: flex;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+.textAreaFullScreen {
+  resize: none;
+  outline: none;
+  border: 0;
+  flex: 1;
+}
+
+.dialogPanel {
+  width: 100dvw;
+  height: 100dvh;
+  overflow: hidden;
 }

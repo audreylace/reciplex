@@ -6,17 +6,6 @@ import type {
 } from "../../../../../services/recipe-store";
 import { useState } from "preact/hooks";
 
-// UI States --
-//  * loading
-//  * loading failed
-//  * not found
-//  * lacks write security
-//. * editing
-//. * saving
-//. * saving failed
-//. * saving failed conflict
-//. * back navigate
-
 /**
  * hook for getting the initial data for the recipe page
  */
@@ -24,6 +13,7 @@ export function useGetInitialDataForRecipeEdit(): GetInitialDataForRecipeEditRet
   const { recipeId } = useParams<{ recipeId: string }>();
   const recipeQuery = useGetRecipeByIdQuery(recipeId ?? "", {
     noCache: true,
+    refetchInterval: 15000,
   });
   const [loadedData, setLoadedData] =
     useState<GetInitialDataForRecipeEditReturnWithData | null>(null);
@@ -36,7 +26,7 @@ export function useGetInitialDataForRecipeEdit(): GetInitialDataForRecipeEditRet
         recipe: loadedData.recipe,
         book: loadedData.book,
       };
-      setLoadedData(newState);
+      setLoadedData((s) => (s && s.tag !== "conflict" ? newState : s));
       return newState;
     }
 
@@ -49,6 +39,16 @@ export function useGetInitialDataForRecipeEdit(): GetInitialDataForRecipeEditRet
   }
 
   if (recipeQuery.status === "success") {
+    // only want new data not cached data from react query
+    if (!recipeQuery.isFetchedAfterMount) {
+      if (recipeQuery.isPaused) {
+        return { tag: "offline" };
+      }
+      if (recipeQuery.isRefetching) {
+        return { tag: "loading" };
+      }
+    }
+
     // API returns null when entry is not found
     if (!recipeQuery.data) {
       return { tag: "not-found" };

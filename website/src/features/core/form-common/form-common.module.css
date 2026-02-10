@@ -10,24 +10,29 @@
 }
 
 .formLegend {
-  margin-bottom: min(1em, calc(0.3em + 0.6vw));
-  border-bottom: 1px solid oklch(80.8% 0.114 19.571);
+  margin-bottom: 0.3em;
+  border-bottom: 1px solid var(--rcx-color-primary-border);
   font-size: 1.1em;
 }
 
+.fieldControl,
+.fieldComplexControl {
+  box-shadow: 0px 0px 2px 0px var(--rcx-color-shadow);
+  border: var(--rcx-form-control-border);
+  border-radius: var(--rcx-border-radius);
+}
+
 .fieldControl {
-  box-shadow: 0px 0px 2px 0px oklch(70.7% 0.022 261.325);
-  border: 2px;
-  border-radius: 0.2em;
   padding: 0.2em 0.3em;
   font-size: 1em;
 }
 
-.fieldControl[data-focus] {
-  box-shadow: 0px 0px 5px 0px oklch(70.7% 0.022 261.325);
+.fieldControl[data-focus],
+.fieldComplexControl:focus-within {
+  box-shadow: 0px 0px 5px 0px var(--rcx-color-shadow);
   outline: 0;
 }
 
 .fieldSet {
-  border-radius: 0.3em;
+  border-radius: var(--rcx-border-radius);
 }

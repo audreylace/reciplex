@@ -1,3 +1,22 @@
+:root {
+  --rcx-border-radius: 0.3em;
+
+  /* colors */
+  --rcx-color-primary-border: oklch(80.8% 0.114 19.571);
+
+  --rcx-color-secondary-light: oklch(95.4% 0.038 75.164);
+
+  --rcx-color-text: oklch(20.5% 0 0);
+
+  --rcx-color-body-background: oklch(96.9% 0.015 12.422);
+
+  --rcx-color-lightest: white;
+  --rcx-color-shadow: oklch(70.7% 0.022 261.325);
+
+  /* form styles */
+  --rcx-form-control-border: 2px;
+}
+
 html,
 body,
 #app {
@@ -5,8 +24,8 @@ body,
 }
 
 body {
-  background: oklch(96.9% 0.015 12.422);
-  color: oklch(20.5% 0 0);
+  background: var(--rcx-color-body-background);
+  color: var(--rcx-color-text);
   min-height: 100dvh;
   font-size: calc(20px + 0.3vw);
 }
