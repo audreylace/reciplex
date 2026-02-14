@@ -1,11 +1,11 @@
 .bookRow {
-  border-bottom: solid 1px oklch(80.8% 0.114 19.571);
+  border-bottom: solid 1px var(--rcx-color-primary-border);
   display: grid;
   background-color: oklch(93.6% 0.032 17.717);
 
   /* zebra stripe the table */
   &:nth-child(even) {
-    background-color: oklch(95.4% 0.038 75.164);
+    background-color: var(--rcx-color-secondary-light);
   }
 
   &:not([data-disabled="true"]):hover {

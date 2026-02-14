@@ -10,7 +10,7 @@
 }
 
 .success[data-disabled] {
-  background-color: oklch(95.4% 0.038 75.164);
+  background-color: var(--rcx-color-secondary-light);
   color: oklch(70.8% 0 0);
   border-color: oklch(98% 0.016 73.684);
 }

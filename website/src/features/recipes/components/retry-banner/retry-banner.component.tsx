@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router";
-import styles from "./retry-banner.module.css";
 import { PrimaryButton } from "../../../core/primary-button/primary-button.component";
 
 export function RetryBannerComponent({ message }: { message: string }) {
@@ -8,7 +7,6 @@ export function RetryBannerComponent({ message }: { message: string }) {
     <p>
       {message}{" "}
       <PrimaryButton
-        className={styles.tryAgainButton}
         onClick={(event) => {
           event.preventDefault();
           navigate(0);
