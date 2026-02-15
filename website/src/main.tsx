@@ -8,12 +8,12 @@ import { ViewRecipeBookPage } from "./features/recipes/pages/view-recipe-book/vi
 import { CreateRecipeBookPage } from "./features/recipes/pages/create-recipe-book/create-recipe-book-page.tsx";
 import { CreateRecipePage } from "./features/recipes/pages/create-recipe/create-recipe-page.tsx";
 import { ViewRecipePage } from "./features/recipes/pages/view-recipe/view-recipe-page.tsx";
-import { EditRecipePage } from "./features/recipes/pages/edit-recipe/edit-recipe-page.tsx";
+import { EditRecipePage } from "./features/recipes/pages/edit-recipe/edit-recipe-page.component.tsx";
 import { DefaultLayout } from "./layouts/default/default-layout.tsx";
 import { LocalRecipeBookStoreImplementation } from "./services/recipe-store/LocalRecipeBookStoreImplementation.ts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RecipeStore } from "./features/recipes/hooks/useRecipeStoreContext.hook.ts";
-import { DeleteRecipePage } from "./features/recipes/pages/delete-recipe/delete-recipe-page.tsx";
+import { DeleteRecipePage } from "./features/recipes/pages/delete-recipe/delete-recipe-page.component.tsx";
 import { DeleteRecipeBookPage } from "./features/recipes/pages/delete-recipe-book/delete-recipe-book-page.tsx";
 import { EditRecipeBookPage } from "./features/recipes/pages/edit-recipe-book/edit-recipe-book-page.tsx";
 import { RecipeHttpBookStore } from "./features/recipes/services/recipe-http-book-store.service.ts";

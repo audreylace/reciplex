@@ -4,8 +4,8 @@ import { RecipeBookMetaFields } from "../../../../components/recipe-book-meta-fi
 import type { IRecipeBookModel } from "../../../../../../services/recipe-store";
 import styles from "./create-recipe-book-form.module.css";
 import { RetryBannerComponent } from "../../../../components/retry-banner/retry-banner.component";
-import { DangerButton } from "../../../../../core/danger-button/danger-button.component";
-import { SuccessButton } from "../../../../../core/success-button/success-button.component";
+import { DangerButton } from "../../../../../core/components/danger-button/danger-button.component";
+import { SuccessButton } from "../../../../../core/components/success-button/success-button.component";
 
 export function CreateRecipeBookForm({
   onCreated,

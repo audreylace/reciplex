@@ -1,7 +1,13 @@
 import { useNavigate } from "react-router";
-import { PrimaryButton } from "../../../core/primary-button/primary-button.component";
+import { PrimaryButton } from "../../../core/components/primary-button/primary-button.component";
 
-export function RetryBannerComponent({ message }: { message: string }) {
+export function RetryBannerComponent({
+  message,
+  buttonCaption,
+}: {
+  message: string;
+  buttonCaption?: string;
+}) {
   const navigate = useNavigate();
   return (
     <p>
@@ -12,8 +18,8 @@ export function RetryBannerComponent({ message }: { message: string }) {
           navigate(0);
         }}
       >
-        <i class="bi bi-arrow-clockwise"></i>
-        Try again?
+        <i className="bi bi-arrow-clockwise"></i>
+        {buttonCaption ?? "Try again?"}
       </PrimaryButton>
     </p>
   );

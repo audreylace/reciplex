@@ -1,4 +1,4 @@
-import { SuccessButton } from "../../../core/success-button/success-button.component";
+import { SuccessButton } from "../../../core/components/success-button/success-button.component";
 
 /**
  * Menu button component inside the markdown recipe details editor menu bar

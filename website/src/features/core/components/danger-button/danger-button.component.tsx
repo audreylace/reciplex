@@ -1,6 +1,6 @@
 import { type ButtonProps } from "@headlessui/react";
 import styles from "./danger-button.module.css";
-import { ButtonCommon } from "../button-common/button-common";
+import { ButtonCommon } from "../../button-common/button-common";
 
 export function DangerButton({
   className,

@@ -1,6 +1,9 @@
 import { type ButtonProps } from "@headlessui/react";
 import styles from "./success-button.module.css";
-import { ButtonCommon, type ButtonType } from "../button-common/button-common";
+import {
+  ButtonCommon,
+  type ButtonType,
+} from "../../button-common/button-common";
 
 export function SuccessButton({
   className,

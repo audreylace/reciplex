@@ -7,14 +7,18 @@ import { RecipeNotFoundBanner } from "../../components/recipe-not-found-banner/r
 import { FetchingRecipeBanner } from "../../components/fetching-recipe-banner/fetching-recipe-banner.component";
 import { FetchingRecipeFailedBanner } from "../../components/fetching-recipe-failed-banner/fetching-recipe-failed-banner.component";
 import { BadPathBanner } from "../../components/bad-path-banner/bad-path-banner.component";
-import { DangerButton } from "../../../core/danger-button/danger-button.component";
-import { PrimaryButton } from "../../../core/primary-button/primary-button.component";
+import { DangerButton } from "../../../core/components/danger-button/danger-button.component";
+import { PrimaryButton } from "../../../core/components/primary-button/primary-button.component";
 import styles from "./view-recipe-page.module.css";
+import {
+  makeRecipeNameAndDescriptionState,
+  RecipeNameAndDescription,
+} from "../../components/recipe-title-and-description/recipe-title-and-description.component";
 
 /**
  * page for viewing a recipe
  */
-export function ViewRecipePage({}: {}) {
+export function ViewRecipePage() {
   const { recipeId } = useParams<{ recipeId: string }>();
   const recipeQuery = useGetRecipeByIdQuery(recipeId, {
     refetchInterval: 60000, // refresh every 60 seconds
@@ -26,6 +30,39 @@ export function ViewRecipePage({}: {}) {
 
   return (
     <main className="pageMain">
+      <RecipeNameAndDescription
+        name={recipeData?.recipe?.name}
+        shortDescription={recipeData?.recipe?.shortDescription}
+      >
+        {recipeData?.recipe.mayEdit && (
+          <div className={styles.actionButtonsBar}>
+            <PrimaryButton
+              onClick={() => {
+                navigate(makeEditRecipePath(recipeData.recipe.id), {
+                  state: makeRecipeNameAndDescriptionState(
+                    recipeData.recipe.name,
+                    recipeData.recipe.shortDescription,
+                  ),
+                });
+              }}
+            >
+              Edit Recipe
+            </PrimaryButton>
+            <DangerButton
+              onClick={() => {
+                navigate(`/delete-recipe/${recipeId}`, {
+                  state: makeRecipeNameAndDescriptionState(
+                    recipeData.recipe.name,
+                    recipeData.recipe.shortDescription,
+                  ),
+                });
+              }}
+            >
+              Delete Recipe
+            </DangerButton>
+          </div>
+        )}
+      </RecipeNameAndDescription>
       {!recipeId && <BadPathBanner />}
       {recipeId && (
         <>
@@ -34,30 +71,7 @@ export function ViewRecipePage({}: {}) {
           {notFound && <RecipeNotFoundBanner />}
           {recipeData && (
             <>
-              <div className={styles.header}>
-                <h1>{recipeData.recipe.name}</h1>
-                <p>{recipeData.recipe.shortDescription}</p>
-                <div className={styles.actionButtonsBar}>
-                  {recipeData.recipe.canEditRecipe && (
-                    <PrimaryButton
-                      onClick={() => {
-                        navigate(makeEditRecipePath(recipeData.recipe.id));
-                      }}
-                    >
-                      Edit Recipe
-                    </PrimaryButton>
-                  )}
-                  {recipeData.recipe.canDeleteRecipe && (
-                    <DangerButton
-                      onClick={() => {
-                        navigate(`/delete-recipe/${recipeId}`);
-                      }}
-                    >
-                      Delete Recipe
-                    </DangerButton>
-                  )}
-                </div>
-              </div>
+              <div className={styles.header}></div>
               <h4>Recipe Details</h4>
               <div className={styles.detailsWrapper}>
                 <Markdown rehypePlugins={[rehypeSanitize]}>

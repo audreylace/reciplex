@@ -95,13 +95,9 @@ export interface IRecipeModel {
    */
   shortDescription: string;
   /**
-   * True when the user may edit the recipe
+   * True when the user may edit and delete the recipe
    */
-  canEditRecipe: boolean;
-  /**
-   * True when the user may delete the recipe
-   */
-  canDeleteRecipe: boolean;
+  mayEdit: boolean;
   /**
    * version of the model for optimistic concurrency
    */

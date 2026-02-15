@@ -194,6 +194,19 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
     recipeId: string,
     args?: { noCache?: boolean },
   ): Promise<IGetRecipeByIdResult | null> {
+    if (!args?.noCache) {
+      const recipe = this._cache.getRecipe(recipeId);
+      if (recipe) {
+        const book = this._cache.getBook(recipe.bookId);
+        if (book) {
+          return {
+            recipe,
+            book,
+          };
+        }
+      }
+    }
+
     const response = await this.httpGet(
       `v1/recipes/${encodeURIComponent(recipeId)}`,
       undefined,
@@ -485,17 +498,20 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
 
     this.decodeUserJson(json.recipeBookOwner);
 
+    const recipe = {
+      id: json.recipe.recipeKey,
+      name: json.recipe.name,
+      shortDescription: json.recipe.shortDescription,
+      details: json.recipe.details,
+      bookId: json.recipe.bookKey,
+      mayEdit: json.recipe.mayEdit ?? false,
+      versionTag: json.recipe.concurrencyTag,
+    };
+
+    this._cache.cacheRecipe(recipe);
+
     return {
-      recipe: {
-        id: json.recipe.recipeKey,
-        name: json.recipe.name,
-        shortDescription: json.recipe.shortDescription,
-        details: json.recipe.details,
-        bookId: json.recipe.bookKey,
-        canEditRecipe: json.recipe.mayEdit ?? false,
-        canDeleteRecipe: json.recipe.mayEdit ?? false,
-        versionTag: json.recipe.concurrencyTag,
-      },
+      recipe,
       book: this.decodeRecipeBookJson(json.recipeBook),
     };
   }
@@ -755,6 +771,11 @@ class RecipeDataCache {
   private _bookCache: Cache<IRecipeBookModel> = {};
 
   /**
+   * Caches recipe data
+   */
+  private _recipeCache: Cache<IRecipeModel> = {};
+
+  /**
    * handle from setTimeout inside of `scheduleCleanup`
    */
   private _scheduleCleanupTimeoutHandle?: number;
@@ -822,6 +843,18 @@ class RecipeDataCache {
   }
 
   /**
+   * Invoke to cache recipe data
+   * @param recipe object to cache
+   */
+  public cacheRecipe(recipe: IRecipeModel) {
+    this.scheduleCleanup();
+    this._recipeCache[recipe.id] = {
+      value: recipe,
+      expirationTime: this.expirationTime(),
+    };
+  }
+
+  /**
    * Tries to get a user from the cache
    * @param userId the id of the user
    * @returns the `IUserModel` or undefined if it is not cached
@@ -864,11 +897,40 @@ class RecipeDataCache {
   }
 
   /**
+   * Tries to get a recipe from the cache
+   * @param recipeId the id of the recipe
+   * @returns the `IRecipeModel` or undefined if it is not cached
+   */
+  public getRecipe(recipeId: string): IRecipeModel | undefined {
+    const recipe = this._recipeCache[recipeId];
+
+    if (!recipe) {
+      return;
+    }
+
+    if (recipe.expirationTime > new Date()) {
+      return recipe.value;
+    }
+
+    delete this._recipeCache[recipeId];
+
+    return;
+  }
+
+  /**
    * Expires a book from the cache
    * @param bookId book id to expire
    */
   public expireBook(bookId: string) {
     delete this._bookCache[bookId];
+  }
+
+  /**
+   * Expires a recipe from the cache
+   * @param recipeId recipe id to expire
+   */
+  public expireRecipe(recipeId: string) {
+    delete this._recipeCache[recipeId];
   }
 
   /**

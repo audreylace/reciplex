@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router";
 import styles from "./create-recipe-book-button.module.css";
-import { SuccessButton } from "../../../../../core/success-button/success-button.component";
+import { SuccessButton } from "../../../../../core/components/success-button/success-button.component";
 
 export function CreateRecipeBookButton() {
   const navigation = useNavigate();
