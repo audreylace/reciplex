@@ -1,8 +1,11 @@
-.primary[data-hover] {
+.primary[data-hover],
+.primary[data-button-type="dotted"][data-hover] {
   background-color: oklch(71.4% 0.203 305.504);
+  color: oklch(96.7% 0.001 286.375);
 }
 
-.primary[data-active] {
+.primary[data-active],
+.primary[data-button-type="dotted"][data-active] {
   background-color: oklch(38.1% 0.176 304.987);
 }
 
@@ -16,4 +19,9 @@
   border-color: oklch(71.4% 0.203 305.504);
   color: oklch(21% 0.034 264.665);
   background-color: oklch(82.7% 0.119 306.383);
+}
+
+.primary[data-button-type="dotted"] {
+  color: oklch(71.4% 0.203 305.504);
+  border-color: oklch(71.4% 0.203 305.504);
 }

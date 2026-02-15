@@ -10,13 +10,10 @@ export function SuccessButton({
   buttonType,
   ...props
 }: ButtonProps & { className?: string; buttonType?: ButtonType }) {
-  const extendedStyle =
-    (buttonType ?? "solid") === "solid" ? styles.success : styles.successHidden;
-
   return (
     <ButtonCommon
       buttonType={buttonType}
-      classArray={[className ?? "", extendedStyle]}
+      classArray={[className ?? "", styles.success]}
       {...props}
     />
   );

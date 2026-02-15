@@ -1,9 +1,11 @@
-.danger[data-hover] {
+.danger[data-hover],
+.danger[data-button-type="dotted"][data-hover] {
   background-color: oklch(63.7% 0.237 25.331);
   color: oklch(96.7% 0.001 286.375);
 }
 
-.danger[data-active] {
+.danger[data-active],
+.danger[data-button-type="dotted"][data-active] {
   background-color: oklch(50.5% 0.213 27.518);
 }
 
@@ -17,4 +19,9 @@
   border-color: var(--rcx-color-primary-border);
   color: oklch(21% 0.034 264.665);
   background-color: oklch(88.5% 0.062 18.334);
+}
+
+.danger[data-button-type="dotted"] {
+  color: oklch(63.7% 0.237 25.331);
+  border-color: oklch(63.7% 0.237 25.331);
 }

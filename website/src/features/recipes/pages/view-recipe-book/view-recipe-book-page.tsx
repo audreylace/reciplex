@@ -6,6 +6,9 @@ import { RecipeBookNotFoundBanner } from "../../components/recipe-book-not-found
 import { FetchingRecipeBookBanner } from "../../components/fetching-recipe-book-banner/fetching-recipe-book-banner.component";
 import { FetchingRecipeBookFailedBanner } from "../../components/fetching-recipe-book-failed-banner/fetching-recipe-book-failed-banner.component";
 import { BadPathBanner } from "../../components/bad-path-banner/bad-path-banner.component";
+import { DangerButton } from "../../../core/components/danger-button/danger-button.component";
+import { SuccessButton } from "../../../core/components/success-button/success-button.component";
+import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
 
 /**
  * Entry point for viewing a recipe book
@@ -23,7 +26,7 @@ export function ViewRecipeBookPage({}: {}) {
 
   const notFound = bookQuery.isSuccess && !bookQuery.data;
   return (
-    <main>
+    <main className="pageMain">
       {!bookId && <BadPathBanner />}
       {bookId && (
         <>
@@ -33,29 +36,36 @@ export function ViewRecipeBookPage({}: {}) {
           {bookQuery.isSuccess && bookQuery.data && (
             <>
               <h1>{bookQuery.data.name}</h1>
-              <h4>
+              <p>
                 {userQuery.isSuccess && userQuery.data && (
                   <>Owned by: {userQuery.data?.displayName}</>
                 )}
                 {userQuery.isLoading && <>...</>}
-              </h4>
+              </p>
               <p>{bookQuery.data.shortDescription}</p>
-              {bookQuery.data.canAddRecipesToBook && (
-                <NavLink to={makeCreateRecipePath(bookId)}>Add Recipe</NavLink>
-              )}
-              {bookQuery.data.canDeleteBook && (
-                <NavLink to={`/delete-recipe-book/${bookId}`}>
-                  Delete Recipe Book
-                </NavLink>
-              )}
-              {bookQuery.data.canEditBookInformation && (
-                <NavLink to={`/edit-recipe-book/${bookId}`}>
-                  Edit Recipe Book Information
-                </NavLink>
-              )}
-              {bookQuery.isFetching && (
-                <p>Checking the cloud for updates ...</p>
-              )}
+              <FormButtons>
+                {bookQuery.data.canAddRecipesToBook && (
+                  <NavLink to={makeCreateRecipePath(bookId)}>
+                    <SuccessButton buttonType="dotted">
+                      Add Recipe
+                    </SuccessButton>
+                  </NavLink>
+                )}
+                {bookQuery.data.canDeleteBook && (
+                  <NavLink to={`/books/${bookId}/delete`}>
+                    <DangerButton buttonType="dotted">
+                      Delete Recipe Book
+                    </DangerButton>
+                  </NavLink>
+                )}
+                {bookQuery.data.canEditBookInformation && (
+                  <NavLink to={`/books/${bookId}/edit`}>
+                    <SuccessButton buttonType="dotted">
+                      Edit Recipe Book Information
+                    </SuccessButton>
+                  </NavLink>
+                )}
+              </FormButtons>
             </>
           )}
         </>

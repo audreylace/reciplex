@@ -6,17 +6,19 @@
   box-shadow: 0px 0px 2px 0px var(--rcx-color-shadow);
 }
 
-.commonButton[data-hover],
-.commonButtonHidden[data-hover] {
+.commonButton[data-hover] {
   box-shadow: 0px 0px 8px 0px var(--rcx-color-shadow);
   cursor: pointer;
 }
 
-.commonButtonHidden {
+.commonButton[data-button-type="hidden"] {
   border: transparent;
   background-color: transparent;
-  padding: 0.1em 0.3em;
-  border-radius: var(--rcx-border-radius);
-  border-style: solid;
-  border-width: 1px;
+  box-shadow: none;
+}
+
+.commonButton[data-button-type="dotted"] {
+  border-style: dotted;
+  box-shadow: none;
+  background: transparent;
 }

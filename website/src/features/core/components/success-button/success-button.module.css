@@ -1,11 +1,11 @@
 .success[data-hover],
-.successHidden[data-hover] {
+.success[data-button-type="dotted"][data-hover] {
   background-color: oklch(70.5% 0.213 47.604);
   color: oklch(96.7% 0.001 286.375);
 }
 
 .success[data-active],
-.successHidden[data-active] {
+.success[data-button-type="dotted"][data-active] {
   background-color: oklch(66.6% 0.179 58.318);
 }
 
@@ -19,4 +19,9 @@
   border-color: oklch(75% 0.183 55.934);
   color: oklch(26.9% 0 0);
   background-color: oklch(83.7% 0.128 66.29);
+}
+
+.success[data-button-type="dotted"] {
+  color: oklch(70.5% 0.213 47.604);
+  border-color: oklch(70.5% 0.213 47.604);
 }

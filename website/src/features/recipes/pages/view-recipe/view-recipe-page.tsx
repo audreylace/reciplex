@@ -14,6 +14,7 @@ import {
   makeRecipeNameAndDescriptionState,
   RecipeNameAndDescription,
 } from "../../components/recipe-title-and-description/recipe-title-and-description.component";
+import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
 
 /**
  * page for viewing a recipe
@@ -29,6 +30,20 @@ export function ViewRecipePage() {
 
   const notFound = recipeQuery.isSuccess && !recipeQuery.data;
   const recipeData = recipeQuery.data;
+  const goToEditAction = () => {
+    if (!recipeData) {
+      return;
+    }
+    navigate(
+      makeEditRecipePath(recipeData.recipe.bookId, recipeData.recipe.id),
+      {
+        state: makeRecipeNameAndDescriptionState(
+          recipeData.recipe.name,
+          recipeData.recipe.shortDescription,
+        ),
+      },
+    );
+  };
 
   return (
     <main className="pageMain">
@@ -37,26 +52,12 @@ export function ViewRecipePage() {
         shortDescription={recipeData?.recipe?.shortDescription}
       >
         {recipeData?.recipe.mayEdit && (
-          <div className={styles.actionButtonsBar}>
-            <PrimaryButton
-              onClick={() => {
-                navigate(
-                  makeEditRecipePath(
-                    recipeData.recipe.bookId,
-                    recipeData.recipe.id,
-                  ),
-                  {
-                    state: makeRecipeNameAndDescriptionState(
-                      recipeData.recipe.name,
-                      recipeData.recipe.shortDescription,
-                    ),
-                  },
-                );
-              }}
-            >
+          <FormButtons>
+            <PrimaryButton onClick={goToEditAction} buttonType="dotted">
               Edit Recipe
             </PrimaryButton>
             <DangerButton
+              buttonType="dotted"
               onClick={() => {
                 navigate(
                   makeDeleteRecipePath(
@@ -74,7 +75,7 @@ export function ViewRecipePage() {
             >
               Delete Recipe
             </DangerButton>
-          </div>
+          </FormButtons>
         )}
       </RecipeNameAndDescription>
       {!recipeId && <BadPathBanner />}
@@ -88,9 +89,25 @@ export function ViewRecipePage() {
               <div className={styles.header}></div>
               <h4>Recipe Details</h4>
               <div className={styles.detailsWrapper}>
-                <Markdown rehypePlugins={[rehypeSanitize]}>
-                  {recipeData.recipe.details || "*edit to add details*"}
-                </Markdown>
+                {recipeData.recipe.details && (
+                  <Markdown rehypePlugins={[rehypeSanitize]}>
+                    recipeData.recipe.details
+                  </Markdown>
+                )}
+                {!recipeData.recipe.details && recipeData.recipe.mayEdit && (
+                  <>
+                    <p className={styles.emptyDetails} onClick={goToEditAction}>
+                      <i>Click to edit and add details</i>
+                    </p>
+                  </>
+                )}
+                {!recipeData.recipe.details && !recipeData.recipe.mayEdit && (
+                  <>
+                    <p>
+                      <i>No details</i>
+                    </p>
+                  </>
+                )}
               </div>
             </>
           )}

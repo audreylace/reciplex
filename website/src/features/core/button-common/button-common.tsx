@@ -6,17 +6,21 @@ export function ButtonCommon({
   buttonType,
   ...props
 }: ButtonProps & { classArray?: string[]; buttonType?: ButtonType }) {
+  buttonType ??= "solid";
   const extendedStyle =
-    (buttonType ?? "solid") === "solid"
+    buttonType === "solid"
       ? styles.commonButton
-      : styles.commonButtonHidden;
+      : buttonType === "dotted"
+        ? styles.commonButtonDotted
+        : styles.commonButtonHidden;
 
   return (
     <Button
-      className={`${(classArray ?? []).join(" ")} ${extendedStyle}`}
+      className={`${(classArray ?? []).join(" ")} ${styles.commonButton}`}
+      data-button-type={buttonType}
       {...props}
     />
   );
 }
 
-export type ButtonType = "solid" | "hidden";
+export type ButtonType = "solid" | "hidden" | "dotted";
