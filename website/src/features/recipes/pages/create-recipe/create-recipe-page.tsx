@@ -1,14 +1,15 @@
-import { useNavigate, useParams } from "react-router";
-import { makeViewRecipePath } from "../../route-utils";
-import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
 import { BookIsReadonlyBanner } from "../../components/book-is-readonly-banner/book-is-readonly-banner.component";
 import { RecipeBookNotFoundBanner } from "../../components/recipe-book-not-found-banner/recipe-book-not-found-banner.component";
 import { FetchingRecipeBookBanner } from "../../components/fetching-recipe-book-banner/fetching-recipe-book-banner.component";
 import { FetchingRecipeBookFailedBanner } from "../../components/fetching-recipe-book-failed-banner/fetching-recipe-book-failed-banner.component";
 import { BadPathBanner } from "../../components/bad-path-banner/bad-path-banner.component";
-import type { IRecipeModel } from "../../../../services/recipe-store";
-import { CreateRecipeForm } from "../../components/create-recipe-form/create-recipe-form.component";
-import { useCallback } from "preact/hooks";
+import { DangerButton } from "../../../core/components/danger-button/danger-button.component";
+import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
+import { SuccessButton } from "../../../core/components/success-button/success-button.component";
+import { RecipeMetaFieldSet } from "../../components/recipe-meta-field-set/recipe-meta-field-set.component";
+import { OfflineBanner } from "../../components/offline-banner/offline-banner.component";
+import { PrimaryButton } from "../../../core/components/primary-button/primary-button.component";
+import { useCreateRecipePage } from "./useCreateRecipePage.hook";
 
 /**
  * Entry point for create recipe page component
@@ -16,46 +17,55 @@ import { useCallback } from "preact/hooks";
  * @returns jsx tree for rendering by react
  */
 export function CreateRecipePage() {
-  const { bookId } = useParams<{
-    bookId: string;
-  }>();
-  const navigate = useNavigate();
-  const bookQuery = useGetRecipeBookById(bookId);
-
-  /**
-   * Runs action on form submit creating a new recipe
-   * @param data form data
-   * @returns void promise
-   */
-  const onRecipeCreated = useCallback(
-    (recipe: IRecipeModel) => {
-      navigate(makeViewRecipePath(recipe.id));
-    },
-    [navigate],
-  );
-
-  const bookData = bookQuery.data;
-  const notFound = bookQuery.isSuccess && !bookData;
-  const canCreateRecipe = bookData && bookData.canAddRecipesToBook;
-  const showReadonlyBanner =
-    bookQuery.isSuccess && bookData && !bookData.canAddRecipesToBook;
+  const {
+    bookName,
+    errors,
+    register,
+    state,
+    bookId,
+    onSubmit,
+    cancelAction,
+    reloadAction,
+  } = useCreateRecipePage();
 
   return (
     <main className="pageMain">
-      {!bookId && <BadPathBanner />}
-      {bookId && (
+      {state === "bad-path" && <BadPathBanner />}
+      {state === "loading" && <FetchingRecipeBookBanner />}
+      {state === "not-found" && <RecipeBookNotFoundBanner />}
+      {state === "offline" && <OfflineBanner />}
+      {state === "read-only" && <BookIsReadonlyBanner bookId={bookId ?? ""} />}
+      {state === "error" && <FetchingRecipeBookFailedBanner />}
+      {state === "creating" && (
         <>
-          {bookQuery.isError && <FetchingRecipeBookFailedBanner />}
-          {bookQuery.isLoading && <FetchingRecipeBookBanner />}
-          {notFound && <RecipeBookNotFoundBanner />}
-          {showReadonlyBanner && <BookIsReadonlyBanner bookId={bookData.id} />}
-          {canCreateRecipe && (
-            <CreateRecipeForm
-              bookId={bookId}
-              bookName={bookData.name}
-              onCreated={onRecipeCreated}
+          <p>Creating recipe</p>
+        </>
+      )}
+      {state === "create-failed" && (
+        <>
+          <p>Something went wrong while creating recipe...</p>
+          <FormButtons>
+            <SuccessButton onClick={reloadAction}>
+              Reload and try again?
+            </SuccessButton>
+            <PrimaryButton onClick={cancelAction}>Return to Book</PrimaryButton>
+          </FormButtons>
+        </>
+      )}
+      {state === "loaded" && (
+        <>
+          <form onSubmit={onSubmit}>
+            <RecipeMetaFieldSet
+              disabled={false}
+              register={register}
+              legendText={`Add recipe to ${bookName}`}
+              errors={errors}
             />
-          )}
+            <FormButtons>
+              <SuccessButton type="submit">Create Recipe</SuccessButton>
+              <DangerButton onClick={cancelAction}>Cancel</DangerButton>
+            </FormButtons>
+          </form>
         </>
       )}
     </main>

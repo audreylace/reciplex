@@ -9,6 +9,7 @@ import { makeRecipeNameAndDescriptionState } from "../../components/recipe-title
 /**
  * logic for the edit recipe page
  * @returns state object for the component
+ * @todo Add support for preventing accidental navigation away with incomplete changes
  */
 export function useEditRecipePage() {
   const { recipeId } = useParams<{ recipeId: string }>();
@@ -79,13 +80,14 @@ export function useEditRecipePage() {
     enableForm,
     saveFailed: recipeData.tag === "mutate-error",
     saveInProgress: recipeData.tag === "saving",
-    cancelHandler: () =>
+    cancelHandler: () => {
       navigate(makeViewRecipePath(recipeId ?? ""), {
         state: makeRecipeNameAndDescriptionState(
           recipeData.recipe?.name,
           recipeData.recipe?.shortDescription,
         ),
-      }),
+      });
+    },
     reloadSaveFailure: () => navigate(0),
     recipeDetailsValue,
     recipeData,

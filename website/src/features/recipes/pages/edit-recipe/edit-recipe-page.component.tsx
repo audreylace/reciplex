@@ -33,7 +33,7 @@ export function EditRecipePage() {
   } = useEditRecipePage();
 
   const conflicted = recipeData.tag === "conflict";
-  const formRef = useRef<HTMLFormElement>();
+  const formRef = useRef<HTMLFormElement | null>(null);
   return (
     <main className="pageMain">
       <RecipeNameAndDescription

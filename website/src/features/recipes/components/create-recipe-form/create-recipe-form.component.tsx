@@ -2,6 +2,9 @@ import { useForm, type SubmitHandler } from "react-hook-form";
 import type { IRecipeModel } from "../../../../services/recipe-store";
 import { useCreateRecipeMutation } from "../../hooks/useCreateRecipeMutation.hook";
 import { RecipeMetaFieldSet } from "../recipe-meta-field-set/recipe-meta-field-set.component";
+import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
+import { SuccessButton } from "../../../core/components/success-button/success-button.component";
+import { DangerButton } from "../../../core/components/danger-button/danger-button.component";
 
 /**
  * Fields in the form
@@ -51,7 +54,10 @@ export function CreateRecipeForm({
         legendText={`Add recipe to ${bookName}`}
         errors={errors}
       />
-      <input type="submit" value="Create Recipe" />
+      <FormButtons>
+        <SuccessButton type="submit">Create Recipe</SuccessButton>
+        <DangerButton onClick={() => }>Cancel</DangerButton>
+      </FormButtons>
     </form>
   );
 }

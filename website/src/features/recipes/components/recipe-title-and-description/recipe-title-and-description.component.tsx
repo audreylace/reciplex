@@ -6,7 +6,7 @@ export function RecipeNameAndDescription({
   name,
   shortDescription,
   children,
-}: PropsWithChildren<RecipeTitleAndDescriptionProps>) {
+}: PropsWithChildren<RecipeNameAndDescriptionProps>) {
   const location = useLocation();
   const { recipeName, recipeShortDescription } = location?.state ?? {};
   const finalName = name ?? recipeName;
@@ -25,7 +25,7 @@ export function RecipeNameAndDescription({
   );
 }
 
-export interface RecipeTitleAndDescriptionProps {
+export interface RecipeNameAndDescriptionProps {
   name?: string;
   shortDescription?: string;
 }

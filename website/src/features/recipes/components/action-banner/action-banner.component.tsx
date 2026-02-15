@@ -1,4 +1,5 @@
 import { NavLink } from "react-router";
+import { PrimaryButton } from "../../../core/components/primary-button/primary-button.component";
 
 /**
  * Banner with a message and an action
@@ -18,7 +19,9 @@ export function ActionBanner({
     <>
       <p>{message}</p>
       <p>
-        <NavLink to={to}>{linkText}</NavLink>
+        <NavLink to={to}>
+          <PrimaryButton>{linkText}</PrimaryButton>
+        </NavLink>
       </p>
     </>
   );
