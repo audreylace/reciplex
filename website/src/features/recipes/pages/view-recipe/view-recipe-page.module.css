@@ -9,12 +9,16 @@
 .detailsWrapper {
   background-color: var(--rcx-color-lightest);
   border-radius: var(--rcx-border-radius);
-  padding: 0.6em;
+  padding: 0.3em 0.6em;
   margin-top: 0.6em;
   font-size: 0.8em;
 
   box-shadow: 0px 0px 2px 0px var(--rcx-color-shadow);
   border: var(--rcx-form-control-border);
+}
+
+.detailsWrapper > *:last-child {
+  margin-bottom: 0;
 }
 
 .header {

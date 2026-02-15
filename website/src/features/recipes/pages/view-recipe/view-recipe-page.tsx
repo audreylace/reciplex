@@ -75,7 +75,7 @@ export function ViewRecipePage() {
               <h4>Recipe Details</h4>
               <div className={styles.detailsWrapper}>
                 <Markdown rehypePlugins={[rehypeSanitize]}>
-                  {recipeData.recipe.details}
+                  {recipeData.recipe.details || "*edit to add details*"}
                 </Markdown>
               </div>
             </>

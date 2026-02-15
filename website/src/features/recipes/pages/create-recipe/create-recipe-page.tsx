@@ -8,8 +8,8 @@ import { FormButtons } from "../../../core/components/form-buttons/form-buttons.
 import { SuccessButton } from "../../../core/components/success-button/success-button.component";
 import { RecipeMetaFieldSet } from "../../components/recipe-meta-field-set/recipe-meta-field-set.component";
 import { OfflineBanner } from "../../components/offline-banner/offline-banner.component";
-import { PrimaryButton } from "../../../core/components/primary-button/primary-button.component";
 import { useCreateRecipePage } from "./useCreateRecipePage.hook";
+import { ActionFailedTryAgainCancel } from "../../components/action-failed-try-again-cancel/action-failed-try-again-cancel.component";
 
 /**
  * Entry point for create recipe page component
@@ -17,16 +17,8 @@ import { useCreateRecipePage } from "./useCreateRecipePage.hook";
  * @returns jsx tree for rendering by react
  */
 export function CreateRecipePage() {
-  const {
-    bookName,
-    errors,
-    register,
-    state,
-    bookId,
-    onSubmit,
-    cancelAction,
-    reloadAction,
-  } = useCreateRecipePage();
+  const { bookName, errors, register, state, bookId, onSubmit, cancelAction } =
+    useCreateRecipePage();
 
   return (
     <main className="pageMain">
@@ -42,15 +34,11 @@ export function CreateRecipePage() {
         </>
       )}
       {state === "create-failed" && (
-        <>
-          <p>Something went wrong while creating recipe...</p>
-          <FormButtons>
-            <SuccessButton onClick={reloadAction}>
-              Reload and try again?
-            </SuccessButton>
-            <PrimaryButton onClick={cancelAction}>Return to Book</PrimaryButton>
-          </FormButtons>
-        </>
+        <ActionFailedTryAgainCancel
+          message="Something went wrong while creating recipe..."
+          cancelCaption="Return to Book"
+          cancelAction={cancelAction}
+        />
       )}
       {state === "loaded" && (
         <>

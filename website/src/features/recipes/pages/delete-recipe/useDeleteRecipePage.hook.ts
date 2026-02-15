@@ -38,7 +38,6 @@ export function useDeleteRecipePage() {
     onSubmit: handleSubmit(onSubmit),
     errors,
     loadState: editRecipe,
-    reloadAction: () => navigate(0),
     cancelAction: () =>
       navigate(makeViewRecipePath(recipeId ?? ""), {
         state: makeRecipeNameAndDescriptionState(

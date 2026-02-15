@@ -6,19 +6,19 @@ import { EditRecipeLoadingState } from "../../hooks/useEditRecipe.hook";
 import { OfflineBanner } from "../../components/offline-banner/offline-banner.component";
 import { RecipeIsReadonlyBanner } from "../../components/recipe-is-readonly-banner/RecipeIsReadonlyBanner.component";
 import { PrimaryButton } from "../../../core/components/primary-button/primary-button.component";
-import { SuccessButton } from "../../../core/components/success-button/success-button.component";
 import formStyles from "../../../core/form-common/form-common.module.css";
 import { DangerButton } from "../../../core/components/danger-button/danger-button.component";
 import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
 import { Field, Fieldset, Input, Label, Legend } from "@headlessui/react";
 import { RecipeNameAndDescription } from "../../components/recipe-title-and-description/recipe-title-and-description.component";
 import { useDeleteRecipePage } from "./useDeleteRecipePage.hook";
+import { ActionFailedTryAgainCancel } from "../../components/action-failed-try-again-cancel/action-failed-try-again-cancel.component";
 
 /**
  * Page for deleting a recipe
  */
 export function DeleteRecipePage() {
-  const { loadState, onSubmit, reloadAction, cancelAction, register, errors } =
+  const { loadState, onSubmit, cancelAction, register, errors } =
     useDeleteRecipePage();
   return (
     <main className="pageMain">
@@ -42,26 +42,19 @@ export function DeleteRecipePage() {
       {loadState.tag === EditRecipeLoadingState.offline && <OfflineBanner />}
       {loadState.tag === EditRecipeLoadingState.deleting && <p>Deleting...</p>}
       {loadState.tag === EditRecipeLoadingState.mutateError && (
-        <>
-          <p>Something went wrong while deleting.</p>
-          <FormButtons>
-            <SuccessButton onClick={reloadAction}>
-              Reload and try again?
-            </SuccessButton>
-            <PrimaryButton onClick={cancelAction}>View Recipe</PrimaryButton>
-          </FormButtons>
-        </>
+        <ActionFailedTryAgainCancel
+          message="Something went wrong while deleting."
+          cancelCaption="View Recipe"
+          cancelAction={cancelAction}
+        />
       )}
       {loadState.tag === EditRecipeLoadingState.conflict && (
-        <>
-          <p>Someone else changed the recipe.</p>
-          <FormButtons>
-            <SuccessButton onClick={reloadAction}>
-              Continue Delete?
-            </SuccessButton>
-            <PrimaryButton onClick={cancelAction}>View Recipe</PrimaryButton>
-          </FormButtons>
-        </>
+        <ActionFailedTryAgainCancel
+          message="Someone else changed the recipe."
+          tryAgainCaption="Continue Delete?"
+          cancelCaption="View Recipe"
+          cancelAction={cancelAction}
+        />
       )}
       {loadState.tag === EditRecipeLoadingState.loaded && (
         <form onSubmit={onSubmit}>

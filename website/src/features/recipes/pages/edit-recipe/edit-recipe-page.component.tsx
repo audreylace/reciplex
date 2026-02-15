@@ -17,6 +17,7 @@ import { PrimaryButton } from "../../../core/components/primary-button/primary-b
 import { RecipeNameAndDescription } from "../../components/recipe-title-and-description/recipe-title-and-description.component";
 import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
 import { useRef } from "preact/hooks";
+import { ActionFailedTryAgainCancel } from "../../components/action-failed-try-again-cancel/action-failed-try-again-cancel.component";
 
 /** Page for editing a recipe */
 export function EditRecipePage() {
@@ -70,15 +71,11 @@ export function EditRecipePage() {
       {recipeData.tag === EditRecipeLoadingState.offline && <OfflineBanner />}
       {recipeData.tag === EditRecipeLoadingState.saving && <p>Saving...</p>}
       {recipeData.tag === EditRecipeLoadingState.mutateError && (
-        <>
-          <p>Something went wrong while saving...</p>
-          <div className={formStyles.formButtonRow}>
-            <SuccessButton onClick={reloadSaveFailure}>
-              Reload and try again?
-            </SuccessButton>
-            <PrimaryButton onClick={cancelHandler}>View Recipe</PrimaryButton>
-          </div>
-        </>
+        <ActionFailedTryAgainCancel
+          message="Something went wrong while recipe..."
+          cancelCaption="View Recipe"
+          cancelAction={cancelHandler}
+        />
       )}
       {(recipeData.tag === EditRecipeLoadingState.conflict ||
         recipeData.tag === EditRecipeLoadingState.loaded) && (

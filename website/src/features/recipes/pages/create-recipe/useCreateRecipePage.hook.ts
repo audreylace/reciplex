@@ -68,9 +68,6 @@ export function useCreateRecipePage() {
     errors,
     state,
     bookId,
-    reloadAction: () => {
-      navigate(0);
-    },
     cancelAction: () => {
       if (bookId) {
         navigate(makeViewRecipeBookPath(bookId));
