@@ -9,6 +9,7 @@ import { BadPathBanner } from "../../components/bad-path-banner/bad-path-banner.
 import { DangerButton } from "../../../core/components/danger-button/danger-button.component";
 import { SuccessButton } from "../../../core/components/success-button/success-button.component";
 import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
+import styles from "./view-recipe-book.module.css";
 
 /**
  * Entry point for viewing a recipe book
@@ -36,14 +37,8 @@ export function ViewRecipeBookPage({}: {}) {
           {bookQuery.isSuccess && bookQuery.data && (
             <>
               <h1>{bookQuery.data.name}</h1>
-              <p>
-                {userQuery.isSuccess && userQuery.data && (
-                  <>Owned by: {userQuery.data?.displayName}</>
-                )}
-                {userQuery.isLoading && <>...</>}
-              </p>
               <p>{bookQuery.data.shortDescription}</p>
-              <FormButtons>
+              <FormButtons notInForm>
                 {bookQuery.data.canAddRecipesToBook && (
                   <NavLink to={makeCreateRecipePath(bookId)}>
                     <SuccessButton buttonType="dotted">

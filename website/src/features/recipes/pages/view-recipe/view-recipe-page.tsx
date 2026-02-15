@@ -52,7 +52,7 @@ export function ViewRecipePage() {
         shortDescription={recipeData?.recipe?.shortDescription}
       >
         {recipeData?.recipe.mayEdit && (
-          <FormButtons>
+          <FormButtons notInForm>
             <PrimaryButton onClick={goToEditAction} buttonType="dotted">
               Edit Recipe
             </PrimaryButton>
