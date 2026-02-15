@@ -1,7 +1,7 @@
 import { useForm, type SubmitHandler } from "react-hook-form";
 import type { IRecipeModel } from "../../../../services/recipe-store";
 import { useCreateRecipeMutation } from "../../hooks/useCreateRecipeMutation.hook";
-import { RecipeMetaFields } from "../recipe-meta-fields/recipe-meta-fields.component";
+import { RecipeMetaFieldSet } from "../recipe-meta-field-set/recipe-meta-field-set.component";
 
 /**
  * Fields in the form
@@ -45,7 +45,7 @@ export function CreateRecipeForm({
   };
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <RecipeMetaFields
+      <RecipeMetaFieldSet
         register={register}
         disabled={createRecipeMutation.status !== "idle"}
         legendText={`Add recipe to ${bookName}`}

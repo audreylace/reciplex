@@ -44,14 +44,17 @@ export type MenuBarCommands =
  * @param orchestratorRef reference to the MD text area controller
  * @returns callback that should be passed to the menu bar component
  */
-export function useMenuBarCommandHandler(
+export function useRecipeDetailsMenuBarCommandHandler(
   orchestratorRef: RefObject<TextAreaCommandOrchestrator | null>,
 ) {
-  return useCallback((command: MenuBarCommands) => {
-    if (orchestratorRef.current) {
-      handleCommand(command, orchestratorRef.current);
-    }
-  }, []);
+  return useCallback(
+    (command: MenuBarCommands) => {
+      if (orchestratorRef.current) {
+        handleCommand(command, orchestratorRef.current);
+      }
+    },
+    [orchestratorRef],
+  );
 }
 
 /**
@@ -127,6 +130,7 @@ function handleCommand(
       textSwap(orchestrator, "()[recipe://]", middleSwap("(", ")[recipe://]"));
       break;
     default:
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       ((_: never) => {
         /* missing branch to handle `command` if there is an assignment error */
       })(command);

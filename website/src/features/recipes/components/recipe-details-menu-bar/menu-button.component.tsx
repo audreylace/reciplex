@@ -44,7 +44,7 @@ export function MenuButton<TCommandType>({
           onClick(command);
         }}
       >
-        <i class={iconName}></i>
+        <i className={iconName}></i>
       </SuccessButton>
     </li>
   );

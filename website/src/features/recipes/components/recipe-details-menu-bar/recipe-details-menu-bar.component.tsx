@@ -1,8 +1,8 @@
-import styles from "./menu-bar.module.css";
+import styles from "./recipe-details-menu-bar.module.css";
 import { MenuButton } from "./menu-button.component";
-import type { MenuBarCommands } from "./useMenuBarCommandHandler.hook";
+import type { MenuBarCommands } from "./useRecipeDetailsMenuBarCommandHandler.hook";
 
-export function MenuBar({
+export function RecipeDetailsMenuBar({
   disabled,
   commandHandler,
   onSizeToggle,

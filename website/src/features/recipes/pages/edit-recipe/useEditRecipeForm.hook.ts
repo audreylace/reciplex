@@ -1,8 +1,8 @@
 import { useForm, type SubmitHandler } from "react-hook-form";
-import type { IRecipeModel } from "../../../../../services/recipe-store";
-import type { RecipeMetaFormModel } from "../../../components/recipe-meta-fields/recipe-meta-fields.component";
-import { useUpdateRecipeMutation } from "../../../hooks/useUpdateRecipeMutation.hook";
-import { makeViewRecipePath } from "../../../route-utils";
+import type { IRecipeModel } from "../../../../services/recipe-store";
+import type { RecipeMetaFormModel } from "../../components/recipe-meta-field-set/recipe-meta-field-set.component";
+import { useUpdateRecipeMutation } from "../../hooks/useUpdateRecipeMutation.hook";
+import { makeViewRecipePath } from "../../route-utils";
 import { useNavigate } from "react-router";
 
 /**
@@ -22,7 +22,7 @@ export function useEditRecipeForm(recipe: IRecipeModel, conflicted: boolean) {
     defaultValues: {
       recipeName: recipe.name,
       recipeDescription: recipe.shortDescription,
-      recipeInstructions: recipe.details,
+      recipeDetails: recipe.details,
     },
   });
 
@@ -36,7 +36,7 @@ export function useEditRecipeForm(recipe: IRecipeModel, conflicted: boolean) {
         recipeId: recipe.id,
         name: data.recipeName,
         shortDescription: data.recipeDescription,
-        details: data.recipeInstructions,
+        details: data.recipeDetails,
         versionTag: recipe.versionTag,
       });
 
@@ -44,10 +44,11 @@ export function useEditRecipeForm(recipe: IRecipeModel, conflicted: boolean) {
     }
   };
 
+  const recipeDetailsValue = watch("recipeDetails");
+
   return {
     register,
     setValue,
-    watch,
     errors,
     onSubmit: handleSubmit(submitHandler),
     recipeName,
@@ -55,6 +56,7 @@ export function useEditRecipeForm(recipe: IRecipeModel, conflicted: boolean) {
     saveFailed: recipeMutation.status === "error",
     saveInProgress: recipeMutation.status === "pending",
     cancelHandler: () => navigate(makeViewRecipePath(recipe.id)),
+    recipeDetailsValue,
   };
 }
 
@@ -63,5 +65,5 @@ export function useEditRecipeForm(recipe: IRecipeModel, conflicted: boolean) {
  */
 export type FormFields = {
   /** recipe instruction section */
-  recipeInstructions: string;
+  recipeDetails: string;
 } & RecipeMetaFormModel;

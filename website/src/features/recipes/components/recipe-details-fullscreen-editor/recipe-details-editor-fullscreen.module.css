@@ -1,0 +1,22 @@
+.detailsEditorFullScreen {
+  width: 100dvw;
+  height: 100dvh;
+  z-index: 1000;
+  overflow: scroll;
+  position: fixed;
+  display: flex;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+.textAreaFullScreen {
+  resize: none;
+  flex: 1;
+}
+
+.dialogPanel {
+  width: 100dvw;
+  height: 100dvh;
+  overflow: hidden;
+}

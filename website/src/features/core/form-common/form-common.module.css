@@ -4,13 +4,18 @@
   margin-bottom: 0.6em;
 }
 
+.inputGroup,
+.formButtonRow {
+  padding-left: 0.3em;
+}
+
 .label {
   margin-bottom: 0.2em;
   font-size: 0.9em;
 }
 
 .formLegend {
-  margin-bottom: 0.3em;
+  margin-bottom: 0.9em;
   border-bottom: 1px solid var(--rcx-color-primary-border);
   font-size: 1.1em;
 }
@@ -35,4 +40,12 @@
 
 .fieldSet {
   border-radius: var(--rcx-border-radius);
+}
+
+.formButtonRow {
+  gap: var(--rcx-button-row-gap);
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  margin-top: 0.9em;
 }

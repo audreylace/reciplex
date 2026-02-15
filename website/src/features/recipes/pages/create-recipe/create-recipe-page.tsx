@@ -9,20 +9,19 @@ import { BadPathBanner } from "../../components/bad-path-banner/bad-path-banner.
 import type { IRecipeModel } from "../../../../services/recipe-store";
 import { CreateRecipeForm } from "../../components/create-recipe-form/create-recipe-form.component";
 import { useCallback } from "preact/hooks";
-import { useSetTitle } from "../../../../layouts/default/default-layout.state";
 
 /**
  * Entry point for create recipe page component
  * @param param0 react props
  * @returns jsx tree for rendering by react
  */
-export function CreateRecipePage({}: {}) {
+export function CreateRecipePage() {
   const { bookId } = useParams<{
     bookId: string;
   }>();
   const navigate = useNavigate();
   const bookQuery = useGetRecipeBookById(bookId);
-  useSetTitle("Adding Recipe");
+
   /**
    * Runs action on form submit creating a new recipe
    * @param data form data
@@ -42,7 +41,7 @@ export function CreateRecipePage({}: {}) {
     bookQuery.isSuccess && bookData && !bookData.canAddRecipesToBook;
 
   return (
-    <main>
+    <main className="pageMain">
       {!bookId && <BadPathBanner />}
       {bookId && (
         <>

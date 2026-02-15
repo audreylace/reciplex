@@ -1,8 +1,9 @@
 import js from "@eslint/js";
 import globals from "globals";
 import tseslint from "typescript-eslint";
-import pluginReact from "eslint-plugin-react";
+import react from "eslint-plugin-react";
 import { defineConfig } from "eslint/config";
+import reactHooks from "eslint-plugin-react-hooks";
 
 export default defineConfig([
   {
@@ -12,16 +13,7 @@ export default defineConfig([
     languageOptions: { globals: globals.browser },
   },
   tseslint.configs.recommended,
-  pluginReact.configs.flat.recommended,
-  {
-    extends: ["plugin:react/recommended", "plugin:react/jsx-runtime"],
-    rules: {
-      "react/react-in-jsx-scope": "off",
-    },
-    settings: {
-      react: {
-        version: "detect",
-      },
-    },
-  },
+  react.configs.flat.recommended,
+  react.configs.flat["jsx-runtime"],
+  reactHooks.configs.flat.recommended,
 ]);

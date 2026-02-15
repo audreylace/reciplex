@@ -3,7 +3,6 @@ import {
   RecipeNameMaxLength,
   RecipeShortDescriptionMaxLength,
 } from "../../../../services/recipe-store";
-import style from "./recipe-meta-fields.module.css";
 import commonFormStyles from "../../../core/form-common/form-common.module.css";
 import {
   Field,
@@ -20,7 +19,7 @@ import {
  * @param param0 react args
  * @returns JSX tree for rendering
  */
-export function RecipeMetaFields<TFormModel extends RecipeMetaFormModel>({
+export function RecipeMetaFieldSet<TFormModel extends RecipeMetaFormModel>({
   disabled,
   legendText,
   register,

@@ -1,9 +1,9 @@
 import { useParams } from "react-router";
-import { useGetRecipeByIdQuery } from "../../../hooks/useGetRecipeByIdQuery.hook";
+import { useGetRecipeByIdQuery } from "../../hooks/useGetRecipeByIdQuery.hook";
 import type {
   IRecipeBookModel,
   IRecipeModel,
-} from "../../../../../services/recipe-store";
+} from "../../../../services/recipe-store";
 import { useState } from "preact/hooks";
 
 /**

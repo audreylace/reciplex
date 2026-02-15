@@ -1,5 +1,7 @@
 :root {
   --rcx-border-radius: 0.3em;
+  --rcx-button-row-gap: 0.3em;
+  --rcx-body-padding: 0.8em;
 
   /* colors */
   --rcx-color-primary-border: oklch(80.8% 0.114 19.571);
@@ -27,7 +29,6 @@ body {
   background: var(--rcx-color-body-background);
   color: var(--rcx-color-text);
   min-height: 100dvh;
-  font-size: calc(20px + 0.3vw);
 }
 
 /* Make links behave like any other element */
@@ -45,4 +46,36 @@ a {
 */
 h1 {
   font-size: calc(1.375em + 1.5vw);
+}
+
+h2 {
+  font-size: calc(1.325em + 0.6vw);
+}
+
+h3 {
+  font-size: calc(1.3em + 0.6vw);
+}
+
+h4 {
+  font-size: calc(1.275em + 0.3vw);
+}
+
+h5 {
+  font-size: 1.25em;
+}
+h6 {
+  font-size: 1em;
+}
+.pageMain {
+  padding: var(--rcx-body-padding);
+}
+
+body {
+  font-size: calc(1.3rem + 0.3vw);
+}
+
+@media (max-width: 800px) {
+  body {
+    font-size: 18px;
+  }
 }

@@ -1,0 +1,22 @@
+.actionButtonsBar {
+  gap: var(--rcx-button-row-gap);
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  font-size: 0.8em;
+}
+
+.detailsWrapper {
+  background-color: var(--rcx-color-lightest);
+  border-radius: var(--rcx-border-radius);
+  padding: 0.6em;
+  margin-top: 0.6em;
+  font-size: 0.8em;
+
+  box-shadow: 0px 0px 2px 0px var(--rcx-color-shadow);
+  border: var(--rcx-form-control-border);
+}
+
+.header {
+  margin-bottom: 1em;
+}
