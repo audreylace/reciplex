@@ -13,8 +13,6 @@ import { ActionFailedTryAgainCancel } from "../../components/action-failed-try-a
 
 /**
  * Entry point for create recipe page component
- * @param param0 react props
- * @returns jsx tree for rendering by react
  */
 export function CreateRecipePage() {
   const { bookName, errors, register, state, bookId, onSubmit, cancelAction } =

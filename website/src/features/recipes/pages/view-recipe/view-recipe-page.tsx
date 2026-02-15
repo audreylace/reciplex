@@ -1,6 +1,6 @@
-import { NavLink, useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { useGetRecipeByIdQuery } from "../../hooks/useGetRecipeByIdQuery.hook";
-import { makeEditRecipePath } from "../../route-utils";
+import { makeDeleteRecipePath, makeEditRecipePath } from "../../route-utils";
 import Markdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 import { RecipeNotFoundBanner } from "../../components/recipe-not-found-banner/recipe-not-found-banner.component";
@@ -19,7 +19,9 @@ import {
  * page for viewing a recipe
  */
 export function ViewRecipePage() {
-  const { recipeId } = useParams<{ recipeId: string }>();
+  const { recipeId } = useParams<{
+    recipeId: string;
+  }>();
   const recipeQuery = useGetRecipeByIdQuery(recipeId, {
     refetchInterval: 60000, // refresh every 60 seconds
   });
@@ -38,24 +40,36 @@ export function ViewRecipePage() {
           <div className={styles.actionButtonsBar}>
             <PrimaryButton
               onClick={() => {
-                navigate(makeEditRecipePath(recipeData.recipe.id), {
-                  state: makeRecipeNameAndDescriptionState(
-                    recipeData.recipe.name,
-                    recipeData.recipe.shortDescription,
+                navigate(
+                  makeEditRecipePath(
+                    recipeData.recipe.bookId,
+                    recipeData.recipe.id,
                   ),
-                });
+                  {
+                    state: makeRecipeNameAndDescriptionState(
+                      recipeData.recipe.name,
+                      recipeData.recipe.shortDescription,
+                    ),
+                  },
+                );
               }}
             >
               Edit Recipe
             </PrimaryButton>
             <DangerButton
               onClick={() => {
-                navigate(`/delete-recipe/${recipeId}`, {
-                  state: makeRecipeNameAndDescriptionState(
-                    recipeData.recipe.name,
-                    recipeData.recipe.shortDescription,
+                navigate(
+                  makeDeleteRecipePath(
+                    recipeData.recipe.bookId,
+                    recipeData.recipe.id,
                   ),
-                });
+                  {
+                    state: makeRecipeNameAndDescriptionState(
+                      recipeData.recipe.name,
+                      recipeData.recipe.shortDescription,
+                    ),
+                  },
+                );
               }}
             >
               Delete Recipe

@@ -12,6 +12,7 @@ type FormFields = {
   recipeDescription: string;
 };
 
+/** component logic for create recipe page */
 export function useCreateRecipePage() {
   const { bookId } = useParams<{
     bookId: string;
@@ -21,6 +22,7 @@ export function useCreateRecipePage() {
     handleSubmit,
     formState: { errors },
   } = useForm<FormFields>();
+
   const navigate = useNavigate();
   const bookQuery = useGetRecipeBookById(bookId);
 
@@ -35,7 +37,7 @@ export function useCreateRecipePage() {
       bookId: bookId,
     });
 
-    navigate(makeViewRecipePath(result.recipe.id));
+    navigate(makeViewRecipePath(bookId, result.recipe.id));
   });
 
   let state: UseCreateRecipePageState = "loading";
@@ -76,6 +78,7 @@ export function useCreateRecipePage() {
   };
 }
 
+/** create recipe page states */
 type UseCreateRecipePageState =
   | "loading"
   | "loaded"

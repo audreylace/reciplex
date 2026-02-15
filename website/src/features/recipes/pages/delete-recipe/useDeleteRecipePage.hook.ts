@@ -13,7 +13,9 @@ type FormFields = {
 /** Logic for the delete recipe page */
 export function useDeleteRecipePage() {
   const navigate = useNavigate();
-  const { recipeId } = useParams<{ recipeId: string }>();
+  const { recipeId } = useParams<{
+    recipeId: string;
+  }>();
   const {
     register,
     handleSubmit,
@@ -39,7 +41,7 @@ export function useDeleteRecipePage() {
     errors,
     loadState: editRecipe,
     cancelAction: () =>
-      navigate(makeViewRecipePath(recipeId ?? ""), {
+      navigate(makeViewRecipePath(editRecipe.book?.id ?? "", recipeId ?? ""), {
         state: makeRecipeNameAndDescriptionState(
           editRecipe.recipe?.name,
           editRecipe.recipe?.shortDescription,

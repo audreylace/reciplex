@@ -19,8 +19,43 @@ import { EditRecipeBookPage } from "./features/recipes/pages/edit-recipe-book/ed
 import { RecipeHttpBookStore } from "./features/recipes/services/recipe-http-book-store.service.ts";
 
 import "./index.css";
+import { BookLayout } from "./layouts/book-layout/book-layout.component.tsx";
 
 const router = createBrowserRouter([
+  {
+    path: "/books/:bookId",
+    Component: BookLayout,
+    children: [
+      {
+        path: "recipes/-/create",
+        element: <CreateRecipePage />,
+      },
+      {
+        path: "recipes/:recipeId",
+        element: <ViewRecipePage />,
+      },
+      {
+        path: "recipes/:recipeId/edit",
+        element: <EditRecipePage />,
+      },
+      {
+        path: "recipes/:recipeId/delete",
+        element: <DeleteRecipePage />,
+      },
+      {
+        path: "delete",
+        element: <DeleteRecipeBookPage />,
+      },
+      {
+        path: "edit",
+        element: <EditRecipeBookPage />,
+      },
+      {
+        path: "",
+        element: <ViewRecipeBookPage />,
+      },
+    ],
+  },
   {
     path: "/",
     Component: DefaultLayout,
@@ -42,36 +77,8 @@ const router = createBrowserRouter([
         element: <RecipeBookListPage />,
       },
       {
-        path: "/recipe-book/:bookId",
-        element: <ViewRecipeBookPage />,
-      },
-      {
         path: "/create-recipe-book",
         element: <CreateRecipeBookPage />,
-      },
-      {
-        path: "/create-recipe/:bookId",
-        element: <CreateRecipePage />,
-      },
-      {
-        path: "/view-recipe/:recipeId",
-        element: <ViewRecipePage />,
-      },
-      {
-        path: "/edit-recipe/:recipeId",
-        element: <EditRecipePage />,
-      },
-      {
-        path: "/delete-recipe/:recipeId",
-        element: <DeleteRecipePage />,
-      },
-      {
-        path: "/delete-recipe-book/:bookId",
-        element: <DeleteRecipeBookPage />,
-      },
-      {
-        path: "/edit-recipe-book/:bookId",
-        element: <EditRecipeBookPage />,
       },
     ],
   },

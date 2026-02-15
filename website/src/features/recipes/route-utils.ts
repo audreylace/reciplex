@@ -4,7 +4,7 @@
  * @returns `/recipe-book/{bookId}`
  */
 export function makeViewRecipeBookPath(bookId: string): string {
-  return `/recipe-book/${encodeURIComponent(bookId)}`;
+  return `/books/${encodeURIComponent(bookId)}`;
 }
 
 /** Navigation actions for makeBookListPath */
@@ -63,7 +63,7 @@ export function makeCreateRecipeBookPath(): string {
  * @returns `/create-recipe-book`
  */
 export function makeCreateRecipePath(bookId: string): string {
-  return `/create-recipe/${encodeURIComponent(bookId)}`;
+  return `/books/${encodeURIComponent(bookId)}/recipes/-/create`;
 }
 
 /**
@@ -71,8 +71,8 @@ export function makeCreateRecipePath(bookId: string): string {
  * @param recipeId the recipe id
  * @returns `/edit-recipe/{bookId}`
  */
-export function makeEditRecipePath(recipeId: string): string {
-  return `/edit-recipe/${encodeURIComponent(recipeId)}`;
+export function makeEditRecipePath(bookId: string, recipeId: string): string {
+  return `/books/${encodeURIComponent(bookId)}/recipes/${encodeURIComponent(recipeId)}/edit`;
 }
 
 /**
@@ -80,6 +80,16 @@ export function makeEditRecipePath(recipeId: string): string {
  * @param recipeId the recipe id
  * @returns `/view-recipe/{bookId}`
  */
-export function makeViewRecipePath(recipeId: string): string {
-  return `/view-recipe/${encodeURIComponent(recipeId)}`;
+export function makeViewRecipePath(bookId: string, recipeId: string): string {
+  return `/books/${encodeURIComponent(bookId)}/recipes/${encodeURIComponent(recipeId)}`;
+}
+
+/**
+ * make a path to the delete recipe page
+ * @param bookId the book id
+ * @param recipeId the recipe id
+ * @returns the path
+ */
+export function makeDeleteRecipePath(bookId: string, recipeId: string): string {
+  return `/books/${encodeURIComponent(bookId)}/recipes/${encodeURIComponent(recipeId)}/delete`;
 }

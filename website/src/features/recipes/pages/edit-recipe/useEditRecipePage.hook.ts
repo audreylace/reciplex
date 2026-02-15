@@ -12,7 +12,9 @@ import { makeRecipeNameAndDescriptionState } from "../../components/recipe-title
  * @todo Add support for preventing accidental navigation away with incomplete changes
  */
 export function useEditRecipePage() {
-  const { recipeId } = useParams<{ recipeId: string }>();
+  const { recipeId } = useParams<{
+    recipeId: string;
+  }>();
   const recipeData = useEditRecipe(recipeId);
   const {
     register,
@@ -60,7 +62,7 @@ export function useEditRecipePage() {
         recipeDescription: data.recipeDescription,
         recipeDetails: data.recipeDetails,
       });
-      navigate(makeViewRecipePath(recipeData.recipe.id), {
+      navigate(makeViewRecipePath(recipeData.book.id, recipeData.recipe.id), {
         state: makeRecipeNameAndDescriptionState(
           newData.name,
           newData.shortDescription,
@@ -81,14 +83,13 @@ export function useEditRecipePage() {
     saveFailed: recipeData.tag === "mutate-error",
     saveInProgress: recipeData.tag === "saving",
     cancelHandler: () => {
-      navigate(makeViewRecipePath(recipeId ?? ""), {
+      navigate(makeViewRecipePath(recipeData.book?.id ?? "", recipeId ?? ""), {
         state: makeRecipeNameAndDescriptionState(
           recipeData.recipe?.name,
           recipeData.recipe?.shortDescription,
         ),
       });
     },
-    reloadSaveFailure: () => navigate(0),
     recipeDetailsValue,
     recipeData,
   };

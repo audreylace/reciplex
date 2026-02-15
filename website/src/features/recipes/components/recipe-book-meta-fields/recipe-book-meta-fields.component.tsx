@@ -21,7 +21,7 @@ export function RecipeBookMetaFields<
   register,
   errors,
 }: {
-  disabled: boolean;
+  disabled?: boolean;
   legend: string;
   register: UseFormRegister<TFormModel>;
   errors: FieldErrors<TFormModel>;

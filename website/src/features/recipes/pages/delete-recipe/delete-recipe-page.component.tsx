@@ -37,7 +37,10 @@ export function DeleteRecipePage() {
         <FetchingRecipeBanner />
       )}
       {loadState.tag === EditRecipeLoadingState.readonly && (
-        <RecipeIsReadonlyBanner recipeId={loadState.recipe.id} />
+        <RecipeIsReadonlyBanner
+          bookId={loadState.book.id}
+          recipeId={loadState.recipe.id}
+        />
       )}
       {loadState.tag === EditRecipeLoadingState.offline && <OfflineBanner />}
       {loadState.tag === EditRecipeLoadingState.deleting && <p>Deleting...</p>}

@@ -1,42 +1,36 @@
-import { useLocation, useNavigate } from "react-router";
-import { useCallback } from "preact/hooks";
-import { makeBookListPath, makeViewRecipeBookPath } from "../../route-utils";
-import { CreateRecipeBookForm } from "./components/create-recipe-book-form/create-recipe-book-form.component";
-import type { IRecipeBookModel } from "../../../../services/recipe-store";
-import styles from "./create-recipe-book.module.css";
+import { DangerButton } from "../../../core/components/danger-button/danger-button.component";
+import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
+import { SuccessButton } from "../../../core/components/success-button/success-button.component";
+import { RecipeBookMetaFields } from "../../components/recipe-book-meta-fields/recipe-book-meta-fields.component";
+import { RetryBannerComponent } from "../../components/retry-banner/retry-banner.component";
+
+import { useCreateRecipeBookPage } from "./useCreateRecipeBookPage.hook";
 
 /**
- * Entry point for create recipe book page component
- * @param param0 react props
- * @returns jsx tree for rendering by react
+ * Create recipe book page component
  */
-export function CreateRecipeBookPage({}: {}) {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { goBack } = location.state || {};
-
-  /**
-   * Runs action on form submit creating a new recipe book
-   * @param data form data
-   * @returns void promise
-   */
-  const onCreated = useCallback(
-    async (data: IRecipeBookModel) => {
-      navigate(makeViewRecipeBookPath(data.id));
-    },
-    [navigate],
-  );
-
-  const onCancel = useCallback(async () => {
-    if (goBack) {
-      navigate(-1);
-    }
-    navigate(makeBookListPath());
-  }, [navigate, goBack]);
-
+export function CreateRecipeBookPage() {
+  const { state, onSubmit, register, errors, onCancel } =
+    useCreateRecipeBookPage();
   return (
-    <main className={styles.pageWrapper}>
-      <CreateRecipeBookForm onCreated={onCreated} onCancel={onCancel} />
+    <main className="pageMain">
+      {state === "idle" && (
+        <form onSubmit={onSubmit}>
+          <RecipeBookMetaFields
+            register={register}
+            legend="Create New Recipe Book"
+            errors={errors}
+          />
+          <FormButtons>
+            <SuccessButton type="submit">Create</SuccessButton>
+            <DangerButton onClick={onCancel}>Cancel</DangerButton>
+          </FormButtons>
+        </form>
+      )}
+      {state === "pending" && <p>Creating recipe book...</p>}
+      {state === "error" && (
+        <RetryBannerComponent message="Creating recipe book failed." />
+      )}
     </main>
   );
 }

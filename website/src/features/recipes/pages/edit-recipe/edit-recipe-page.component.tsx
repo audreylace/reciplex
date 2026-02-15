@@ -12,8 +12,6 @@ import { RecipeMetaFieldSet } from "../../components/recipe-meta-field-set/recip
 import { RecipeConcurrentEditBanner } from "./recipe-concurrent-edit-banner.component";
 import { useEditRecipePage } from "./useEditRecipePage.hook";
 import styles from "./edit-recipe-page.module.css";
-import formStyles from "../../../core/form-common/form-common.module.css";
-import { PrimaryButton } from "../../../core/components/primary-button/primary-button.component";
 import { RecipeNameAndDescription } from "../../components/recipe-title-and-description/recipe-title-and-description.component";
 import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
 import { useRef } from "preact/hooks";
@@ -30,7 +28,6 @@ export function EditRecipePage() {
     cancelHandler,
     recipeDetailsValue,
     recipeData,
-    reloadSaveFailure,
   } = useEditRecipePage();
 
   const conflicted = recipeData.tag === "conflict";
@@ -66,7 +63,10 @@ export function EditRecipePage() {
         <FetchingRecipeBanner />
       )}
       {recipeData.tag === EditRecipeLoadingState.readonly && (
-        <RecipeIsReadonlyBanner recipeId={recipeData.recipe.id} />
+        <RecipeIsReadonlyBanner
+          bookId={recipeData.book.id}
+          recipeId={recipeData.recipe.id}
+        />
       )}
       {recipeData.tag === EditRecipeLoadingState.offline && <OfflineBanner />}
       {recipeData.tag === EditRecipeLoadingState.saving && <p>Saving...</p>}
