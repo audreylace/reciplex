@@ -54,3 +54,9 @@
   padding-left: 0;
   margin-top: 0;
 }
+
+.formMain {
+  margin: auto;
+  max-width: 30em;
+  padding: var(--rcx-body-padding);
+}

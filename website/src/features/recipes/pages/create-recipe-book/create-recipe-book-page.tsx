@@ -3,8 +3,8 @@ import { FormButtons } from "../../../core/components/form-buttons/form-buttons.
 import { SuccessButton } from "../../../core/components/success-button/success-button.component";
 import { RecipeBookMetaFields } from "../../components/recipe-book-meta-fields/recipe-book-meta-fields.component";
 import { RetryBannerComponent } from "../../components/retry-banner/retry-banner.component";
-
 import { useCreateRecipeBookPage } from "./useCreateRecipeBookPage.hook";
+import formStyles from "../../../core/form-common/form-common.module.css";
 
 /**
  * Create recipe book page component
@@ -13,7 +13,7 @@ export function CreateRecipeBookPage() {
   const { state, onSubmit, register, errors, onCancel } =
     useCreateRecipeBookPage();
   return (
-    <main className="pageMain">
+    <main className={`${formStyles.formMain}`}>
       {state === "idle" && (
         <form onSubmit={onSubmit}>
           <RecipeBookMetaFields

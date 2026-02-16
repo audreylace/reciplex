@@ -16,7 +16,7 @@ export function DeleteRecipeBookPage() {
   const { state, bookId, errors, register, bookName, onSubmit, onCancel } =
     useDeleteRecipeBookPage();
   return (
-    <main className="pageMain">
+    <main className={`${formStyles.formMain}`}>
       {state === "bad-path" && <BadPathBanner />}
       {state === "loading" && <FetchingRecipeBookBanner />}
       {state === "error" && <FetchingRecipeBookFailedBanner />}

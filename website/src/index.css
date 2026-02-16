@@ -68,6 +68,8 @@ h6 {
 }
 .pageMain {
   padding: var(--rcx-body-padding);
+  max-width: 40em;
+  margin: auto;
 }
 
 body {

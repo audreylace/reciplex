@@ -21,7 +21,7 @@ export function DeleteRecipePage() {
   const { loadState, onSubmit, cancelAction, register, errors } =
     useDeleteRecipePage();
   return (
-    <main className="pageMain">
+    <main className={`${formStyles.formMain}`}>
       <RecipeNameAndDescription
         name={loadState.recipe?.name}
         shortDescription={loadState.recipe?.shortDescription}
@@ -71,6 +71,7 @@ export function DeleteRecipePage() {
               </Label>
               <Input
                 className={formStyles.fieldControl}
+                placeholder={loadState.recipe.name}
                 type="text"
                 {...register("recipeName", {
                   required: true,

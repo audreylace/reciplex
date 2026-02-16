@@ -10,6 +10,7 @@ import { ActionFailedTryAgainCancel } from "../../components/action-failed-try-a
 import { SuccessButton } from "../../../core/components/success-button/success-button.component";
 import { DangerButton } from "../../../core/components/danger-button/danger-button.component";
 import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
+import formStyles from "../../../core/form-common/form-common.module.css";
 
 /**
  * Entry point for editing a recipe book
@@ -18,7 +19,7 @@ export function EditRecipeBookPage() {
   const { onSubmit, bookName, state, bookId, onCancel, register, errors } =
     useEditRecipeBookPage();
   return (
-    <main className="pageMain">
+    <main className={formStyles.formMain}>
       {state === "bad-path" && <BadPathBanner />}
       {state === "loading" && <FetchingRecipeBookBanner />}
       {state === "error" && <FetchingRecipeBookFailedBanner />}

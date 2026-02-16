@@ -10,6 +10,7 @@ import { RecipeMetaFieldSet } from "../../components/recipe-meta-field-set/recip
 import { OfflineBanner } from "../../components/offline-banner/offline-banner.component";
 import { useCreateRecipePage } from "./useCreateRecipePage.hook";
 import { ActionFailedTryAgainCancel } from "../../components/action-failed-try-again-cancel/action-failed-try-again-cancel.component";
+import formStyles from "../../../core/form-common/form-common.module.css";
 
 /**
  * Entry point for create recipe page component
@@ -19,7 +20,7 @@ export function CreateRecipePage() {
     useCreateRecipePage();
 
   return (
-    <main className="pageMain">
+    <main className={`${formStyles.formMain}`}>
       {state === "bad-path" && <BadPathBanner />}
       {state === "loading" && <FetchingRecipeBookBanner />}
       {state === "not-found" && <RecipeBookNotFoundBanner />}
