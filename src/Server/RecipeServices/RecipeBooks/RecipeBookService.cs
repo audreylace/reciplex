@@ -203,7 +203,7 @@ public class RecipeBookService(
             return new(UpdateRecipeBookDetailsOutcome.ConcurrencyConflict);
         }
 
-        return new(UpdateRecipeBookDetailsOutcome.Success);
+        return new(ToRecipeBookDao(book, bookData.MayEdit, bookData.MayDelete));
     }
 
     class GetBookInternalResult
