@@ -91,7 +91,7 @@ export function ViewRecipePage() {
               <div className={styles.detailsWrapper}>
                 {recipeData.recipe.details && (
                   <Markdown rehypePlugins={[rehypeSanitize]}>
-                    recipeData.recipe.details
+                    {recipeData.recipe.details}
                   </Markdown>
                 )}
                 {!recipeData.recipe.details && recipeData.recipe.mayEdit && (
