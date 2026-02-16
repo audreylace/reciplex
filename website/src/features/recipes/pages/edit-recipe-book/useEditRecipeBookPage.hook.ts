@@ -89,7 +89,7 @@ export function useEditRecipeBookPage() {
     ) {
       return;
     }
-    recipeBookMutation.mutateAsync({
+    await recipeBookMutation.mutateAsync({
       recipeBookId: bookId,
       name: data.bookName,
       shortDescription: data.bookDescription,
