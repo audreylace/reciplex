@@ -28,7 +28,7 @@ export function EditRecipeBookPage() {
       {state === "save-in-progress" && <p>Saving...</p>}
       {state === "save-failed" && (
         <ActionFailedTryAgainCancel
-          message="Something went wrong while deleting."
+          message="Something went wrong while saving."
           cancelCaption="View Recipe"
           cancelAction={onCancel}
         />
