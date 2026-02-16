@@ -16,10 +16,10 @@ export function CreateRecipeBookButton() {
       buttonType="hidden"
     >
       <span className={styles.dottedCircle}>
-        <i class="bi bi-plus-circle-dotted"></i>
+        <i className="bi bi-plus-circle-dotted"></i>
       </span>
       <span className={styles.solidCircle}>
-        <i class="bi bi-plus-circle-fill"></i>
+        <i className="bi bi-plus-circle-fill"></i>
       </span>{" "}
       Add
     </SuccessButton>
