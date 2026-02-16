@@ -1,5 +1,5 @@
 import { Fieldset, Legend, Field, Label } from "@headlessui/react";
-import { RecipeDetailsMaxLength } from "../../../../services/recipe-store";
+import { RecipeDetailsMaxLength } from "../../services/recipe-types";
 import { RecipeDetailsEditor } from "../recipe-details-editor/recipe-details-editor.component";
 import formStyles from "../../../core/form-common/form-common.module.css";
 import { useState } from "preact/hooks";

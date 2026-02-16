@@ -16,15 +16,11 @@ import styles from "./view-recipe-book.module.css";
  * @param param0 react props
  * @returns jsx tree for rendering by react
  */
-export function ViewRecipeBookPage({}: {}) {
+export function ViewRecipeBookPage() {
   const { bookId } = useParams<{
     bookId: string;
   }>();
   const bookQuery = useGetRecipeBookById(bookId);
-  const userQuery = useGetUserById(bookQuery.data?.ownerId, {
-    enabled: bookQuery.isSuccess,
-  });
-
   const notFound = bookQuery.isSuccess && !bookQuery.data;
   return (
     <main className="pageMain">

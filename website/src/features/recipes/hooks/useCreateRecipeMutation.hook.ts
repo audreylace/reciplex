@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
-import type { ICreateRecipeArgs } from "../../../services/recipe-store";
+import type { ICreateRecipeArgs } from "../services/recipe-types";
 import { recipeByIdCacheKey } from "./useGetRecipeByIdQuery.hook";
 
 export function useCreateRecipeMutation() {

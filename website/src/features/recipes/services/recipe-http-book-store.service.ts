@@ -11,8 +11,9 @@ import {
   type IRecipeBookStore,
   type IRecipeModel,
   type IUpdateRecipeArgs,
+  type IUpdateRecipeBookArgs,
   type IUserModel,
-} from "../../../services/recipe-store";
+} from "./recipe-types";
 
 /**
  * Stores and retrieves recipes from a remote HTTP server
@@ -72,7 +73,7 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
         return cachedBookData;
       }
     }
-    var response = await this.httpGet(
+    const response = await this.httpGet(
       `v1/recipe-books/${encodeURIComponent(bookId)}`,
       undefined,
       { noCache: args?.noCache },
@@ -111,7 +112,7 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
   async getRecipeBooks(
     args?: IGetRecipeBooksArgs,
   ): Promise<IGetRecipeBooksResult | null> {
-    let requestPath = "v1/recipe-books";
+    const requestPath = "v1/recipe-books";
 
     const queryParams = [];
     if (args && args.cursor) {
@@ -128,7 +129,7 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
       queryParams.push(`page-size=${args.limit}`);
     }
 
-    var response = await this.httpGet(requestPath, queryParams);
+    const response = await this.httpGet(requestPath, queryParams);
 
     if (!response.ok) {
       await this.throwUnexpectedHttpResult(response);
@@ -348,6 +349,33 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
     return await this.decodeSingleRecipeResult(response);
   }
 
+  async updateRecipeBook(
+    bookId: string,
+    args: IUpdateRecipeBookArgs,
+  ): Promise<IRecipeBookModel> {
+    const response = await this.httpPut(
+      `v1/recipe-books/${encodeURIComponent(bookId)}`,
+      args.versionTag,
+      {
+        name: args.name ?? "",
+        shortDescription: args.shortDescription ?? "",
+      },
+    );
+
+    if (!response.ok) {
+      if (response.status === 412 || response.status === 404) {
+        throw new ConcurrencyConflict();
+      }
+
+      if (response.status === 403) {
+        throw new OperationForbidden();
+      }
+
+      await this.throwUnexpectedHttpResult(response);
+    }
+    return await this.decodeSingleRecipeBookResult(response);
+  }
+
   /**
    * Gets data from the remote
    * @param path the path
@@ -422,7 +450,7 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "If-Match": `\"${versionTag}\"`,
+        "If-Match": `"${versionTag}"`,
       },
       body: JSON.stringify(body),
     });
@@ -449,7 +477,7 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
       credentials: "include",
       method: "DELETE",
       headers: {
-        "If-Match": `\"${versionTag}\"`,
+        "If-Match": `"${versionTag}"`,
       },
     });
   }
@@ -459,7 +487,7 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
    * @param response the fetch response that failed
    */
   private async throwUnexpectedHttpResult(response: Response): Promise<never> {
-    var text = await response.text();
+    const text = await response.text();
     throw new Error(`unexpected result : ${response.status} : ${text}`);
   }
 

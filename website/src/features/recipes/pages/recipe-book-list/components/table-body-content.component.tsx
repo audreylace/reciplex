@@ -1,4 +1,4 @@
-import type { IGetRecipeBooksResult } from "../../../../../services/recipe-store";
+import type { IGetRecipeBooksResult } from "../../../services/recipe-types";
 import { useBookData } from "../hooks/useBookData.hook";
 import { BookListUi } from "./book-list-ui.component";
 import { CreateFirstBookUI } from "./create-first-book-ui.component";

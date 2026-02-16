@@ -64,8 +64,8 @@ export function useEditRecipePage() {
       });
       navigate(makeViewRecipePath(recipeData.book.id, recipeData.recipe.id), {
         state: makeRecipeNameAndDescriptionState(
-          newData.name,
-          newData.shortDescription,
+          newData.recipe.name,
+          newData.recipe.shortDescription,
         ),
       });
     }

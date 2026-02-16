@@ -1,5 +1,5 @@
 import { useForm, type SubmitHandler } from "react-hook-form";
-import type { IRecipeModel } from "../../../../services/recipe-store";
+import type { IRecipeModel } from "../../services/recipe-types";
 import { useCreateRecipeMutation } from "../../hooks/useCreateRecipeMutation.hook";
 import { RecipeMetaFieldSet } from "../recipe-meta-field-set/recipe-meta-field-set.component";
 import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";

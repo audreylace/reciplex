@@ -6,7 +6,9 @@
   box-shadow: 0px 0px 2px 0px var(--rcx-color-shadow);
 }
 
-.commonButton[data-hover] {
+.commonButton[data-hover],
+.commonButton[data-hover][data-button-type="hidden"],
+.commonButton[data-hover][data-button-type="dotted"] {
   box-shadow: 0px 0px 8px 0px var(--rcx-color-shadow);
   cursor: pointer;
 }

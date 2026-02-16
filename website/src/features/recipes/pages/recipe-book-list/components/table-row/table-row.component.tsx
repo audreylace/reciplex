@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router";
 import { makeViewRecipeBookPath } from "../../../../route-utils";
-import type { IRecipeBookModel } from "../../../../../../services/recipe-store";
+import type { IRecipeBookModel } from "../../../../services/recipe-types";
 import styles from "./table-row.module.css";
 
 export function TableRow({ book }: { book: IRecipeBookModel }) {

@@ -1,5 +1,5 @@
 import { useContext } from "preact/hooks";
-import { type IRecipeBookStore } from "../../../services/recipe-store";
+import { type IRecipeBookStore } from "../services/recipe-types";
 import { createContext } from "preact";
 
 /**

@@ -2,7 +2,7 @@ import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import {
   RecipeBookNameMaxLength,
   RecipeBookShortDescriptionMaxLength,
-} from "../../../../services/recipe-store";
+} from "../../services/recipe-types";
 import fieldStyles from "../../../core/form-common/form-common.module.css";
 import {
   Field,

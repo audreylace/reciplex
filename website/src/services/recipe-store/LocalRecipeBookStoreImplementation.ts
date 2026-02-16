@@ -10,7 +10,7 @@ import type {
   ICreateRecipeArgs,
   IRecipeModel,
   IUpdateRecipeArgs,
-} from ".";
+} from "../../features/recipes/services/recipe-types";
 
 /**
  * Implements `IRecipeBookStore` using a browser only model that stores mock data. Useful for testing and demoing.

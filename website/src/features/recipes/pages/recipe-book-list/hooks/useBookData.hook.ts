@@ -2,7 +2,7 @@ import { useMemo } from "preact/hooks";
 import type {
   IGetRecipeBooksResult,
   IRecipeBookModel,
-} from "../../../../../services/recipe-store";
+} from "../../../services/recipe-types";
 
 export function useBookData(data: IGetRecipeBooksResult | undefined) {
   return useMemo(() => {

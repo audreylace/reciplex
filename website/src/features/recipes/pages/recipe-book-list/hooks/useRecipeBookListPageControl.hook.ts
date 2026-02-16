@@ -2,7 +2,7 @@ import { useParams } from "react-router";
 import type { BookListNavigationAction } from "../../../route-utils";
 import { useFakeLoading } from "./useFakeLoading.hook";
 import { useRecipeBookListQuery } from "./useRecipeBookListQuery.hook";
-import type { IGetRecipeBooksResult } from "../../../../../services/recipe-store";
+import type { IGetRecipeBooksResult } from "../../../services/recipe-types";
 
 export function useRecipeBookListPageControl(): {
   data?: IGetRecipeBooksResult;

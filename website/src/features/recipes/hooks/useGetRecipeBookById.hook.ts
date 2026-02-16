@@ -14,9 +14,9 @@ export type UseGetRecipeBookByIdArgs = {
    */
   refetchInterval?: number | false;
   /**
-   * ttl of the data
+   * When true, data will be loaded directly from the remote
    */
-  staleTime?: number;
+  noCache?: boolean;
 };
 export function useGetRecipeBookById(
   bookId: string | null | undefined,
@@ -25,15 +25,17 @@ export function useGetRecipeBookById(
   const recipeStore = useRecipeStoreContext();
   return useQuery({
     queryKey: recipeBookByIdCacheKey(bookId ?? ""),
-    enabled: !!bookId ? args?.enabled : false,
-    staleTime: args?.staleTime ?? 60 * 1000,
+    enabled: bookId ? args?.enabled : false,
+    staleTime: args?.noCache ? 0 : undefined,
     refetchInterval: args?.refetchInterval,
     queryFn: async () => {
       if (!bookId) {
         throw Error("need a recipe book id");
       }
 
-      return await recipeStore.getRecipeBook(bookId);
+      return await recipeStore.getRecipeBook(bookId, {
+        noCache: args?.noCache,
+      });
     },
   });
 }

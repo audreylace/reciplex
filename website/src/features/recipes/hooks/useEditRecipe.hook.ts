@@ -1,8 +1,9 @@
 import { useGetRecipeByIdQuery } from "./useGetRecipeByIdQuery.hook";
 import type {
+  IGetRecipeByIdResult,
   IRecipeBookModel,
   IRecipeModel,
-} from "../../../services/recipe-store";
+} from "../services/recipe-types";
 import { useState } from "preact/hooks";
 import { useUpdateRecipeMutation } from "./useUpdateRecipeMutation.hook";
 import { useDeleteRecipeMutation } from "./useDeleteRecipeMutation";
@@ -144,7 +145,7 @@ export function useEditRecipe(
           });
 
           if (!canEdit) {
-            return;
+            throw Error("invalid action: user can not modify recipe");
           }
 
           const result = await recipeMutation.mutateAsync({
@@ -241,6 +242,6 @@ interface UseEditRecipeReturnWithDataAndAction extends GetInitialDataForRecipeEd
     recipeName: string;
     recipeDescription: string;
     recipeDetails: string;
-  }) => Promise<IRecipeModel>;
+  }) => Promise<IGetRecipeByIdResult>;
   delete: () => Promise<void>;
 }

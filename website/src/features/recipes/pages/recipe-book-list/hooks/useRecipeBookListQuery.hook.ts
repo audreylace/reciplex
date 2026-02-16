@@ -5,7 +5,7 @@ import { BookListNavigationAction } from "../../../route-utils";
 import {
   type IGetRecipeBooksArgs,
   CursorTypes,
-} from "../../../../../services/recipe-store";
+} from "../../../services/recipe-types";
 
 export function useRecipeBookListQuery(source?: string, index?: string) {
   const recipeStore = useContext(RecipeStore);

@@ -244,6 +244,24 @@ export interface IUpdateRecipeArgs {
   details: string;
 }
 
+/** Args for updating a recipe book */
+export interface IUpdateRecipeBookArgs {
+  /**
+   * name of the recipe book
+   * @see RecipeBookNameMaxLength Max length of this property
+   */
+  name: string;
+  /**
+   * short description of the recipe book
+   * @see RecipeBookShortDescriptionMaxLength Max length of this property
+   */
+  shortDescription: string;
+  /**
+   * version of the model for optimistic concurrency
+   */
+  versionTag: string;
+}
+
 /**
  * Store for recipe books and recipe data
  */
@@ -319,6 +337,11 @@ export interface IRecipeBookStore {
    * @param versionTag the version tag for optimistic concurrency
    */
   deleteRecipeBook(bookId: string, versionTag: string): Promise<void>;
+
+  updateRecipeBook(
+    bookId: string,
+    args: IUpdateRecipeBookArgs,
+  ): Promise<IRecipeBookModel>;
 
   /**
    * Updates a recipe
