@@ -2,10 +2,15 @@ import { Link, useNavigate } from "react-router";
 import { makeViewRecipeBookPath } from "../../../../route-utils";
 import type { IRecipeBookModel } from "../../../../services/recipe-types";
 import styles from "./table-row.module.css";
+import { makeBookNameAndDescriptionState } from "../../../../components/book-information-banner/book-information-banner";
 
 export function TableRow({ book }: { book: IRecipeBookModel }) {
   const navigate = useNavigate();
   const path = makeViewRecipeBookPath(book.id);
+  const state = makeBookNameAndDescriptionState(
+    book.name,
+    book.shortDescription,
+  );
   return (
     <tr
       className={`${styles.bookCell} ${styles.bookRow}`}
@@ -19,12 +24,16 @@ export function TableRow({ book }: { book: IRecipeBookModel }) {
         {book.shortDescription || <>&mdash;</>}
       </td>
       <td className={`${styles.bookCell} ${styles.bookIconLink}`}>
-        <Link to={path} aria-description="navigate to recipe book">
+        <Link
+          to={path}
+          aria-description="navigate to recipe book"
+          state={state}
+        >
           <span className={styles.emptyEye}>
-            <i class="bi bi-eye"></i>
+            <i className="bi bi-eye"></i>
           </span>
           <span className={styles.filledEye}>
-            <i class="bi bi-eye-fill"></i>
+            <i className="bi bi-eye-fill"></i>
           </span>
         </Link>
       </td>
