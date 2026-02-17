@@ -11,6 +11,8 @@ import { OfflineBanner } from "../../components/offline-banner/offline-banner.co
 import { useCreateRecipePage } from "./useCreateRecipePage.hook";
 import { ActionFailedTryAgainCancel } from "../../components/action-failed-try-again-cancel/action-failed-try-again-cancel.component";
 import formStyles from "../../../core/form-common/form-common.module.css";
+import { AssertString } from "../../../sentinel/stringUtilities";
+import { BookInformationBannerWithQuery } from "../../components/book-information-banner/book-information-banner-with-query";
 
 /**
  * Entry point for create recipe page component
@@ -25,7 +27,9 @@ export function CreateRecipePage() {
       {state === "loading" && <FetchingRecipeBookBanner />}
       {state === "not-found" && <RecipeBookNotFoundBanner />}
       {state === "offline" && <OfflineBanner />}
-      {state === "read-only" && <BookIsReadonlyBanner bookId={bookId ?? ""} />}
+      {state === "read-only" && (
+        <BookIsReadonlyBanner bookId={AssertString(bookId)} />
+      )}
       {state === "error" && <FetchingRecipeBookFailedBanner />}
       {state === "creating" && (
         <>
@@ -41,6 +45,7 @@ export function CreateRecipePage() {
       )}
       {state === "loaded" && (
         <>
+          <BookInformationBannerWithQuery bookId={bookId} />
           <form onSubmit={onSubmit}>
             <RecipeMetaFieldSet
               disabled={false}

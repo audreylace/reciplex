@@ -10,6 +10,7 @@ import { DangerButton } from "../../../core/components/danger-button/danger-butt
 import { SuccessButton } from "../../../core/components/success-button/success-button.component";
 import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
 import styles from "./view-recipe-book.module.css";
+import { BookInformationBanner } from "../../components/book-information-banner/book-information-banner";
 
 /**
  * Entry point for viewing a recipe book
@@ -32,8 +33,10 @@ export function ViewRecipeBookPage() {
           {bookQuery.isError && <FetchingRecipeBookFailedBanner />}
           {bookQuery.isSuccess && bookQuery.data && (
             <>
-              <h1>{bookQuery.data.name}</h1>
-              <p>{bookQuery.data.shortDescription}</p>
+              <BookInformationBanner
+                name={bookQuery.data.name}
+                shortDescription={bookQuery.data.shortDescription}
+              />
               <FormButtons notInForm>
                 {bookQuery.data.canAddRecipesToBook && (
                   <NavLink to={makeCreateRecipePath(bookId)}>

@@ -3,6 +3,7 @@ import formStyles from "../../../core/form-common/form-common.module.css";
 import { useNavigate, useParams } from "react-router";
 import { RecipeBookEditor } from "../../components/recipe-book-editor/recipe-book-editor";
 import { makeViewRecipeBookPath } from "../../route-utils";
+import { BookInformationBannerWithQuery } from "../../components/book-information-banner/book-information-banner-with-query";
 
 /**
  * page for editing a recipe book
@@ -20,12 +21,15 @@ export function EditRecipeBookPage() {
     <main className={formStyles.formMain}>
       {!bookId && <BadPathBanner />}
       {bookId && (
-        <RecipeBookEditor
-          key={bookId}
-          bookId={bookId}
-          onSaved={goBackToBook}
-          onCancel={goBackToBook}
-        />
+        <>
+          <BookInformationBannerWithQuery bookId={bookId} />
+          <RecipeBookEditor
+            key={bookId}
+            bookId={bookId}
+            onSaved={goBackToBook}
+            onCancel={goBackToBook}
+          />
+        </>
       )}
     </main>
   );
