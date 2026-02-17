@@ -1,7 +1,6 @@
 import { NavLink, useParams } from "react-router";
 import { makeCreateRecipePath } from "../../route-utils";
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
-import { useGetUserById } from "../../../users/hooks/getUserById.hook";
 import { RecipeBookNotFoundBanner } from "../../components/recipe-book-not-found-banner/recipe-book-not-found-banner.component";
 import { FetchingRecipeBookBanner } from "../../components/fetching-recipe-book-banner/fetching-recipe-book-banner.component";
 import { FetchingRecipeBookFailedBanner } from "../../components/fetching-recipe-book-failed-banner/fetching-recipe-book-failed-banner.component";
@@ -9,8 +8,10 @@ import { BadPathBanner } from "../../components/bad-path-banner/bad-path-banner.
 import { DangerButton } from "../../../core/components/danger-button/danger-button.component";
 import { SuccessButton } from "../../../core/components/success-button/success-button.component";
 import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
-import styles from "./view-recipe-book.module.css";
-import { BookInformationBanner } from "../../components/book-information-banner/book-information-banner";
+import {
+  BookInformationBanner,
+  makeBookNameAndDescriptionState,
+} from "../../components/book-information-banner/book-information-banner";
 
 /**
  * Entry point for viewing a recipe book
@@ -23,6 +24,12 @@ export function ViewRecipeBookPage() {
   }>();
   const bookQuery = useGetRecipeBookById(bookId);
   const notFound = bookQuery.isSuccess && !bookQuery.data;
+  const bookNavState = bookQuery.data
+    ? makeBookNameAndDescriptionState(
+        bookQuery.data.name,
+        bookQuery.data.shortDescription,
+      )
+    : undefined;
   return (
     <main className="pageMain">
       {!bookId && <BadPathBanner />}
@@ -46,14 +53,14 @@ export function ViewRecipeBookPage() {
                   </NavLink>
                 )}
                 {bookQuery.data.canDeleteBook && (
-                  <NavLink to={`/books/${bookId}/delete`}>
+                  <NavLink to={`/books/${bookId}/delete`} state={bookNavState}>
                     <DangerButton buttonType="dotted">
                       Delete Recipe Book
                     </DangerButton>
                   </NavLink>
                 )}
                 {bookQuery.data.canEditBookInformation && (
-                  <NavLink to={`/books/${bookId}/edit`}>
+                  <NavLink to={`/books/${bookId}/edit`} state={bookNavState}>
                     <SuccessButton buttonType="dotted">
                       Edit Recipe Book Information
                     </SuccessButton>
