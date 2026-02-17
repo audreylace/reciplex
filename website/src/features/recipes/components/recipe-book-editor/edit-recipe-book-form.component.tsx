@@ -30,15 +30,16 @@ export function EditRecipeBookForm({
     },
   });
   const recipeBookMutation = useUpdateRecipeBookMutation();
+  const [versionTag, setVersionTag] = useState<string | null>(null);
   const onSubmit = handleSubmit(async (formData) => {
-    if (!recipeBookMutation.isIdle) {
+    if (!recipeBookMutation.isIdle || !versionTag) {
       return;
     }
     const newModel = await recipeBookMutation.mutateAsync({
       recipeBookId: data.id,
       name: formData.bookName,
       shortDescription: formData.bookDescription,
-      versionTag: data.versionTag,
+      versionTag: versionTag,
     });
     onSaved({
       bookId: newModel.id,
@@ -46,7 +47,6 @@ export function EditRecipeBookForm({
       shortDescription: newModel.shortDescription,
     });
   });
-  const [versionTag, setVersionTag] = useState<string | null>(null);
 
   const cancelProxy = () => {
     onCancel({
