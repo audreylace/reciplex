@@ -45,9 +45,17 @@ export interface RecipeBookEditorProps {
   /**
    * Invoked on cancel
    */
-  onCancel: () => void;
+  onCancel: (info?: {
+    name: string;
+    shortDescription: string;
+    bookId: string;
+  }) => void;
   /**
    * Invoked once the user is done editing
    */
-  onSaved: () => void;
+  onSaved: (info?: {
+    name: string;
+    shortDescription: string;
+    bookId: string;
+  }) => void;
 }

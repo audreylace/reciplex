@@ -34,15 +34,37 @@ export function EditRecipeBookForm({
     if (!recipeBookMutation.isIdle) {
       return;
     }
-    await recipeBookMutation.mutateAsync({
+    const newModel = await recipeBookMutation.mutateAsync({
       recipeBookId: data.id,
       name: formData.bookName,
       shortDescription: formData.bookDescription,
       versionTag: data.versionTag,
     });
-    onSaved();
+    onSaved({
+      bookId: newModel.id,
+      name: newModel.name,
+      shortDescription: newModel.shortDescription,
+    });
   });
   const [versionTag, setVersionTag] = useState<string | null>(null);
+
+  const cancelProxy = () => {
+    onCancel({
+      bookId: data.id,
+      name: data.name,
+      shortDescription: data.shortDescription,
+    });
+  };
+
+  const reloadProxy = reloadAction
+    ? () => {
+        reloadAction({
+          bookId: data.id,
+          name: data.name,
+          shortDescription: data.shortDescription,
+        });
+      }
+    : undefined;
 
   if (data.versionTag && !versionTag) {
     setVersionTag(data.versionTag);
@@ -55,8 +77,8 @@ export function EditRecipeBookForm({
         message="Someone else changed the recipe book."
         tryAgainCaption="Reload and try again?"
         cancelCaption="View Recipe Book"
-        cancelAction={onCancel}
-        reloadAction={reloadAction}
+        cancelAction={cancelProxy}
+        reloadAction={reloadProxy}
       />
     );
   }
@@ -75,7 +97,7 @@ export function EditRecipeBookForm({
           />
           <FormButtons>
             <SuccessButton type="submit">Save</SuccessButton>
-            <DangerButton onClick={onCancel}>Cancel</DangerButton>
+            <DangerButton onClick={cancelProxy}>Cancel</DangerButton>
           </FormButtons>
         </form>
       )}
@@ -84,7 +106,8 @@ export function EditRecipeBookForm({
         <ActionFailedTryAgainCancel
           message="Something went wrong while saving."
           cancelCaption="View Recipe"
-          cancelAction={onCancel}
+          cancelAction={cancelProxy}
+          reloadAction={reloadProxy}
         />
       )}
     </>
@@ -110,15 +133,27 @@ export interface EditRecipeBookFormProps {
   /**
    * Invoked on cancel
    */
-  onCancel: () => void;
+  onCancel: (info?: {
+    name: string;
+    shortDescription: string;
+    bookId: string;
+  }) => void;
   /**
    * Invoked once the user is done editing
    */
-  onSaved: () => void;
+  onSaved: (info?: {
+    name: string;
+    shortDescription: string;
+    bookId: string;
+  }) => void;
   /**
    * Invoked when the user wants to reload the form
    * because of a conflict. Defaults to reloading
    * the page if not provided.
    */
-  reloadAction?: () => void;
+  reloadAction?: (info?: {
+    name: string;
+    shortDescription: string;
+    bookId: string;
+  }) => void;
 }
