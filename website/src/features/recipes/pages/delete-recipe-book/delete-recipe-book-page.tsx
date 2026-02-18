@@ -3,7 +3,8 @@ import { useNavigate, useParams } from "react-router";
 import { makeBookListPath, makeViewRecipeBookPath } from "../../route-utils";
 import { makeBookNameAndDescriptionState } from "../../components/book-information-banner/book-information-banner";
 import { BookInformationBannerWithQuery } from "../../components/book-information-banner/book-information-banner-with-query";
-import { DeleteRecipeBook } from "../../components/delete-recipe-book/delete-recipe-book.component";
+import { RecipeBookMutationLoader } from "../../components/recipe-book-loader/recipe-book-mutation-loader";
+import { DeleteRecipeBookForm } from "../../components/delete-recipe-book-form/delete-recipe-book-form";
 
 import formStyles from "../../../core/form-common/form-common.module.css";
 
@@ -35,11 +36,20 @@ export function DeleteRecipeBookPage() {
       {bookId && (
         <>
           <BookInformationBannerWithQuery bookId={bookId} />
-          <DeleteRecipeBook
+          <RecipeBookMutationLoader
             key={bookId}
             bookId={bookId}
-            onCancel={goBackToBook}
-            onDeleted={onDeleted}
+            noCache={true}
+            refetchInterval={10000}
+            onRender={(book) => {
+              return (
+                <DeleteRecipeBookForm
+                  onCancel={goBackToBook}
+                  onDeleted={onDeleted}
+                  data={book}
+                />
+              );
+            }}
           />
         </>
       )}

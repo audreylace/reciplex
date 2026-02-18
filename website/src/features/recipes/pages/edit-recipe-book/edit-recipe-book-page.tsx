@@ -1,10 +1,11 @@
 import { BadPathBanner } from "../../components/bad-path-banner/bad-path-banner.component";
 import formStyles from "../../../core/form-common/form-common.module.css";
 import { useNavigate, useParams } from "react-router";
-import { RecipeBookEditor } from "../../components/recipe-book-editor/recipe-book-editor";
 import { makeViewRecipeBookPath } from "../../route-utils";
 import { BookInformationBannerWithQuery } from "../../components/book-information-banner/book-information-banner-with-query";
 import { makeBookNameAndDescriptionState } from "../../components/book-information-banner/book-information-banner";
+import { RecipeBookMutationLoader } from "../../components/recipe-book-loader/recipe-book-mutation-loader";
+import { EditRecipeBookForm } from "../../components/edit-recipe-book-form/edit-recipe-book-form.component";
 
 /**
  * page for editing a recipe book
@@ -34,11 +35,20 @@ export function EditRecipeBookPage() {
       {bookId && (
         <>
           <BookInformationBannerWithQuery bookId={bookId} />
-          <RecipeBookEditor
+          <RecipeBookMutationLoader
             key={bookId}
             bookId={bookId}
-            onSaved={goBackToBook}
-            onCancel={goBackToBook}
+            noCache={true}
+            refetchInterval={10000}
+            onRender={(book) => {
+              return (
+                <EditRecipeBookForm
+                  onCancel={goBackToBook}
+                  onSaved={goBackToBook}
+                  data={book}
+                />
+              );
+            }}
           />
         </>
       )}

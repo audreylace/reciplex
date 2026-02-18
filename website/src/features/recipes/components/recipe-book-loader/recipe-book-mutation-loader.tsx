@@ -1,24 +1,24 @@
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
 import { RecipeBookNotFoundBanner } from "../recipe-book-not-found-banner/recipe-book-not-found-banner.component";
-import { EditRecipeBookForm } from "./edit-recipe-book-form.component";
 import { FetchingRecipeBookBanner } from "../fetching-recipe-book-banner/fetching-recipe-book-banner.component";
 import { OfflineBanner } from "../offline-banner/offline-banner.component";
 import { FetchingRecipeBookFailedBanner } from "../fetching-recipe-book-failed-banner/fetching-recipe-book-failed-banner.component";
+import type { IRecipeBookModel } from "../../services/recipe-types";
 
 /**
- * loads the recipe book data and then renders the form
- * @todo Allow outside caller to control reload action.
- *       Requires prop drilling the reload action to
- *       the underlying banners that trigger a reload.
+ * loads the recipe book data and then render using `onRender`.
  */
-export function RecipeBookEditor({
+export function RecipeBookMutationLoader({
   bookId,
-  onCancel,
-  onSaved,
+  onRender,
+  noCache,
+  enabled,
+  refetchInterval,
 }: RecipeBookEditorProps) {
   const recipeBookQuery = useGetRecipeBookById(bookId, {
-    noCache: true,
-    refetchInterval: 10000,
+    noCache,
+    refetchInterval,
+    enabled,
   });
 
   if (recipeBookQuery.isFetchedAfterMount) {
@@ -26,9 +26,7 @@ export function RecipeBookEditor({
     if (!data) {
       return <RecipeBookNotFoundBanner />;
     }
-    return (
-      <EditRecipeBookForm onCancel={onCancel} onSaved={onSaved} data={data} />
-    );
+    return onRender(data);
   } else if (recipeBookQuery.isError) {
     return <FetchingRecipeBookFailedBanner />;
   } else if (recipeBookQuery.isPaused) {
@@ -43,19 +41,10 @@ export interface RecipeBookEditorProps {
   /** the book id to edit */
   bookId: string;
   /**
-   * Invoked on cancel
+   * Invoked to render the content
    */
-  onCancel: (info?: {
-    name: string;
-    shortDescription: string;
-    bookId: string;
-  }) => void;
-  /**
-   * Invoked once the user is done editing
-   */
-  onSaved: (info?: {
-    name: string;
-    shortDescription: string;
-    bookId: string;
-  }) => void;
+  onRender: (book: IRecipeBookModel) => React.ReactNode;
+  noCache?: boolean;
+  refetchInterval?: number;
+  enabled?: boolean;
 }
