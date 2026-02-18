@@ -169,6 +169,21 @@ export interface IGetRecipeBooksArgs {
    */
   limit?: number;
 }
+
+/**
+ * args for `getRecipesInBook` @see IRecipeBookStore
+ */
+export interface IGetRecipesInBookArgs {
+  /**
+   * Cursor for getting the next page of data
+   */
+  cursor?: IPageRequestCursor;
+  /**
+   * Limit the number of results
+   */
+  limit?: number;
+}
+
 /**
  * result from `getCurrentUser` @see IRecipeBookStore
  */
@@ -300,6 +315,16 @@ export interface IRecipeBookStore {
   ): Promise<IGetRecipeBooksResult | null>;
 
   /**
+   * gets recipes for a book
+   * @param bookId the id of the book
+   * @param args optional args to control the query
+   */
+  getRecipesInBook(
+    bookId: string,
+    args?: IGetRecipesInBookArgs,
+  ): Promise<IGetRecipesInBookResult | null>;
+
+  /**
    * Creates a recipe book
    * @param args args for the create command
    * @returns string with the ID of the new book
@@ -345,7 +370,8 @@ export interface IRecipeBookStore {
 
   /**
    * Updates a recipe
-   * @param args recipe update args
+   * @param recipeId id of recipe to load
+   * @param args arguments controlling the update
    */
   updateRecipe(
     recipeId: string,
@@ -353,18 +379,42 @@ export interface IRecipeBookStore {
   ): Promise<IGetRecipeByIdResult>;
 }
 
+/** thrown when server indicates a conflict */
 export class ConcurrencyConflict extends Error {
+  /** default constructor */
   constructor() {
     super("request failed because of concurrency conflict");
   }
 }
 
+/** throw when the client tries to perform a action the server considers forbidden */
 export class OperationForbidden extends Error {
+  /** default constructor */
   constructor() {
     super("request failed because the operation is forbidden");
   }
 }
+
+/** return for getting a recipe */
 export interface IGetRecipeByIdResult {
+  /** the recipe */
   recipe: IRecipeModel;
+  /** the book */
   book: IRecipeBookModel;
+}
+
+/**
+ * A single page holding a list of recipes for a book.
+ * Use next and previous to determine if there is more data.
+ * @todo return user data provided by the server
+ */
+export interface IGetRecipesInBookResult {
+  /** list of recipes */
+  recipes: IRecipeModel[];
+  /** the book */
+  book: IRecipeBookModel;
+  /** cursor to fetch the next page */
+  nextCursor?: IPageCursor;
+  /** cursor to fetch the previous page */
+  previousCursor?: IPageCursor;
 }

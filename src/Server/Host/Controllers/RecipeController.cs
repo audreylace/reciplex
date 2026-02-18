@@ -380,7 +380,7 @@ public class RecipesController(
                 RecipeBooks = [new(book)],
                 Users = [new(owningUser)],
                 NextPage =
-                    idForNextPage != null
+                    hasNextPage && idForNextPage != null
                         ? new()
                         {
                             GoingQueryParam = new NavigationDirection()
@@ -392,7 +392,7 @@ public class RecipesController(
                         }
                         : null,
                 PreviousPage =
-                    idForPreviousPage != null
+                    hasPreviousPage && idForPreviousPage != null
                         ? new()
                         {
                             GoingQueryParam = new NavigationDirection()

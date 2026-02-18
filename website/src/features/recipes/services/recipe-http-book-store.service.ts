@@ -6,6 +6,8 @@ import {
   type IGetRecipeBooksArgs,
   type IGetRecipeBooksResult,
   type IGetRecipeByIdResult,
+  type IGetRecipesInBookArgs,
+  type IGetRecipesInBookResult,
   type IGetSessionInformationResult,
   type IRecipeBookModel,
   type IRecipeBookStore,
@@ -155,6 +157,83 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
       page: json.recipeBooks.map((b) => b.bookKey),
       recipeBooks: books,
       users: users,
+      nextCursor: json.nextPage
+        ? {
+            type: "next",
+            position: json.nextPage.index,
+          }
+        : undefined,
+      previousCursor: json.previousPage
+        ? {
+            type: "previous",
+            position: json.previousPage.index,
+          }
+        : undefined,
+    };
+  }
+
+  /**
+   * @inheritdoc
+   */
+  async getRecipesInBook(
+    bookId: string,
+    args?: IGetRecipesInBookArgs,
+  ): Promise<IGetRecipesInBookResult | null> {
+    const requestPath = "v1/recipes";
+
+    const queryParams = [`book=${encodeURIComponent(bookId)}`];
+    if (args && args.cursor) {
+      const cursor = args.cursor;
+      if (cursor.position) {
+        queryParams.push(`index=${encodeURIComponent(cursor.position)}`);
+      }
+      queryParams.push(
+        `going=${cursor.type === "next" ? "forward" : "backward"}`,
+      );
+    }
+
+    if (args && (args?.limit ?? 0) > 0) {
+      queryParams.push(`page-size=${args.limit}`);
+    }
+
+    const response = await this.httpGet(requestPath, queryParams);
+
+    if (!response.ok) {
+      await this.throwUnexpectedHttpResult(response);
+    }
+
+    const json: IPagedRecipeJson | undefined | null = await response.json();
+
+    if (!json) {
+      throw new Error(`unexpected result : ${json}`);
+    }
+
+    const users: Record<string, IUserModel> = {};
+    for (const user of json.users) {
+      users[user.userKey] = this.decodeUserJson(user);
+    }
+
+    let recipeBook: IRecipeBookModel | undefined;
+    for (const book of json.recipeBooks) {
+      const decodedBook = this.decodeRecipeBookJson(book);
+      if (decodedBook.id === bookId) {
+        recipeBook = decodedBook;
+      }
+    }
+
+    if (!recipeBook) {
+      // server sent back bad data. Throw.
+      throw Error("server did not send back a recipe book");
+    }
+
+    const recipes: IRecipeModel[] = [];
+    for (const recipe of json.recipes) {
+      recipes.push(this.decodeRecipeJson(recipe));
+    }
+
+    return {
+      book: recipeBook,
+      recipes: recipes,
       nextCursor: json.nextPage
         ? {
             type: "next",
@@ -526,22 +605,27 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
 
     this.decodeUserJson(json.recipeBookOwner);
 
-    const recipe = {
-      id: json.recipe.recipeKey,
-      name: json.recipe.name,
-      shortDescription: json.recipe.shortDescription,
-      details: json.recipe.details,
-      bookId: json.recipe.bookKey,
-      mayEdit: json.recipe.mayEdit ?? false,
-      versionTag: json.recipe.concurrencyTag,
-    };
-
-    this._cache.cacheRecipe(recipe);
+    const recipe = this.decodeRecipeJson(json.recipe);
 
     return {
       recipe,
       book: this.decodeRecipeBookJson(json.recipeBook),
     };
+  }
+
+  decodeRecipeJson(json: IRecipeJson): IRecipeModel {
+    const recipe = {
+      id: json.recipeKey,
+      name: json.name,
+      shortDescription: json.shortDescription,
+      details: json.details,
+      bookId: json.bookKey,
+      mayEdit: json.mayEdit ?? false,
+      versionTag: json.concurrencyTag,
+    };
+
+    this._cache.cacheRecipe(recipe);
+    return recipe;
   }
 
   /**
@@ -592,6 +676,42 @@ interface IPagedRecipeBookJson {
    * JSON describing the users linked to by objects in the request
    */
   users: IUserJson[];
+  /**
+   * populated if there is another page of books
+   */
+  nextPage?: {
+    /**
+     * the index used to get the next page
+     */
+    index: string;
+  };
+  /**
+   * populated if there is a previous page of books
+   */
+  previousPage?: {
+    /**
+     * the index used to get the previous page
+     */
+    index: string;
+  };
+}
+
+/**
+ * JSON returned when requesting a page of recipes
+ */
+interface IPagedRecipeJson {
+  /**
+   * the recipe books
+   */
+  recipeBooks: IRecipeBookJson[];
+  /**
+   * JSON describing the users linked to by objects in the request
+   */
+  users: IUserJson[];
+  /**
+   * JSON representing the list of recipes in the page
+   */
+  recipes: IRecipeJson[];
   /**
    * populated if there is another page of books
    */
