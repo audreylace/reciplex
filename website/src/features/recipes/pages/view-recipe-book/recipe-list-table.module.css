@@ -1,0 +1,97 @@
+.recipeTable {
+  width: 100%;
+}
+
+.recipeWrapper {
+  background-color: var(--rcx-color-secondary-light);
+  border-radius: var(--rcx-border-radius);
+  box-shadow: 0px 0px 2px 0px var(--rcx-color-shadow);
+  padding: 0.4em;
+
+  max-height: 80dvh;
+  overflow: scroll;
+  width: 100%;
+  padding-top: 0;
+}
+
+.recipeListRow {
+  border-bottom: solid 1px var(--rcx-color-primary-border);
+  background-color: oklch(93.6% 0.032 17.717);
+  &:nth-child(even) {
+    background-color: transparent;
+  }
+
+  &:not([data-disabled="true"]):hover {
+    cursor: pointer;
+    background-color: oklch(89.2% 0.058 10.001);
+
+    &:nth-child(even) {
+      background-color: oklch(92.4% 0.12 95.746);
+    }
+  }
+}
+
+.recipeHeader {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--rcx-color-secondary-light);
+  padding-top: 0.4em;
+  padding-bottom: 0.4em;
+}
+
+.paginationButton:hover {
+  .buttonIconHover {
+    display: inline;
+  }
+  .buttonIconNormal {
+    display: none;
+  }
+}
+
+.paginationButton {
+  .buttonIconHover {
+    display: none;
+  }
+}
+
+.searchInput {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--rcx-color-secondary-light);
+  padding-top: 0.4em;
+  padding-bottom: 0.4em;
+}
+
+.paginationWrapper {
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  gap: 0.2em;
+  padding-top: 0.6em;
+}
+
+.paginationGrow {
+  flex: 1;
+  max-width: 100px;
+}
+
+@media (max-width: 768px) {
+  .recipeListRow {
+    display: grid;
+  }
+  .tableColumnHeaders {
+    display: none;
+  }
+  .recipeHeader {
+    border: none;
+  }
+  .paginationWrapper {
+    padding-bottom: 1em;
+    background-color: var(--rcx-color-secondary-light);
+  }
+}

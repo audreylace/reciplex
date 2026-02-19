@@ -8,7 +8,7 @@ import { CreateRecipeBookButton } from "./components/create-recipe-book-button/c
 /**
  * Entry point for recipe book list page component
  */
-export function RecipeBookListPage({}: {}) {
+export function RecipeBookListPage() {
   const { isPaused, isPending, data } = useRecipeBookListPageControl();
 
   return (
