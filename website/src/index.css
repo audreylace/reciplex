@@ -80,4 +80,7 @@ body {
   body {
     font-size: 18px;
   }
+  .pageMain {
+    padding: 0.4em;
+  }
 }
