@@ -1,9 +1,5 @@
-.actionButtonsBar {
-  gap: var(--rcx-button-row-gap);
-  display: flex;
-  flex-wrap: wrap;
-  flex-direction: row;
-  font-size: 0.8em;
+.emptyDetails {
+  cursor: pointer;
 }
 
 .detailsWrapper {
@@ -19,12 +15,4 @@
 
 .detailsWrapper > *:last-child {
   margin-bottom: 0;
-}
-
-.header {
-  margin-bottom: 2em;
-}
-
-.emptyDetails {
-  cursor: pointer;
 }

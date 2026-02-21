@@ -7,6 +7,8 @@ import { RecipeListTableMessage } from "./recipe-list-table-message.component";
 import { OfflineBanner } from "../../components/offline-banner/offline-banner.component";
 import { RecipeListTableRowsSkeleton } from "./recipe-list-table-rows-skeleton.component";
 import { useRecipeListTableContext } from "./useRecipeListTableContext.hook";
+import { FetchingStatusDispatch } from "../../../core/components/fetch-status-dispatch/fetch-status-dispatch.component";
+import { QueryStatusDispatch } from "../../../core/components/query-status-dispatch/query-status-dispatch.component";
 
 export /**
  * Renders the table body
@@ -21,70 +23,50 @@ function TableBody({
   /** the status of the fetch */
   fetchStatus: FetchStatus;
 }) {
+  const size = useRecipeListTableContext((state) => state.size);
   return (
     <tbody>
-      {(() => {
-        switch (loadingStatus) {
-          case "success": {
-            if (!recipeData) {
-              return (
-                <RecipeListTableMessage>
-                  <RecipeNotFoundBanner />
-                </RecipeListTableMessage>
-              );
+      <QueryStatusDispatch
+        loadingStatus={loadingStatus}
+        error={
+          <RecipeListTableMessage>
+            <FetchingRecipeFailedBanner />
+          </RecipeListTableMessage>
+        }
+        pending={
+          <FetchingStatusDispatch
+            fetchStatus={fetchStatus}
+            idle={<FetchingRecipeFailedBanner />}
+            paused={
+              <RecipeListTableMessage>
+                <OfflineBanner />
+              </RecipeListTableMessage>
             }
-
-            if (recipeData.recipes.length === 0) {
-              return (
-                <RecipeListTableMessage>
-                  <p>No recipe in this book</p>
-                </RecipeListTableMessage>
-              );
-            }
-
-            return recipeData.recipes.map((r, idx) => (
-              <RecipeListRow key={r.id} recipe={r} focus={idx === 0} />
-            ));
-          }
-
-          case "error": {
+            fetching={<RecipeListTableRowsSkeleton count={size} />}
+          />
+        }
+        success={() => {
+          if (!recipeData) {
             return (
               <RecipeListTableMessage>
-                <FetchingRecipeFailedBanner />
+                <RecipeNotFoundBanner />
               </RecipeListTableMessage>
             );
           }
 
-          case "pending":
-            return <FetchingStatus fetchStatus={fetchStatus} />;
-        }
-      })()}
+          if (recipeData.recipes.length === 0) {
+            return (
+              <RecipeListTableMessage>
+                <p>No recipe in this book</p>
+              </RecipeListTableMessage>
+            );
+          }
+
+          return recipeData.recipes.map((r, idx) => (
+            <RecipeListRow key={r.id} recipe={r} focus={idx === 0} />
+          ));
+        }}
+      />
     </tbody>
   );
-}
-
-/**
- * Renders UI when the component is fetching
- */
-function FetchingStatus({
-  fetchStatus,
-}: {
-  /** the status of the fetch */
-  fetchStatus: FetchStatus;
-}) {
-  const size = useRecipeListTableContext((state) => state.size);
-  switch (fetchStatus) {
-    case "fetching":
-      return <RecipeListTableRowsSkeleton count={size} />;
-
-    case "idle":
-      return <FetchingRecipeFailedBanner />;
-
-    case "paused":
-      return (
-        <RecipeListTableMessage>
-          <OfflineBanner />
-        </RecipeListTableMessage>
-      );
-  }
 }

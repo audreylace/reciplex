@@ -1,18 +1,14 @@
 import { useNavigate } from "react-router";
-
-import { SuccessButton } from "../../../core/components/success-button/success-button.component";
 import { makeBookNameAndDescriptionState } from "../../components/book-information-banner/book-information-banner";
 import { makeCreateRecipePath } from "../../route-utils";
 
-import styles from "./recipe-book-menu.module.css";
+import recipeBookMenuStylesModule from "./recipe-book-menu.module.css";
+
 import {
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuItems,
-  MenuSeparator,
-} from "@headlessui/react";
-import { Fragment } from "preact/jsx-runtime";
+  DropDownMenu,
+  type MenuSpecs,
+} from "../../../core/components/drop-down-menu/drop-down-menu.component";
+import { useMemo } from "preact/hooks";
 
 /** menu for recipe book actions */
 export function RecipeBookMenu({
@@ -33,57 +29,60 @@ export function RecipeBookMenu({
   /** if the user has delete privileges */
   mayDelete?: boolean;
 }) {
-  const bookNavState = makeBookNameAndDescriptionState(name, shortDescription);
   const navigate = useNavigate();
+  const menuSettings: MenuSpecs = useMemo(() => {
+    const bookNavState = makeBookNameAndDescriptionState(
+      name,
+      shortDescription,
+    );
+    if (!mayEdit || !mayDelete) {
+      return [];
+    }
+
+    return [
+      {
+        key: "add",
+        caption: "Add Recipe",
+        type: "entry",
+        onClick: () => navigate(makeCreateRecipePath(bookId)),
+        icon: "bi bi-plus-circle-dotted",
+        hidden: !mayEdit,
+      },
+      { key: "separator", type: "separator", hidden: !mayEdit },
+      {
+        key: "settings",
+        caption: "Book Settings",
+        type: "entry",
+        onClick: () => {
+          navigate(`/books/${bookId}/edit`, { state: bookNavState });
+        },
+        icon: "bi bi-gear",
+        hidden: !mayEdit,
+      },
+      {
+        key: "delete",
+        caption: "Delete Book",
+        type: "entry",
+        onClick: () => {
+          navigate(`/books/${bookId}/delete`, { state: bookNavState });
+        },
+        icon: "bi bi-trash",
+        hidden: !mayDelete,
+      },
+    ] as MenuSpecs;
+  }, [bookId, mayDelete, mayEdit, name, navigate, shortDescription]);
 
   if (!mayEdit && !mayDelete) {
     return null;
   }
 
   return (
-    <div className={styles.menu}>
-      <Menu>
-        <MenuButton as={Fragment}>
-          <div>
-            <SuccessButton buttonType="dotted">
-              <i className="bi bi-lightning-charge"></i> Actions
-            </SuccessButton>
-          </div>
-        </MenuButton>
-        <MenuItems anchor="bottom" className={styles.dropDownMenuContainer}>
-          <ul className={styles.dropDownMenu}>
-            {mayEdit && (
-              <MenuItem
-                as="li"
-                onClick={() => navigate(makeCreateRecipePath(bookId))}
-              >
-                <i className="bi bi-plus-circle-dotted"></i> Add Recipe
-              </MenuItem>
-            )}
-            <MenuSeparator className={styles.menuSeparator} />
-            {mayDelete && (
-              <MenuItem
-                as="li"
-                onClick={() => {
-                  navigate(`/books/${bookId}/delete`, { state: bookNavState });
-                }}
-              >
-                <i className="bi bi-trash"></i> Delete Book
-              </MenuItem>
-            )}
-            {mayEdit && (
-              <MenuItem
-                as="li"
-                onClick={() => {
-                  navigate(`/books/${bookId}/edit`, { state: bookNavState });
-                }}
-              >
-                <i className="bi bi-gear"></i> Book Settings
-              </MenuItem>
-            )}
-          </ul>
-        </MenuItems>
-      </Menu>
+    <div className={recipeBookMenuStylesModule.menu}>
+      <DropDownMenu
+        menu={menuSettings}
+        icon="bi bi-lightning-charge"
+        caption="Actions"
+      />
     </div>
   );
 }
