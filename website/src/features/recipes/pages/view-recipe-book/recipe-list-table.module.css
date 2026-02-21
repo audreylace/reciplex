@@ -1,28 +1,43 @@
+/** expand the table to the max width of the page */
 .recipeTable {
   width: 100%;
 }
 
+/*
+  - add the wrapper background
+  - put some padding around the edges to ensure the values don't just run up against it
+  - add a shadow to give the wrapper some 3d dimension
+*/
 .recipeWrapper {
   background-color: var(--rcx-color-secondary-light);
   border-radius: var(--rcx-border-radius);
   box-shadow: 0px 0px 2px 0px var(--rcx-color-shadow);
-  padding: 0.4em;
-
-  max-height: 80dvh;
-  overflow: scroll;
+  padding: 0.2em;
   width: 100%;
-  padding-top: 0;
+}
+
+.recipeListRow,
+.recipeListHeaderRow {
+  padding: 0.2em 0.6em;
 }
 
 .recipeListRow {
   border-bottom: solid 1px var(--rcx-color-primary-border);
   background-color: oklch(93.6% 0.032 17.717);
+
+  /** Zebra stripe the table */
   &:nth-child(even) {
     background-color: transparent;
   }
 
+  /** hover effect to make it easier for the end user to see what row they are hovering  over */
   &:not([data-disabled="true"]):hover {
     cursor: pointer;
+
+    /* 
+       TODO: 
+        - move these colors to a CSS variable 
+    */
     background-color: oklch(89.2% 0.058 10.001);
 
     &:nth-child(even) {
@@ -31,67 +46,25 @@
   }
 }
 
-.recipeHeader {
-  position: sticky;
-  top: 0;
-  left: 0;
-  right: 0;
-  background-color: var(--rcx-color-secondary-light);
-  padding-top: 0.4em;
-  padding-bottom: 0.4em;
-}
-
-.paginationButton:hover {
-  .buttonIconHover {
-    display: inline;
-  }
-  .buttonIconNormal {
-    display: none;
-  }
-}
-
-.paginationButton {
-  .buttonIconHover {
-    display: none;
-  }
-}
-
-.searchInput {
-  position: sticky;
-  top: 0;
-  left: 0;
-  right: 0;
-  background-color: var(--rcx-color-secondary-light);
-  padding-top: 0.4em;
-  padding-bottom: 0.4em;
-}
-
-.paginationWrapper {
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  display: flex;
-  gap: 0.2em;
-  padding-top: 0.6em;
-}
-
-.paginationGrow {
-  flex: 1;
-  max-width: 100px;
+.recipeListHeaderRow,
+.recipeListRow {
+  display: grid;
+  grid-template-columns: 33% 66%;
 }
 
 @media (max-width: 768px) {
+  .recipeListHeaderRow,
   .recipeListRow {
     display: grid;
+    padding: 0.1em 0.3em;
   }
-  .tableColumnHeaders {
+  .hideSmallScreen {
     display: none;
   }
-  .recipeHeader {
-    border: none;
+  .tableColumnRecipeName {
+    font-size: 1.2em;
   }
-  .paginationWrapper {
-    padding-bottom: 1em;
-    background-color: var(--rcx-color-secondary-light);
+  .recipeListRow {
+    grid-template-columns: unset;
   }
 }

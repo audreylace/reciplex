@@ -1,0 +1,16 @@
+.recipeHeader {
+  /* Stick the header at the top of the page when scrolling */
+  position: sticky;
+  top: 2em; /* spacing for nav header */
+  left: 0;
+  right: 0;
+  background-color: var(--rcx-color-secondary-light);
+  padding-top: 0.4em;
+  padding-bottom: 0.4em;
+}
+
+@media (max-width: 768px) {
+  .recipeHeader {
+    position: unset;
+  }
+}

@@ -14,6 +14,8 @@ import {
 } from "../../components/book-information-banner/book-information-banner";
 import { RecipeListTable } from "./recipe-list-table.component";
 
+import styles from "./view-recipe-book-page.module.css";
+
 /**
  * Entry point for viewing a recipe book
  */
@@ -43,32 +45,37 @@ export function ViewRecipeBookPage() {
                 name={bookQuery.data.name}
                 shortDescription={bookQuery.data.shortDescription}
               />
-              <FormButtons notInForm>
-                {bookQuery.data.canAddRecipesToBook && (
-                  <NavLink to={makeCreateRecipePath(bookId)}>
-                    <SuccessButton buttonType="dotted">
-                      Add Recipe
-                    </SuccessButton>
-                  </NavLink>
-                )}
-                {bookQuery.data.canDeleteBook && (
-                  <NavLink to={`/books/${bookId}/delete`} state={bookNavState}>
-                    <DangerButton buttonType="dotted">
-                      Delete Recipe Book
-                    </DangerButton>
-                  </NavLink>
-                )}
-                {bookQuery.data.canEditBookInformation && (
-                  <NavLink to={`/books/${bookId}/edit`} state={bookNavState}>
-                    <SuccessButton buttonType="dotted">
-                      Edit Recipe Book Information
-                    </SuccessButton>
-                  </NavLink>
-                )}
-              </FormButtons>
+              <div className={styles.formButtonBar}>
+                <FormButtons notInForm>
+                  {bookQuery.data.canAddRecipesToBook && (
+                    <NavLink to={makeCreateRecipePath(bookId)}>
+                      <SuccessButton buttonType="dotted">
+                        Add Recipe
+                      </SuccessButton>
+                    </NavLink>
+                  )}
+                  {bookQuery.data.canDeleteBook && (
+                    <NavLink
+                      to={`/books/${bookId}/delete`}
+                      state={bookNavState}
+                    >
+                      <DangerButton buttonType="dotted">
+                        Delete Recipe Book
+                      </DangerButton>
+                    </NavLink>
+                  )}
+                  {bookQuery.data.canEditBookInformation && (
+                    <NavLink to={`/books/${bookId}/edit`} state={bookNavState}>
+                      <SuccessButton buttonType="dotted">
+                        Edit Recipe Book Information
+                      </SuccessButton>
+                    </NavLink>
+                  )}
+                </FormButtons>
+              </div>
+              <RecipeListTable bookId={bookId} />
             </>
           )}
-          <RecipeListTable bookId={bookId} />
         </>
       )}
     </main>

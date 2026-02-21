@@ -1,0 +1,27 @@
+/* buttonIconHover and buttonIconNormal flip flip to give a full icon indicator */
+.paginationButton:hover {
+  .buttonIconHover {
+    display: inline;
+  }
+  .buttonIconNormal {
+    display: none;
+  }
+}
+
+/* hide hover icon when user is not hovering over it */
+.paginationButton {
+  .buttonIconHover {
+    display: none;
+  }
+}
+
+.paginationButton[data-hide="true"] {
+  visibility: hidden;
+}
+
+@media (max-width: 768px) {
+  /** increase font-size for touch screens */
+  .paginationButton {
+    font-size: 1.5em;
+  }
+}
