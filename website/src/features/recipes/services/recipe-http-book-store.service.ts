@@ -639,9 +639,8 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
       name: recipeBook.name,
       shortDescription: recipeBook.shortDescription,
       ownerId: recipeBook.owningUserKey,
-      canDeleteBook: recipeBook.mayDelete,
-      canEditBookInformation: recipeBook.mayEdit,
-      canAddRecipesToBook: recipeBook.mayDelete,
+      mayDelete: recipeBook.mayDelete,
+      mayEdit: recipeBook.mayEdit,
       versionTag: recipeBook.concurrencyTag,
     };
 

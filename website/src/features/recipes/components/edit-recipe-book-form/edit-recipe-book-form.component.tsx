@@ -12,12 +12,14 @@ import { ActionFailedTryAgainCancel } from "../action-failed-try-again-cancel/ac
 import { BookIsReadonlyBanner } from "../book-is-readonly-banner/book-is-readonly-banner.component";
 import { useState } from "preact/hooks";
 
-/** Form for editing a recipe book. Includes support for concurrent edit detection. */
+/**
+ * Form for editing a recipe book.
+ * Includes support for concurrent edit detection.
+ */
 export function EditRecipeBookForm({
   data,
   onCancel,
   onSaved,
-  reloadAction,
 }: EditRecipeBookFormProps) {
   const {
     register,
@@ -56,16 +58,6 @@ export function EditRecipeBookForm({
     });
   };
 
-  const reloadProxy = reloadAction
-    ? () => {
-        reloadAction({
-          bookId: data.id,
-          name: data.name,
-          shortDescription: data.shortDescription,
-        });
-      }
-    : undefined;
-
   if (data.versionTag && !versionTag) {
     setVersionTag(data.versionTag);
     return null;
@@ -78,7 +70,6 @@ export function EditRecipeBookForm({
         tryAgainCaption="Reload and try again?"
         cancelCaption="View Recipe Book"
         cancelAction={cancelProxy}
-        reloadAction={reloadProxy}
       />
     );
   }
@@ -107,7 +98,6 @@ export function EditRecipeBookForm({
           message="Something went wrong while saving."
           cancelCaption="View Recipe"
           cancelAction={cancelProxy}
-          reloadAction={reloadProxy}
         />
       )}
     </>
@@ -115,7 +105,7 @@ export function EditRecipeBookForm({
 }
 
 /**
- * props for `EditRecipeBookForm`
+ * Component properties for `EditRecipeBookForm`
  */
 export interface EditRecipeBookFormProps {
   /**
@@ -124,9 +114,9 @@ export interface EditRecipeBookFormProps {
    * Remount this component if new data has been
    * loaded and all the fields should be updated.
    *
-   * This component monitors the
-   * `versionTag` property to watch for concurrent edits.
-   * When it detects the value has changed, it stops
+   * This component monitors the `versionTag` property to
+   * watch for concurrent edits. When it detects the
+   * value has changed, it stops
    * all editing and shows an error banner.
    */
   data: IRecipeBookModel;
@@ -142,16 +132,6 @@ export interface EditRecipeBookFormProps {
    * Invoked once the user is done editing
    */
   onSaved: (info?: {
-    name: string;
-    shortDescription: string;
-    bookId: string;
-  }) => void;
-  /**
-   * Invoked when the user wants to reload the form
-   * because of a conflict. Defaults to reloading
-   * the page if not provided.
-   */
-  reloadAction?: (info?: {
     name: string;
     shortDescription: string;
     bookId: string;

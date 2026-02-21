@@ -5,8 +5,12 @@
 
   /* colors */
   --rcx-color-primary-border: oklch(80.8% 0.114 19.571);
+  --rcx-color-primary-row: oklch(93.6% 0.032 17.717);
+  --rcx-color-primary-row-hover: oklch(89.2% 0.058 10.001);
 
   --rcx-color-secondary-light: oklch(95.4% 0.038 75.164);
+  --rcx-color-secondary-row-hover: oklch(92.4% 0.12 95.746);
+  --rcx-color-secondary-skeleton-middle: oklch(83.7% 0.128 66.29);
 
   --rcx-color-text: oklch(20.5% 0 0);
 
@@ -17,6 +21,10 @@
 
   /* form styles */
   --rcx-form-control-border: 2px;
+
+  /** button */
+  --rcx-success-hover-bg-color: oklch(70.5% 0.213 47.604);
+  --rcs-button-hover-text-color: oklch(96.7% 0.001 286.375);
 }
 
 html,

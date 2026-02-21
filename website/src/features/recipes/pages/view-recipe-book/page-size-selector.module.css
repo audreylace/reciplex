@@ -1,23 +1,24 @@
-.dropDownButton {
-  /* stack all text on top of each other so the size of the button is accurate */
-  .textWrapper {
-    display: grid;
-    .visibleValue,
-    .hiddenValue {
-      grid-area: 1 / 1;
-      font-weight: 100;
-    }
-    .hiddenValue {
-      visibility: hidden;
-    }
+/* stack all text on top of each other so the size of the button is accurate */
+.textWrapper {
+  display: grid;
+  .visibleValue,
+  .hiddenValue {
+    grid-area: 1 / 1;
+    font-weight: 100;
+  }
+  .hiddenValue {
+    visibility: hidden;
   }
 }
 
 /** container that appears when the button is pressed. Holds the drop down options. */
 .dropDownOptionContainer {
-  box-shadow: 0px 0px 2px 0px var(--rcx-color-shadow);
   border-radius: var(--rcx-border-radius);
+  border: 2px solid var(--rcx-color-primary-border);
+  box-shadow: 0px 0px 10px 0px var(--rcx-color-shadow);
+  padding: 0.1em;
   background: var(--rcx-color-lightest);
+  outline: none;
 
   /* entry in the drop down menu */
   .dropDownOption {
@@ -27,8 +28,18 @@
   }
 
   /* hover effect for the pagination drop down menu item */
-  .dropDownOption:hover {
+  .dropDownOption:hover,
+  .dropDownOption[data-focus] {
     cursor: pointer;
-    background-color: oklch(89.2% 0.058 10.001);
+    background-color: var(--rcx-success-hover-bg-color);
+    color: var(--rcs-button-hover-text-color);
+    border-radius: var(--rcx-border-radius);
+    box-shadow: 0px 0px 8px 0px var(--rcx-color-shadow);
+  }
+}
+
+@media (max-width: 768px) {
+  .dropDownOption {
+    font-size: 1.3em;
   }
 }

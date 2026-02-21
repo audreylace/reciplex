@@ -294,7 +294,7 @@ public class RecipesController(
         CancellationToken cancellationToken
     )
     {
-        pageSize = Math.Min(20, Math.Max(1, pageSize ?? 10));
+        pageSize = Math.Min(100, Math.Max(1, pageSize ?? 50));
         var pageIterator = await recipeService.ListRecipesAsync(
             bookId,
             userClaimsPrincipal.UserKey,

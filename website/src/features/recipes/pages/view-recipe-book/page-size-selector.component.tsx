@@ -8,8 +8,8 @@ import {
 import { useRecipeListTableContext } from "./useRecipeListTableContext.hook";
 
 import styles from "./page-size-selector.module.css";
-import buttonCommonStyle from "../../../core/button-common/button-common.module.css";
-import dangerButtonStyle from "../../../core/components/danger-button/danger-button.module.css";
+import { Fragment } from "preact/jsx-runtime";
+import { SuccessButton } from "../../../core/components/success-button/success-button.component";
 
 /** selector control for choosing a page size */
 export function PageSizeSelector() {
@@ -20,24 +20,25 @@ export function PageSizeSelector() {
   return (
     <Field className={styles.pageSizeFormWrapper}>
       <Listbox value={selectedValue} onChange={(value) => updateSize(value.id)}>
-        <ListboxButton
-          className={`${buttonCommonStyle.commonButton} ${dangerButtonStyle.danger} ${styles.dropDownButton}`}
-          data-button-type="hidden"
-        >
-          <div className={styles.textWrapper}>
-            <div className={styles.visibleValue}>
-              {selectedValue?.name ?? selectedValue}
-            </div>
-            {pageSize.map((sz) => (
-              <div
-                key={sz.id}
-                role="structure"
-                aria-hidden
-                className={styles.hiddenValue}
-              >
-                {sz.name}
+        <ListboxButton as={Fragment}>
+          <div>
+            <SuccessButton buttonType="dotted">
+              <div className={styles.textWrapper}>
+                <div className={styles.visibleValue}>
+                  {selectedValue?.name ?? selectedValue}
+                </div>
+                {pageSize.map((sz) => (
+                  <div
+                    key={sz.id}
+                    role="structure"
+                    aria-hidden
+                    className={styles.hiddenValue}
+                  >
+                    {sz.name}
+                  </div>
+                ))}
               </div>
-            ))}
+            </SuccessButton>
           </div>
         </ListboxButton>
         <ListboxOptions

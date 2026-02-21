@@ -22,8 +22,11 @@
 }
 
 .recipeListRow {
+  &:first-child {
+    border-top: solid 1px var(--rcx-color-primary-border);
+  }
   border-bottom: solid 1px var(--rcx-color-primary-border);
-  background-color: oklch(93.6% 0.032 17.717);
+  background-color: var(--rcx-color-primary-row);
 
   /** Zebra stripe the table */
   &:nth-child(even) {
@@ -31,17 +34,14 @@
   }
 
   /** hover effect to make it easier for the end user to see what row they are hovering  over */
-  &:not([data-disabled="true"]):hover {
+  &:hover,
+  &:focus {
     cursor: pointer;
 
-    /* 
-       TODO: 
-        - move these colors to a CSS variable 
-    */
-    background-color: oklch(89.2% 0.058 10.001);
+    background-color: var(--rcx-color-primary-row-hover);
 
     &:nth-child(even) {
-      background-color: oklch(92.4% 0.12 95.746);
+      background-color: var(--rcx-color-secondary-row-hover);
     }
   }
 }

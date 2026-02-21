@@ -4,15 +4,14 @@ import { CursorTypes } from "../../services/recipe-types";
 import { useRecipeListTableContext } from "./useRecipeListTableContext.hook";
 import { RecipeListTableFooter } from "./recipe-list-table-footer.component";
 import { RecipeListHeader } from "./recipe-list-header.component";
-import { RecipeListRow } from "./recipe-list-row.componet";
-import { RecipeListTableMessage } from "./recipe-list-table-message.component";
-import { RecipeNotFoundBanner } from "../../components/recipe-not-found-banner/recipe-not-found-banner.component";
-import { FetchingRecipeFailedBanner } from "../../components/fetching-recipe-failed-banner/fetching-recipe-failed-banner.component";
-import { OfflineBanner } from "../../components/offline-banner/offline-banner.component";
 
 import styles from "./recipe-list-table.module.css";
-import { RecipeListTableRowsSkeleton } from "./recipe-list-table-rows-skeleton.component";
+import { TableBody } from "./table-body.component";
 
+/**
+ * Renders a list of recipes as a table
+ * @todo fix skeleton flicker when switching pages and the page size
+ */
 export function RecipeListTable({ bookId }: { bookId: string }) {
   const size = useRecipeListTableContext((state) => state.size);
   const [searchParams] = useSearchParams();
@@ -39,31 +38,14 @@ export function RecipeListTable({ bookId }: { bookId: string }) {
     <div className={styles.recipeWrapper}>
       <table className={styles.recipeTable}>
         <RecipeListHeader />
-        <tbody>
-          {recipeListQuery.status === "success" &&
-            recipeListQuery.data?.recipes.map((r) => (
-              <RecipeListRow key={r.id} recipe={r} />
-            ))}
-          {recipeListQuery.status === "success" && !recipeListQuery.data && (
-            <RecipeListTableMessage>
-              <RecipeNotFoundBanner />
-            </RecipeListTableMessage>
-          )}
-          {recipeListQuery.status === "error" && (
-            <RecipeListTableMessage>
-              <FetchingRecipeFailedBanner />
-            </RecipeListTableMessage>
-          )}
-          {recipeListQuery.status === "pending" && recipeListQuery.isPaused && (
-            <RecipeListTableMessage>
-              <OfflineBanner />
-            </RecipeListTableMessage>
-          )}
-          {recipeListQuery.status === "pending" &&
-            recipeListQuery.fetchStatus === "fetching" && (
-              <RecipeListTableRowsSkeleton count={size} />
-            )}
-        </tbody>
+
+        <TableBody
+          key={`${bookId} / ${at}`}
+          fetchStatus={recipeListQuery.fetchStatus}
+          recipeData={recipeListQuery.data}
+          loadingStatus={recipeListQuery.status}
+        />
+
         <RecipeListTableFooter
           nextCursor={next}
           previousCursor={back}

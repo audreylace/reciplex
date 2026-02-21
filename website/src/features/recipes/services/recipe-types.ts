@@ -45,16 +45,12 @@ export interface IRecipeBookModel {
   /**
    * True when the user can delete the recipe book and all of its data.
    */
-  canDeleteBook?: boolean;
+  mayDelete?: boolean;
   /**
    * True when the user can edit the recipe book's top level
-   * fields.
+   * fields and add recipes.
    */
-  canEditBookInformation?: boolean;
-  /**
-   * True when the user may add recipes to the book
-   */
-  canAddRecipesToBook?: boolean;
+  mayEdit?: boolean;
 }
 
 /**

@@ -1,7 +1,7 @@
 .danger[data-hover],
 .danger[data-button-type="dotted"][data-hover] {
   background-color: oklch(63.7% 0.237 25.331);
-  color: oklch(96.7% 0.001 286.375);
+  color: var(--rcs-button-hover-text-color);
 }
 
 .danger[data-active],

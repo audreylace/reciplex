@@ -2,7 +2,7 @@
   background: linear-gradient(
     90deg,
     var(--rcx-color-secondary-light),
-    oklch(83.7% 0.128 66.29),
+    var(--rcx-color-secondary-skeleton-middle),
     var(--rcx-color-secondary-light)
   );
   background-size: 200% 100%;
