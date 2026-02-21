@@ -9,9 +9,9 @@ import { RecipeListTableMessage } from "./recipe-list-table-message.component";
 import { RecipeNotFoundBanner } from "../../components/recipe-not-found-banner/recipe-not-found-banner.component";
 import { FetchingRecipeFailedBanner } from "../../components/fetching-recipe-failed-banner/fetching-recipe-failed-banner.component";
 import { OfflineBanner } from "../../components/offline-banner/offline-banner.component";
-import { FetchingRecipeBanner } from "../../components/fetching-recipe-banner/fetching-recipe-banner.component";
 
 import styles from "./recipe-list-table.module.css";
+import { RecipeListTableRowsSkeleton } from "./recipe-list-table-rows-skeleton.component";
 
 export function RecipeListTable({ bookId }: { bookId: string }) {
   const size = useRecipeListTableContext((state) => state.size);
@@ -61,10 +61,14 @@ export function RecipeListTable({ bookId }: { bookId: string }) {
           )}
           {recipeListQuery.status === "pending" &&
             recipeListQuery.fetchStatus === "fetching" && (
-              <FetchingRecipeBanner />
+              <RecipeListTableRowsSkeleton count={size} />
             )}
         </tbody>
-        <RecipeListTableFooter nextCursor={next} previousCursor={back} />
+        <RecipeListTableFooter
+          nextCursor={next}
+          previousCursor={back}
+          hasLoaded={recipeListQuery.status === "success"}
+        />
       </table>
     </div>
   );

@@ -9,6 +9,7 @@ import styles from "./pagination-controls.module.css";
 export function PaginationControls({
   nextCursor,
   previousCursor,
+  hasLoaded,
 }: PaginationControlsProps) {
   const setSearchParams = useSearchParams()[1];
   return (
@@ -33,7 +34,7 @@ export function PaginationControls({
         visibilityHidden={!previousCursor}
       />
       <div className={styles.paginationGrow}></div>
-      <PageSizeSelector />
+      {hasLoaded && <PageSizeSelector />}
       <div className={styles.paginationGrow}></div>
 
       <PageNavigationButton
@@ -62,4 +63,6 @@ export interface PaginationControlsProps {
   nextCursor?: IPageCursor;
   /** cursor to move to previous page */
   previousCursor?: IPageCursor;
+  /** if the page has loaded */
+  hasLoaded: boolean;
 }

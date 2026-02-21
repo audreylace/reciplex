@@ -7,6 +7,7 @@ import {
 export function RecipeListTableFooter({
   nextCursor,
   previousCursor,
+  hasLoaded,
 }: {} & PaginationControlsProps) {
   return (
     <tfoot>
@@ -15,6 +16,7 @@ export function RecipeListTableFooter({
           <PaginationControls
             nextCursor={nextCursor}
             previousCursor={previousCursor}
+            hasLoaded={hasLoaded}
           />
         </td>
       </tr>
