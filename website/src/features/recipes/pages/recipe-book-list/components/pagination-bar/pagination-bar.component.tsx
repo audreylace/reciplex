@@ -31,7 +31,7 @@ export function PaginationBar({
           direction={BookListNavigationAction.next}
           disabled={previousCursor ? false : true}
         >
-          <i class="bi bi-chevron-double-left"></i>
+          <i className="bi bi-chevron-double-left"></i>
         </NavLink>
         <NavLink
           title="go to previous page"
@@ -44,7 +44,7 @@ export function PaginationBar({
               : "go to previous page of books"
           }
         >
-          <i class="bi bi-chevron-left"></i>
+          <i className="bi bi-chevron-left"></i>
         </NavLink>
         <li
           className={`${styles.expander}`}
@@ -62,7 +62,7 @@ export function PaginationBar({
               : "go to next page of books"
           }
         >
-          <i class="bi bi-chevron-right"></i>
+          <i className="bi bi-chevron-right"></i>
         </NavLink>
         <NavLink
           title="go to last page"
@@ -74,7 +74,7 @@ export function PaginationBar({
               : "go to last page of books"
           }
         >
-          <i class="bi bi-chevron-double-right"></i>
+          <i className="bi bi-chevron-double-right"></i>
         </NavLink>
       </ul>
     </nav>

@@ -1,76 +1,112 @@
 import { createBrowserRouter } from "react-router";
-import { CreateRecipeBookPage } from "./features/recipes/pages/create-recipe-book/create-recipe-book-page.hook";
-import { CreateRecipePage } from "./features/recipes/pages/create-recipe/create-recipe-page.component";
-import { DeleteRecipeBookPage } from "./features/recipes/pages/delete-recipe-book/delete-recipe-book-page.component";
-import { DeleteRecipePage } from "./features/recipes/pages/delete-recipe/delete-recipe-page.component";
-import { EditRecipeBookPage } from "./features/recipes/pages/edit-recipe-book/edit-recipe-book-page.component";
-import { EditRecipePage } from "./features/recipes/pages/edit-recipe/edit-recipe-page.component";
-import { RecipeBookListPage } from "./features/recipes/pages/recipe-book-list/recipe-book-list-page";
-import { ViewRecipeBookPage } from "./features/recipes/pages/view-recipe-book/view-recipe-book-page.component";
-import { ViewRecipePage } from "./features/recipes/pages/view-recipe/view-recipe-page.component";
-import { DefaultLayout } from "./layouts/default/default-layout";
-import { HomePage } from "./pages/home/home-page.component";
-import { BookLayout } from "./features/recipes/layouts/book-layout/book-layout.component";
 
 export const router = createBrowserRouter([
   {
     path: "/books/:bookId",
-    Component: BookLayout,
+    lazy: async () => {
+      const Component =
+        await import("./features/recipes/layouts/book-layout/book-layout.component");
+      return { Component: Component.BookLayout };
+    },
     children: [
       {
         path: "recipes/-/create",
-        element: <CreateRecipePage />,
+        lazy: async () => {
+          const Component =
+            await import("./features/recipes/pages/create-recipe/create-recipe-page.component");
+          return { Component: Component.CreateRecipePage };
+        },
       },
       {
         path: "recipes/:recipeId",
-        element: <ViewRecipePage />,
+        lazy: async () => {
+          const Component =
+            await import("./features/recipes/pages/view-recipe/view-recipe-page.component");
+          return { Component: Component.ViewRecipePage };
+        },
       },
       {
         path: "recipes/:recipeId/edit",
-        element: <EditRecipePage />,
+        lazy: async () => {
+          const Component =
+            await import("./features/recipes/pages/edit-recipe/edit-recipe-page.component");
+          return { Component: Component.EditRecipePage };
+        },
       },
       {
         path: "recipes/:recipeId/delete",
-        element: <DeleteRecipePage />,
+        lazy: async () => {
+          const Component =
+            await import("./features/recipes/pages/delete-recipe/delete-recipe-page.component");
+          return { Component: Component.DeleteRecipePage };
+        },
       },
       {
         path: "delete",
-        element: <DeleteRecipeBookPage />,
+        lazy: async () => {
+          const Component =
+            await import("./features/recipes/pages/delete-recipe-book/delete-recipe-book-page.component");
+          return { Component: Component.DeleteRecipeBookPage };
+        },
       },
       {
         path: "edit",
-        element: <EditRecipeBookPage />,
+        lazy: async () => {
+          const Component =
+            await import("./features/recipes/pages/edit-recipe-book/edit-recipe-book-page.component");
+          return { Component: Component.EditRecipeBookPage };
+        },
       },
       {
         path: "",
-        element: <ViewRecipeBookPage />,
+        lazy: async () => {
+          const Component =
+            await import("./features/recipes/pages/view-recipe-book/view-recipe-book-page.component");
+          return { Component: Component.ViewRecipeBookPage };
+        },
       },
     ],
   },
   {
     path: "/",
-    Component: DefaultLayout,
+    lazy: async () => {
+      const Component = await import("./layouts/default/default-layout");
+      return { Component: Component.DefaultLayout };
+    },
     children: [
       {
         path: "/",
-        element: <HomePage />,
+        lazy: async () => {
+          const Component = await import("./pages/home/home-page.component");
+          return { Component: Component.HomePage };
+        },
       },
       {
         path: "/recipe-books",
-        element: <RecipeBookListPage />,
+        lazy: RecipeBooksLazy,
       },
       {
         path: "/recipe-books/:source/:index",
-        element: <RecipeBookListPage />,
+        lazy: RecipeBooksLazy,
       },
       {
         path: "/recipe-books/:source",
-        element: <RecipeBookListPage />,
+        lazy: RecipeBooksLazy,
       },
       {
         path: "/create-recipe-book",
-        element: <CreateRecipeBookPage />,
+        lazy: async () => {
+          const Component =
+            await import("./features/recipes/pages/create-recipe-book/create-recipe-book-page.component");
+          return { Component: Component.CreateRecipeBookPage };
+        },
       },
     ],
   },
 ]);
+
+async function RecipeBooksLazy() {
+  const Component =
+    await import("./features/recipes/pages/recipe-book-list/recipe-book-list-page");
+  return { Component: Component.RecipeBookListPage };
+}

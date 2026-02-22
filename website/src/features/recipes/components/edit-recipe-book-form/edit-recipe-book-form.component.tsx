@@ -76,10 +76,8 @@ export function EditRecipeBookForm({
 
   return (
     <>
-      {!data.canEditBookInformation && (
-        <BookIsReadonlyBanner bookId={data.id} />
-      )}
-      {data.canEditBookInformation && recipeBookMutation.isIdle && (
+      {!data.mayEdit && <BookIsReadonlyBanner bookId={data.id} />}
+      {data.mayEdit && recipeBookMutation.isIdle && (
         <form onSubmit={onSubmit}>
           <RecipeBookMetaFields
             register={register}

@@ -1,11 +1,13 @@
 .primary[data-hover],
-.primary[data-button-type="dotted"][data-hover] {
+.primary[data-button-type="dotted"][data-hover],
+.primary[data-button-type="hidden"][data-hover] {
   background-color: oklch(71.4% 0.203 305.504);
   color: var(--rcs-button-hover-text-color);
 }
 
 .primary[data-active],
-.primary[data-button-type="dotted"][data-active] {
+.primary[data-button-type="dotted"][data-active],
+.primary[data-button-type="hidden"][data-active] {
   background-color: oklch(38.1% 0.176 304.987);
 }
 

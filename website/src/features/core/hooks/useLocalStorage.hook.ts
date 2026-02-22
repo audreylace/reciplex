@@ -8,7 +8,7 @@ import { useState, useCallback } from "preact/hooks";
 export function useLocalStorage(
   key: string,
 ): [string | null, (value: string | undefined | null) => void] {
-  const [_, triggerRender] = useState<object>({}); // trigger render on local storage change
+  const triggerRender = useState<object>({})[1]; // trigger render on local storage change
 
   const updater = useCallback(
     (value: string | undefined | null) => {
@@ -19,7 +19,7 @@ export function useLocalStorage(
       }
       triggerRender({});
     },
-    [key],
+    [key, triggerRender],
   );
 
   return [localStorage.getItem(key), updater];

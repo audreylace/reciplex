@@ -34,23 +34,23 @@ function TableRow() {
       aria-label="loading placeholder"
     >
       <td className={`${tableRowStyles.bookCell} ${tableRowStyles.bookName}`}>
-        <span class={styles.glowingShimmerSkeleton}></span>
+        <span className={styles.glowingShimmerSkeleton}></span>
       </td>
       <td
         className={`${tableRowStyles.bookCell} ${tableRowStyles.bookDescription}`}
       >
         <span
-          class={`${styles.glowingShimmerSkeleton} ${styles.fourFifthSkeleton}`}
+          className={`${styles.glowingShimmerSkeleton} ${styles.fourFifthSkeleton}`}
         ></span>
         <span
-          class={`${styles.glowingShimmerSkeleton} ${styles.threeFourSkeleton}`}
+          className={`${styles.glowingShimmerSkeleton} ${styles.threeFourSkeleton}`}
         ></span>
       </td>
       <td
         className={`${tableRowStyles.bookCell} ${tableRowStyles.bookIconLink}`}
       >
         <span className={styles.hourglass}>
-          <i class="bi bi-hourglass"></i>
+          <i className="bi bi-hourglass"></i>
         </span>
       </td>
     </tr>

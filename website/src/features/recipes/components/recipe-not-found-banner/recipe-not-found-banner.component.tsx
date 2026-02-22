@@ -1,6 +1,6 @@
 import { ActionBanner } from "../action-banner/action-banner.component";
 
-export function RecipeNotFoundBanner({}: {}) {
+export function RecipeNotFoundBanner() {
   return (
     <ActionBanner
       to="/"

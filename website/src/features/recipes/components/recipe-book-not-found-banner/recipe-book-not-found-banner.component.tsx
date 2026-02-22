@@ -1,7 +1,7 @@
 import { makeBookListPath } from "../../route-utils";
 import { ActionBanner } from "../action-banner/action-banner.component";
 
-export function RecipeBookNotFoundBanner({}: {}) {
+export function RecipeBookNotFoundBanner() {
   return (
     <ActionBanner
       to={makeBookListPath()}

@@ -5,13 +5,15 @@
 
 .success[data-hover],
 .success[data-button-type="dotted"][data-hover],
+.success[data-button-type="hidden"][data-hover],
 .success[data-focus] {
   background-color: var(--rcx-success-hover-bg-color);
   color: var(--rcs-button-hover-text-color);
 }
 
 .success[data-active],
-.success[data-button-type="dotted"][data-active] {
+.success[data-button-type="dotted"][data-active],
+.success[data-button-type="hidden"][data-active] {
   background-color: oklch(66.6% 0.179 58.318);
 }
 
