@@ -69,8 +69,8 @@ export function DeleteRecipeBookForm({
 
   return (
     <>
-      {!data.canDeleteBook && <BookIsReadonlyBanner bookId={data.id} />}
-      {deleteRecipeBookMutation.status === "idle" && data.canDeleteBook && (
+      {!data.mayDelete && <BookIsReadonlyBanner bookId={data.id} />}
+      {deleteRecipeBookMutation.status === "idle" && data.mayDelete && (
         <form onSubmit={onSubmit}>
           <Fieldset className={formStyles.fieldSet}>
             <Legend className={formStyles.formLegend}>
@@ -95,7 +95,9 @@ export function DeleteRecipeBookForm({
             )}
           </Fieldset>
           <FormButtons>
-            <DangerButton type="submit">Delete</DangerButton>
+            <DangerButton type="submit">
+              <i className="bi bi-trash"></i> Delete
+            </DangerButton>
             <PrimaryButton onClick={cancelProxy}>Cancel</PrimaryButton>
           </FormButtons>
         </form>

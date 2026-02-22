@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
+import { useMemo } from "preact/hooks";
 
 /**
  * arguments for @see useGetRecipeByIdQuery
@@ -30,9 +31,20 @@ export function useGetRecipeByIdQuery(
   args?: UseGetRecipeByIdQueryArgs,
 ) {
   const recipeStore = useRecipeStoreContext();
+
+  const idForCache = useMemo(() => {
+    if (!recipeId) {
+      return "";
+    }
+    if (args?.noCache) {
+      return `${recipeId}?${Date.now()}`;
+    }
+    return recipeId;
+  }, [args?.noCache, recipeId]);
+
   return useQuery({
-    queryKey: recipeByIdCacheKey(recipeId ?? ""),
-    enabled: !!recipeId ? args?.enabled : false,
+    queryKey: recipeByIdCacheKey(idForCache ?? ""),
+    enabled: recipeId ? args?.enabled : false,
     staleTime: args?.noCache ? 0 : undefined,
     refetchInterval: args?.refetchInterval,
     queryFn: async () => {

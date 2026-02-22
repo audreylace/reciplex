@@ -21,6 +21,11 @@ export function RecipeBookMutationLoader({
     enabled,
   });
 
+  enabled ??= true;
+  if (!enabled) {
+    return null;
+  }
+
   if (recipeBookQuery.isFetchedAfterMount) {
     const data = recipeBookQuery.data;
     if (!data) {
