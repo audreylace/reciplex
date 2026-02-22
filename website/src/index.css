@@ -1,3 +1,5 @@
+/** holds global, unscoped styles for the entire application */
+
 :root {
   --rcx-border-radius: 0.3em;
   --rcx-button-row-gap: 0.3em;

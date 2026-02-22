@@ -1,5 +1,5 @@
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
-import { BookInformationBanner } from "./book-information-banner";
+import { BookInformationBanner } from "./book-information-banner.component";
 
 /** Wraps `BookInformationBanner` populating the banner using `useGetRecipeBookById` */
 export function BookInformationBannerWithQuery({ bookId }: { bookId: string }) {

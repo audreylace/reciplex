@@ -1,14 +1,14 @@
 import { NavLink, Outlet, useParams } from "react-router";
-import { AppNavigation } from "../../features/core/components/app-navigation/app-navigation.component";
-import { useGetRecipeBookById } from "../../features/recipes/hooks/useGetRecipeBookById.hook";
+import styles from "./book-layout.module.css";
+import { AppNavigation } from "../../../core/components/app-navigation/app-navigation.component";
+import { SuccessButton } from "../../../core/components/success-button/success-button.component";
+import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
+import { useGetRecipeByIdQuery } from "../../hooks/useGetRecipeByIdQuery.hook";
 import {
   makeBookListPath,
   makeViewRecipeBookPath,
   makeViewRecipePath,
-} from "../../features/recipes/route-utils";
-import { SuccessButton } from "../../features/core/components/success-button/success-button.component";
-import { useGetRecipeByIdQuery } from "../../features/recipes/hooks/useGetRecipeByIdQuery.hook";
-import styles from "./book-layout.module.css";
+} from "../../route-utils";
 
 export function BookLayout() {
   return (

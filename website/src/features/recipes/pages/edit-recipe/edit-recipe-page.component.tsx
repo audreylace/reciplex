@@ -1,6 +1,6 @@
 import { useParams } from "react-router";
 import { BadPathBanner } from "../../components/bad-path-banner/bad-path-banner.component";
-import { RecipeMutationLoader } from "../../components/recipe-loader/recipe-mutation-loader";
+import { RecipeMutationLoader } from "../../components/recipe-loader/recipe-mutation-loader.component";
 import { EditRecipeForm } from "../../components/edit-recipe-form/edit-recipe-form.component";
 import { useNavigate } from "react-router";
 import type { IRecipeModel } from "../../services/recipe-types";

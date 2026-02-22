@@ -11,7 +11,7 @@ import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
 import {
   BookInformationBanner,
   makeBookNameAndDescriptionState,
-} from "../../components/book-information-banner/book-information-banner";
+} from "../../components/book-information-banner/book-information-banner.component";
 import { CreateRecipeForm } from "../../components/create-recipe-form/create-recipe-form.component";
 
 /**

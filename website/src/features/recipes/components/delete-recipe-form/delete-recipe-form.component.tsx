@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { DangerButton } from "../../../core/components/danger-button/danger-button.component";
 import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
 import { PrimaryButton } from "../../../core/components/primary-button/primary-button.component";
-import { useDeleteRecipeMutation } from "../../hooks/useDeleteRecipeMutation";
+import { useDeleteRecipeMutation } from "../../hooks/useDeleteRecipeMutation.hook";
 import type { IRecipeModel } from "../../services/recipe-types";
 import { useState } from "preact/hooks";
 

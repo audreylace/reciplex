@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import { makeBookNameAndDescriptionState } from "../../components/book-information-banner/book-information-banner";
+import { makeBookNameAndDescriptionState } from "../../components/book-information-banner/book-information-banner.component";
 import { DeleteRecipeForm } from "../../components/delete-recipe-form/delete-recipe-form.component";
 import {
   RecipeNameAndDescription,

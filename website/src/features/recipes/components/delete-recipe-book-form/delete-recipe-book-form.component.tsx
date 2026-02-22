@@ -5,7 +5,7 @@ import { FormButtons } from "../../../core/components/form-buttons/form-buttons.
 import { PrimaryButton } from "../../../core/components/primary-button/primary-button.component";
 import type { IRecipeBookModel } from "../../services/recipe-types";
 import { useState } from "preact/hooks";
-import { useDeleteRecipeBookMutation } from "../../hooks/useDeleteRecipeBookMutation";
+import { useDeleteRecipeBookMutation } from "../../hooks/useDeleteRecipeBookMutation.hook";
 
 import formStyles from "../../../core/form-common/form-common.module.css";
 import { ActionFailedTryAgainCancel } from "../action-failed-try-again-cancel/action-failed-try-again-cancel.component";

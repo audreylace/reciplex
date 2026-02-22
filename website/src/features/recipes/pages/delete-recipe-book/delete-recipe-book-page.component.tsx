@@ -1,10 +1,10 @@
 import { BadPathBanner } from "../../components/bad-path-banner/bad-path-banner.component";
 import { useNavigate, useParams } from "react-router";
 import { makeBookListPath, makeViewRecipeBookPath } from "../../route-utils";
-import { makeBookNameAndDescriptionState } from "../../components/book-information-banner/book-information-banner";
-import { BookInformationBannerWithQuery } from "../../components/book-information-banner/book-information-banner-with-query";
-import { RecipeBookMutationLoader } from "../../components/recipe-book-loader/recipe-book-mutation-loader";
-import { DeleteRecipeBookForm } from "../../components/delete-recipe-book-form/delete-recipe-book-form";
+import { makeBookNameAndDescriptionState } from "../../components/book-information-banner/book-information-banner.component";
+import { BookInformationBannerWithQuery } from "../../components/book-information-banner/book-information-banner-with-query.component";
+import { RecipeBookMutationLoader } from "../../components/recipe-book-loader/recipe-book-mutation-loader.component";
+import { DeleteRecipeBookForm } from "../../components/delete-recipe-book-form/delete-recipe-book-form.component";
 
 import formStyles from "../../../core/form-common/form-common.module.css";
 

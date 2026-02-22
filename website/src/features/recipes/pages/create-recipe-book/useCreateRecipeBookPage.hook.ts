@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { useNavigate, useLocation } from "react-router";
-import { useCreateRecipeBookMutation } from "../../hooks/useCreateRecipeBookMutation";
+import { useCreateRecipeBookMutation } from "../../hooks/useCreateRecipeBookMutation.hook";
 import { makeBookListPath, makeViewRecipeBookPath } from "../../route-utils";
 
 /**

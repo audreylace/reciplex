@@ -3,7 +3,7 @@ import styles from "./primary-button.module.css";
 import {
   ButtonCommon,
   type ButtonType,
-} from "../../button-common/button-common";
+} from "../button-common/button-common.component";
 
 export function PrimaryButton({
   className,
