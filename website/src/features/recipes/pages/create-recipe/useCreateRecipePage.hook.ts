@@ -53,7 +53,7 @@ export function useCreateRecipePage() {
     state = "error";
   } else if (bookQuery.status === "success") {
     if (bookQuery.data) {
-      state = bookQuery.data.canAddRecipesToBook ? "loaded" : "read-only";
+      state = bookQuery.data.mayEdit ? "loaded" : "read-only";
     } else {
       state = "not-found";
     }

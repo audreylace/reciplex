@@ -54,7 +54,9 @@ export function CreateRecipePage() {
               errors={errors}
             />
             <FormButtons>
-              <SuccessButton type="submit">Create Recipe</SuccessButton>
+              <SuccessButton type="submit">
+                <i className="bi bi-plus-circle-dotted"></i> Create Recipe
+              </SuccessButton>
               <DangerButton onClick={cancelAction}>Cancel</DangerButton>
             </FormButtons>
           </form>
