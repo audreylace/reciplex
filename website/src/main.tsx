@@ -6,7 +6,7 @@ import { HomePage } from "./pages/home/home-page.tsx";
 import { RecipeBookListPage } from "./features/recipes/pages/recipe-book-list/recipe-book-list-page.tsx";
 import { ViewRecipeBookPage } from "./features/recipes/pages/view-recipe-book/view-recipe-book-page.tsx";
 import { CreateRecipeBookPage } from "./features/recipes/pages/create-recipe-book/create-recipe-book-page.tsx";
-import { CreateRecipePage } from "./features/recipes/pages/create-recipe/create-recipe-page.tsx";
+import { CreateRecipePage } from "./features/recipes/pages/create-recipe/create-recipe-page.component.tsx";
 import { ViewRecipePage } from "./features/recipes/pages/view-recipe/view-recipe-page.component.tsx";
 import { EditRecipePage } from "./features/recipes/pages/edit-recipe/edit-recipe-page.component.tsx";
 import { DefaultLayout } from "./layouts/default/default-layout.tsx";
