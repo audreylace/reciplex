@@ -1,10 +1,6 @@
-import {
-  TextAreaCommandOrchestrator,
-  handleKeyDown,
-  shortcuts,
-  getCommands,
-} from "@uiw/react-md-editor";
+import { TextAreaCommandOrchestrator } from "@uiw/react-md-editor/commands";
 import { useRef, useCallback } from "preact/hooks";
+import handleKeyDown from "../external/react-md-editor";
 
 /**
  * Hook for a markdown text editor
@@ -16,9 +12,6 @@ export function useMarkdownEditor(): UseMarkdownEditorReturn {
   // Markdown key event handler. Supposed to be bound to textarea
   const onKeyDown = (e: KeyboardEvent) => {
     handleKeyDown(e, 2, false);
-    if (orchestratorRef.current) {
-      shortcuts(e, getCommands(), orchestratorRef.current);
-    }
   };
 
   // ref function to bind the text area element to the orchestrator

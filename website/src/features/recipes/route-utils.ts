@@ -51,16 +51,16 @@ export function makeBookListPath(args?: {
 
 /**
  * computes the path to the create recipe book page
- * @returns `/create-recipe-book`
+ * @returns the path
  */
 export function makeCreateRecipeBookPath(): string {
-  return `/create-recipe-book`;
+  return `/books/-/create`;
 }
 
 /**
  * computes the path to the create recipe page
  * @param bookId the id of the book the recipe will be added
- * @returns `/create-recipe-book`
+ * @returns the path
  */
 export function makeCreateRecipePath(bookId: string): string {
   return `/books/${encodeURIComponent(bookId)}/recipes/-/create`;

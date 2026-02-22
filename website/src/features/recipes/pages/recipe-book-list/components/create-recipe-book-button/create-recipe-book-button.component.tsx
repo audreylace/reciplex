@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router";
 import styles from "./create-recipe-book-button.module.css";
 import { SuccessButton } from "../../../../../core/components/success-button/success-button.component";
+import { makeCreateRecipeBookPath } from "../../../../route-utils";
 
 export function CreateRecipeBookButton() {
   const navigation = useNavigate();
@@ -9,7 +10,7 @@ export function CreateRecipeBookButton() {
       className={styles.createButton}
       onClick={(e) => {
         e.preventDefault();
-        navigation("/create-recipe-book", {
+        navigation(makeCreateRecipeBookPath(), {
           state: { goBack: true },
         });
       }}

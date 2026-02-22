@@ -90,5 +90,7 @@ else
 }
 app.UseAuthorization();
 app.MapGroup("/api/v1").MapControllers();
+app.MapStaticAssets();
+app.MapFallbackToFile("index.html");
 
 app.Run();

@@ -2,6 +2,23 @@ import { createBrowserRouter } from "react-router";
 
 export const router = createBrowserRouter([
   {
+    path: "/books/-/create",
+    lazy: async () => {
+      const Component = await import("./layouts/default/default-layout");
+      return { Component: Component.DefaultLayout };
+    },
+    children: [
+      {
+        path: "",
+        lazy: async () => {
+          const Component =
+            await import("./features/recipes/pages/create-recipe-book/create-recipe-book-page.component");
+          return { Component: Component.CreateRecipeBookPage };
+        },
+      },
+    ],
+  },
+  {
     path: "/books/:bookId",
     lazy: async () => {
       const Component =
@@ -92,14 +109,6 @@ export const router = createBrowserRouter([
       {
         path: "/recipe-books/:source",
         lazy: RecipeBooksLazy,
-      },
-      {
-        path: "/create-recipe-book",
-        lazy: async () => {
-          const Component =
-            await import("./features/recipes/pages/create-recipe-book/create-recipe-book-page.component");
-          return { Component: Component.CreateRecipeBookPage };
-        },
       },
     ],
   },
