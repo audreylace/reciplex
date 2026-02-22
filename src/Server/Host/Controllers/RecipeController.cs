@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using NodaTime.Text;
 using Reciplex.Server.Host.Models.HttpPrimitives;
 using Reciplex.Server.Host.Models.PagingUtils;
 using Reciplex.Server.Host.Models.Recipe;
@@ -53,7 +52,6 @@ public class RecipesController(
     /// <param name="cancellationToken">token that cancels when the user closes the connection</param>
     /// <returns>Task resolving to the response to send back</returns>
     [HttpGet("{recipeKey}")]
-    [ResponseCache(Duration = 15 * 60, Location = ResponseCacheLocation.Any, NoStore = false)]
     public async Task<SendRecipeResults> GetRecipeById(
         [FromRoute] [BindRequired] RecipeKey recipeKey,
         [UseModelBinderProvider] ApplicationClaimsPrincipal userClaimsPrincipal,
@@ -283,7 +281,6 @@ public class RecipesController(
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     [HttpGet]
-    [ResponseCache(Duration = 15 * 60, Location = ResponseCacheLocation.Any, NoStore = false)]
     public async Task<
         Results<ValidationProblem, ProblemHttpResult, Ok<RecipePageResponseJson>>
     > GetRecipes(

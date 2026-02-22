@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using NodaTime.Text;
 using Reciplex.Server.Host.Models.HttpPrimitives;
 using Reciplex.Server.Host.Models.PagingUtils;
 using Reciplex.Server.Host.Models.RecipeBook;
@@ -44,7 +43,6 @@ public class RecipeBooksController(
     /// <param name="cancellationToken">token cancelled when the remote closes their connection</param>
     /// <returns>A HTTP response indicating the outcome of the operation</returns>
     [HttpGet("{bookKey}")]
-    [ResponseCache(Duration = 15 * 60, Location = ResponseCacheLocation.Any, NoStore = false)]
     public async Task<
         Results<
             Ok<SingleRecipeBookResponseJson>,
@@ -259,7 +257,6 @@ public class RecipeBooksController(
     /// <param name="cancellationToken">token that cancels when the connection is closed</param>
     /// <returns>Task that resolves to the HTTP response</returns>
     [HttpGet]
-    [ResponseCache(Duration = 15 * 60, Location = ResponseCacheLocation.Any, NoStore = false)]
     public async Task<
         Results<ValidationProblem, ProblemHttpResult, Ok<RecipeBookPageResponseJson>>
     > GetBooks(
@@ -269,7 +266,7 @@ public class RecipeBooksController(
         CancellationToken cancellationToken
     )
     {
-        pageSize = Math.Min(20, Math.Max(1, pageSize ?? 10));
+        pageSize = Math.Min(100, Math.Max(1, pageSize ?? 50));
 
         IAsyncEnumerable<RecipeBookDao> pageIterator = await recipeBookService.ListRecipeBooksAsync(
             appClaimsPrincipal.UserKey,
