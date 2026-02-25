@@ -3,7 +3,7 @@ import formCommonStylesModule from "../../../core/form-common/form-common.module
 import { useParams } from "react-router";
 import { RecipeMutationLoader } from "../../components/recipe-loader/recipe-mutation-loader.component";
 import { DeleteRecipeEditBody } from "./delete-recipe-edit-body.component";
-import { FetchingRecipeBanner } from "../../components/fetching-recipe-banner/fetching-recipe-banner.component";
+import { FetchingRecipeBanner } from "../../components/recipe-banners/fetching-recipe-banner.component";
 import { RecipeNameAndDescription } from "../../components/recipe-title-and-description/recipe-title-and-description.component";
 
 /**

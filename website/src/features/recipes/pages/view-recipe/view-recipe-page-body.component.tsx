@@ -5,10 +5,10 @@ import {
   QueryStatusDispatch,
   type LoadingStatusValues,
 } from "../../../core/components/query-status-dispatch/query-status-dispatch.component";
-import { FetchingRecipeBanner } from "../../components/fetching-recipe-banner/fetching-recipe-banner.component";
-import { FetchingRecipeFailedBanner } from "../../components/fetching-recipe-failed-banner/fetching-recipe-failed-banner.component";
+import { FetchingRecipeBanner } from "../../components/recipe-banners/fetching-recipe-banner.component";
+import { FetchingRecipeFailedBanner } from "../../components/recipe-banners/fetching-recipe-failed-banner.component";
 import { OfflineBanner } from "../../components/offline-banner/offline-banner.component";
-import { RecipeNotFoundBanner } from "../../components/recipe-not-found-banner/recipe-not-found-banner.component";
+import { RecipeNotFoundBanner } from "../../components/recipe-banners/recipe-not-found-banner.component";
 import { makeRecipeNameAndDescriptionState } from "../../components/recipe-title-and-description/recipe-title-and-description.component";
 import { makeEditRecipePath } from "../../route-utils";
 import type { IGetRecipeByIdResult } from "../../services/recipe-types";

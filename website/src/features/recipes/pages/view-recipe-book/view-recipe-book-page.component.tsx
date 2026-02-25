@@ -1,7 +1,7 @@
 import { useParams } from "react-router";
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
 import { BadPathBanner } from "../../components/bad-path-banner/bad-path-banner.component";
-import { BookInformationBanner } from "../../components/book-information-banner/book-information-banner.component";
+import { BookInformationHeader } from "../../components/book-information-header/book-information-header.component";
 
 import { ViewRecipeBookPageBody } from "./view-recipe-book-page-body.component";
 
@@ -18,7 +18,7 @@ export function ViewRecipeBookPage() {
       {!bookId && <BadPathBanner />}
       {bookId && (
         <>
-          <BookInformationBanner
+          <BookInformationHeader
             name={bookQuery.data?.name}
             shortDescription={bookQuery.data?.shortDescription}
           />

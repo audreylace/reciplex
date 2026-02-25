@@ -1,6 +1,6 @@
 import type { FetchStatus } from "@tanstack/react-query";
-import { FetchingRecipeFailedBanner } from "../../components/fetching-recipe-failed-banner/fetching-recipe-failed-banner.component";
-import { RecipeNotFoundBanner } from "../../components/recipe-not-found-banner/recipe-not-found-banner.component";
+import { FetchingRecipeFailedBanner } from "../../components/recipe-banners/fetching-recipe-failed-banner.component";
+import { RecipeNotFoundBanner } from "../../components/recipe-banners/recipe-not-found-banner.component";
 import type { IGetRecipesInBookResult } from "../../services/recipe-types";
 import { RecipeListRow } from "./recipe-list-row.component";
 import { RecipeListTableMessage } from "./recipe-list-table-message.component";

@@ -9,7 +9,7 @@ import { useState } from "preact/hooks";
 
 import formCommonStylesModule from "../../../core/form-common/form-common.module.css";
 import { ActionFailedTryAgainCancel } from "../action-failed-try-again-cancel/action-failed-try-again-cancel.component";
-import { RecipeIsReadonlyBanner } from "../recipe-is-readonly-banner/RecipeIsReadonlyBanner.component";
+import { RecipeIsReadonlyBanner } from "../recipe-banners/recipe-is-readonly-banner.component";
 
 /** form for deleting a recipe */
 export function DeleteRecipeForm({

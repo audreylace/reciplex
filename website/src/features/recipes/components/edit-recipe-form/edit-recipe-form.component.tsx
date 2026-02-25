@@ -8,14 +8,17 @@ import {
 import editRecipeFormStylesModule from "./edit-recipe-form.module.css";
 import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
 import { useState } from "preact/hooks";
-import { ActionFailedTryAgainCancel } from "../action-failed-try-again-cancel/action-failed-try-again-cancel.component";
 import type { IRecipeModel } from "../../services/recipe-types";
 import { useForm } from "react-hook-form";
 import { useUpdateRecipeMutation } from "../../hooks/useUpdateRecipeMutation.hook";
-import { ActionBanner } from "../action-banner/action-banner.component";
 import { makeViewRecipePath } from "../../route-utils";
-import { RecipeIsReadonlyBanner } from "../recipe-is-readonly-banner/RecipeIsReadonlyBanner.component";
-import { RetryBannerComponent } from "../retry-banner/retry-banner.component";
+import { RecipeIsReadonlyBanner } from "../recipe-banners/recipe-is-readonly-banner.component";
+import {
+  ErrorBanner,
+  InformationBanner,
+} from "../../../core/components/banner/banner.component";
+import { PrimaryButton } from "../../../core/components/primary-button/primary-button.component";
+import { useNavigate } from "react-router";
 
 /**
  * Fields in the form
@@ -34,6 +37,7 @@ export function EditRecipeForm({
   onAfterUpdate: (args: { name: string; shortDescription: string }) => void;
   onCancel: () => void;
 }) {
+  const navigate = useNavigate();
   const [versionTag, setVersionTag] = useState<string | null>(null);
   const recipeMutation = useUpdateRecipeMutation();
   const {
@@ -91,8 +95,11 @@ export function EditRecipeForm({
   // at least manually copy and paste the data
   // to a new form instance or save off locally.
   //
-  const enableForm = conflict || recipeMutation.status === "idle";
-  const disableCancel = recipeMutation.status === "pending";
+  const enableForm = !conflict && recipeMutation.status === "idle";
+  const disableCancel = recipeMutation.status === "pending" || conflict;
+  const navigateToViewRecipe = () => {
+    navigate(makeViewRecipePath(recipe.bookId, recipe.id));
+  };
 
   return (
     <form onSubmit={onSubmit}>
@@ -105,25 +112,46 @@ export function EditRecipeForm({
         </DangerButton>
       </FormButtons>
       {conflict && (
-        <RetryBannerComponent
-          buttonCaption="Discard and Reload?"
-          message="Another user has made changes to this recipe. Existing changes must be discarded and the recipe reloaded."
-        />
+        <ErrorBanner
+          title="Conflict"
+          message="Another user has changed this recipe. Existing changes must be discarded and the recipe data reloaded."
+        >
+          <FormButtons notInForm>
+            <SuccessButton onClick={() => navigate(0)}>
+              Reload Recipe
+            </SuccessButton>
+            <PrimaryButton onClick={onCancel}>End Editing</PrimaryButton>
+          </FormButtons>
+        </ErrorBanner>
       )}
       {recipeMutation.isError && (
-        <ActionFailedTryAgainCancel
-          message="Something went wrong while saving recipe..."
-          cancelCaption="View Recipe"
-          cancelAction={onCancel}
-        />
+        <ErrorBanner
+          title="Save Failed"
+          message="The save failed. Existing changes must be discarded and the recipe data reloaded."
+        >
+          <FormButtons notInForm>
+            <SuccessButton onClick={() => navigate(0)}>
+              Reload Recipe
+            </SuccessButton>
+            <PrimaryButton onClick={onCancel}>End Editing</PrimaryButton>
+          </FormButtons>
+        </ErrorBanner>
       )}
-      {recipeMutation.isPending && <p>Saving...</p>}
+      {recipeMutation.isPending && (
+        <InformationBanner
+          title="Saving Changes"
+          message="New changes are being published to the cloud. Do not leave or close this window."
+        ></InformationBanner>
+      )}
       {recipeMutation.isSuccess && (
-        <ActionBanner
-          to={makeViewRecipePath(recipe.bookId, recipe.id)}
-          message="Recipe update"
-          linkText="view recipe"
-        ></ActionBanner>
+        <InformationBanner
+          title="Recipe saved"
+          message="Changes published to the cloud."
+        >
+          <SuccessButton onClick={navigateToViewRecipe}>
+            View Recipe
+          </SuccessButton>
+        </InformationBanner>
       )}
       <div className={editRecipeFormStylesModule.recipeInfoFields}>
         <RecipeMetaFieldSet

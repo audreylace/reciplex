@@ -4,9 +4,9 @@ import type {
   IRecipeModel,
 } from "../../services/recipe-types";
 import { useGetRecipeByIdQuery } from "../../hooks/useGetRecipeByIdQuery.hook";
-import { FetchingRecipeFailedBanner } from "../fetching-recipe-failed-banner/fetching-recipe-failed-banner.component";
-import { RecipeNotFoundBanner } from "../recipe-not-found-banner/recipe-not-found-banner.component";
-import { FetchingRecipeBanner } from "../fetching-recipe-banner/fetching-recipe-banner.component";
+import { FetchingRecipeFailedBanner } from "../recipe-banners/fetching-recipe-failed-banner.component";
+import { RecipeNotFoundBanner } from "../recipe-banners/recipe-not-found-banner.component";
+import { FetchingRecipeBanner } from "../recipe-banners/fetching-recipe-banner.component";
 
 /**
  * loads the recipe data and then render using `onRender`.

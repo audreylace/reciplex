@@ -1,8 +1,8 @@
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
-import { BookInformationBanner } from "./book-information-banner.component";
+import { BookInformationHeader } from "./book-information-header.component";
 
-/** Wraps `BookInformationBanner` populating the banner using `useGetRecipeBookById` */
-export function BookInformationBannerWithQuery({ bookId }: { bookId: string }) {
+/** Wraps `BookInformationHeader` populating it via `useGetRecipeBookById` */
+export function BookInformationHeaderWithQuery({ bookId }: { bookId: string }) {
   const query = useGetRecipeBookById(bookId);
 
   if (query.isError || (query.isSuccess && !query.data)) {
@@ -10,7 +10,7 @@ export function BookInformationBannerWithQuery({ bookId }: { bookId: string }) {
   }
 
   return (
-    <BookInformationBanner
+    <BookInformationHeader
       name={query.data?.name}
       shortDescription={query.data?.shortDescription}
     />

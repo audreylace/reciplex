@@ -1,11 +1,11 @@
 import { useLocation } from "react-router";
-import styles from "./book-information-banner.module.css";
+import styles from "./book-information-header.module.css";
 
 /** Information about a book */
-export function BookInformationBanner({
+export function BookInformationHeader({
   name,
   shortDescription,
-}: BookInformationBannerProps) {
+}: BookInformationHeaderProps) {
   const location = useLocation();
   const { bookName, bookShortDescription } = location?.state ?? {};
   const finalName = name ?? bookName;
@@ -22,8 +22,8 @@ export function BookInformationBanner({
   );
 }
 
-/** props for `BookInformationBanner` */
-export interface BookInformationBannerProps {
+/** props for `BookInformationHeader` */
+export interface BookInformationHeaderProps {
   /** book name */
   name?: string | null;
   /** book short description */

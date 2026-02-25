@@ -9,7 +9,7 @@ import { useDeleteRecipeBookMutation } from "../../hooks/useDeleteRecipeBookMuta
 
 import formStyles from "../../../core/form-common/form-common.module.css";
 import { ActionFailedTryAgainCancel } from "../action-failed-try-again-cancel/action-failed-try-again-cancel.component";
-import { BookIsReadonlyBanner } from "../book-is-readonly-banner/book-is-readonly-banner.component";
+import { BookIsReadonlyBanner } from "../book-banners/book-is-readonly-banner.component";
 
 /**
  * Form for deleting a recipe book

@@ -1,10 +1,10 @@
 import { BadPathBanner } from "../../components/bad-path-banner/bad-path-banner.component";
 import { useNavigate, useParams } from "react-router";
 import { makeBookListPath, makeViewRecipeBookPath } from "../../route-utils";
-import { makeBookNameAndDescriptionState } from "../../components/book-information-banner/book-information-banner.component";
-import { BookInformationBannerWithQuery } from "../../components/book-information-banner/book-information-banner-with-query.component";
+import { makeBookNameAndDescriptionState } from "../../components/book-information-header/book-information-header.component";
 import { RecipeBookMutationLoader } from "../../components/recipe-book-loader/recipe-book-mutation-loader.component";
 import { DeleteRecipeBookForm } from "../../components/delete-recipe-book-form/delete-recipe-book-form.component";
+import { BookInformationHeaderWithQuery } from "../../components/book-information-header/book-information-header-with-query.component";
 
 import formStyles from "../../../core/form-common/form-common.module.css";
 
@@ -35,7 +35,7 @@ export function DeleteRecipeBookPage() {
       {!bookId && <BadPathBanner />}
       {bookId && (
         <>
-          <BookInformationBannerWithQuery bookId={bookId} />
+          <BookInformationHeaderWithQuery bookId={bookId} />
           <RecipeBookMutationLoader
             key={bookId}
             bookId={bookId}

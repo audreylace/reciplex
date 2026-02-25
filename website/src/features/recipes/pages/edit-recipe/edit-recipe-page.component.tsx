@@ -9,7 +9,7 @@ import {
   makeRecipeNameAndDescriptionState,
   RecipeNameAndDescription,
 } from "../../components/recipe-title-and-description/recipe-title-and-description.component";
-import { FetchingRecipeBanner } from "../../components/fetching-recipe-banner/fetching-recipe-banner.component";
+import { FetchingRecipeBanner } from "../../components/recipe-banners/fetching-recipe-banner.component";
 
 /** Page for editing a recipe */
 export function EditRecipePage() {

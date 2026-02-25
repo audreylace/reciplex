@@ -1,0 +1,40 @@
+.root {
+  margin: 1em 0em;
+  border-radius: var(--rcx-border-radius);
+  border-width: 1px;
+  border-style: solid;
+  box-shadow: 0px 0px 10px 0px var(--rcx-color-shadow);
+  border-left-width: 10px;
+
+  display: flex;
+  gap: 1em;
+  padding: 1em;
+}
+
+.title {
+  font-size: 1.5em;
+}
+
+.icon {
+  font-size: 2em;
+}
+
+.root[data-banner-type="error"] {
+  background-color: oklch(88.5% 0.062 18.334);
+  border-color: oklch(57.7% 0.245 27.325);
+}
+
+.root[data-banner-type="warning"] {
+  background-color: oklch(98.7% 0.026 102.212);
+  border-color: oklch(90.5% 0.182 98.111);
+}
+
+.root[data-banner-type="information"] {
+  background-color: oklch(93.2% 0.032 255.585);
+  border-color: oklch(54.6% 0.245 262.881);
+}
+
+.root[data-banner-type="success"] {
+  background-color: oklch(96.2% 0.044 156.743);
+  border-color: oklch(62.7% 0.194 149.214);
+}

@@ -1,8 +1,8 @@
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
-import { RecipeBookNotFoundBanner } from "../recipe-book-not-found-banner/recipe-book-not-found-banner.component";
-import { FetchingRecipeBookBanner } from "../fetching-recipe-book-banner/fetching-recipe-book-banner.component";
+import { RecipeBookNotFoundBanner } from "../book-banners/recipe-book-not-found-banner.component";
+import { FetchingRecipeBookBanner } from "../book-banners/fetching-recipe-book-banner.component";
 import { OfflineBanner } from "../offline-banner/offline-banner.component";
-import { FetchingRecipeBookFailedBanner } from "../fetching-recipe-book-failed-banner/fetching-recipe-book-failed-banner.component";
+import { FetchingRecipeBookFailedBanner } from "../book-banners/fetching-recipe-book-failed-banner.component";
 import type { IRecipeBookModel } from "../../services/recipe-types";
 
 /**

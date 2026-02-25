@@ -1,6 +1,5 @@
-import { RecipeBookNotFoundBanner } from "../../components/recipe-book-not-found-banner/recipe-book-not-found-banner.component";
-import { FetchingRecipeBookBanner } from "../../components/fetching-recipe-book-banner/fetching-recipe-book-banner.component";
-import { FetchingRecipeBookFailedBanner } from "../../components/fetching-recipe-book-failed-banner/fetching-recipe-book-failed-banner.component";
+import { FetchingRecipeBookBanner } from "../../components/book-banners/fetching-recipe-book-banner.component";
+import { FetchingRecipeBookFailedBanner } from "../../components/book-banners/fetching-recipe-book-failed-banner.component";
 import { OfflineBanner } from "../../components/offline-banner/offline-banner.component";
 import formStyles from "../../../core/form-common/form-common.module.css";
 import { FetchingStatusDispatch } from "../../../core/components/fetch-status-dispatch/fetch-status-dispatch.component";
@@ -9,10 +8,11 @@ import { makeViewRecipeBookPath, makeViewRecipePath } from "../../route-utils";
 import { useNavigate, useParams } from "react-router";
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
 import {
-  BookInformationBanner,
+  BookInformationHeader,
   makeBookNameAndDescriptionState,
-} from "../../components/book-information-banner/book-information-banner.component";
+} from "../../components/book-information-header/book-information-header.component";
 import { CreateRecipeForm } from "../../components/create-recipe-form/create-recipe-form.component";
+import { RecipeBookNotFoundBanner } from "../../components/book-banners/recipe-book-not-found-banner.component";
 
 /**
  * Entry point for create recipe page component
@@ -45,7 +45,7 @@ export function CreateRecipePage() {
 
   return (
     <main className={`${formStyles.formMain}`}>
-      <BookInformationBanner
+      <BookInformationHeader
         name={bookName}
         shortDescription={bookShortDescription}
       />

@@ -6,10 +6,10 @@ import { SuccessButton } from "../../../core/components/success-button/success-b
 import { useCreateRecipeMutation } from "../../hooks/useCreateRecipeMutation.hook";
 import { makeViewRecipePath } from "../../route-utils";
 import type { IRecipeBookModel } from "../../services/recipe-types";
-import { ActionBanner } from "../action-banner/action-banner.component";
 import { ActionFailedTryAgainCancel } from "../action-failed-try-again-cancel/action-failed-try-again-cancel.component";
-import { BookIsReadonlyBanner } from "../book-is-readonly-banner/book-is-readonly-banner.component";
+import { BookIsReadonlyBanner } from "../book-banners/book-is-readonly-banner.component";
 import { RecipeMetaFieldSet } from "../recipe-meta-field-set/recipe-meta-field-set.component";
+import { SuccessBanner } from "../../../core/components/banner/banner.component";
 
 /** form for creating a recipe */
 export function CreateRecipeForm({
@@ -82,11 +82,12 @@ export function CreateRecipeForm({
       );
     case "success":
       return (
-        <ActionBanner
+        <SuccessBanner
           to={makeViewRecipePath(bookId, recipeId)}
-          message="Recipe created."
-          linkText="open recipe"
-        ></ActionBanner>
+          title="Success"
+          message="Your new recipe was created"
+          buttonCaption="open recipe"
+        />
       );
   }
 }

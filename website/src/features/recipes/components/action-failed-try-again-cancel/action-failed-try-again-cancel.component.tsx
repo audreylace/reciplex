@@ -2,6 +2,7 @@ import { useNavigate } from "react-router";
 import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
 import { PrimaryButton } from "../../../core/components/primary-button/primary-button.component";
 import { SuccessButton } from "../../../core/components/success-button/success-button.component";
+import { ErrorBanner } from "../../../core/components/banner/banner.component";
 
 export function ActionFailedTryAgainCancel({
   cancelAction,
@@ -12,15 +13,14 @@ export function ActionFailedTryAgainCancel({
 }: ActionFailedTryAgainCancelProps) {
   const navigate = useNavigate();
   reloadAction ??= () => navigate(0);
-  tryAgainCaption ??= "Reload and try again?";
+  tryAgainCaption ??= "Try Again";
   return (
-    <>
-      <p>{message}</p>
-      <FormButtons>
+    <ErrorBanner title="Problem" message={message} icon="bi bi-bug">
+      <FormButtons notInForm>
         <SuccessButton onClick={reloadAction}>{tryAgainCaption}</SuccessButton>
         <PrimaryButton onClick={cancelAction}>{cancelCaption}</PrimaryButton>
       </FormButtons>
-    </>
+    </ErrorBanner>
   );
 }
 

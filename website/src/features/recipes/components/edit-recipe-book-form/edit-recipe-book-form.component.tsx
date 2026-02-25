@@ -9,7 +9,7 @@ import { SuccessButton } from "../../../core/components/success-button/success-b
 import { DangerButton } from "../../../core/components/danger-button/danger-button.component";
 import type { IRecipeBookModel } from "../../services/recipe-types";
 import { ActionFailedTryAgainCancel } from "../action-failed-try-again-cancel/action-failed-try-again-cancel.component";
-import { BookIsReadonlyBanner } from "../book-is-readonly-banner/book-is-readonly-banner.component";
+import { BookIsReadonlyBanner } from "../book-banners/book-is-readonly-banner.component";
 import { useState } from "preact/hooks";
 
 /**
