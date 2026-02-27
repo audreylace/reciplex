@@ -38,3 +38,19 @@
   background-color: oklch(96.2% 0.044 156.743);
   border-color: oklch(62.7% 0.194 149.214);
 }
+
+.fadeIn {
+  animation: fadeInAnimation 0.5s forwards;
+}
+
+@keyframes fadeInAnimation {
+  0% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}

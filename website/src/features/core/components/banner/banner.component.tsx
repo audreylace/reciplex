@@ -29,12 +29,13 @@ export function Banner({
     }
   };
 
+  const extraClassName = className ? ` ${className}` : "";
   return (
     <div
-      className={`${bannerStylesModule.root} ${className}`}
+      className={`${bannerStylesModule.root} ${bannerStylesModule.fadeIn} ${extraClassName}`}
       data-banner-type={type ?? "default"}
     >
-      <div className={bannerStylesModule.icon}>
+      <div className={bannerStylesModule.icon} role={"figure"}>
         <i className={icon ?? "bi bi-fork-knife"}></i>
       </div>
       <div>
