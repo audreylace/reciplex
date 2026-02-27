@@ -17,6 +17,7 @@ public static class WebApplicationBuilderExtensions
         this WebApplicationBuilder builder
     )
     {
+#if DEBUG
         if (!builder.Environment.IsDevelopment())
         {
             throw new InvalidOperationException(
@@ -26,6 +27,8 @@ public static class WebApplicationBuilderExtensions
         string dbString = $"Data Source=bin/{Guid.NewGuid()}.db";
         builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite(dbString));
         builder.Services.AddHostedService<ConfigureSqliteDbForDevelopment>();
+
+#endif
         return builder;
     }
 }
