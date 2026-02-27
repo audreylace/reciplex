@@ -1,3 +1,5 @@
+import { ApplicationErrorBanner } from "../banner/application-error-banner.component";
+
 export function QueryStatusDispatch({
   loadingStatus,
   error,
@@ -6,26 +8,19 @@ export function QueryStatusDispatch({
 }: {
   /** overall status of the load */
   loadingStatus: LoadingStatusValues;
-  pending:
-    | preact.ComponentChildren
-    | undefined
-    | (() => preact.ComponentChildren | undefined);
-  error:
-    | preact.ComponentChildren
-    | undefined
-    | (() => preact.ComponentChildren | undefined);
-  success:
-    | preact.ComponentChildren
-    | undefined
-    | (() => preact.ComponentChildren | undefined);
+  pending: preact.ComponentChildren;
+  error: preact.ComponentChildren;
+  success: preact.ComponentChildren;
 }) {
   switch (loadingStatus) {
     case "error":
-      return typeof error !== "function" ? error : error();
+      return error;
     case "pending":
-      return typeof pending !== "function" ? pending : pending();
+      return pending;
     case "success":
-      return typeof success !== "function" ? success : success();
+      return success;
+    default:
+      return <ApplicationErrorBanner />;
   }
 }
 

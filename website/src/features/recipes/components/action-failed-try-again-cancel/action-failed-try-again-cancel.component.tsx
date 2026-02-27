@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
-import { PrimaryButton } from "../../../core/components/primary-button/primary-button.component";
-import { SuccessButton } from "../../../core/components/success-button/success-button.component";
+import { PrimaryButton } from "../../../core/components/buttons/primary-button.component";
+import { SuccessButton } from "../../../core/components/buttons/success-button.component";
 import { ErrorBanner } from "../../../core/components/banner/banner.component";
 
 export function ActionFailedTryAgainCancel({

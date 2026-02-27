@@ -1,11 +1,9 @@
-import { ErrorBanner } from "../../../core/components/banner/banner.component";
+import { ErrorBanner } from "./banner.component";
 
 /**
- * Error showed when a component
- * somehow is activated with path parameters
- * that should not be possible.
+ * Error showed when an application error is hit
  */
-export function BadPathBanner() {
+export function ApplicationErrorBanner() {
   return (
     <ErrorBanner
       icon="bi bi-bug"

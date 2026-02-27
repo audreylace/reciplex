@@ -4,7 +4,7 @@ import { RecipeNotFoundBanner } from "../../components/recipe-banners/recipe-not
 import type { IGetRecipesInBookResult } from "../../services/recipe-types";
 import { RecipeListRow } from "./recipe-list-row.component";
 import { RecipeListTableMessage } from "./recipe-list-table-message.component";
-import { OfflineBanner } from "../../components/offline-banner/offline-banner.component";
+import { OfflineBanner } from "../../../core/components/banner/offline-banner.component";
 import { RecipeListTableRowsSkeleton } from "./recipe-list-table-rows-skeleton.component";
 import { useRecipeListTableContext } from "./useRecipeListTableContext.hook";
 import { FetchingStatusDispatch } from "../../../core/components/fetch-status-dispatch/fetch-status-dispatch.component";
@@ -45,28 +45,34 @@ function TableBody({
             fetching={<RecipeListTableRowsSkeleton count={size} />}
           />
         }
-        success={() => {
-          if (!recipeData) {
-            return (
-              <RecipeListTableMessage>
-                <RecipeNotFoundBanner />
-              </RecipeListTableMessage>
-            );
-          }
-
-          if (recipeData.recipes.length === 0) {
-            return (
-              <RecipeListTableMessage>
-                <p>No recipe in this book</p>
-              </RecipeListTableMessage>
-            );
-          }
-
-          return recipeData.recipes.map((r, idx) => (
-            <RecipeListRow key={r.id} recipe={r} focus={idx === 0} />
-          ));
-        }}
+        success={<SuccessRender recipeData={recipeData} />}
       />
     </tbody>
   );
+}
+
+function SuccessRender({
+  recipeData,
+}: {
+  recipeData: IGetRecipesInBookResult | undefined | null;
+}) {
+  if (!recipeData) {
+    return (
+      <RecipeListTableMessage>
+        <RecipeNotFoundBanner />
+      </RecipeListTableMessage>
+    );
+  }
+
+  if (recipeData.recipes.length === 0) {
+    return (
+      <RecipeListTableMessage>
+        <p>No recipe in this book</p>
+      </RecipeListTableMessage>
+    );
+  }
+
+  return recipeData.recipes.map((r, idx) => (
+    <RecipeListRow key={r.id} recipe={r} focus={idx === 0} />
+  ));
 }

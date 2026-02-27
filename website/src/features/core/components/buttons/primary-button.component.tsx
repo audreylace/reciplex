@@ -1,15 +1,15 @@
 import { type ButtonProps } from "@headlessui/react";
-import styles from "./danger-button.module.css";
+import styles from "./primary-button.module.css";
 import {
   ButtonCommon,
   type ButtonType,
-} from "../button-common/button-common.component";
+} from "../buttons/button-common.component";
 
-export function DangerButton({
+export function PrimaryButton({
   className,
   ...props
 }: ButtonProps & { className?: string; buttonType?: ButtonType }) {
   return (
-    <ButtonCommon classArray={[className ?? "", styles.danger]} {...props} />
+    <ButtonCommon classArray={[className ?? "", styles.primary]} {...props} />
   );
 }

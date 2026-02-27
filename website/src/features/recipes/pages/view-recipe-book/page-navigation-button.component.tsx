@@ -1,4 +1,4 @@
-import { SuccessButton } from "../../../core/components/success-button/success-button.component";
+import { SuccessButton } from "../../../core/components/buttons/success-button.component";
 
 import styles from "./page-navigation-button.module.css";
 

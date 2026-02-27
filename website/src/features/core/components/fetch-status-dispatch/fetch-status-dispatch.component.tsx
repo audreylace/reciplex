@@ -1,4 +1,5 @@
 import type { FetchStatus } from "@tanstack/react-query";
+import { ApplicationErrorBanner } from "../banner/application-error-banner.component";
 
 /**
  * Dispatches the fetching status of a react query to the appropriate UI
@@ -24,5 +25,8 @@ export function FetchingStatusDispatch({
 
     case "paused":
       return paused;
+
+    default:
+      return <ApplicationErrorBanner />;
   }
 }

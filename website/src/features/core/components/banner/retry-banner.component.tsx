@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import { ErrorBanner } from "../../../core/components/banner/banner.component";
+import { ErrorBanner } from "./banner.component";
 
 /** banner that shows the use an error and clicking the button will reload the page */
 export function RetryBannerComponent({
@@ -7,7 +7,7 @@ export function RetryBannerComponent({
   buttonCaption,
 }: {
   /** main message shown to the end user */
-  message: string;
+  message?: string;
   /** action button caption. Default to `Try again?` */
   buttonCaption?: string;
 }) {
@@ -15,7 +15,7 @@ export function RetryBannerComponent({
   return (
     <ErrorBanner
       title={"Problem"}
-      message={message}
+      message={message ?? "Something went wrong"}
       icon="bi bi-bug"
       buttonCaption={
         <>

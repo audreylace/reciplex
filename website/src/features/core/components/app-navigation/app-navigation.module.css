@@ -11,14 +11,6 @@
   }
 }
 
-@media (min-height: 700px) {
-  .appNavigationDiv {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-}
-
 .appNavigationDiv {
   background-color: var(--rcx-color-secondary-light);
   box-shadow: 0px 0px 5px 0px var(--rcx-color-shadow);

@@ -5,12 +5,14 @@ import {
   type RecipeBookMetaFormModel,
 } from "../recipe-book-meta-fields/recipe-book-meta-fields.component";
 import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
-import { SuccessButton } from "../../../core/components/success-button/success-button.component";
-import { DangerButton } from "../../../core/components/danger-button/danger-button.component";
+import { SuccessButton } from "../../../core/components/buttons/success-button.component";
+import { DangerButton } from "../../../core/components/buttons/danger-button.component";
 import type { IRecipeBookModel } from "../../services/recipe-types";
 import { ActionFailedTryAgainCancel } from "../action-failed-try-again-cancel/action-failed-try-again-cancel.component";
 import { BookIsReadonlyBanner } from "../book-banners/book-is-readonly-banner.component";
 import { useState } from "preact/hooks";
+import { InformationBanner } from "../../../core/components/banner/banner.component";
+import { ApplicationErrorBanner } from "../../../core/components/banner/application-error-banner.component";
 
 /**
  * Form for editing a recipe book.
@@ -74,10 +76,13 @@ export function EditRecipeBookForm({
     );
   }
 
-  return (
-    <>
-      {!data.mayEdit && <BookIsReadonlyBanner bookId={data.id} />}
-      {data.mayEdit && recipeBookMutation.isIdle && (
+  if (!data.mayEdit) {
+    return <BookIsReadonlyBanner bookId={data.id} />;
+  }
+
+  switch (recipeBookMutation.status) {
+    case "idle":
+      return (
         <form onSubmit={onSubmit}>
           <RecipeBookMetaFields
             register={register}
@@ -89,17 +94,27 @@ export function EditRecipeBookForm({
             <DangerButton onClick={cancelProxy}>Cancel</DangerButton>
           </FormButtons>
         </form>
-      )}
-      {recipeBookMutation.isPending && <p>Saving...</p>}
-      {recipeBookMutation.isError && (
+      );
+
+    case "pending":
+      return (
+        <InformationBanner
+          title="Saving Changes"
+          message="New changes are being published to the cloud. Do not leave or close this window."
+        />
+      );
+
+    case "error":
+      return (
         <ActionFailedTryAgainCancel
           message="Something went wrong while saving."
           cancelCaption="View Recipe"
           cancelAction={cancelProxy}
         />
-      )}
-    </>
-  );
+      );
+    default:
+      return <ApplicationErrorBanner />;
+  }
 }
 
 /**

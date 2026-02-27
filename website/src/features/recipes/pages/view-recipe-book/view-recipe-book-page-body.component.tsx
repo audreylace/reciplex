@@ -1,7 +1,7 @@
 import type { FetchStatus } from "@tanstack/react-query";
 import { FetchingRecipeBookBanner } from "../../components/book-banners/fetching-recipe-book-banner.component";
 import { FetchingRecipeBookFailedBanner } from "../../components/book-banners/fetching-recipe-book-failed-banner.component";
-import { OfflineBanner } from "../../components/offline-banner/offline-banner.component";
+import { OfflineBanner } from "../../../core/components/banner/offline-banner.component";
 import { RecipeBookNotFoundBanner } from "../../components/book-banners/recipe-book-not-found-banner.component";
 import type { IRecipeBookModel } from "../../services/recipe-types";
 import { RecipeListTable } from "./recipe-list-table.component";
@@ -34,24 +34,31 @@ export function ViewRecipeBookPageBody({
           paused={<OfflineBanner />}
         />
       }
-      success={() => {
-        if (!bookData) {
-          return <RecipeBookNotFoundBanner />;
-        }
-
-        return (
-          <>
-            <RecipeBookMenu
-              bookId={bookData.id}
-              name={bookData.name}
-              shortDescription={bookData.shortDescription}
-              mayEdit={bookData.mayEdit}
-              mayDelete={bookData.mayDelete}
-            />
-            <RecipeListTable bookId={bookData.id} />
-          </>
-        );
-      }}
+      success={<SuccessRender bookData={bookData} />}
     />
+  );
+}
+
+function SuccessRender({
+  bookData,
+}: {
+  /** data fetched by the load */
+  bookData: IRecipeBookModel | undefined | null;
+}) {
+  if (!bookData) {
+    return <RecipeBookNotFoundBanner />;
+  }
+
+  return (
+    <>
+      <RecipeBookMenu
+        bookId={bookData.id}
+        name={bookData.name}
+        shortDescription={bookData.shortDescription}
+        mayEdit={bookData.mayEdit}
+        mayDelete={bookData.mayDelete}
+      />
+      <RecipeListTable bookId={bookData.id} />
+    </>
   );
 }

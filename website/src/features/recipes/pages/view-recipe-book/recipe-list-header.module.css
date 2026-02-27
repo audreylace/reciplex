@@ -1,7 +1,7 @@
 .recipeHeader {
   /* Stick the header at the top of the page when scrolling */
   position: sticky;
-  top: 2em; /* spacing for nav header */
+  top: 0;
   left: 0;
   right: 0;
   background-color: var(--rcx-color-secondary-light);

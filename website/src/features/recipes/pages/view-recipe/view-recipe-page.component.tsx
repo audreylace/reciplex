@@ -1,6 +1,6 @@
 import { useParams } from "react-router";
 import { useGetRecipeByIdQuery } from "../../hooks/useGetRecipeByIdQuery.hook";
-import { BadPathBanner } from "../../components/bad-path-banner/bad-path-banner.component";
+import { ApplicationErrorBanner } from "../../../core/components/banner/application-error-banner.component";
 import { RecipeNameAndDescription } from "../../components/recipe-title-and-description/recipe-title-and-description.component";
 import { ViewRecipePageBody } from "./view-recipe-page-body.component";
 import { RecipeMenu } from "./recipe-menu.component";
@@ -31,7 +31,7 @@ export function ViewRecipePage() {
           />
         )}
       </RecipeNameAndDescription>
-      {!recipeId && <BadPathBanner />}
+      {!recipeId && <ApplicationErrorBanner />}
       {recipeId && (
         <ViewRecipePageBody
           data={recipeQuery.data}

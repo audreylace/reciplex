@@ -1,5 +1,5 @@
 import { NavLink } from "react-router";
-import { SuccessButton } from "../success-button/success-button.component";
+import { SuccessButton } from "../buttons/success-button.component";
 import styles from "./app-navigation.module.css";
 import type { PropsWithChildren } from "preact/compat";
 

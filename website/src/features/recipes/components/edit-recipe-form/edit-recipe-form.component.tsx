@@ -1,5 +1,5 @@
-import { DangerButton } from "../../../core/components/danger-button/danger-button.component";
-import { SuccessButton } from "../../../core/components/success-button/success-button.component";
+import { DangerButton } from "../../../core/components/buttons/danger-button.component";
+import { SuccessButton } from "../../../core/components/buttons/success-button.component";
 import { RecipeDetailsFieldSet } from "../recipe-details-field-set/recipe-details-field-set.component";
 import {
   RecipeMetaFieldSet,
@@ -17,7 +17,7 @@ import {
   ErrorBanner,
   InformationBanner,
 } from "../../../core/components/banner/banner.component";
-import { PrimaryButton } from "../../../core/components/primary-button/primary-button.component";
+import { PrimaryButton } from "../../../core/components/buttons/primary-button.component";
 import { useNavigate } from "react-router";
 
 /**

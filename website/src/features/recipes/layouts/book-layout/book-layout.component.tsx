@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useParams } from "react-router";
 import styles from "./book-layout.module.css";
 import { AppNavigation } from "../../../core/components/app-navigation/app-navigation.component";
-import { SuccessButton } from "../../../core/components/success-button/success-button.component";
+import { SuccessButton } from "../../../core/components/buttons/success-button.component";
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
 import { useGetRecipeByIdQuery } from "../../hooks/useGetRecipeByIdQuery.hook";
 import {

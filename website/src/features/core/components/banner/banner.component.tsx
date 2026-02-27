@@ -1,6 +1,6 @@
 import type { PropsWithChildren } from "preact/compat";
 import bannerStylesModule from "./banner.module.css";
-import { SuccessButton } from "../../../core/components/success-button/success-button.component";
+import { SuccessButton } from "../../../core/components/buttons/success-button.component";
 import { useNavigate } from "react-router";
 import type { ComponentChildren } from "preact";
 
@@ -71,7 +71,7 @@ export function ErrorBanner(props: PropsWithChildren<BannerProps>) {
 }
 
 /**
- * Reusable error banner component
+ * Reusable warning banner component
  */
 export function WarningBanner(props: PropsWithChildren<BannerProps>) {
   return <Banner icon="bi bi-exclamation-triangle" type="warning" {...props} />;
@@ -84,6 +84,9 @@ export function InformationBanner(props: PropsWithChildren<BannerProps>) {
   return <Banner icon="bi bi-info-circle" type="information" {...props} />;
 }
 
+/**
+ * Reusable success banner
+ */
 export function SuccessBanner(props: PropsWithChildren<BannerProps>) {
   return <Banner icon="bi bi-check2-circle" type="success" {...props} />;
 }

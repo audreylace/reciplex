@@ -1,4 +1,4 @@
-import { BadPathBanner } from "../../components/bad-path-banner/bad-path-banner.component";
+import { ApplicationErrorBanner } from "../../../core/components/banner/application-error-banner.component";
 import formCommonStylesModule from "../../../core/form-common/form-common.module.css";
 import { useParams } from "react-router";
 import { RecipeMutationLoader } from "../../components/recipe-loader/recipe-mutation-loader.component";
@@ -16,11 +16,12 @@ export function DeleteRecipePage() {
 
   return (
     <main className={`${formCommonStylesModule.formMain}`}>
-      {!recipeId && <BadPathBanner />}
+      {!recipeId && <ApplicationErrorBanner />}
       {recipeId && (
         <RecipeMutationLoader
           recipeId={recipeId}
           noCache
+          refetchInterval={10000}
           fetchingRender={
             <>
               <RecipeNameAndDescription />

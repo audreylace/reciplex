@@ -7,7 +7,7 @@ import {
 } from "../../../core/components/query-status-dispatch/query-status-dispatch.component";
 import { FetchingRecipeBanner } from "../../components/recipe-banners/fetching-recipe-banner.component";
 import { FetchingRecipeFailedBanner } from "../../components/recipe-banners/fetching-recipe-failed-banner.component";
-import { OfflineBanner } from "../../components/offline-banner/offline-banner.component";
+import { OfflineBanner } from "../../../core/components/banner/offline-banner.component";
 import { RecipeNotFoundBanner } from "../../components/recipe-banners/recipe-not-found-banner.component";
 import { makeRecipeNameAndDescriptionState } from "../../components/recipe-title-and-description/recipe-title-and-description.component";
 import { makeEditRecipePath } from "../../route-utils";
@@ -26,6 +26,29 @@ export function ViewRecipePageBody({
   /** the status of the fetch when `loadingStatus` is `pending` */
   fetchStatus: FetchStatus;
 }) {
+  return (
+    <QueryStatusDispatch
+      loadingStatus={loadingStatus}
+      error={<FetchingRecipeFailedBanner />}
+      pending={
+        <FetchingStatusDispatch
+          fetchStatus={fetchStatus}
+          fetching={<FetchingRecipeBanner />}
+          paused={<OfflineBanner />}
+          idle={<FetchingRecipeFailedBanner />}
+        />
+      }
+      success={<SuccessRender data={data} />}
+    />
+  );
+}
+
+function SuccessRender({
+  data,
+}: {
+  /** data fetched by the load */
+  data: IGetRecipeByIdResult | undefined | null;
+}) {
   const navigate = useNavigate();
   const goToEditAction = () => {
     if (!data) {
@@ -39,31 +62,15 @@ export function ViewRecipePageBody({
     });
   };
 
-  return (
-    <QueryStatusDispatch
-      loadingStatus={loadingStatus}
-      error={<FetchingRecipeFailedBanner />}
-      pending={
-        <FetchingStatusDispatch
-          fetchStatus={fetchStatus}
-          fetching={<FetchingRecipeBanner />}
-          paused={<OfflineBanner />}
-          idle={<FetchingRecipeFailedBanner />}
-        />
-      }
-      success={() => {
-        if (!data) {
-          return <RecipeNotFoundBanner />;
-        }
+  if (!data) {
+    return <RecipeNotFoundBanner />;
+  }
 
-        return (
-          <DetailsRender
-            detailsMd={data.recipe.details}
-            mayEdit={data.recipe.mayEdit}
-            goToEditAction={goToEditAction}
-          />
-        );
-      }}
+  return (
+    <DetailsRender
+      detailsMd={data.recipe.details}
+      mayEdit={data.recipe.mayEdit}
+      goToEditAction={goToEditAction}
     />
   );
 }

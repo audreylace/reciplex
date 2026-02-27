@@ -1,15 +1,19 @@
 import { useState } from "preact/hooks";
 import { useForm } from "react-hook-form";
-import { DangerButton } from "../../../core/components/danger-button/danger-button.component";
+import { DangerButton } from "../../../core/components/buttons/danger-button.component";
 import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
-import { SuccessButton } from "../../../core/components/success-button/success-button.component";
+import { SuccessButton } from "../../../core/components/buttons/success-button.component";
 import { useCreateRecipeMutation } from "../../hooks/useCreateRecipeMutation.hook";
 import { makeViewRecipePath } from "../../route-utils";
 import type { IRecipeBookModel } from "../../services/recipe-types";
 import { ActionFailedTryAgainCancel } from "../action-failed-try-again-cancel/action-failed-try-again-cancel.component";
 import { BookIsReadonlyBanner } from "../book-banners/book-is-readonly-banner.component";
 import { RecipeMetaFieldSet } from "../recipe-meta-field-set/recipe-meta-field-set.component";
-import { SuccessBanner } from "../../../core/components/banner/banner.component";
+import {
+  InformationBanner,
+  SuccessBanner,
+} from "../../../core/components/banner/banner.component";
+import { ApplicationErrorBanner } from "../../../core/components/banner/application-error-banner.component";
 
 /** form for creating a recipe */
 export function CreateRecipeForm({
@@ -76,9 +80,10 @@ export function CreateRecipeForm({
       );
     case "pending":
       return (
-        <>
-          <p>Creating recipe</p>
-        </>
+        <InformationBanner
+          title="Creating Recipe"
+          message="Publishing new recipe to the cloud. Do not leave or close this window."
+        />
       );
     case "success":
       return (
@@ -89,6 +94,8 @@ export function CreateRecipeForm({
           buttonCaption="open recipe"
         />
       );
+    default:
+      return <ApplicationErrorBanner />;
   }
 }
 

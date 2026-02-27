@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from "react-router";
 import { AppNavigation } from "../../features/core/components/app-navigation/app-navigation.component";
-import { SuccessButton } from "../../features/core/components/success-button/success-button.component";
+import { SuccessButton } from "../../features/core/components/buttons/success-button.component";
 
 export function DefaultLayout() {
   return (

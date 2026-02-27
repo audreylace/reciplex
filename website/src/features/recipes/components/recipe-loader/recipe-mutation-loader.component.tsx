@@ -1,4 +1,3 @@
-import { OfflineBanner } from "../offline-banner/offline-banner.component";
 import type {
   IRecipeBookModel,
   IRecipeModel,
@@ -7,6 +6,7 @@ import { useGetRecipeByIdQuery } from "../../hooks/useGetRecipeByIdQuery.hook";
 import { FetchingRecipeFailedBanner } from "../recipe-banners/fetching-recipe-failed-banner.component";
 import { RecipeNotFoundBanner } from "../recipe-banners/recipe-not-found-banner.component";
 import { FetchingRecipeBanner } from "../recipe-banners/fetching-recipe-banner.component";
+import { MutationLoader } from "../../../core/components/mutation-loader/mutation-loader.component";
 
 /**
  * loads the recipe data and then render using `onRender`.
@@ -25,31 +25,16 @@ export function RecipeMutationLoader({
     enabled,
   });
 
-  enabled ??= true;
-  if (!enabled) {
-    return null;
-  }
-
-  if (recipeQuery.isFetchedAfterMount) {
-    const data = recipeQuery.data;
-    if (!data) {
-      return <RecipeNotFoundBanner />;
-    }
-    return dataLoaderRender(data.book, data.recipe);
-  } else if (recipeQuery.isError) {
-    return <FetchingRecipeFailedBanner />;
-  } else if (recipeQuery.isPaused) {
-    return <OfflineBanner />;
-  }
-
-  if (!fetchingRender) {
-    return <FetchingRecipeBanner />;
-  }
-
-  if (typeof fetchingRender === "function") {
-    return fetchingRender();
-  }
-  return fetchingRender;
+  return (
+    <MutationLoader
+      enabled={enabled}
+      onRender={(data) => dataLoaderRender(data.book, data.recipe)}
+      notFound={<RecipeNotFoundBanner />}
+      queryResult={recipeQuery}
+      fetchingBanner={fetchingRender ?? <FetchingRecipeBanner />}
+      failureBanner={<FetchingRecipeFailedBanner />}
+    />
+  );
 }
 
 /** props for `RecipeMutationLoader` */
@@ -66,8 +51,5 @@ export interface RecipeMutationLoaderProps {
   noCache?: boolean;
   refetchInterval?: number;
   enabled?: boolean;
-  fetchingRender?:
-    | preact.ComponentChildren
-    | undefined
-    | (() => preact.ComponentChildren | undefined);
+  fetchingRender?: preact.ComponentChildren;
 }

@@ -1,5 +1,5 @@
 import { useParams } from "react-router";
-import { BadPathBanner } from "../../components/bad-path-banner/bad-path-banner.component";
+import { ApplicationErrorBanner } from "../../../core/components/banner/application-error-banner.component";
 import { RecipeMutationLoader } from "../../components/recipe-loader/recipe-mutation-loader.component";
 import { EditRecipeForm } from "../../components/edit-recipe-form/edit-recipe-form.component";
 import { useNavigate } from "react-router";
@@ -19,10 +19,11 @@ export function EditRecipePage() {
 
   return (
     <main className="pageMain">
-      {!recipeId && <BadPathBanner />}
+      {!recipeId && <ApplicationErrorBanner />}
       {recipeId && (
         <RecipeMutationLoader
           recipeId={recipeId}
+          refetchInterval={10000}
           fetchingRender={
             <>
               <RecipeNameAndDescription />

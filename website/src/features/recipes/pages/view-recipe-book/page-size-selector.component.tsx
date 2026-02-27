@@ -9,7 +9,7 @@ import { useRecipeListTableContext } from "./useRecipeListTableContext.hook";
 
 import styles from "./page-size-selector.module.css";
 import { Fragment } from "preact/jsx-runtime";
-import { SuccessButton } from "../../../core/components/success-button/success-button.component";
+import { SuccessButton } from "../../../core/components/buttons/success-button.component";
 
 /** selector control for choosing a page size */
 export function PageSizeSelector() {

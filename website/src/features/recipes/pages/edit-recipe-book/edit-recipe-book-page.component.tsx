@@ -1,4 +1,4 @@
-import { BadPathBanner } from "../../components/bad-path-banner/bad-path-banner.component";
+import { ApplicationErrorBanner } from "../../../core/components/banner/application-error-banner.component";
 import formStyles from "../../../core/form-common/form-common.module.css";
 import { useNavigate, useParams } from "react-router";
 import { makeViewRecipeBookPath } from "../../route-utils";
@@ -31,7 +31,7 @@ export function EditRecipeBookPage() {
 
   return (
     <main className={formStyles.formMain}>
-      {!bookId && <BadPathBanner />}
+      {!bookId && <ApplicationErrorBanner />}
       {bookId && (
         <>
           <BookInformationHeaderWithQuery bookId={bookId} />

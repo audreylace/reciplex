@@ -1,4 +1,4 @@
-import { SuccessButton } from "../success-button/success-button.component";
+import { SuccessButton } from "../buttons/success-button.component";
 
 import dropDownMenuStylesModule from "./drop-down-menu.module.css";
 import {

@@ -1,4 +1,4 @@
-import { BadPathBanner } from "../../components/bad-path-banner/bad-path-banner.component";
+import { ApplicationErrorBanner } from "../../../core/components/banner/application-error-banner.component";
 import { useNavigate, useParams } from "react-router";
 import { makeBookListPath, makeViewRecipeBookPath } from "../../route-utils";
 import { makeBookNameAndDescriptionState } from "../../components/book-information-header/book-information-header.component";
@@ -32,7 +32,7 @@ export function DeleteRecipeBookPage() {
   };
   return (
     <main className={`${formStyles.formMain}`}>
-      {!bookId && <BadPathBanner />}
+      {!bookId && <ApplicationErrorBanner />}
       {bookId && (
         <>
           <BookInformationHeaderWithQuery bookId={bookId} />

@@ -1,4 +1,4 @@
-import { InformationBanner } from "../../../core/components/banner/banner.component";
+import { InformationBanner } from "./banner.component";
 
 export function OfflineBanner() {
   return (

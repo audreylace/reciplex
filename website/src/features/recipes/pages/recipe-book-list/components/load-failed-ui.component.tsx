@@ -1,5 +1,5 @@
 import { TableMessage } from "./table-message/table-message.component";
-import { RetryBannerComponent } from "../../../components/retry-banner/retry-banner.component";
+import { RetryBannerComponent } from "../../../../core/components/banner/retry-banner.component";
 
 export function LoadFailedUi() {
   return (

@@ -1,8 +1,8 @@
 import { Fieldset, Legend, Field, Label, Input } from "@headlessui/react";
 import { useForm } from "react-hook-form";
-import { DangerButton } from "../../../core/components/danger-button/danger-button.component";
+import { DangerButton } from "../../../core/components/buttons/danger-button.component";
 import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
-import { PrimaryButton } from "../../../core/components/primary-button/primary-button.component";
+import { PrimaryButton } from "../../../core/components/buttons/primary-button.component";
 import type { IRecipeBookModel } from "../../services/recipe-types";
 import { useState } from "preact/hooks";
 import { useDeleteRecipeBookMutation } from "../../hooks/useDeleteRecipeBookMutation.hook";
@@ -10,6 +10,11 @@ import { useDeleteRecipeBookMutation } from "../../hooks/useDeleteRecipeBookMuta
 import formStyles from "../../../core/form-common/form-common.module.css";
 import { ActionFailedTryAgainCancel } from "../action-failed-try-again-cancel/action-failed-try-again-cancel.component";
 import { BookIsReadonlyBanner } from "../book-banners/book-is-readonly-banner.component";
+import { ApplicationErrorBanner } from "../../../core/components/banner/application-error-banner.component";
+import {
+  InformationBanner,
+  SuccessBanner,
+} from "../../../core/components/banner/banner.component";
 
 /**
  * Form for deleting a recipe book
@@ -59,6 +64,10 @@ export function DeleteRecipeBookForm({
     );
   }
 
+  if (!data.mayDelete) {
+    return <BookIsReadonlyBanner bookId={data.id} />;
+  }
+
   const cancelProxy = () => {
     onCancel({
       bookId: data.id,
@@ -67,10 +76,9 @@ export function DeleteRecipeBookForm({
     });
   };
 
-  return (
-    <>
-      {!data.mayDelete && <BookIsReadonlyBanner bookId={data.id} />}
-      {deleteRecipeBookMutation.status === "idle" && data.mayDelete && (
+  switch (deleteRecipeBookMutation.status) {
+    case "idle":
+      return (
         <form onSubmit={onSubmit}>
           <Fieldset className={formStyles.fieldSet}>
             <Legend className={formStyles.formLegend}>
@@ -101,17 +109,33 @@ export function DeleteRecipeBookForm({
             <PrimaryButton onClick={cancelProxy}>Cancel</PrimaryButton>
           </FormButtons>
         </form>
-      )}
-      {deleteRecipeBookMutation.isPending && <p>Deleting...</p>}
-      {deleteRecipeBookMutation.isError && (
+      );
+    case "pending":
+      return (
+        <InformationBanner
+          title="Deleting Recipe Book"
+          message="Deleting recipe book. Do not leave or close this window."
+        />
+      );
+    case "error":
+      return (
         <ActionFailedTryAgainCancel
           message="Something went wrong while deleting."
           cancelCaption="View Recipe Book"
           cancelAction={cancelProxy}
         />
-      )}
-    </>
-  );
+      );
+    case "success":
+      return (
+        <SuccessBanner
+          title="Recipe book deleted"
+          buttonCaption="Go home"
+          onButtonClick={onDeleted}
+        />
+      );
+    default:
+      return <ApplicationErrorBanner />;
+  }
 }
 
 /** props for the `DeleteRecipeBookForm` */

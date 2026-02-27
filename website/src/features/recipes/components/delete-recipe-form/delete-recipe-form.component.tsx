@@ -1,8 +1,8 @@
 import { Fieldset, Legend, Field, Label, Input } from "@headlessui/react";
 import { useForm } from "react-hook-form";
-import { DangerButton } from "../../../core/components/danger-button/danger-button.component";
+import { DangerButton } from "../../../core/components/buttons/danger-button.component";
 import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
-import { PrimaryButton } from "../../../core/components/primary-button/primary-button.component";
+import { PrimaryButton } from "../../../core/components/buttons/primary-button.component";
 import { useDeleteRecipeMutation } from "../../hooks/useDeleteRecipeMutation.hook";
 import type { IRecipeModel } from "../../services/recipe-types";
 import { useState } from "preact/hooks";
@@ -10,6 +10,8 @@ import { useState } from "preact/hooks";
 import formCommonStylesModule from "../../../core/form-common/form-common.module.css";
 import { ActionFailedTryAgainCancel } from "../action-failed-try-again-cancel/action-failed-try-again-cancel.component";
 import { RecipeIsReadonlyBanner } from "../recipe-banners/recipe-is-readonly-banner.component";
+import { InformationBanner } from "../../../core/components/banner/banner.component";
+import { ApplicationErrorBanner } from "../../../core/components/banner/application-error-banner.component";
 
 /** form for deleting a recipe */
 export function DeleteRecipeForm({
@@ -100,16 +102,24 @@ export function DeleteRecipeForm({
       );
 
     case "pending":
-      return <p>Deleting...</p>;
+      return (
+        <InformationBanner
+          title="Deleting Recipe"
+          message="Deleting recipe. Do not leave or close this window."
+        />
+      );
 
     case "error":
       return (
         <ActionFailedTryAgainCancel
-          message="Something went wrong while deleting."
+          message="Something went wrong while deleting the recipe."
           cancelCaption="View Recipe"
           cancelAction={onCancel}
         />
       );
+
+    default:
+      return <ApplicationErrorBanner />;
   }
 }
 

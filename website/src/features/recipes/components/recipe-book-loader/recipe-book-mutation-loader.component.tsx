@@ -1,9 +1,9 @@
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
 import { RecipeBookNotFoundBanner } from "../book-banners/recipe-book-not-found-banner.component";
 import { FetchingRecipeBookBanner } from "../book-banners/fetching-recipe-book-banner.component";
-import { OfflineBanner } from "../offline-banner/offline-banner.component";
 import { FetchingRecipeBookFailedBanner } from "../book-banners/fetching-recipe-book-failed-banner.component";
 import type { IRecipeBookModel } from "../../services/recipe-types";
+import { MutationLoader } from "../../../core/components/mutation-loader/mutation-loader.component";
 
 /**
  * loads the recipe book data and then render using `onRender`.
@@ -21,24 +21,16 @@ export function RecipeBookMutationLoader({
     enabled,
   });
 
-  enabled ??= true;
-  if (!enabled) {
-    return null;
-  }
-
-  if (recipeBookQuery.isFetchedAfterMount) {
-    const data = recipeBookQuery.data;
-    if (!data) {
-      return <RecipeBookNotFoundBanner />;
-    }
-    return onRender(data);
-  } else if (recipeBookQuery.isError) {
-    return <FetchingRecipeBookFailedBanner />;
-  } else if (recipeBookQuery.isPaused) {
-    return <OfflineBanner />;
-  }
-
-  return <FetchingRecipeBookBanner />;
+  return (
+    <MutationLoader
+      enabled={enabled}
+      onRender={(data) => onRender(data)}
+      notFound={<RecipeBookNotFoundBanner />}
+      queryResult={recipeBookQuery}
+      fetchingBanner={<FetchingRecipeBookBanner />}
+      failureBanner={<FetchingRecipeBookFailedBanner />}
+    />
+  );
 }
 
 /** props for `RecipeBookEditor` */
