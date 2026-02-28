@@ -484,4 +484,4 @@ $RECYCLE.BIN/
 *.swp
 
 
-/Server/Host/wwwroot/
+/src/Reciplex.Server.Host/wwwroot

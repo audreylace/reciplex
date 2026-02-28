@@ -5,9 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Database\Reciplex.Server.Database.csproj" />
-    <ProjectReference Include="..\RecipeServices\Reciplex.Server.RecipeServices.csproj" />
-    <ProjectReference Include="..\UserServices\Reciplex.Server.UserServices.csproj" />
+    <ProjectReference Include="..\Reciplex.Server.Database\Reciplex.Server.Database.csproj" />
+    <ProjectReference Include="..\Reciplex.Server.RecipeServices\Reciplex.Server.RecipeServices.csproj" />
+    <ProjectReference Include="..\Reciplex.Server.UserServices\Reciplex.Server.UserServices.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NodaTime" />

@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Database\Reciplex.Server.Database.csproj" />
+    <ProjectReference Include="..\Reciplex.Server.Database\Reciplex.Server.Database.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NodaTime" />

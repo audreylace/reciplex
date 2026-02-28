@@ -508,4 +508,4 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
-/src/Server/Host/wwwroot/
+/src/Reciplex.Server.Host/wwwroot
