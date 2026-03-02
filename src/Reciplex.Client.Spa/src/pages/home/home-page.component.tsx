@@ -1,3 +1,10 @@
+import { Input } from "@headlessui/react";
+import {
+  RecipeCstVisitor,
+  RecipeExpressionLexer,
+  RecipeParser,
+} from "../../features/recipes/utils/recipe-expressions/lexer2";
+
 /**
  * Entry point for home page component
  * @param param0 react props
@@ -8,6 +15,29 @@ export function HomePage() {
     <>
       <h1>Welcome to Reciplex!</h1>
       <p>Version: Alpha A</p>
+      <p>
+        <Input
+          style={{ width: "100%" }}
+          onChange={(e) => {
+            if (e.target && e.currentTarget.value) {
+              const lexingResult = RecipeExpressionLexer.tokenize(
+                e.currentTarget.value,
+              );
+              console.log(lexingResult);
+
+              const parser = new RecipeParser();
+              parser.input = lexingResult.tokens;
+
+              const cst = parser.recipeExpression();
+
+              console.log(cst);
+
+              const ast = new RecipeCstVisitor().visit(cst);
+              console.log(ast);
+            }
+          }}
+        />
+      </p>
     </>
   );
 }
