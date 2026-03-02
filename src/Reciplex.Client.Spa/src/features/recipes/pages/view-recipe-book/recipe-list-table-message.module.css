@@ -1,0 +1,11 @@
+.tableCell {
+  display: block;
+}
+
+.tableCell {
+  font-size: 1.3em;
+  display: block;
+  text-align: center;
+  padding-top: 1.6em;
+  padding-bottom: 0.8em;
+}

@@ -66,9 +66,7 @@ function SuccessRender({
 
   if (recipeData.recipes.length === 0) {
     return (
-      <RecipeListTableMessage>
-        <p>No recipe in this book</p>
-      </RecipeListTableMessage>
+      <RecipeListTableMessage>No recipes in this book</RecipeListTableMessage>
     );
   }
 
