@@ -4,6 +4,7 @@ import {
   RecipeExpressionLexer,
   RecipeParser,
 } from "../../features/recipes/utils/recipe-expressions/lexer2";
+import { RecipeExpressionLexer3 } from "../../features/recipes/utils/recipe-expressions/lexer3";
 
 /**
  * Entry point for home page component
@@ -20,20 +21,20 @@ export function HomePage() {
           style={{ width: "100%" }}
           onChange={(e) => {
             if (e.target && e.currentTarget.value) {
-              const lexingResult = RecipeExpressionLexer.tokenize(
+              const lexingResult = RecipeExpressionLexer3.tokenize(
                 e.currentTarget.value,
               );
               console.log(lexingResult);
 
-              const parser = new RecipeParser();
-              parser.input = lexingResult.tokens;
+              // const parser = new RecipeParser();
+              // parser.input = lexingResult.tokens;
 
-              const cst = parser.recipeExpression();
+              // const cst = parser.recipeExpression();
 
-              console.log(cst);
+              // console.log(cst);
 
-              const ast = new RecipeCstVisitor().visit(cst);
-              console.log(ast);
+              // const ast = new RecipeCstVisitor().visit(cst);
+              // console.log(ast);
             }
           }}
         />
