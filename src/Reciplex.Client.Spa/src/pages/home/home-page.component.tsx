@@ -4,7 +4,10 @@ import {
   RecipeExpressionLexer,
   RecipeParser,
 } from "../../features/recipes/utils/recipe-expressions/lexer2";
-import { RecipeExpressionLexer3 } from "../../features/recipes/utils/recipe-expressions/lexer3";
+import {
+  RecipeExpressionLexer3,
+  RecipeExpressionParser,
+} from "../../features/recipes/utils/recipe-expressions/lexer3";
 
 /**
  * Entry point for home page component
@@ -26,12 +29,12 @@ export function HomePage() {
               );
               console.log(lexingResult);
 
-              // const parser = new RecipeParser();
-              // parser.input = lexingResult.tokens;
+              const parser = new RecipeExpressionParser();
+              parser.input = lexingResult.tokens;
 
-              // const cst = parser.recipeExpression();
+              const cst = parser.recipeTextWithExpressions();
 
-              // console.log(cst);
+              console.log(cst);
 
               // const ast = new RecipeCstVisitor().visit(cst);
               // console.log(ast);

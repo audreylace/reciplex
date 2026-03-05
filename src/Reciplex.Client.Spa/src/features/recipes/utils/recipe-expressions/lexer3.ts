@@ -1,9 +1,11 @@
 import {
   createToken,
+  CstParser,
   Lexer,
   tokenMatcher,
   type CustomPatternMatcherReturn,
   type IToken,
+  type TokenType,
 } from "chevrotain";
 
 const sQuaredExpressionMode = "sQuaredExpression";
@@ -133,9 +135,15 @@ const DecimalExpressionToken = createToken({
   line_breaks: false,
 });
 
-const WhiteSpaceExpression = "WhiteSpaceExpression";
-const WhiteSpaceToken = createToken({
-  name: WhiteSpaceExpression,
+const FreeTextWhitespaceExpression = "FreeTextWhitespaceExpression";
+const FreeTextWhitespaceToken = createToken({
+  name: FreeTextWhitespaceExpression,
+  pattern: /\s+/,
+});
+
+const SQuaredWhitespaceExpression = "SQuaredWhitespaceExpression";
+const SQuaredWhitespaceExpressionToken = createToken({
+  name: SQuaredWhitespaceExpression,
   pattern: /\s+/,
 });
 
@@ -183,7 +191,10 @@ const AtomExpressionToken = createToken({
       } else if (matchedTokens.length >= 2) {
         if (
           isSExp(2) &&
-          tokenMatcher(matchedTokens[matchedTokens.length - 1], WhiteSpaceToken)
+          tokenMatcher(
+            matchedTokens[matchedTokens.length - 1],
+            SQuaredWhitespaceExpressionToken,
+          )
         ) {
           /* empty */
         } else if (isSExp(1)) {
@@ -214,7 +225,7 @@ function wasLastTokenSeparator(matchedTokens: IToken[]) {
 
   const lastToken = matchedTokens[matchedTokens.length - 1];
 
-  if (tokenMatcher(lastToken, WhiteSpaceToken)) {
+  if (tokenMatcher(lastToken, SQuaredWhitespaceExpressionToken)) {
     return true;
   }
 
@@ -280,23 +291,117 @@ function matchRegexWithStructure(
   };
 }
 
+const lexerModes: Record<string, TokenType[]> = {
+  [freeTextMode]: [
+    FreeTextWhitespaceToken,
+    OpeningSQuaredExpressionToken,
+    FreeTextExpressionToken,
+  ],
+  [sQuaredExpressionMode]: [
+    StringExpressionToken,
+    IntegerExpressionToken,
+    FractionExpressionToken,
+    DecimalExpressionToken,
+    AtomExpressionToken,
+    SQuaredWhitespaceExpressionToken,
+    ClosingSQuaredExpressionToken,
+    FreeTextLiteralToken,
+  ],
+};
+
+const lexerTokens = Object.keys(lexerModes).reduce((prev, k) => {
+  const list = lexerModes[k];
+  list.forEach((t) => prev.push(t));
+  return prev;
+}, [] as TokenType[]);
+
 export const RecipeExpressionLexer3 = new Lexer({
-  modes: {
-    [freeTextMode]: [
-      WhiteSpaceToken,
-      OpeningSQuaredExpressionToken,
-      FreeTextExpressionToken,
-    ],
-    [sQuaredExpressionMode]: [
-      StringExpressionToken,
-      IntegerExpressionToken,
-      FractionExpressionToken,
-      DecimalExpressionToken,
-      AtomExpressionToken,
-      WhiteSpaceToken,
-      ClosingSQuaredExpressionToken,
-      FreeTextLiteralToken,
-    ],
-  },
+  modes: lexerModes,
   defaultMode: freeTextMode,
 });
+
+export class RecipeExpressionParser extends CstParser {
+  constructor() {
+    super(lexerTokens);
+
+    this.RULE("recipeTextWithExpressions", () => {
+      this.MANY(() => {
+        this.SUBRULE(this.embeddedExpressionRule);
+      });
+      //   this.OR([
+      //     {
+      //       ALT: () => {
+      //         this.MANY(() => {
+      //           this.SUBRULE(this.embeddedExpressionRule);
+      //         });
+      //       },
+      //     },
+      //     {
+      //       ALT: () => {
+      //         this.MANY1(() => {
+      //           this.OR1([
+      //             { ALT: () => this.CONSUME(FreeTextExpressionToken) },
+      //             { ALT: () => this.CONSUME(FreeTextWhitespaceToken) },
+      //           ]);
+      //         });
+      //       },
+      //     },
+      //   ]);
+    });
+
+    this.RULE("embeddedExpressionRule", () => {
+      this.MANY(() => {
+        this.OR([
+          { ALT: () => this.CONSUME(FreeTextExpressionToken) },
+          { ALT: () => this.CONSUME(FreeTextWhitespaceToken) },
+        ]);
+      });
+      this.SUBRULE(this.commandExpressionRule);
+      this.MANY1(() => {
+        this.OR1([
+          { ALT: () => this.CONSUME1(FreeTextExpressionToken) },
+          { ALT: () => this.CONSUME1(FreeTextWhitespaceToken) },
+        ]);
+      });
+    });
+
+    this.RULE("commandExpressionRule", () => {
+      this.CONSUME(OpeningSQuaredExpressionToken);
+      this.OR([
+        { ALT: () => this.CONSUME(AtomExpressionToken) },
+        {
+          ALT: () => {
+            this.CONSUME(SQuaredWhitespaceExpressionToken);
+            this.CONSUME1(AtomExpressionToken);
+          },
+        },
+      ]);
+      this.MANY(() => {
+        this.CONSUME1(SQuaredWhitespaceExpressionToken);
+        this.SUBRULE(this.valueTokenRule);
+      });
+
+      this.OR1([
+        { ALT: () => this.CONSUME(ClosingSQuaredExpressionToken) },
+        {
+          ALT: () => {
+            this.CONSUME2(SQuaredWhitespaceExpressionToken);
+            this.CONSUME1(ClosingSQuaredExpressionToken);
+          },
+        },
+      ]);
+    });
+
+    this.RULE("valueTokenRule", () => {
+      this.OR([
+        { ALT: () => this.CONSUME(StringExpressionToken) },
+        { ALT: () => this.CONSUME(IntegerExpressionToken) },
+        { ALT: () => this.CONSUME(FractionExpressionToken) },
+        { ALT: () => this.CONSUME(DecimalExpressionToken) },
+        { ALT: () => this.CONSUME(FreeTextLiteralToken) },
+      ]);
+    });
+
+    this.performSelfAnalysis();
+  }
+}
