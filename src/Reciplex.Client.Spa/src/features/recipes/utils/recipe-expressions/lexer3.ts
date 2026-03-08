@@ -1,8 +1,20 @@
 import {
+  Alternation,
+  Alternative,
   createToken,
   CstParser,
+  GAstVisitor,
   Lexer,
+  NonTerminal,
+  Option,
+  Repetition,
+  RepetitionMandatory,
+  RepetitionMandatoryWithSeparator,
+  RepetitionWithSeparator,
+  Rule,
+  Terminal,
   tokenMatcher,
+  type CstNode,
   type CustomPatternMatcherReturn,
   type IToken,
   type TokenType,
@@ -403,5 +415,27 @@ export class RecipeExpressionParser extends CstParser {
     });
 
     this.performSelfAnalysis();
+  }
+}
+
+export const RecipeExpressionParserInstance = new RecipeExpressionParser();
+export class RecipeExpressionVisitor extends RecipeExpressionParserInstance.getBaseCstVisitorConstructorWithDefaults() {
+  constructor() {
+    super();
+    this.validateVisitor();
+  }
+
+  recipeTextWithExpressions(cstNode: CstNode) {
+    this.visit(cstNode.embeddedExpressionRule);
+  }
+
+  embeddedExpressionRule(cstNode: CstNode) {
+    this.visit(cstNode.commandExpressionRule);
+  }
+  commandExpressionRule(cstNode: CstNode) {
+    if (cstNode.AtomExpression) {
+      console.log(cstNode.AtomExpression[0].image);
+    }
+    //this.visit(cstNode.AtomExpression);
   }
 }

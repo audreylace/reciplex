@@ -50,11 +50,15 @@ export function CreateRecipePage() {
   );
 }
 
-function SuccessRender({
-  bookData,
-}: {
-  bookData: IRecipeBookModel | null | undefined;
-}) {
+/**
+ * Renders the create recipe form after the
+ * recipe book data has been successfully fetched.
+ * Handles navigation callbacks for cancel
+ * and after-create actions, and displays
+ * the recipe book not found banner if
+ * book data is unavailable.
+ */
+function SuccessRender({ bookData }: ISuccessRenderProps) {
   const {
     id: bookId,
     name: bookName,
@@ -88,4 +92,14 @@ function SuccessRender({
       onAfterCreated={onAfterCreated}
     />
   );
+}
+
+/**
+ * Props interface for the SuccessRender component.
+ */
+interface ISuccessRenderProps {
+  /**
+   * The fetched recipe book data containing id, name, and shortDescription.
+   */
+  bookData: IRecipeBookModel | null | undefined;
 }
