@@ -6,12 +6,24 @@ import {
   type IToken,
 } from "chevrotain";
 
+/**
+ * The name of the mode used when parsing S-squared expressions.
+ */
 const S_SquaredExpressionMode = "s-squared-expression-mode";
+
+/**
+ * The name of the default mode used when parsing free text outside of S-squared expressions.
+ */
 const FreeTextMode = "free-text-mode";
 
-export const S_SquaredOpeningToken = "s-squared-opening-tag";
 /**
- * Matches an opening S-squared expression
+ * The token that identifies the start of a recipe expression
+ */
+export const S_SquaredOpeningToken = "s-squared-opening-tag";
+
+/**
+ * The token definition for matching an opening S-squared expression tag.
+ * Matches the pattern `((` to enter S-squared expression parsing mode.
  */
 const S_SquaredOpeningTokenDef = createToken({
   name: S_SquaredOpeningToken,
@@ -19,9 +31,14 @@ const S_SquaredOpeningTokenDef = createToken({
   push_mode: S_SquaredExpressionMode,
 });
 
-export const S_SquaredClosingToken = "s-squared-closing-tag";
 /**
- * Matches a closing S-squared expression
+ * A token that ends a recipe expression
+ */
+export const S_SquaredClosingToken = "s-squared-closing-tag";
+
+/**
+ * The token definition for matching a closing S-squared expression tag.
+ * Matches the pattern `))` to exit S-squared expression parsing mode.
  */
 const S_SquaredClosingTokenDef = createToken({
   name: S_SquaredClosingToken,
@@ -29,10 +46,19 @@ const S_SquaredClosingTokenDef = createToken({
   pop_mode: true,
 });
 
-export const FreeTextLiteralToken = "free-text-literal";
-const FreeTextLiteralRegex = /([^\s(]|(\([^\s(]))+/y;
 /**
- * Matches free text outside of a S-squared expression
+ * Token that matches a set of non-whitespace characters outside of an expression
+ */
+export const FreeTextLiteralToken = "free-text-literal";
+
+/**
+ * Regex pattern for matching free text literals outside of S-squared expressions.
+ */
+const FreeTextLiteralRegex = /([^\s(]|(\([^\s(]))+/y;
+
+/**
+ * The token definition for matching free text literals outside of S-squared expressions.
+ * Matches text that is not whitespace or opening `((` tags.
  */
 const FreeTextLiteralTokenDef = createToken({
   name: FreeTextLiteralToken,
@@ -62,13 +88,29 @@ const FreeTextLiteralTokenDef = createToken({
   line_breaks: false,
 });
 
+/**
+ * Payload interface for S-squared quoted string tokens.
+ */
 export interface S_SquaredQuotedStringPayload {
+  /**
+   * the text value of the token
+   */
   textValue: string;
 }
-export const S_SquaredQuotedStringToken = "s-squared-quoted-string";
-const S_SquaredQuotedStringRegex = /"(?:[^"]|"")*"/y;
+
 /**
- * Matches a string expression
+ * Token holding a string value wrapped by quotes
+ */
+export const S_SquaredQuotedStringToken = "s-squared-quoted-string";
+
+/**
+ * Regex pattern for matching quoted string literals within S-squared expressions.
+ */
+const S_SquaredQuotedStringRegex = /"(?:[^"]|"")*"/y;
+
+/**
+ * The token definition for matching quoted string literals within S-squared expressions.
+ * Handles escaped quotes by consuming the character after `"`.
  */
 const S_SquaredQuotedStringTokenDef = createToken({
   name: S_SquaredQuotedStringToken,
@@ -96,16 +138,46 @@ const S_SquaredQuotedStringTokenDef = createToken({
   line_breaks: true,
 });
 
+/**
+ * Payload interface for S-squared text value tokens.
+ */
 export interface S_SquaredTextValuePayload {
+  /**
+   * extracted text value
+   */
   text: string;
 }
+
+/**
+ * Payload interface for S-squared real number value tokens.
+ */
 export interface S_SquaredRealValuePayload extends S_SquaredTextValuePayload {
+  /**
+   * computed real value of the number token
+   */
   realValue: number;
 }
+
+/**
+ * Payload interface for S-squared integer value tokens.
+ */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface S_SquaredIntegerPayload extends S_SquaredRealValuePayload {}
+
+/**
+ * Token matching an integer value in the text
+ */
 export const S_SquaredIntegerToken = "s-squared-integer";
+
+/**
+ * Regex pattern for matching integer literals within S-squared expressions.
+ */
 const S_SquaredIntegerRegex = /[0-9]([0-9]*)/y;
+
+/**
+ * The token definition for matching integer literals within S-squared expressions.
+ * Parses the matched string into an integer value.
+ */
 const S_SquaredIntegerTokenDef = createToken({
   name: S_SquaredIntegerToken,
   pattern: {
@@ -120,12 +192,34 @@ const S_SquaredIntegerTokenDef = createToken({
   line_breaks: false,
 });
 
+/**
+ * Payload interface for S-squared fraction value tokens.
+ */
 export interface S_SquaredFractionPayload extends S_SquaredRealValuePayload {
+  /**
+   * numerator of the fraction
+   */
   numerator: number;
+  /**
+   * denominator of the fraction
+   */
   denominator: number;
 }
+
+/**
+ * Token holding a fraction
+ */
 export const S_SquaredFractionToken = "s-squared-fraction";
+
+/**
+ * Regex pattern for matching fraction literals within S-squared expressions.
+ */
 const S_SquaredFractionRegex = /([0-9][0-9]*)\/([0-9][0-9]*)/y;
+
+/**
+ * The token definition for matching fraction literals within S-squared expressions.
+ * Parses the matched string into numerator, denominator, and real value.
+ */
 const S_SquaredFractionDef = createToken({
   name: S_SquaredFractionToken,
   pattern: {
@@ -143,10 +237,26 @@ const S_SquaredFractionDef = createToken({
   line_breaks: false,
 });
 
+/**
+ * Payload interface for S-squared decimal value tokens.
+ */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface S_SquaredDecimalTokenPayload extends S_SquaredRealValuePayload {}
+
+/**
+ * Token holding a decimal
+ */
 export const S_SquaredDecimalToken = "s-squared-decimal";
+
+/**
+ * Regex pattern for matching decimal number literals within S-squared expressions.
+ */
 const S_SquaredDecimalRegex = /([0-9]*)\.[0-9][0-9]*/y;
+
+/**
+ * The token definition for matching decimal number literals within S-squared expressions.
+ * Parses the matched string into a floating-point value.
+ */
 const S_SquaredDecimalTokenDef = createToken({
   name: S_SquaredDecimalToken,
   pattern: {
@@ -161,15 +271,35 @@ const S_SquaredDecimalTokenDef = createToken({
   line_breaks: false,
 });
 
+/**
+ * Free text token outside of a recipe expression
+ */
 export const FreeTextWhitespaceToken = "free-text-whitespace";
+
+/**
+ * The token definition for matching whitespace characters in free text mode.
+ * Matches one or more whitespace characters including newlines.
+ */
 const FreeTextWhitespaceTokenDef = createToken({
   name: FreeTextWhitespaceToken,
   pattern: /\s+/,
   line_breaks: true,
 });
 
+/**
+ * Regex matching whitespace sequence inside a recipe expression
+ */
 const S_SquaredWhitespaceRegex = /\s+/y;
+
+/**
+ * Token holding a sequence of whitespace characters inside of an expression
+ */
 export const S_SquaredWhitespaceToken = "s-squared-whitespace";
+
+/**
+ * The token definition for matching whitespace characters within S-squared expressions.
+ * Matches one or more whitespace characters including newlines.
+ */
 const S_SquaredWhitespaceTokenDef = createToken({
   name: S_SquaredWhitespaceToken,
   pattern: (text, startOffset) => {
@@ -183,9 +313,20 @@ const S_SquaredWhitespaceTokenDef = createToken({
   },
   line_breaks: true,
 });
-
+/**
+ * Token holding a sequence of unquoted non-whitespace characters
+ */
 export const S_SquaredTextLiteralToken = "s-squared-text-literal";
+
+/**
+ * Regex pattern for matching text literals within S-squared expressions.
+ */
 const S_SquaredTextLiteralRegex = /([^\s"]|(\)[^\s)]))+/y;
+
+/**
+ * The token definition for matching text literals within S-squared expressions.
+ * Matches text that is not whitespace, quotes, or closing `))` tags.
+ */
 const S_SquaredTextLiteralTokenDef = createToken({
   name: FreeTextLiteralToken,
   pattern: {
@@ -215,8 +356,22 @@ const S_SquaredTextLiteralTokenDef = createToken({
   line_breaks: false,
 });
 
+/**
+ * Token matching an expression atom. The atom is the expression command. See
+ * s-expression syntax for further reading.
+ */
 export const S_SquaredAtomToken = "s-squared-atom";
+
+/**
+ * Regex pattern for matching atom (identifier) literals within S-squared expressions.
+ */
 const S_SquaredAtomRegex = /[a-zA-Z][a-zA-Z0-9]*/y;
+
+/**
+ * The token definition for matching atom identifiers within S-squared expressions.
+ * Matches identifiers that start with a letter and contain only letters or digits.
+ * Validates that the token is followed by a terminal separator (whitespace or `))`).
+ */
 const S_SquaredAtomTokenDef = createToken({
   name: S_SquaredAtomToken,
   pattern: {
@@ -261,6 +416,11 @@ const S_SquaredAtomTokenDef = createToken({
   line_breaks: false,
 });
 
+/**
+ * Checks if the last matched token was a separator (whitespace or opening tag).
+ * @param matchedTokens The array of tokens matched so far.
+ * @returns `true` if the last token was a separator, `false` otherwise.
+ */
 function wasLastTokenSeparator(matchedTokens: IToken[]) {
   if (matchedTokens.length <= 0) {
     return false;
@@ -279,7 +439,18 @@ function wasLastTokenSeparator(matchedTokens: IToken[]) {
   return false;
 }
 
+/**
+ * Simple regex for checking if a character is whitespace
+ */
 const isCharacterWhitespaceRegex = /\s/;
+
+/**
+ * Checks if the character at the given offset is a terminal separator.
+ * A terminal separator is either end of string, whitespace, or closing `))`.
+ * @param text The text being parsed.
+ * @param startOffset The offset to check.
+ * @returns `true` if the character at the offset is a terminal separator.
+ */
 function isTerminalSeparator(text: string, startOffset: number) {
   if (startOffset === text.length) {
     return true;
@@ -297,6 +468,14 @@ function isTerminalSeparator(text: string, startOffset: number) {
   return false;
 }
 
+/**
+ * Matches a regex pattern and optionally transforms the result into a payload.
+ * Validates that the token is preceded by a separator and followed by a terminal separator.
+ * @param regEx The regex pattern to match.
+ * @param payloadCreator Optional function to transform the matched text into a payload.
+ * @param postResultHook Optional function to further process the result.
+ * @returns A CustomPatternMatcherReturn with the matched text and optional payload.
+ */
 function matchRegexWithStructure(
   regEx: RegExp,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -334,6 +513,12 @@ function matchRegexWithStructure(
   };
 }
 
+/**
+ * Transforms matched data into a text payload with optional custom value.
+ * @param dataToDecorate The matched data array.
+ * @param value Optional custom value to use for the payload text.
+ * @returns A CustomPatternMatcherReturn decorated with a text payload.
+ */
 function transformToTextPayload(
   dataToDecorate: [string] | RegExpMatchArray,
   value?: string,
@@ -345,6 +530,11 @@ function transformToTextPayload(
   return result;
 }
 
+/**
+ * The lexer for parsing recipe expressions with S-squared syntax.
+ * Supports parsing free text and S-squared expressions delimited by `((` and `))`.
+ * Handles atoms, numbers (integers, decimals, fractions), quoted strings, and text literals.
+ */
 export const RecipeExpressionLexer = new Lexer({
   modes: {
     [FreeTextMode]: [

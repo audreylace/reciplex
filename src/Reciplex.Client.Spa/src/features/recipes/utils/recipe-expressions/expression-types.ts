@@ -14,6 +14,9 @@ import {
   type S_SquaredTextValuePayload,
 } from "./expression-lexer";
 
+/**
+ * Helper for changing `IToken.payload` from `any` to `T`.
+ */
 type ITokenWithPayload<T> = Omit<IToken, "payload"> & { payload: T };
 
 /**
@@ -432,6 +435,9 @@ function mergeTextTokens(
   return value;
 }
 
+/**
+ * Set of extractors to run
+ */
 const modelExtractors = [echoCommandExtractor, recipeIngredientExtractor];
 
 /**
