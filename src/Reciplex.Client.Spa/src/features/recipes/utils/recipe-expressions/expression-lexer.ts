@@ -328,7 +328,7 @@ const S_SquaredTextLiteralRegex = /([^\s"]|(\)[^\s)]))+/y;
  * Matches text that is not whitespace, quotes, or closing `))` tags.
  */
 const S_SquaredTextLiteralTokenDef = createToken({
-  name: FreeTextLiteralToken,
+  name: S_SquaredTextLiteralToken,
   pattern: {
     exec: matchRegexWithStructure(
       S_SquaredTextLiteralRegex,

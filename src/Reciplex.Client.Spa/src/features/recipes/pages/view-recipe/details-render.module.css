@@ -16,3 +16,12 @@
 .detailsWrapper > *:last-child {
   margin-bottom: 0;
 }
+
+.ingredientText {
+  border-bottom: 1px dotted grey;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    cursor: help;
+  }
+}

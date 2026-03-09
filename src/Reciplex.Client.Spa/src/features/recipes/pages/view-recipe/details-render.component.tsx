@@ -1,32 +1,116 @@
 import Markdown from "react-markdown";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
-import { visit } from "unist-util-visit";
-import { visitParents } from "unist-util-visit-parents";
-import type { Node as UNode } from "@types/unist";
-import type { Root, Text as MDastText } from "mdast";
-import { is } from "unist-util-is";
-
-import { findAndReplace } from "mdast-util-find-and-replace";
-
 import detailsRenderStyleModule from "./details-render.module.css";
-import {} from "../../utils/recipe-expressions/lexer2";
-import type { HTMLAttributes } from "preact";
+
 import {
-  RecipeExpressionLexer3,
-  RecipeExpressionParser,
-  RecipeExpressionParserInstance,
-  RecipeExpressionVisitor,
-} from "../../utils/recipe-expressions/lexer3";
-import type { IToken } from "chevrotain";
+  RecipeAstElementAttributes,
+  RecipeAstElements,
+  RecipeAstToHastHandlers,
+  recipeExpressionSyntax,
+  RecipeFreeformIngredientElement,
+  RecipeIngredientWithUnit,
+  type RecipeExpressionAstNodeData,
+} from "../../utils/recipe-expressions/md-to-expressions";
+import { useContext, useEffect, useState } from "preact/hooks";
+import { unified } from "unified";
+import remarkParse from "remark-parse";
+import type { Root } from "mdast";
+import type {
+  RecipeIngredientFreeformModel,
+  RecipeIngredientWithUnitModel,
+} from "../../utils/recipe-expressions/expression-types";
+import { createContext } from "preact";
+import { visitParents } from "unist-util-visit-parents";
+
+/**
+ * The model for the recipe details context
+ */
+interface RecipeDetailsContextModel {
+  /**
+   * The markdown text
+   */
+  markdownText: string;
+  /**
+   * the expressions in order of walking the tree
+   */
+  expressions: RecipeExpressionAstNodeData[];
+  expressionByPosition: Record<number, RecipeExpressionAstNodeData>;
+  /**
+   * Mapping from proper command name to the actual expressions index from the tree
+   */
+  expressionVariables: Record<string, RecipeExpressionAstNodeData>;
+  /**
+   * the markdown AST tree root
+   */
+  mdAstRoot: Root;
+}
+
+/**
+ * The recipe details context
+ */
+const RecipeDetailsContext = createContext<RecipeDetailsContextModel | null>(
+  null,
+);
+
+type ExtendedNodeTypes<T> =
+  | T
+  | {
+      type: "recipeIngredientWithUnit";
+      data: { position: number; expression: RecipeIngredientWithUnitModel };
+    }
+  | {
+      type: "recipeIngredientFreeform";
+      data: { position: number; expression: RecipeIngredientFreeformModel };
+    };
 
 /** renders the recipe details */
 export function DetailsRender(props: DetailsRenderProps) {
+  const [detailsContextModel, setDetailsContextModel] =
+    useState<RecipeDetailsContextModel | null>(null);
+
+  useEffect(() => {
+    if (props.detailsMd) {
+      const processor = unified().use(remarkParse);
+      const ast = processor.parse(props.detailsMd);
+      recipeExpressionSyntax()(ast);
+
+      const expressions: RecipeExpressionAstNodeData[] = [];
+      const expressionByPosition: Record<number, RecipeExpressionAstNodeData> =
+        {};
+      visitParents(ast, (node) => {
+        const extendedNode: ExtendedNodeTypes<typeof node> =
+          node as unknown as ExtendedNodeTypes<typeof node>;
+        switch (extendedNode.type) {
+          case RecipeFreeformIngredientElement:
+          case RecipeIngredientWithUnit:
+            expressions.push(extendedNode.data);
+            expressionByPosition[extendedNode.data.position] =
+              extendedNode.data;
+            break;
+        }
+      });
+
+      setDetailsContextModel({
+        markdownText: props.detailsMd,
+        expressionVariables: {},
+        expressions: expressions,
+        mdAstRoot: ast,
+        expressionByPosition: expressionByPosition,
+      });
+      return;
+    }
+    setDetailsContextModel(null);
+  }, [props.detailsMd]);
+
   return (
     <>
-      <h4>Recipe Details</h4>
-      <div className={detailsRenderStyleModule.detailsWrapper}>
-        <DetailsMdRender {...props} />
-      </div>
+      <RecipeDetailsContext.Provider value={detailsContextModel}>
+        <h4>Recipe Details</h4>
+        <IngredientList />
+        <div className={detailsRenderStyleModule.detailsWrapper}>
+          <DetailsMdRender {...props} />
+        </div>
+      </RecipeDetailsContext.Provider>
     </>
   );
 }
@@ -36,11 +120,11 @@ const customSchema = {
   tagNames: [
     // @ts-expect-error expanding tagNames is the expected pattern for rehype-remark per their docs
     ...defaultSchema.tagNames,
-    "recipe", // Add your custom element name here
+    ...RecipeAstElements,
   ],
   attributes: {
     ...defaultSchema.attributes,
-    recipe: ["*"],
+    ...RecipeAstElementAttributes,
   },
 };
 
@@ -49,6 +133,24 @@ export interface DetailsRenderProps {
   detailsMd?: string;
   mayEdit: boolean;
   goToEditAction: () => void;
+}
+
+function IngredientList() {
+  const detailsContext = useContext(RecipeDetailsContext);
+
+  if (!detailsContext) {
+    return null;
+  }
+
+  return (
+    <>
+      <ul>
+        {detailsContext.expressions.map((node) => (
+          <li key={node.position}>{node.expression.text}</li>
+        ))}
+      </ul>
+    </>
+  );
 }
 
 /** inner md render */
@@ -78,30 +180,15 @@ function DetailsMdRender({
   return (
     <Markdown
       rehypePlugins={[[rehypeSanitize, customSchema]]}
-      remarkPlugins={[/*extractRecipeSyntax,*/ extractRecipeSyntax2]}
-      allowedElement={"recipe"}
+      remarkPlugins={[recipeExpressionSyntax]}
+      allowedElements={customSchema.tagNames}
       remarkRehypeOptions={{
-        handlers: {
-          recipe: (state, node) => {
-            //return h("recipe", { className: "custom-node" }, node.children);
-
-            return {
-              type: "element",
-              tagName: "recipe",
-              properties: {
-                value: node.value,
-              },
-              children: [],
-            };
-          },
-        },
+        // @ts-expect-error not picking up hast custom elements properly
+        handlers: RecipeAstToHastHandlers,
       }}
       components={{
-        recipe: (props: HTMLAttributes<HTMLElement>) => {
-          console.log(props.className);
-
-          return <span>{props.value}</span>;
-        },
+        // @ts-expect-error not picking up hast custom elements properly
+        recipeExpressionNode: RecipeIngredientRender,
       }}
     >
       {detailsMd}
@@ -109,97 +196,34 @@ function DetailsMdRender({
   );
 }
 
-export function extractRecipeSyntax() {
-  return function (tree) {
-    findAndReplace(tree, [
-      /\(\(\s(?:[^()]|"\(|"\))*?\s\)\)/g,
-      function (value, node) {
-        //console.log(`${value} : ${node}`);
-        //console.log(node);
-        //console.log(selectedString);
+function RecipeIngredientRender({ position }: { position: number }) {
+  const detailsContext = useContext(RecipeDetailsContext);
 
-        return { type: "recipe-expression", value: value };
-        // return "gotcha";
-      },
-    ]);
-  };
+  if (!detailsContext) {
+    return null;
+  }
+
+  const node = detailsContext.expressionByPosition[position];
+  if (!node) {
+    return null;
+  }
+
+  switch (node.expression.tag) {
+    case "ingredient-freeform":
+      return (
+        <span className={detailsRenderStyleModule.ingredientText}>
+          {node.expression.text}
+        </span>
+      );
+    case "ingredient-with-unit":
+      return (
+        <span className={detailsRenderStyleModule.ingredientText}>
+          {node.expression.amountText} {node.expression.unit}
+          {" of "}
+          {node.expression.text}
+        </span>
+      );
+  }
+
+  return null;
 }
-
-function extractRecipeSyntax2() {
-  return (tree: Root) => {
-    visitParents(tree, function (node: UNode, parents: UNode[]) {
-      if (is(node, "text")) {
-        const textNode = node as MDastText;
-        const lexingResult = RecipeExpressionLexer3.tokenize(textNode.value);
-
-        let tokenSet: IToken[] = [];
-        let isInExpression = false;
-        const groups: IToken[][] = [];
-        lexingResult.tokens.forEach((token) => {
-          if (token.tokenType.name === "OpeningSQuaredExpression") {
-            isInExpression = true;
-            tokenSet = [];
-          }
-
-          if (isInExpression) {
-            //console.log(token);
-            tokenSet.push(token);
-          }
-          if (token.tokenType.name === "ClosingSQuaredExpression") {
-            isInExpression = false;
-            groups.push(tokenSet);
-            tokenSet = [];
-          }
-        });
-
-        groups.forEach((set) => {
-          if (set.length < 3) {
-            return;
-          }
-
-          const atomIndex = set.findIndex(
-            (t) => t.tokenType.name === "AtomExpression",
-          );
-          if (atomIndex === 1 || atomIndex === 2) {
-            if (
-              atomIndex === 2 &&
-              set[1].tokenType.name !== "SQuaredWhitespaceExpression"
-            ) {
-              return;
-            }
-          }
-          console.log(set[atomIndex].image);
-        });
-
-        //RecipeExpressionParserInstance.input = lexingResult.tokens;
-        //const cst = RecipeExpressionParserInstance.recipeTextWithExpressions();
-        //const visitor = new RecipeExpressionVisitor();
-        //if (cst) {
-        //   //console.log(cst);
-        //   console.log(visitor.visit(cst));
-        //visitor.visit(cst);
-        // }
-      }
-    });
-  };
-}
-
-type RecipeModelTags = "ingredient-freeform" | "ingredient-with-unit";
-type RecipeModels = RecipeIngredientFreeform | RecipeIngredientWithUnit;
-interface RecipeIngredientFreeform extends RecipeModel {
-  text: string;
-  tag: "ingredient-freeform";
-}
-
-interface RecipeIngredientWithUnit extends RecipeModel {
-  text: string;
-  amount: number;
-  unit: string;
-  tag: "ingredient-with-unit";
-}
-
-interface RecipeModel {
-  tag: RecipeModelTags;
-}
-
-function RecipeIngredientFreeformExtractor(): RecipeIngredientFreeform | null {}

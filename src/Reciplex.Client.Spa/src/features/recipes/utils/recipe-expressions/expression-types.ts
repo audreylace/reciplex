@@ -66,6 +66,10 @@ export interface RecipeIngredientWithUnitModel extends RecipeExpressionModel {
    */
   unit: string;
   /**
+   * the amount as text
+   */
+  amountText: string;
+  /**
    * @inheritdoc
    */
   tag: "ingredient-with-unit";
@@ -191,9 +195,20 @@ function extractExpressionArgumentsFromStack(
     return null;
   }
 
+  if (tokenStack[startOffset].tokenType.name === S_SquaredClosingToken) {
+    return [[], startOffset + 1];
+  }
+
   for (let endIndex = startOffset; endIndex < tokenStack.length; endIndex++) {
     if (tokenStack[endIndex].tokenType.name === S_SquaredClosingToken) {
-      return [tokenStack.slice(startOffset, endIndex), endIndex + 1];
+      if (
+        endIndex > startOffset + 1 &&
+        tokenStack[endIndex - 1].tokenType.name === S_SquaredWhitespaceToken
+      ) {
+        return [tokenStack.slice(startOffset + 1, endIndex - 1), endIndex + 1];
+      }
+
+      return [tokenStack.slice(startOffset + 1, endIndex), endIndex + 1];
     }
 
     // look for bad tokens
@@ -310,6 +325,7 @@ function recipeIngredientExtractor({
       amount: amount,
       startIndex: rawStartIndex,
       endIndex: rawEndIndex,
+      amountText: args[0].payload.text,
       text: text,
     };
   }
@@ -467,7 +483,7 @@ export function parseRecipeExpressionFromStack(
   }
 
   // extract the atom from the opening expression if there is one
-  const extractedToken = extractAtomTokenFromStack(tokenStack, startOffset);
+  const extractedToken = extractAtomTokenFromStack(tokenStack, startOffset + 1);
   if (!extractedToken) {
     //
     // `extractAtomTokenFromStack` returns null if there is not an
