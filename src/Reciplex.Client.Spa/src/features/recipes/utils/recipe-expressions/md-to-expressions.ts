@@ -132,7 +132,7 @@ function MarkDownTreeVisiter(tree: Root) {
         return;
       }
       childrenArray.splice(nodeIndex, 1, ...newChildren);
-      return nodeIndex + (newChildren.length - 1);
+      return nodeIndex + newChildren.length;
     }
   });
 }

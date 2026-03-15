@@ -1,23 +1,17 @@
 import type { IToken } from "chevrotain";
 import {
+  isNumberToken,
+  isTextNumberOrWhitespaceToken,
+  isTextOrNumberToken,
+  isTextToken,
+  isWhitespaceToken,
+  mergeTextTokens,
   RecipeExpressionLexer,
-  S_SquaredAtomToken,
-  S_SquaredClosingToken,
-  S_SquaredDecimalToken,
-  S_SquaredFractionToken,
-  S_SquaredIntegerToken,
-  S_SquaredOpeningToken,
-  S_SquaredQuotedStringToken,
-  S_SquaredTextLiteralToken,
-  S_SquaredWhitespaceToken,
-  type S_SquaredRealValuePayload,
-  type S_SquaredTextValuePayload,
+  RExpAtomName,
+  RExpEndName,
+  RExpStartName,
+  RExpWhitespaceName,
 } from "./expression-lexer";
-
-/**
- * Helper for changing `IToken.payload` from `any` to `T`.
- */
-type ITokenWithPayload<T> = Omit<IToken, "payload"> & { payload: T };
 
 /**
  * the set of tags identifying each recipe model
@@ -161,15 +155,15 @@ function extractAtomTokenFromStack(
   startOffset: number,
 ): [string, number] | null {
   const firstToken = tokenStack[startOffset];
-  if (firstToken?.tokenType.name === S_SquaredAtomToken) {
+  if (firstToken?.tokenType.name === RExpAtomName) {
     return [firstToken.image, startOffset + 1];
   }
-  if (firstToken?.tokenType.name !== S_SquaredWhitespaceToken) {
+  if (!isWhitespaceToken(firstToken)) {
     return null;
   }
 
   const secondToken = tokenStack[startOffset + 1];
-  if (secondToken?.tokenType.name === S_SquaredAtomToken) {
+  if (secondToken?.tokenType.name === RExpAtomName) {
     return [secondToken.image, 2 + startOffset];
   }
 
@@ -188,22 +182,22 @@ function extractExpressionArgumentsFromStack(
 ): [IToken[], number] | null {
   if (
     tokenStack.length === startOffset ||
-    (tokenStack[startOffset].tokenType.name !== S_SquaredWhitespaceToken &&
-      tokenStack[startOffset].tokenType.name !== S_SquaredClosingToken)
+    (tokenStack[startOffset].tokenType.name !== RExpWhitespaceName &&
+      tokenStack[startOffset].tokenType.name !== RExpEndName)
   ) {
     // bad spacer token. After atom only closing or whitespace should come.
     return null;
   }
 
-  if (tokenStack[startOffset].tokenType.name === S_SquaredClosingToken) {
+  if (tokenStack[startOffset].tokenType.name === RExpEndName) {
     return [[], startOffset + 1];
   }
 
   for (let endIndex = startOffset; endIndex < tokenStack.length; endIndex++) {
-    if (tokenStack[endIndex].tokenType.name === S_SquaredClosingToken) {
+    if (tokenStack[endIndex].tokenType.name === RExpEndName) {
       if (
         endIndex > startOffset + 1 &&
-        tokenStack[endIndex - 1].tokenType.name === S_SquaredWhitespaceToken
+        tokenStack[endIndex - 1].tokenType.name === RExpWhitespaceName
       ) {
         return [tokenStack.slice(startOffset + 1, endIndex - 1), endIndex + 1];
       }
@@ -269,7 +263,7 @@ function echoCommandExtractor({
   rawEndIndex,
   args,
 }: IExpressionExtractionContext): RecipeEchoModel | null {
-  if (atom !== "echo") {
+  if (atom !== "echo" && atom !== "e") {
     return null;
   }
   const text = mergeTextTokens(args);
@@ -299,7 +293,7 @@ function recipeIngredientExtractor({
   | RecipeIngredientWithUnitModel
   | RecipeIngredientFreeformModel
   | null {
-  if (atom !== "ingredient") {
+  if (atom !== "ingredient" && atom !== "i") {
     return null;
   }
 
@@ -345,113 +339,6 @@ function recipeIngredientExtractor({
 }
 
 /**
- * Checks if a token represents a numeric value (integer, decimal, or fraction).
- * @param token the token to check
- * @returns true if the token is a number type, false otherwise
- */
-function isNumberToken(
-  token: IToken | undefined | null,
-): token is ITokenWithPayload<S_SquaredRealValuePayload> {
-  switch (token?.tokenType.name) {
-    case S_SquaredIntegerToken:
-    case S_SquaredDecimalToken:
-    case S_SquaredFractionToken:
-      return true;
-  }
-
-  return false;
-}
-
-/**
- * Checks if a token represents a text value (quoted string or text literal).
- * @param token the token to check
- * @returns true if the token is a text type, false otherwise
- */
-function isTextToken(
-  token: IToken | undefined | null,
-): token is ITokenWithPayload<S_SquaredTextValuePayload> {
-  switch (token?.tokenType.name) {
-    case S_SquaredQuotedStringToken:
-    case S_SquaredTextLiteralToken:
-      return true;
-  }
-
-  return false;
-}
-
-/**
- * Checks if a token represents either a text value or a numeric value.
- * @param token the token to check
- * @returns true if the token is text or number, false otherwise
- */
-function isTextOrNumberToken(
-  token: IToken | undefined | null,
-): token is ITokenWithPayload<
-  S_SquaredTextValuePayload | S_SquaredRealValuePayload
-> {
-  if (isTextToken(token)) {
-    return true;
-  }
-
-  return isNumberToken(token);
-}
-
-/**
- * Checks if a token represents either text, number, or whitespace.
- * @param token the token to check
- * @returns true if the token is text, number, or whitespace, false otherwise
- */
-function isTextNumberOrWhitespaceToken(
-  token: IToken | undefined | null,
-): token is
-  | ITokenWithPayload<S_SquaredTextValuePayload>
-  | ITokenWithPayload<S_SquaredRealValuePayload> {
-  if (isTextOrNumberToken(token)) {
-    return true;
-  }
-
-  return isWhitespaceToken(token);
-}
-
-/**
- * Checks if a token represents whitespace.
- * @param token the token to check
- * @returns true if the token is whitespace, false otherwise
- */
-function isWhitespaceToken(
-  token: IToken | undefined | null,
-): token is ITokenWithPayload<S_SquaredTextValuePayload> {
-  return token?.tokenType.name === S_SquaredWhitespaceToken;
-}
-
-/**
- * Merges multiple text tokens into a single string value.
- * Skips non-text tokens (numbers, whitespace) and concatenates text payloads.
- * @param tokens the array of tokens to merge
- * @param startOffset the optional start index (defaults to 0)
- * @param endOffset the optional end index (defaults to tokens.length)
- * @returns the concatenated text string, or null if any non-text token is encountered
- */
-function mergeTextTokens(
-  tokens: IToken[],
-  startOffset?: number,
-  endOffset?: number,
-) {
-  endOffset ??= tokens.length;
-  startOffset ??= 0;
-  let value = "";
-  for (let i = startOffset; i < endOffset && i < tokens.length; i++) {
-    const currentToken = tokens[i];
-    if (!isTextNumberOrWhitespaceToken(currentToken)) {
-      return null;
-    }
-    value += currentToken.payload.text;
-  }
-
-  return value;
-}
-
-/**
  * Set of extractors to run
  */
 const modelExtractors = [echoCommandExtractor, recipeIngredientExtractor];
@@ -471,7 +358,7 @@ export function parseRecipeExpressionFromStack(
   // scan forward looking for an opening token
   let foundOpening = false;
   for (; startOffset < tokenStack.length; startOffset++) {
-    if (tokenStack[startOffset].tokenType.name === S_SquaredOpeningToken) {
+    if (tokenStack[startOffset].tokenType.name === RExpStartName) {
       foundOpening = true;
       break;
     }
