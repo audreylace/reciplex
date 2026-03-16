@@ -5,7 +5,8 @@ import type { Root, Text as MdAstTextNode } from "mdast";
 import {
   parseTextForRecipeExpression,
   type ICommandTokens,
-  type RExpIngredientCommand,
+  type IRExpIngredientCommand,
+  type IRExpToolCommand,
 } from "./expression-syntax-v2";
 
 /**
@@ -17,39 +18,53 @@ export function recipeExpressionSyntaxPlugin() {
   return (tree: Root) => recipeSyntaxMarkDownTreeVisiter(tree);
 }
 
-export const RecipeAstElements = ["recipeExpression"];
+export type RecipeAstNodes =
+  | RecipeIngredientExpressionAstNode
+  | RecipeToolExpressionAstNode;
+
+export const RecipeAstElements = [
+  "recipeIngredientExpression",
+  "recipeToolExpression",
+];
 export const RecipeAstElementAttributes: Record<string, string[]> = {
-  recipeExpression: ["position"],
+  recipeIngredientExpression: ["position"],
+  recipeToolExpression: ["position"],
 };
 
-export type RecipeExpressionAstNodeData = {
+export type RecipeExpressionAstNodeData<TCommand> = {
   position: number;
-  command: RExpIngredientCommand;
+  command: TCommand;
 };
 
-export type RecipeExpressionAstNode = {
-  type: "recipeExpression";
-  data: RecipeExpressionAstNodeData;
+export type RecipeIngredientExpressionAstNode = {
+  type: "recipeIngredientExpression";
+  data: RecipeExpressionAstNodeData<IRExpIngredientCommand>;
 };
 
-function mapExpressionAstToHast(_: unknown, node: RecipeExpressionAstNode) {
+export type RecipeToolExpressionAstNode = {
+  type: "recipeToolExpression";
+  data: RecipeExpressionAstNodeData<IRExpToolCommand>;
+};
+
+function mapExpressionAstToHast(_: unknown, node: RecipeAstNodes) {
   return {
     type: "element",
-    tagName: "recipeExpression",
+    tagName: node.type,
     properties: {
-      position: node.data.position, // in Hast conversion, strip away all data except the position.
+      position: node.data.position,
     },
     children: [],
   };
 }
 
 export const RecipeAstToHastHandlers = {
-  recipeExpression: mapExpressionAstToHast,
+  recipeIngredientExpression: mapExpressionAstToHast,
+  recipeToolExpression: mapExpressionAstToHast,
 };
 
 export function recipeSyntaxMarkDownTreeVisiter(
   tree: Root,
-  onCreated?: (node: RecipeExpressionAstNode) => void,
+  onCreated?: (node: RecipeAstNodes) => void,
 ) {
   let position = 0;
   visitParents(tree, function (node: AstNode, parents: AstNode[]) {
@@ -86,7 +101,7 @@ export function recipeSyntaxMarkDownTreeVisiter(
 
       const newChildren: AstNode[] = [];
       for (const segment of segments) {
-        let maybeCommandNode: MdAstTextNode | RecipeExpressionAstNode;
+        let maybeCommandNode: RecipeAstNodes | MdAstTextNode;
         switch (segment.type) {
           case "outside-text": // preserve existing text
             newChildren.push({
@@ -96,7 +111,10 @@ export function recipeSyntaxMarkDownTreeVisiter(
             break;
           case "command":
             maybeCommandNode = handleCommand(segment, () => position++);
-            if (maybeCommandNode.type === "recipeExpression") {
+            if (
+              maybeCommandNode.type === "recipeIngredientExpression" ||
+              maybeCommandNode.type === "recipeToolExpression"
+            ) {
               onCreated?.(maybeCommandNode);
             }
             newChildren.push(maybeCommandNode);
@@ -117,7 +135,10 @@ export function recipeSyntaxMarkDownTreeVisiter(
 function handleCommand(
   commandTokens: ICommandTokens,
   nextId: () => number,
-): MdAstTextNode | RecipeExpressionAstNode {
+):
+  | MdAstTextNode
+  | RecipeIngredientExpressionAstNode
+  | RecipeToolExpressionAstNode {
   // echo gets turned into a text node
   if (commandTokens.command?.tag === "echo") {
     return {
@@ -129,7 +150,14 @@ function handleCommand(
   if (commandTokens.command?.tag === "ingredient") {
     return {
       data: { command: commandTokens.command, position: nextId() },
-      type: "recipeExpression",
+      type: "recipeIngredientExpression",
+    };
+  }
+
+  if (commandTokens.command?.tag === "tool") {
+    return {
+      data: { command: commandTokens.command, position: nextId() },
+      type: "recipeToolExpression",
     };
   }
 

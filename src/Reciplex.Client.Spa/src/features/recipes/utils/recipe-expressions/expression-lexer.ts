@@ -6,28 +6,40 @@ import {
   type IToken,
   type TokenType,
 } from "chevrotain";
-import type { INamedTokenType, ITokenWithPayload } from "./type-helpers";
+
+/**
+ * Helper for changing `IToken.payload` from `any` to `T`.
+ */
+type TokenWithPayload<T> = Omit<IToken, "payload"> & { payload: T };
+
+/**
+ * Helper for stronger typing the name property on `TokenType`
+ * @typeParam TName - the new type of for `name`. Must derive from `string`.
+ */
+type NamedTokenType<TName> = Omit<TokenType, "name"> & { name: TName };
 
 /**
  * Base pattern of a recipe expression token
- * @type TName the value for token name
- * @type TPayload the payload of the token if any
+ * @typeParam TName - the type for token name
+ * @typeParam TPayload - the payload of the token. `undefined` by default.
  */
-export type IRecipeExpressionToken<TName, TPayload = undefined> = Omit<
-  ITokenWithPayload<TPayload>,
+export type RecipeExpressionToken<TName, TPayload = ITextValuePayload> = Omit<
+  TokenWithPayload<TPayload>,
   "tokenType"
-> & { tokenType: INamedTokenType<TName> };
+> & { tokenType: NamedTokenType<TName> };
 
 /**
  * Helper type to grab the name from a `IToken`
- * @type T the type to extract name from
+ * @typeParam TExtendedTokenType - the type to extract name from
  */
-type ExtractTokenName<T extends IToken> = T["tokenType"]["name"];
+type ExtractTokenName<TExtendedTokenType extends IToken> =
+  TExtendedTokenType["tokenType"]["name"];
 
 /**
  * Payload interface for S-squared text value tokens.
+ * @typeParam TText - the type of `text`. Must extend from `string`.
  */
-export interface TextValuePayload<TText extends string = string> {
+export interface ITextValuePayload<TText extends string = string> {
   /**
    * extracted text value
    */
@@ -35,9 +47,10 @@ export interface TextValuePayload<TText extends string = string> {
 }
 
 /**
- * Payload interface for S-squared real number value tokens.
+ * Payload used by tokens that produce number values
+ * @see IFractionTokenPayload
  */
-export interface NumberPayload extends TextValuePayload {
+export interface INumberTokenPayload extends ITextValuePayload {
   /**
    * computed real value of the number token
    */
@@ -45,9 +58,10 @@ export interface NumberPayload extends TextValuePayload {
 }
 
 /**
- * Payload interface for S-squared fraction value tokens.
+ * Payload from the fraction token.
+ * @see INumberTokenPayload
  */
-export interface FractionPayload extends NumberPayload {
+export interface IFractionTokenPayload extends INumberTokenPayload {
   /**
    * numerator of the fraction
    */
@@ -59,9 +73,9 @@ export interface FractionPayload extends NumberPayload {
 }
 
 /**
- * word outside of the recipe expression
+ * Word outside of the recipe expression
  */
-export type RExpOutsideWordToken = IRecipeExpressionToken<"outside-word">;
+export type RExpOutsideWordToken = RecipeExpressionToken<"outside-word">;
 
 /**
  * Whitespace between words outside of the recipe expression.
@@ -70,71 +84,58 @@ export type RExpOutsideWordToken = IRecipeExpressionToken<"outside-word">;
  * Matched by the regular expression `\s`
  */
 export type RExpOutsideWhitespaceToken =
-  IRecipeExpressionToken<"outside-whitespace">;
+  RecipeExpressionToken<"outside-whitespace">;
 
 /**
  * Marks the start of a recipe expression: `((`.
  */
-export type RExpStartToken = IRecipeExpressionToken<"start-expression">;
+export type RExpStartToken = RecipeExpressionToken<"start-expression">;
 
 /**
  * Marks the end of a recipe expression: `))`.
  */
-export type RExpEndToken = IRecipeExpressionToken<"end-expression">;
+export type RExpEndToken = RecipeExpressionToken<"end-expression">;
 
 /**
  * A quoted string: `"values inside of the quotes including ""escaped"" quotes"`
  */
-export type RExpQuotedStringToken = IRecipeExpressionToken<
+export type RExpQuotedStringToken = RecipeExpressionToken<
   "quoted-string",
-  TextValuePayload
+  ITextValuePayload
 >;
 
 /**
  * An integer value: `1`, `2`, .. `101`, `102`, etc
  * A decimal: `.25`, `0.25`, `3.75`, etc
  */
-export type RExpNumberToken = IRecipeExpressionToken<"number", NumberPayload>;
+export type RExpNumberToken = RecipeExpressionToken<
+  "number",
+  INumberTokenPayload
+>;
 
 /**
  * A fraction: `1/2`
  */
-export type RExpFractionToken = IRecipeExpressionToken<
+export type RExpFractionToken = RecipeExpressionToken<
   "fraction",
-  FractionPayload
+  IFractionTokenPayload
 >;
 
 /**
  * Whitespace between tokens as matched by the regular expression `\s`
  */
-export type RExpWhitespaceToken = IRecipeExpressionToken<
+export type RExpWhitespaceToken = RecipeExpressionToken<
   "whitespace",
-  TextValuePayload
+  ITextValuePayload
 >;
 
 /**
  * Any text value not in quotes not matched as an integer, fraction, or decimal.
  * Examples include `12ab1`, `word`, `11//22//abcd`, etc
  */
-export type RExpTextLiteralToken = IRecipeExpressionToken<
+export type RExpTextLiteralToken = RecipeExpressionToken<
   "text-literal",
-  TextValuePayload
->;
-
-/**
- * Matches the start of a sub expression: `(`
- */
-export type RExpStartSubExpToken = IRecipeExpressionToken<
-  "start-sub-expression",
-  TextValuePayload
->;
-
-/**
- * Matches the end of a sub expression: `)`
- */
-export type RExpEndSubExpToken = IRecipeExpressionToken<
-  "end-sub-expression",
-  TextValuePayload
+  ITextValuePayload
 >;
 
 /**
@@ -147,9 +148,9 @@ export type RExpEndSubExpToken = IRecipeExpressionToken<
  * @see RExpStartSubExpToken
  * @see RExpEndSubExpToken
  */
-export type RExpAtomToken<T extends string = string> = IRecipeExpressionToken<
+export type RExpAtomToken<T extends string = string> = RecipeExpressionToken<
   "atom",
-  TextValuePayload<T>
+  ITextValuePayload<T>
 >;
 
 /**
@@ -165,52 +166,45 @@ export type ReciplexExpressionToken =
   | RExpFractionToken
   | RExpWhitespaceToken
   | RExpTextLiteralToken
-  | RExpAtomToken
-  | RExpEndSubExpToken
-  | RExpStartSubExpToken;
-
-/**
- * Parsing mode for a nested sub expression
- */
-//const SubExpressionMode = "sub-expression-mode";
+  | RExpAtomToken;
 
 /**
  * Parsing mode for the top level expression
  */
-const ExpressionMode = "expression-mode";
+const expressionLexerMode = "expression-mode";
 
 /**
  * Parsing mode outside the recipe expression
  */
-const OutsideMode = "outside-mode";
+const outsideLexerMode = "outside-mode";
 
 /**
  * The token that identifies the start of a recipe expression
  */
-export const RExpStartName: ExtractTokenName<RExpStartToken> =
+export const rExpStartName: ExtractTokenName<RExpStartToken> =
   "start-expression";
 
 /**
  * The token definition for matching an opening S-squared expression tag.
  * Matches the pattern `((` to enter S-squared expression parsing mode.
  */
-const RExpStartTokenDef = createToken({
-  name: RExpStartName,
+const rExpStartTokenDef = createToken({
+  name: rExpStartName,
   pattern: /\(\(/,
-  push_mode: ExpressionMode,
+  push_mode: expressionLexerMode,
 });
 
 /**
  * A token that ends a recipe expression
  */
-export const RExpEndName: ExtractTokenName<RExpEndToken> = "end-expression";
+export const rExpEndName: ExtractTokenName<RExpEndToken> = "end-expression";
 
 /**
  * The token definition for matching a closing S-squared expression tag.
  * Matches the pattern `))` to exit S-squared expression parsing mode.
  */
-const RExpEndTokenDef = createToken({
-  name: RExpEndName,
+const rExpEndTokenDef = createToken({
+  name: rExpEndName,
   pattern: /\)\)/,
   pop_mode: true,
 });
@@ -218,41 +212,41 @@ const RExpEndTokenDef = createToken({
 /**
  * Token that matches a set of non-whitespace characters outside of an expression
  */
-export const RExpOutsideWordName: ExtractTokenName<RExpOutsideWordToken> =
+export const rExpOutsideWordName: ExtractTokenName<RExpOutsideWordToken> =
   "outside-word";
 
 /**
  * Regex pattern for matching free text literals outside of S-squared expressions.
  */
-const RExpOutsideWordRegex = /([^\s(]|(\([^\s(]))+/y;
+const rExpOutsideWordRegex = /[^\s]+/y;
 
 /**
  * The token definition for matching free text literals outside of S-squared expressions.
  * Matches text that is not whitespace or opening `((` tags.
  */
-const RExpOutsideWordTokenDef = createToken({
-  name: RExpOutsideWordName,
+const rExpOutsideWordTokenDef = createToken({
+  name: rExpOutsideWordName,
   pattern: {
     exec: (text, startOffset) => {
-      RExpOutsideWordRegex.lastIndex = startOffset;
-      const match = RExpOutsideWordRegex.exec(text);
+      rExpOutsideWordRegex.lastIndex = startOffset;
+      const match = rExpOutsideWordRegex.exec(text);
       if (match === null) {
         return null;
       }
       const matchedString = match[0];
       if (matchedString.length < 2) {
-        return match;
+        return transformToTextPayload(match);
       }
 
-      const lastTwoChars = matchedString.substring(
-        matchedString.length - 2,
-        matchedString.length,
-      );
-      if (lastTwoChars === "((") {
-        return [matchedString.substring(0, matchedString.length - 2)];
+      const index = matchedString.indexOf("((");
+      if (index !== -1) {
+        if (index === 0) {
+          return null;
+        }
+        return transformToTextPayload([matchedString.substring(0, index)]);
       }
 
-      return match;
+      return transformToTextPayload(match);
     },
   },
   line_breaks: false,
@@ -261,23 +255,23 @@ const RExpOutsideWordTokenDef = createToken({
 /**
  * Token holding a string value wrapped by quotes
  */
-export const RExpQuotedStringName: ExtractTokenName<RExpQuotedStringToken> =
+export const rExpQuotedStringName: ExtractTokenName<RExpQuotedStringToken> =
   "quoted-string";
 
 /**
  * Regex pattern for matching quoted string literals within S-squared expressions.
  */
-const RExpQuotedStringRegex = /"(?:[^"]|"")*"/y;
+const rExpQuotedStringRegex = /"(?:[^"]|"")*"/y;
 
 /**
  * The token definition for matching quoted string literals within S-squared expressions.
  * Handles escaped quotes by consuming the character after `"`.
  */
-const RExpQuotedStringTokenDef = createToken({
-  name: RExpQuotedStringName,
+const rExpQuotedStringTokenDef = createToken({
+  name: rExpQuotedStringName,
   start_chars_hint: ['"'],
   pattern: {
-    exec: matchRegexWithStructure(RExpQuotedStringRegex, (text) => {
+    exec: matchRegexWithStructure(rExpQuotedStringRegex, (text) => {
       const rawValue = text.substring(1, text.length - 1);
 
       let eatNextChar = false;
@@ -293,7 +287,7 @@ const RExpQuotedStringTokenDef = createToken({
         processedValue += c;
       }
 
-      return { text: processedValue } as TextValuePayload;
+      return { text: processedValue } as ITextValuePayload;
     }),
   },
   line_breaks: true,
@@ -302,25 +296,25 @@ const RExpQuotedStringTokenDef = createToken({
 /**
  * Token matching an integer value in the text
  */
-export const RExpNumberName: ExtractTokenName<RExpNumberToken> = "number";
+export const rExpNumberName: ExtractTokenName<RExpNumberToken> = "number";
 
 /**
  * Regex pattern for matching integer and number literals within S-squared expressions.
  */
-const RExpNumberRegex = /([0-9]([0-9]*))|(([0-9]*)\.[0-9][0-9]*)/y;
+const rExpNumberRegex = /([0-9]([0-9]*))|(([0-9]*)\.[0-9][0-9]*)/y;
 
 /**
  * The token definition for matching integer and number literals within S-squared expressions.
  * Parses the matched string into an integer value.
  */
-const RExpNumberTokenDef = createToken({
-  name: RExpNumberName,
+const rExpNumberTokenDef = createToken({
+  name: rExpNumberName,
   pattern: {
-    exec: matchRegexWithStructure(RExpNumberRegex, (s) => {
+    exec: matchRegexWithStructure(rExpNumberRegex, (s) => {
       return {
         realValue: parseFloat(s),
         text: s,
-      } as NumberPayload;
+      } as INumberTokenPayload;
     }),
   },
   start_chars_hint: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "."],
@@ -330,28 +324,28 @@ const RExpNumberTokenDef = createToken({
 /**
  * Token holding a fraction
  */
-export const RExpFractionName: ExtractTokenName<RExpFractionToken> = "fraction";
+export const rExpFractionName: ExtractTokenName<RExpFractionToken> = "fraction";
 
 /**
  * Regex pattern for matching fraction literals within S-squared expressions.
  */
-const RExpFractionRegex = /([0-9][0-9]*)\/([0-9][0-9]*)/y;
+const rExpFractionRegex = /([0-9][0-9]*)\/([0-9][0-9]*)/y;
 
 /**
  * The token definition for matching fraction literals within S-squared expressions.
  * Parses the matched string into numerator, denominator, and real value.
  */
-const RExpFractionTokenDef = createToken({
-  name: RExpFractionName,
+const rExpFractionTokenDef = createToken({
+  name: rExpFractionName,
   pattern: {
-    exec: matchRegexWithStructure(RExpFractionRegex, (s) => {
+    exec: matchRegexWithStructure(rExpFractionRegex, (s) => {
       const pieces = s.split("/");
       return {
         numerator: parseInt(pieces[0]),
         denominator: parseInt(pieces[1]),
         realValue: parseInt(pieces[0]) / parseInt(pieces[1]),
         text: s,
-      } as FractionPayload;
+      } as IFractionTokenPayload;
     }),
   },
   start_chars_hint: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
@@ -361,15 +355,15 @@ const RExpFractionTokenDef = createToken({
 /**
  * Free text token outside of a recipe expression
  */
-export const RExpOutsideWhitespaceName: ExtractTokenName<RExpOutsideWhitespaceToken> =
+export const rExpOutsideWhitespaceName: ExtractTokenName<RExpOutsideWhitespaceToken> =
   "outside-whitespace";
 
 /**
  * The token definition for matching whitespace characters in free text mode.
  * Matches one or more whitespace characters including newlines.
  */
-const RExpOutsideWhitespaceTokenDef = createToken({
-  name: RExpOutsideWhitespaceName,
+const rExpOutsideWhitespaceTokenDef = createToken({
+  name: rExpOutsideWhitespaceName,
   pattern: /\s+/,
   line_breaks: true,
 });
@@ -377,23 +371,23 @@ const RExpOutsideWhitespaceTokenDef = createToken({
 /**
  * Regex matching whitespace sequence inside a recipe expression
  */
-const RExpWhitespaceRegex = /\s+/y;
+const rExpWhitespaceRegex = /\s+/y;
 
 /**
  * Token holding a sequence of whitespace characters inside of an expression
  */
-export const RExpWhitespaceName: ExtractTokenName<RExpWhitespaceToken> =
+export const rExpWhitespaceName: ExtractTokenName<RExpWhitespaceToken> =
   "whitespace";
 
 /**
  * The token definition for matching whitespace characters within S-squared expressions.
  * Matches one or more whitespace characters including newlines.
  */
-const RExpWhitespaceTokenDef = createToken({
-  name: RExpWhitespaceName,
+const rExpWhitespaceTokenDef = createToken({
+  name: rExpWhitespaceName,
   pattern: (text, startOffset) => {
-    RExpWhitespaceRegex.lastIndex = startOffset;
-    const match = RExpWhitespaceRegex.exec(text);
+    rExpWhitespaceRegex.lastIndex = startOffset;
+    const match = rExpWhitespaceRegex.exec(text);
     if (match === null) {
       return null;
     }
@@ -402,42 +396,30 @@ const RExpWhitespaceTokenDef = createToken({
   },
   line_breaks: true,
 });
+
 /**
  * Token holding a sequence of unquoted non-whitespace characters
  */
-export const RExpTextLiteralName: ExtractTokenName<RExpTextLiteralToken> =
+export const rExpTextLiteralName: ExtractTokenName<RExpTextLiteralToken> =
   "text-literal";
 
 /**
  * Regex pattern for matching text literals within S-squared expressions.
  */
-const RExpTextLiteralRegex = /[^\s")()]+/y;
+const rExpTextLiteralRegex = /[^\s")(]+/y;
 
 /**
  * The token definition for matching text literals within S-squared expressions.
  * Matches text that is not whitespace, quoted, or closing `))` tags.
  */
-const RExpTextLiteralTokenDef = createToken({
-  name: RExpTextLiteralName,
+const rExpTextLiteralTokenDef = createToken({
+  name: rExpTextLiteralName,
   pattern: {
-    exec: matchRegexWithStructure(RExpTextLiteralRegex, undefined, (result) => {
-      const matchedString = result[0];
-      if (matchedString.length < 2) {
-        return transformToTextPayload(result);
-      }
-
-      const lastTwoChars = matchedString.substring(
-        matchedString.length - 2,
-        matchedString.length,
-      );
-      if (lastTwoChars === "))") {
-        return transformToTextPayload([
-          matchedString.substring(0, matchedString.length - 2),
-        ]);
-      }
-
-      return transformToTextPayload(result);
-    }),
+    exec: matchRegexWithStructure(
+      rExpTextLiteralRegex,
+      undefined,
+      transformToTextPayload,
+    ),
   },
   line_breaks: false,
 });
@@ -446,61 +428,51 @@ const RExpTextLiteralTokenDef = createToken({
  * Token matching an expression atom. The atom is the expression command. See
  * s-expression syntax for further reading.
  */
-export const RExpAtomName: ExtractTokenName<RExpAtomToken> = "atom";
+export const rExpAtomName: ExtractTokenName<RExpAtomToken> = "atom";
 
 /**
  * Regex pattern for matching atom (identifier) literals within S-squared expressions.
  */
-const RExpAtomRegex = /[a-zA-Z][a-zA-Z0-9]*/y;
-
-function isOneOfTokenSet(tokenToTest: IToken, ...possibleTokens: TokenType[]) {
-  return possibleTokens.some((t) => tokenMatcher(tokenToTest, t));
-}
+const rExpAtomRegex = /[a-zA-Z][a-zA-Z0-9]*/y;
 
 /**
  * The token definition for matching atom identifiers within S-squared expressions.
  * Matches identifiers that start with a letter and contain only letters or digits.
  * Validates that the token is followed by a terminal separator (whitespace or `))`).
  */
-const RExpAtomTokenDef = createToken({
-  name: RExpAtomName,
+const rExpAtomTokenDef = createToken({
+  name: rExpAtomName,
   pattern: {
     exec: (text, startOffset, matchedTokens) => {
       const isSExp = (offset: number) => {
-        return isOneOfTokenSet(
-          matchedTokens[matchedTokens.length - offset],
-          RExpStartTokenDef,
-          // RExpStartSubExpTokenDef,
-        );
+        const token = matchedTokens[matchedTokens.length + offset];
+        if (!token) {
+          return false;
+        }
+
+        return tokenMatcher(token, rExpStartTokenDef);
       };
-      if (matchedTokens.length < 1) {
-        return null;
-      } else if (matchedTokens.length == 1 && !isSExp(1)) {
-        return null;
-      } else if (matchedTokens.length >= 2) {
-        if (
-          isSExp(2) &&
+
+      if (
+        !isSExp(-1) &&
+        !(
+          isSExp(-2) &&
           isOneOfTokenSet(
             matchedTokens[matchedTokens.length - 1],
-            RExpWhitespaceTokenDef,
+            rExpWhitespaceTokenDef,
           )
-        ) {
-          /* empty */
-        } else if (isSExp(1)) {
-          /* empty */
-        } else {
-          return null;
-        }
+        )
+      ) {
+        return null;
       }
-      RExpAtomRegex.lastIndex = startOffset;
-      const match = RExpAtomRegex.exec(text);
+
+      rExpAtomRegex.lastIndex = startOffset;
+      const match = rExpAtomRegex.exec(text);
       if (match === null) {
         return null;
       }
 
-      if (
-        !isTerminalSeparator(text, startOffset + match[0].length, matchedTokens)
-      ) {
+      if (!isTerminalSeparator(text, startOffset + match[0].length)) {
         return null;
       }
       return transformToTextPayload(match);
@@ -508,35 +480,6 @@ const RExpAtomTokenDef = createToken({
   },
   line_breaks: false,
 });
-
-//const S_ExpressionOpeningTokenRegex = /\(/y;
-// const RExpStartSubExpName: ExtractTokenName<RExpStartSubExpToken> =
-//   "start-sub-expression";
-// const RExpStartSubExpTokenDef = createToken({
-//   name: RExpStartSubExpName,
-//   pattern: /\(/,
-//   push_mode: SubExpressionMode,
-
-//   // pattern: {
-//   //   exec: matchRegexWithStructure(S_ExpressionOpeningTokenRegex),
-//   // },
-//   // line_breaks: false,
-//   // start_chars_hint: ["("],
-// });
-
-//const S_SquaredNestedExpClosingTokenRegex = /\)/y;
-// const RExpEndSubExpName: ExtractTokenName<RExpEndSubExpToken> =
-//   "end-sub-expression";
-// const RExpEndSubExpTokenDef = createToken({
-//   name: RExpEndSubExpName,
-//   pattern: /\)/,
-//   pop_mode: true,
-//   // pattern: {
-//   //   exec: matchRegexWithStructure(S_ExpressionClosingTokenRegex),
-//   // },
-//   // line_breaks: false,
-//   // start_chars_hint: [")"],
-// });
 
 /**
  * Checks if the last matched token was a separator (whitespace or opening tag).
@@ -550,13 +493,7 @@ function wasLastTokenSeparator(matchedTokens: IToken[]) {
 
   const lastToken = matchedTokens[matchedTokens.length - 1];
 
-  return isOneOfTokenSet(
-    lastToken,
-    RExpWhitespaceTokenDef,
-    RExpStartTokenDef,
-    //  RExpStartSubExpTokenDef,
-    //  RExpEndSubExpTokenDef,
-  );
+  return isOneOfTokenSet(lastToken, rExpWhitespaceTokenDef, rExpStartTokenDef);
 }
 
 /**
@@ -571,11 +508,7 @@ const isCharacterWhitespaceRegex = /\s/;
  * @param startOffset The offset to check.
  * @returns `true` if the character at the offset is a terminal separator.
  */
-function isTerminalSeparator(
-  text: string,
-  startOffset: number,
-  _matchedTokens: IToken[],
-) {
+function isTerminalSeparator(text: string, startOffset: number) {
   if (startOffset === text.length) {
     return true;
   }
@@ -585,30 +518,9 @@ function isTerminalSeparator(
     return true;
   }
 
-  // const [open, close] = matchedTokens.reduce(
-  //   ([open, close], t) => {
-  //     if (tokenMatcher(t, RExpStartSubExpTokenDef)) {
-  //       return [open + 1, close];
-  //     }
-
-  //     if (tokenMatcher(t, RExpEndSubExpTokenDef)) {
-  //       return [open, close + 1];
-  //     }
-
-  //     return [open, close];
-  //   },
-  //   [0, 0],
-  // );
-
-  // if (open !== close) {
-  //   if (text.substring(startOffset, startOffset + 1) === ")") {
-  //     return true;
-  //   }
-  // } else {
   if (text.substring(startOffset, startOffset + 2) === "))") {
     return true;
   }
-  //}
 
   return false;
 }
@@ -621,10 +533,9 @@ function isTerminalSeparator(
  * @param postResultHook Optional function to further process the result.
  * @returns A CustomPatternMatcherReturn with the matched text and optional payload.
  */
-function matchRegexWithStructure(
+function matchRegexWithStructure<T>(
   regEx: RegExp,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  payloadCreator?: (text: string) => any,
+  payloadCreator?: (text: string) => T,
   postResultHook?: (
     result: CustomPatternMatcherReturn,
   ) => CustomPatternMatcherReturn | null,
@@ -644,9 +555,7 @@ function matchRegexWithStructure(
       return null;
     }
 
-    if (
-      !isTerminalSeparator(text, startOffset + match[0].length, matchedTokens)
-    ) {
+    if (!isTerminalSeparator(text, startOffset + match[0].length)) {
       return null;
     }
 
@@ -673,7 +582,7 @@ function transformToTextPayload(
   const result: CustomPatternMatcherReturn = [dataToDecorate[0]];
   result.payload = {
     text: value ?? dataToDecorate[0],
-  } as TextValuePayload;
+  } as ITextValuePayload;
   return result;
 }
 
@@ -760,144 +669,57 @@ export function isAtomToken(
   return true;
 }
 
-/**
- * Checks if a token represents a text value (quoted string or text literal).
- * @param token the token to check
- * @returns true if the token is a text type, false otherwise
- */
-// export function isTextToken(
-//   token: IToken | undefined | null,
-// ): token is ITokenWithPayload<TextValuePayload> {
-//   switch (token?.tokenType.name) {
-//     case RExpQuotedStringName:
-//     case RExpTextLiteralName:
-//       return true;
-//   }
+export function isOpeningToken(
+  token: ReciplexExpressionToken | undefined | null,
+): token is RExpStartToken {
+  if (token?.tokenType.name !== rExpStartName) {
+    return false;
+  }
 
-//   return false;
-// }
+  return true;
+}
 
-/**
- * Checks if a token represents either a text value or a numeric value.
- * @param token the token to check
- * @returns true if the token is text or number, false otherwise
- */
-// export function isTextOrNumberToken(
-//   token: IToken | undefined | null,
-// ): token is ITokenWithPayload<TextValuePayload | NumberPayload> {
-//   if (isTextToken(token)) {
-//     return true;
-//   }
+export function isClosingToken(
+  token: ReciplexExpressionToken | undefined | null,
+): token is RExpEndToken {
+  if (token?.tokenType.name !== rExpEndName) {
+    return false;
+  }
 
-//   return isNumberToken(token);
-// }
+  return true;
+}
 
-/**
- * Checks if a token represents either text, number, or whitespace.
- * @param token the token to check
- * @returns true if the token is text, number, or whitespace, false otherwise
- */
-// export function isTextNumberOrWhitespaceToken(
-//   token: IToken | undefined | null,
-// ): token is
-//   | ITokenWithPayload<TextValuePayload>
-//   | ITokenWithPayload<NumberPayload> {
-//   if (isTextOrNumberToken(token)) {
-//     return true;
-//   }
-
-//   return isWhitespaceToken(token);
-// }
-
-/**
- * Checks if a token represents whitespace.
- * @param token the token to check
- * @returns true if the token is whitespace, false otherwise
- */
-// export function isWhitespaceToken(
-//   token: IToken | undefined | null,
-// ): token is ITokenWithPayload<TextValuePayload> {
-//   return token?.tokenType.name === RExpWhitespaceName;
-// }
-
-/**
- * Checks if a token represents a numeric value (integer, decimal, or fraction).
- * @param token the token to check
- * @returns true if the token is a number type, false otherwise
- */
-// export function isNumberToken(
-//   token: IToken | undefined | null,
-// ): token is ITokenWithPayload<NumberPayload> {
-//   switch (token?.tokenType.name) {
-//     case RExpNumberName:
-//     case RExpFractionName:
-//       return true;
-//   }
-
-//   return false;
-// }
-
-/**
- * Merges multiple text tokens into a single string value.
- * Skips non-text tokens (numbers, whitespace) and concatenates text payloads.
- * @param tokens the array of tokens to merge
- * @param startOffset the optional start index (defaults to 0)
- * @param endOffset the optional end index (defaults to tokens.length)
- * @returns the concatenated text string, or null if any non-text token is encountered
- */
-// export function mergeTextTokens(
-//   tokens: IToken[],
-//   startOffset?: number,
-//   endOffset?: number,
-// ) {
-//   endOffset ??= tokens.length;
-//   startOffset ??= 0;
-//   let value = "";
-//   for (let i = startOffset; i < endOffset && i < tokens.length; i++) {
-//     const currentToken = tokens[i];
-//     if (!isTextNumberOrWhitespaceToken(currentToken)) {
-//       return null;
-//     }
-//     value += currentToken.payload.text;
-//   }
-
-//   return value;
-// }
+function isOneOfTokenSet(
+  tokenToTest: IToken | undefined | null,
+  ...possibleTokens: TokenType[]
+) {
+  if (!tokenToTest) {
+    return false;
+  }
+  return possibleTokens.some((t) => tokenMatcher(tokenToTest, t));
+}
 
 /**
  * The lexer for parsing recipe expressions with S-squared syntax.
  * Supports parsing free text and S-squared expressions delimited by `((` and `))`.
  * Handles atoms, numbers (integers, decimals, fractions), quoted strings, and text literals.
  */
-export const RecipeExpressionLexer = new Lexer({
+export const recipeExpressionLexer = new Lexer({
   modes: {
-    [OutsideMode]: [
-      RExpOutsideWhitespaceTokenDef,
-      RExpStartTokenDef,
-      RExpOutsideWordTokenDef,
+    [outsideLexerMode]: [
+      rExpOutsideWhitespaceTokenDef,
+      rExpStartTokenDef,
+      rExpOutsideWordTokenDef,
     ],
-    [ExpressionMode]: [
-      RExpQuotedStringTokenDef,
-      RExpNumberTokenDef,
-      RExpFractionTokenDef,
-      // RExpDecimalTokenDef,
-      RExpAtomTokenDef,
-      RExpWhitespaceTokenDef,
-      RExpEndTokenDef,
-      // RExpStartSubExpTokenDef,
-      RExpTextLiteralTokenDef,
+    [expressionLexerMode]: [
+      rExpQuotedStringTokenDef,
+      rExpNumberTokenDef,
+      rExpFractionTokenDef,
+      rExpAtomTokenDef,
+      rExpWhitespaceTokenDef,
+      rExpEndTokenDef,
+      rExpTextLiteralTokenDef,
     ],
-    // [SubExpressionMode]: [
-    //   RExpQuotedStringTokenDef,
-    //   RExpIntegerTokenDef,
-    //   RExpFractionTokenDef,
-    //   RExpDecimalTokenDef,
-    //   RExpAtomTokenDef,
-    //   RExpWhitespaceTokenDef,
-    //   RExpEndSubExpTokenDef,
-    //   RExpStartSubExpTokenDef,
-    //   RExpTextLiteralTokenDef,
-    // ],
   },
-  defaultMode: OutsideMode,
+  defaultMode: outsideLexerMode,
 });

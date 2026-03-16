@@ -4,13 +4,15 @@
 
 import {
   isAtomToken,
+  isClosingToken,
   isFractionToken,
   isNumberLikeToken,
+  isOpeningToken,
   isOutsideLikeToken,
   isQuotedStringToken,
   isTextLikeToken,
   isTextLiteralToken,
-  RecipeExpressionLexer,
+  recipeExpressionLexer,
   type ReciplexExpressionToken,
   type RExpAtomToken,
   type RExpFractionToken,
@@ -32,14 +34,17 @@ export interface IRExpCommand<TCommandTag extends string> {
 /**
  * An echo command
  */
-export interface RExpEchoCommand extends IRExpCommand<"echo"> {
+export interface IRExpEchoCommand extends IRExpCommand<"echo"> {
   /**
    * the text to write
    */
   text: string;
 }
 
-export type RExpCommand = RExpEchoCommand | RExpIngredientCommand;
+export type RExpCommand =
+  | IRExpEchoCommand
+  | IRExpIngredientCommand
+  | IRExpToolCommand;
 
 type ArgumentTokens =
   | RExpQuotedStringToken
@@ -77,7 +82,7 @@ interface ICommandParser<
 /**
  * Handles an echo command
  */
-const EchoCommandParser: ICommandParser<"echo", RExpEchoCommand> = {
+const echoCommandParser: ICommandParser<"echo", IRExpEchoCommand> = {
   selector: (atom) => {
     const atomValue = atom.payload.text;
     switch (atomValue) {
@@ -122,7 +127,7 @@ const EchoCommandParser: ICommandParser<"echo", RExpEchoCommand> = {
  * Ingredient commands with variables are merged with the last instance winning. So (( i SOY 1 tsbp "soy sauce" )) followed by (( i SOY 2 tsbp "green soy" )) would redefine
  * `SOY` to be 2 tsbp. However, the list text would be "soy sauce". To make it "green soy" then the second expression would need to include both local text and list text.
  */
-export interface RExpIngredientCommand extends IRExpCommand<"ingredient"> {
+export interface IRExpIngredientCommand extends IRExpCommand<"ingredient"> {
   /**
    * the ingredient quantity if applicable
    */
@@ -155,24 +160,22 @@ export interface RExpIngredientCommand extends IRExpCommand<"ingredient"> {
   /**
    * Set to true to disable combining. Otherwise this should be left at undefined.
    */
-  doNotCombine?: true;
+  doNotCombine: boolean;
 }
 
-// function createId(bytesNeeded: number) {
-//   const randomBytes = new Uint8Array(bytesNeeded);
-//   crypto.getRandomValues(randomBytes);
-//   const hexString = Array.from(randomBytes)
-//     .map((b) => b.toString(16).padStart(2, "0"))
-//     .join("");
-//   return hexString;
-// }
+/**
+ * Tool command. Has the same syntax as the ingredient command.
+ * @see IRExpIngredientCommand
+ */
+export interface IRExpToolCommand
+  extends Omit<IRExpIngredientCommand, "tag">, IRExpCommand<"tool"> {}
 
 /**
- * Handles a recipe command
+ * Handles a recipe and tool command
  */
-const IngredientCommandParser: ICommandParser<
-  "ingredient",
-  RExpIngredientCommand
+const ingredientCommandParser: ICommandParser<
+  "ingredient" | "tool",
+  IRExpIngredientCommand | IRExpToolCommand
 > = {
   selector: (atom) => {
     const atomValue = atom.payload.text;
@@ -182,6 +185,13 @@ const IngredientCommandParser: ICommandParser<
       case "ingredientUnique":
       case "iUnique":
         return true;
+
+      case "t":
+      case "tool":
+      case "tUnique":
+      case "toolUnique":
+        return true;
+
       default:
         return false;
     }
@@ -193,18 +203,20 @@ const IngredientCommandParser: ICommandParser<
 
     const doNotCombine =
       atom.payload.text === "ingredientUnique" ||
-      atom.payload.text === "iUnique";
+      atom.payload.text === "iUnique" ||
+      atom.payload.text === "tUnique" ||
+      atom.payload.text === "toolUnique";
 
     let expressionTokenPosition = 0;
 
-    let userSuppliedIdProperty: RExpIngredientCommand["userSuppliedId"];
+    let userSuppliedIdProperty: IRExpIngredientCommand["userSuppliedId"];
     let nextToken = args[expressionTokenPosition];
     if (isTextLiteralToken(nextToken)) {
       userSuppliedIdProperty = nextToken.payload.text;
       expressionTokenPosition++;
     }
 
-    let quantityProperty: RExpIngredientCommand["quantity"] = undefined;
+    let quantityProperty: IRExpIngredientCommand["quantity"] = undefined;
     nextToken = args[expressionTokenPosition];
     if (isNumberLikeToken(nextToken)) {
       const unitToken = args[expressionTokenPosition + 1];
@@ -230,8 +242,8 @@ const IngredientCommandParser: ICommandParser<
       expressionTokenPosition += 2;
     }
 
-    let ingredientNameProperty: RExpIngredientCommand["ingredientName"];
-    let inlineTextProperty: RExpIngredientCommand["inlineText"];
+    let ingredientNameProperty: IRExpIngredientCommand["ingredientName"];
+    let inlineTextProperty: IRExpIngredientCommand["inlineText"];
     const remainingTokens = args.slice(expressionTokenPosition);
     if (
       remainingTokens.length === 2 &&
@@ -255,13 +267,31 @@ const IngredientCommandParser: ICommandParser<
       return null;
     }
 
+    let tag: "ingredient" | "tool";
+    switch (atom.payload.text) {
+      case "t":
+      case "tUnique":
+      case "toolUnique":
+      case "tool":
+        tag = "tool";
+        break;
+      case "i":
+      case "ingredient":
+      case "ingredientUnique":
+      case "iUnique":
+        tag = "ingredient";
+        break;
+      default:
+        return null;
+    }
+
     return {
-      tag: "ingredient",
+      tag: tag,
       quantity: quantityProperty,
       ingredientName: ingredientNameProperty,
       inlineText: inlineTextProperty,
       userSuppliedId: userSuppliedIdProperty,
-      doNotCombine: doNotCombine ? true : undefined,
+      doNotCombine: doNotCombine,
     };
   },
 };
@@ -332,33 +362,27 @@ function extractCommandSegment(
   startOffset: number,
 ): ICommandTokens | null {
   let endOffset = startOffset;
-
-  if (tokens[startOffset]?.tokenType.name !== "start-expression") {
+  if (!isOpeningToken(tokens[startOffset])) {
     return null;
   }
 
-  while (
-    tokens[endOffset].tokenType.name !== "end-expression" &&
-    tokens.length > endOffset
-  ) {
+  while (!isClosingToken(tokens[endOffset]) && endOffset < tokens.length) {
     endOffset++;
   }
 
-  if (tokens[endOffset].tokenType.name !== "end-expression") {
+  if (!isClosingToken(tokens[endOffset])) {
     return null;
   }
+
+  endOffset++; // have to increment by 1 to pull in end token
 
   const expressionTokens = tokens.slice(startOffset, endOffset) as [
     ReciplexExpressionToken,
     ...ReciplexExpressionToken[],
   ];
-  const tokensOfInterest = expressionTokens.filter((t) => {
-    if (isAtomToken(t) || isNumberLikeToken(t) || isTextLikeToken(t)) {
-      return true;
-    }
-
-    return false;
-  });
+  const tokensOfInterest = expressionTokens.filter(
+    (t) => isAtomToken(t) || isNumberLikeToken(t) || isTextLikeToken(t),
+  );
 
   if (tokensOfInterest.length < 1 || !isAtomToken(tokensOfInterest[0])) {
     return {
@@ -377,7 +401,7 @@ function extractCommandSegment(
     };
   }
 
-  for (const parser of [EchoCommandParser, IngredientCommandParser]) {
+  for (const parser of [echoCommandParser, ingredientCommandParser]) {
     if (parser.selector(atomToken)) {
       const result = parser.argumentExtractor(atomToken, atomArgs);
       if (result !== false) {
@@ -416,7 +440,7 @@ function isArrayExpressionArgs(
 export function parseTextForRecipeExpression(
   freeText: string,
 ): ReturnType<typeof extractExpressionFromTokens> | null {
-  const lexerTokens = RecipeExpressionLexer.tokenize(freeText);
+  const lexerTokens = recipeExpressionLexer.tokenize(freeText);
   if (lexerTokens.errors.length > 0) {
     return null;
   }
