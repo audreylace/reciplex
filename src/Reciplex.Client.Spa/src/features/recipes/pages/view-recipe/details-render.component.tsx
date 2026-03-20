@@ -46,7 +46,7 @@ function IngredientList() {
       return null;
     }
 
-    return detailsContext.ingredientCollection.getList();
+    return detailsContext.ingredientCollection.getIngredientList();
   }, [detailsContext?.ingredientCollection]);
 
   if (!list) {
@@ -83,7 +83,7 @@ function ToolList() {
       return null;
     }
 
-    return detailsContext.toolCollection.getList();
+    return detailsContext.toolCollection.getToolList();
   }, [detailsContext?.toolCollection]);
 
   if (!list) {
@@ -95,14 +95,12 @@ function ToolList() {
       <ul>
         {list.map((listEntry) => {
           let unitString = "";
-          if (listEntry.unit && listEntry.amount) {
-            unitString = ` - ${listEntry.amount} ${listEntry.unit}`;
-          } else if (listEntry.amount) {
-            unitString = ` - ${listEntry.amount}`;
+          if (listEntry.sizeUnit && listEntry.size) {
+            unitString = ` - ${listEntry.size} ${listEntry.sizeUnit}`;
           }
           return (
             <li key={listEntry.key}>
-              {listEntry.title}
+              {listEntry.toolName} x{listEntry.quantity}
               {unitString}
             </li>
           );
@@ -162,9 +160,7 @@ function RecipeIngredientRender({ position }: { position: number }) {
   if (amount) {
     return (
       <span className={detailsRenderStyleModule.ingredientText}>
-        {amount} {unit}
-        {" of "}
-        {inlineText}
+        {amount} {unit} {inlineText}
       </span>
     );
   }
@@ -188,14 +184,15 @@ function RecipeToolRender({ position }: { position: number }) {
     return null;
   }
 
-  const inlineText = concept.getRenderText(position);
-  const unit = concept.unitText;
-  const amount = concept.getAmountByPosition(position);
+  const toolName = concept.toolName;
+  const inlineText = concept.getInlineText(position);
+  const toolSizeUnit = concept.toolSizeUnit;
+  const toolSize = concept.toolSize;
+  const toolQuantity = concept.getToolQuantityByPosition(position);
 
-  if (amount) {
+  if (inlineText) {
     return (
       <span className={detailsRenderStyleModule.ingredientText}>
-        {amount} {unit}
         {inlineText}
       </span>
     );
@@ -203,7 +200,8 @@ function RecipeToolRender({ position }: { position: number }) {
 
   return (
     <span className={detailsRenderStyleModule.ingredientText}>
-      {inlineText}
+      {toolSize} {toolSizeUnit} {toolQuantity !== 1 ? "x" + toolQuantity : ""}
+      {toolName}
     </span>
   );
 }

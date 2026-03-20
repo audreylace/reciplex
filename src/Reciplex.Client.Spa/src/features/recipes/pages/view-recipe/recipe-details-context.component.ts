@@ -1,9 +1,6 @@
 import { createContext } from "preact";
-import type {
-  RecipeIngredientExpressionAstNode,
-  RecipeToolExpressionAstNode,
-} from "../../utils/recipe-expressions/md-to-expressions-v2";
-import type { RecipeConceptCollection } from "./recipe-concept";
+import type { RecipeIngredientConceptCollection } from "./ingredient-concept";
+import type { RecipeToolConceptCollection } from "./tool-concept";
 
 /**
  * The model for the recipe details context
@@ -20,8 +17,11 @@ export interface IRecipeDetailsContextModel {
   /**
    * ingredients in the markdown collection
    */
-  ingredientCollection: RecipeConceptCollection<RecipeIngredientExpressionAstNode>;
-  toolCollection: RecipeConceptCollection<RecipeToolExpressionAstNode>;
+  ingredientCollection: RecipeIngredientConceptCollection;
+  /**
+   * tools in the markdown collection
+   */
+  toolCollection: RecipeToolConceptCollection;
 }
 
 /**

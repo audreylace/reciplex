@@ -5,9 +5,9 @@ import type { Root, Text as MdAstTextNode } from "mdast";
 import {
   parseTextForRecipeExpression,
   type ICommandTokens,
-  type IRExpIngredientCommand,
-  type IRExpToolCommand,
 } from "./expression-syntax-v2";
+import type { IRExpIngredientCommand } from "./ingredient-command-syntax";
+import type { IRExpToolCommand } from "./tool-command-syntax";
 
 /**
  * Plugin for adding recipe expression syntax to mark down
