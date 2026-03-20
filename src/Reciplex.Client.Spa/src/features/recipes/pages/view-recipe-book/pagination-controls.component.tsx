@@ -1,5 +1,4 @@
 import { useSearchParams } from "react-router";
-import type { IPageCursor } from "../../services/recipe-types";
 import { PageNavigationButton } from "./page-navigation-button.component";
 import { PageSizeSelector } from "./page-size-selector.component";
 
@@ -26,7 +25,7 @@ export function PaginationControls({
         onClick={() => {
           if (previousCursor) {
             setSearchParams({
-              at: previousCursor.position,
+              at: previousCursor,
               source: "previous",
             });
           }
@@ -42,7 +41,7 @@ export function PaginationControls({
         hoverIcon="bi bi-fast-forward-fill"
         onClick={() => {
           if (nextCursor) {
-            setSearchParams({ at: nextCursor.position, source: "next" });
+            setSearchParams({ at: nextCursor, source: "next" });
           }
         }}
         visibilityHidden={!nextCursor}
@@ -60,9 +59,9 @@ export function PaginationControls({
 /** properties for `PaginationControls` */
 export interface PaginationControlsProps {
   /** cursor to move to next page */
-  nextCursor?: IPageCursor;
+  nextCursor?: string;
   /** cursor to move to previous page */
-  previousCursor?: IPageCursor;
+  previousCursor?: string;
   /** if the page has loaded */
   hasLoaded: boolean;
 }

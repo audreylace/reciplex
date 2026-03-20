@@ -19,7 +19,7 @@ export type BookListNavigationAction =
 /**
  * computes a path to the book list page
  * @param args arguments for making the path
- * @returns `/recipe-books/{by_ascending | by_descending}/{cursor.index}?`
+ * @returns `/books?source={by_ascending | by_descending}&index={cursor.index}?`
  */
 export function makeBookListPath(args?: {
   cursor: {
@@ -28,7 +28,7 @@ export function makeBookListPath(args?: {
   };
 }): string {
   if (!args || !args.cursor) {
-    return `/recipe-books`;
+    return `/books`;
   }
 
   if (
@@ -36,14 +36,14 @@ export function makeBookListPath(args?: {
       args.cursor.order === BookListNavigationAction.next) &&
     args.cursor.index
   ) {
-    return `/recipe-books/${args.cursor.order}/${encodeURIComponent(args.cursor.index)}`;
+    return `/books?source=${encodeURIComponent(args.cursor.order)}&index=${encodeURIComponent(args.cursor.index)}`;
   }
 
   if (
     args.cursor.order === BookListNavigationAction.previous ||
     args.cursor.order === BookListNavigationAction.next
   ) {
-    return `/recipe-books/${args.cursor.order}`;
+    return `/books?source=${encodeURIComponent(args.cursor.order)}`;
   }
 
   throw Error("unable to create book list path");

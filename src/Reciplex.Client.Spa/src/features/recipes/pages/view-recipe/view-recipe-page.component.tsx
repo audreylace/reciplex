@@ -18,16 +18,16 @@ export function ViewRecipePage() {
   return (
     <main className="pageMain">
       <RecipeNameAndDescription
-        name={recipeData?.recipe?.name}
-        shortDescription={recipeData?.recipe?.shortDescription}
+        name={recipeData?.name}
+        shortDescription={recipeData?.shortDescription}
       >
         {recipeData && (
           <RecipeMenu
-            bookId={recipeData.book.id}
-            recipeId={recipeData.recipe.id}
-            mayEdit={recipeData.recipe.mayEdit}
-            name={recipeData.recipe.name}
-            shortDescription={recipeData.recipe.shortDescription}
+            bookId={recipeData.id}
+            recipeId={recipeData.id}
+            mayEdit={recipeData.mayEdit}
+            name={recipeData.name}
+            shortDescription={recipeData.shortDescription}
           />
         )}
       </RecipeNameAndDescription>

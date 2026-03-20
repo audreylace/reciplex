@@ -1,7 +1,0 @@
-namespace Reciplex.Server.RecipeServices.RecipeBooks;
-
-public class CreateRecipeBookArgs
-{
-    public required string Name { get; set; }
-    public required string ShortDescription { get; set; }
-}

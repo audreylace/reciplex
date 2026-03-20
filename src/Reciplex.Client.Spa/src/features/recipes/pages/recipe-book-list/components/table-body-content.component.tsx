@@ -1,5 +1,4 @@
 import type { IGetRecipeBooksResult } from "../../../services/recipe-types";
-import { useBookData } from "../hooks/useBookData.hook";
 import { BookListUi } from "./book-list-ui.component";
 import { CreateFirstBookUI } from "./create-first-book-ui.component";
 import { EmptyPageUi } from "./empty-page-ui.component";
@@ -16,7 +15,7 @@ export function TableBodyContent({
   isPending?: boolean;
   data: IGetRecipeBooksResult | undefined;
 }) {
-  const bookData = useBookData(data);
+  const bookData = data?.books;
 
   if (isPaused) {
     return <OfflineUi />;

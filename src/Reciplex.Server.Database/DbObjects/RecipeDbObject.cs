@@ -11,6 +11,10 @@ namespace Reciplex.Server.Database.DbObjects;
 [Index(nameof(RecipeBookFk))]
 public class RecipeDbObject
 {
+    public const int NameMaxLength = 128;
+    public const int ShortDescriptionMaxLength = 256;
+    public const int DetailsMaxLength = 1024 * 1024; // 1MB
+
     /// <summary>
     /// Primary key
     /// </summary>
@@ -20,19 +24,19 @@ public class RecipeDbObject
     /// <summary>
     /// Name of the recipe
     /// </summary>
-    [MaxLength(127)]
+    [MaxLength(NameMaxLength)]
     public string Name { get; set; } = "";
 
     /// <summary>
     /// Recipe short description
     /// </summary>
-    [MaxLength(255)]
+    [MaxLength(ShortDescriptionMaxLength)]
     public string ShortDescription { get; set; } = "";
 
     /// <summary>
     /// Recipe markdown details
     /// </summary>
-    [MaxLength(1024 * 1024)]
+    [MaxLength(DetailsMaxLength)]
     public string Details { get; set; } = "";
 
     /// <summary>
@@ -64,11 +68,6 @@ public class RecipeDbObject
     /// Database FK to <see cref="RecipeBookDbObject"/> for property <see cref="RecipeBook"/>
     /// </summary>
     public long RecipeBookFk { get; init; }
-
-    /// <summary>
-    /// The stored json model
-    /// </summary>
-    public RecipeDbJsonObject JsonData { get; set; } = new();
 
     /// <summary>
     /// Populated if the recipe is deleted. The value is the time of deletion.

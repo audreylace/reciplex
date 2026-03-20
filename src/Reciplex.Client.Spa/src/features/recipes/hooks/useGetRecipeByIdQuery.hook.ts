@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
 import { useMemo } from "preact/hooks";
+import { useActiveUserKey } from "../../auth/hooks/useActiveUser.hook";
+import type { IRecipeBookStore } from "../services/recipe-types";
 
 /**
  * arguments for @see useGetRecipeByIdQuery
@@ -30,6 +32,7 @@ export function useGetRecipeByIdQuery(
   recipeId: string | null | undefined,
   args?: UseGetRecipeByIdQueryArgs,
 ) {
+  const userKey = useActiveUserKey();
   const recipeStore = useRecipeStoreContext();
 
   const idForCache = useMemo(() => {
@@ -42,19 +45,33 @@ export function useGetRecipeByIdQuery(
     return recipeId;
   }, [args?.noCache, recipeId]);
 
-  return useQuery({
-    queryKey: recipeByIdCacheKey(idForCache ?? ""),
+  return useQuery(
+    getRecipeByIdQueryArgs(userKey, idForCache, idForCache, recipeStore, args),
+  );
+}
+
+export function getRecipeByIdQueryArgs(
+  userKey: string | null | undefined,
+  recipeId: string | null | undefined,
+  cacheKey: string,
+  recipeStore: IRecipeBookStore,
+  args?: UseGetRecipeByIdQueryArgs,
+) {
+  return {
+    queryKey: recipeByIdCacheKey(cacheKey),
     enabled: recipeId ? args?.enabled : false,
     staleTime: args?.noCache ? 0 : undefined,
     refetchInterval: args?.refetchInterval,
     queryFn: async () => {
-      if (!recipeId) {
+      if (!recipeId || !userKey) {
         throw Error("invalid recipe id");
       }
 
-      return recipeStore.getRecipeById(recipeId, { noCache: args?.noCache });
+      return recipeStore.getRecipeById(userKey, recipeId, {
+        noCache: args?.noCache,
+      });
     },
-  });
+  };
 }
 
 /**

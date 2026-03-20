@@ -1,14 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import { useContext } from "preact/hooks";
-import { RecipeStore } from "../../../hooks/useRecipeStoreContext.hook";
+import { useRecipeStoreContext } from "../../../hooks/useRecipeStoreContext.hook";
 import { BookListNavigationAction } from "../../../route-utils";
 import {
   type IGetRecipeBooksArgs,
   CursorTypes,
 } from "../../../services/recipe-types";
+import { useActiveUserKey } from "../../../../auth/hooks/useActiveUser.hook";
+import { AssertString } from "../../../../sentinel/stringUtilities";
 
 export function useRecipeBookListQuery(source?: string, index?: string) {
-  const recipeStore = useContext(RecipeStore);
+  const userKey = useActiveUserKey();
+  const recipeStore = useRecipeStoreContext();
   return useQuery({
     queryKey: ["recipe-book-list", { source, index }],
     queryFn: async () => {
@@ -30,7 +32,10 @@ export function useRecipeBookListQuery(source?: string, index?: string) {
         };
       }
 
-      const result = await recipeStore.getRecipeBooks(args);
+      const result = await recipeStore.getRecipeBooks(
+        AssertString(userKey),
+        args,
+      );
       if (!result) {
         throw new Error("Get book API failed");
       }

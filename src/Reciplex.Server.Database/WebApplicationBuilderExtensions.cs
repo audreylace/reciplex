@@ -2,7 +2,11 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Database;
+using Reciplex.Server.Database.RecipeBooksDomain;
+using Reciplex.Server.Database.RecipesDomain;
+using Reciplex.Server.Database.UsersDomain;
 
 namespace Recipe.Database;
 
@@ -11,6 +15,23 @@ namespace Recipe.Database;
 /// </summary>
 public static partial class WebApplicationBuilderExtensions
 {
+    public static WebApplicationBuilder AddApplicationDbSupportServices(
+        this WebApplicationBuilder builder
+    )
+    {
+        builder.Services.AddScoped<IUsersRepository, UsersRepository>();
+        builder.Services.AddScoped<IRecipesRepository, RecipesRepository>();
+        builder.Services.AddScoped<IRecipeBooksRepository, RecipeBooksRepository>();
+
+        builder.Services.AddScoped<RecipeBookDbObjectQuery>();
+        builder.Services.AddScoped<RecipeDbObjectQuery>();
+        builder.Services.AddScoped<RecipeDbObjectListQuery>();
+
+        builder.Services.AddRandomNumberGeneratorConcurrencyTagProvider();
+
+        return builder;
+    }
+
     /// <summary>
     /// Adds application DB context to the application
     /// </summary>
@@ -21,6 +42,9 @@ public static partial class WebApplicationBuilderExtensions
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlite(builder.Configuration.GetConnectionString("ApplicationDbContext"))
         );
+
+        builder.AddApplicationDbSupportServices();
+
         return builder;
     }
 }
