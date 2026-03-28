@@ -255,7 +255,9 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
     }
 
     const executor = async (queryParams: [string, string][]) =>
-      (await this._recipeClient.httpGet("", queryParams)).json();
+      (
+        await this._recipeClient.httpGet("", [...queryParams, ["book", bookId]])
+      ).json();
     const [next, prev] = await Promise.all([
       this.resolveCursor(
         userId,
