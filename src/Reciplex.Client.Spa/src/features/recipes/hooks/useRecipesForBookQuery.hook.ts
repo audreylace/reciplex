@@ -1,15 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import { useContext } from "preact/hooks";
 import { type IPageRequestCursor } from "../services/recipe-types";
-import { RecipeStore } from "./useRecipeStoreContext.hook";
+import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
 import { AssertString } from "../../sentinel/stringUtilities";
+import { useActiveUserKey } from "../../auth/hooks/useActiveUser.hook";
 
 export function useRecipeForBookQuery(
   bookId: string | undefined | null,
   cursor?: IPageRequestCursor | null,
   pageSize?: number,
 ) {
-  const recipeStore = useContext(RecipeStore);
+  const userKey = useActiveUserKey();
+  const recipeStore = useRecipeStoreContext();
   return useQuery({
     queryKey: [
       "feature:recipes",
@@ -22,10 +23,14 @@ export function useRecipeForBookQuery(
         throw new Error("Require recipe store");
       }
 
-      return await recipeStore.getRecipesInBook(AssertString(bookId), {
-        cursor: cursor ?? undefined,
-        limit: pageSize,
-      });
+      return await recipeStore.getRecipesInBook(
+        AssertString(userKey),
+        AssertString(bookId),
+        {
+          cursor: cursor ?? undefined,
+          limit: pageSize,
+        },
+      );
     },
   });
 }

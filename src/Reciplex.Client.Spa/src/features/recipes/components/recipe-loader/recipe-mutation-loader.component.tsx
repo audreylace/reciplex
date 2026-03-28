@@ -2,11 +2,11 @@ import type {
   IRecipeBookModel,
   IRecipeModel,
 } from "../../services/recipe-types";
-import { useGetRecipeByIdQuery } from "../../hooks/useGetRecipeByIdQuery.hook";
 import { FetchingRecipeFailedBanner } from "../recipe-banners/fetching-recipe-failed-banner.component";
 import { RecipeNotFoundBanner } from "../recipe-banners/recipe-not-found-banner.component";
 import { FetchingRecipeBanner } from "../recipe-banners/fetching-recipe-banner.component";
 import { MutationLoader } from "../../../core/components/mutation-loader/mutation-loader.component";
+import { useFusedRecipeByIdQuery } from "../../hooks/useFusedRecipeByIdQuery.hook";
 
 /**
  * loads the recipe data and then render using `onRender`.
@@ -19,7 +19,7 @@ export function RecipeMutationLoader({
   refetchInterval,
   fetchingRender,
 }: RecipeMutationLoaderProps) {
-  const recipeQuery = useGetRecipeByIdQuery(recipeId ?? "", {
+  const recipeQuery = useFusedRecipeByIdQuery(recipeId ?? "", {
     noCache,
     refetchInterval,
     enabled,

@@ -54,21 +54,6 @@ export interface IRecipeBookModel {
 }
 
 /**
- * User model
- */
-export interface IUserModel {
-  /**
-   * Unique id of the user
-   */
-  id: string;
-  /**
-   * The user's display name. Not unique and user supplied.
-   * @see UserDisplayNameMaxLength Max length of this property
-   */
-  displayName: string;
-}
-
-/**
  * Recipe model
  */
 export interface IRecipeModel {
@@ -109,30 +94,13 @@ export interface IRecipeModel {
  */
 export interface IGetRecipeBooksResult {
   /** cursor to fetch the next page */
-  nextCursor?: IPageCursor;
+  nextCursor?: string;
   /** cursor to fetch the previous page */
-  previousCursor?: IPageCursor;
-  /** recipe keys based on the order returned from the server */
-  page: string[];
-  /**
-   * map of user id to user model. Only populated if `fetchUserData` is true
-   * and the user is not the current logged in user.
-   */
-  users?: Record<string, IUserModel>;
+  previousCursor?: string;
   /**
    * recipe books indexed by key
    */
-  recipeBooks: Record<string, IRecipeBookModel>;
-}
-
-/**
- * A page cursor
- */
-export interface IPageCursor {
-  /** The cursor's position */
-  position: string;
-  /** The type of the cursor */
-  type: CursorTypes;
+  books: IRecipeBookModel[];
 }
 
 export interface IPageRequestCursor {
@@ -178,24 +146,6 @@ export interface IGetRecipesInBookArgs {
    * Limit the number of results
    */
   limit?: number;
-}
-
-/**
- * result from `getCurrentUser` @see IRecipeBookStore
- */
-export interface IGetSessionInformationResult {
-  /**
-   * If the current session is authenticated
-   */
-  isAuthenticated: boolean;
-
-  /**
-   * Information about the user.
-   * Will be null when `isAuthenticated` is false
-   * or if the user does not have an account
-   * on the server.
-   */
-  userData?: IUserModel;
 }
 
 /**
@@ -278,24 +228,6 @@ export interface IUpdateRecipeBookArgs {
  */
 export interface IRecipeBookStore {
   /**
-   * Gets information for a user by id
-   * @param userId the user id
-   * @param args optional args for the request
-   * @returns a promise that resolves either to null or with user information
-   */
-  getUserById(
-    userId: string,
-    args?: { noCache?: boolean },
-  ): Promise<IUserModel | null>;
-
-  /**
-   * Returns information about the current session.
-   * @returns a promise about the current user. Resolves to null if
-   * the use is not logged in or does not have an account.
-   */
-  getSessionInformation(): Promise<IGetSessionInformationResult>;
-
-  /**
    * Gets recipe book by id
    * @param bookId the recipe book id
    * @param args optional args for the request
@@ -303,10 +235,12 @@ export interface IRecipeBookStore {
    */
   getRecipeBook(
     bookId: string,
+    userId: string,
     args?: { noCache?: boolean },
   ): Promise<IRecipeBookModel | null>;
 
   getRecipeBooks(
+    userId: string,
     args?: IGetRecipeBooksArgs,
   ): Promise<IGetRecipeBooksResult | null>;
 
@@ -316,6 +250,7 @@ export interface IRecipeBookStore {
    * @param args optional args to control the query
    */
   getRecipesInBook(
+    userId: string,
     bookId: string,
     args?: IGetRecipesInBookArgs,
   ): Promise<IGetRecipesInBookResult | null>;
@@ -325,7 +260,10 @@ export interface IRecipeBookStore {
    * @param args args for the create command
    * @returns string with the ID of the new book
    */
-  createRecipeBook(args: ICreateRecipeBookArgs): Promise<IRecipeBookModel>;
+  createRecipeBook(
+    userId: string,
+    args: ICreateRecipeBookArgs,
+  ): Promise<IRecipeBookModel>;
 
   /**
    * get a recipe by id
@@ -335,31 +273,41 @@ export interface IRecipeBookStore {
    * or null if the recipe does not exist (or user does not have access).
    */
   getRecipeById(
+    userId: string,
     recipeId: string,
     args?: { noCache?: boolean },
-  ): Promise<IGetRecipeByIdResult | null>;
+  ): Promise<IRecipeModel | null>;
 
   /**
    * Creates a recipe
    * @param args recipe creation args
    */
-  createRecipe(args: ICreateRecipeArgs): Promise<IGetRecipeByIdResult>;
+  createRecipe(userId: string, args: ICreateRecipeArgs): Promise<IRecipeModel>;
 
   /**
    * Deletes a recipe
    * @param recipeId the recipe id
    * @param versionTag the version tag for optimistic concurrency
    */
-  deleteRecipe(recipeId: string, versionTag: string): Promise<void>;
+  deleteRecipe(
+    userId: string,
+    recipeId: string,
+    versionTag: string,
+  ): Promise<void>;
 
   /**
    * Deletes a recipe book
    * @param bookId the recipe book id
    * @param versionTag the version tag for optimistic concurrency
    */
-  deleteRecipeBook(bookId: string, versionTag: string): Promise<void>;
+  deleteRecipeBook(
+    userId: string,
+    bookId: string,
+    versionTag: string,
+  ): Promise<void>;
 
   updateRecipeBook(
+    userId: string,
     bookId: string,
     args: IUpdateRecipeBookArgs,
   ): Promise<IRecipeBookModel>;
@@ -370,33 +318,10 @@ export interface IRecipeBookStore {
    * @param args arguments controlling the update
    */
   updateRecipe(
+    userId: string,
     recipeId: string,
     args: IUpdateRecipeArgs,
-  ): Promise<IGetRecipeByIdResult>;
-}
-
-/** thrown when server indicates a conflict */
-export class ConcurrencyConflict extends Error {
-  /** default constructor */
-  constructor() {
-    super("request failed because of concurrency conflict");
-  }
-}
-
-/** throw when the client tries to perform a action the server considers forbidden */
-export class OperationForbidden extends Error {
-  /** default constructor */
-  constructor() {
-    super("request failed because the operation is forbidden");
-  }
-}
-
-/** return for getting a recipe */
-export interface IGetRecipeByIdResult {
-  /** the recipe */
-  recipe: IRecipeModel;
-  /** the book */
-  book: IRecipeBookModel;
+  ): Promise<IRecipeModel>;
 }
 
 /**
@@ -407,10 +332,8 @@ export interface IGetRecipeByIdResult {
 export interface IGetRecipesInBookResult {
   /** list of recipes */
   recipes: IRecipeModel[];
-  /** the book */
-  book: IRecipeBookModel;
   /** cursor to fetch the next page */
-  nextCursor?: IPageCursor;
+  nextCursor?: string;
   /** cursor to fetch the previous page */
-  previousCursor?: IPageCursor;
+  previousCursor?: string;
 }

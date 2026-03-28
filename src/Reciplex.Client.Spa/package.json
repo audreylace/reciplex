@@ -35,7 +35,6 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "globals": "^17.0.0",
-    "i": "^0.3.7",
     "jiti": "^2.6.1",
     "npm": "^11.8.0",
     "typescript": "~5.9.3",

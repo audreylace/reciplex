@@ -11,8 +11,8 @@ import { OfflineBanner } from "../../../core/components/banner/offline-banner.co
 import { RecipeNotFoundBanner } from "../../components/recipe-banners/recipe-not-found-banner.component";
 import { makeRecipeNameAndDescriptionState } from "../../components/recipe-title-and-description/recipe-title-and-description.component";
 import { makeEditRecipePath } from "../../route-utils";
-import type { IGetRecipeByIdResult } from "../../services/recipe-types";
 import { DetailsRender } from "./details-render.component";
+import type { IRecipeModel } from "../../services/recipe-types";
 
 export function ViewRecipePageBody({
   loadingStatus,
@@ -22,7 +22,7 @@ export function ViewRecipePageBody({
   /** overall status of the load */
   loadingStatus: LoadingStatusValues;
   /** data fetched by the load */
-  data: IGetRecipeByIdResult | undefined | null;
+  data: IRecipeModel | undefined | null;
   /** the status of the fetch when `loadingStatus` is `pending` */
   fetchStatus: FetchStatus;
 }) {
@@ -47,17 +47,17 @@ function SuccessRender({
   data,
 }: {
   /** data fetched by the load */
-  data: IGetRecipeByIdResult | undefined | null;
+  data: IRecipeModel | undefined | null;
 }) {
   const navigate = useNavigate();
   const goToEditAction = () => {
     if (!data) {
       return;
     }
-    navigate(makeEditRecipePath(data.recipe.bookId, data.recipe.id), {
+    navigate(makeEditRecipePath(data.bookId, data.id), {
       state: makeRecipeNameAndDescriptionState(
-        data.recipe.name,
-        data.recipe.shortDescription,
+        data.name,
+        data.shortDescription,
       ),
     });
   };
@@ -68,8 +68,8 @@ function SuccessRender({
 
   return (
     <DetailsRender
-      detailsMd={data.recipe.details}
-      mayEdit={data.recipe.mayEdit}
+      detailsMd={data.details}
+      mayEdit={data.mayEdit}
       goToEditAction={goToEditAction}
     />
   );

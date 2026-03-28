@@ -1,12 +1,15 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
 import { recipeBookByIdCacheKey } from "./useGetRecipeBookById.hook";
+import { useActiveUserKey } from "../../auth/hooks/useActiveUser.hook";
+import { AssertString } from "../../sentinel/stringUtilities";
 
 /**
  * Mutation for deleting a recipe
  * @returns delete mutation from useMutation
  */
 export function useDeleteRecipeBookMutation() {
+  const userKey = useActiveUserKey();
   const queryClient = useQueryClient();
   const recipeStore = useRecipeStoreContext();
   return useMutation({
@@ -17,7 +20,11 @@ export function useDeleteRecipeBookMutation() {
       bookId: string;
       versionTag: string;
     }) => {
-      await recipeStore.deleteRecipeBook(bookId, versionTag);
+      await recipeStore.deleteRecipeBook(
+        AssertString(userKey),
+        bookId,
+        versionTag,
+      );
       queryClient.invalidateQueries({
         queryKey: recipeBookByIdCacheKey(bookId),
       });

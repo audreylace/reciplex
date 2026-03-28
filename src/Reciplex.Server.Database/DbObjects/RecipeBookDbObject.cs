@@ -11,6 +11,9 @@ namespace Reciplex.Server.Database.DbObjects;
 [Index(nameof(OwnerFk))]
 public class RecipeBookDbObject
 {
+    public const int NameMaxLength = 128;
+    public const int ShortDescriptionMaxLength = 256;
+
     /// <summary>
     /// Primary key
     /// </summary>
@@ -20,13 +23,13 @@ public class RecipeBookDbObject
     /// <summary>
     /// Title of the recipe book
     /// </summary>
-    [MaxLength(127)]
+    [MaxLength(NameMaxLength)]
     public string Name { get; set; } = "";
 
     /// <summary>
     /// Recipe book short description
     /// </summary>
-    [MaxLength(255)]
+    [MaxLength(ShortDescriptionMaxLength)]
     public string ShortDescription { get; set; } = "";
 
     /// <summary>

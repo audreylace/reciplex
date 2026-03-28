@@ -42,8 +42,8 @@ export function CreateRecipeForm({
       bookId: bookId,
     });
 
-    setRecipeId(result.recipe.id);
-    onAfterCreated(result.recipe.id);
+    setRecipeId(result.id);
+    onAfterCreated(result.id);
   });
 
   // short circuit to a read-only banner

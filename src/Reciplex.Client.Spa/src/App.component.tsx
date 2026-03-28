@@ -4,15 +4,30 @@ import { RouterProvider } from "react-router";
 import { RecipeStore } from "./features/recipes/hooks/useRecipeStoreContext.hook";
 import { router } from "./routes";
 import "./index.css";
+import { ChallengeHttpClient } from "./features/auth/http-clients/challenge-http-client";
+import { UsersHttpClient } from "./features/auth/http-clients/users-http-client";
+import {
+  AuthClients,
+  type IAuthClients,
+} from "./features/auth/hooks/useAuthClients.hook";
 
 const queryClient = new QueryClient();
 const serverStore = new RecipeHttpBookStore("/api");
+const challengeClient = new ChallengeHttpClient("/api");
+const userClient = new UsersHttpClient("/api");
+const authStoreContext: IAuthClients = {
+  challengeClient: challengeClient,
+  usersClient: userClient,
+};
+
 export function App() {
   return (
-    <RecipeStore.Provider value={serverStore}>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
-    </RecipeStore.Provider>
+    <AuthClients.Provider value={authStoreContext}>
+      <RecipeStore.Provider value={serverStore}>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </RecipeStore.Provider>
+    </AuthClients.Provider>
   );
 }

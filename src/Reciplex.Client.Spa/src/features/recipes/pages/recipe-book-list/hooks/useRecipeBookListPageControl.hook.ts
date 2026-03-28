@@ -1,4 +1,4 @@
-import { useParams } from "react-router";
+import { useSearchParams } from "react-router";
 import type { BookListNavigationAction } from "../../../route-utils";
 import { useFakeLoading } from "./useFakeLoading.hook";
 import { useRecipeBookListQuery } from "./useRecipeBookListQuery.hook";
@@ -9,12 +9,11 @@ export function useRecipeBookListPageControl(): {
   isPending?: boolean;
   isPaused?: boolean;
 } {
-  const { source, index } = useParams<{
-    /** the source of the route navigation */
-    source: BookListNavigationAction;
-    /** the navigation index */
-    index: string;
-  }>();
+  const searchParams = useSearchParams()[0];
+  const source = searchParams.get("source") as
+    | BookListNavigationAction
+    | undefined;
+  const index = searchParams.get("index") as string | undefined;
 
   const query = useRecipeBookListQuery(source, index);
   const fakeLoading = useFakeLoading(source, index);

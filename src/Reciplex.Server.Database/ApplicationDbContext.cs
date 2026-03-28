@@ -29,14 +29,4 @@ public class ApplicationDbContext : DbContext
     /// <param name="options">Application settings</param>
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options) { }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        modelBuilder
-            .Entity<RecipeDbObject>()
-            .OwnsOne( // configure json serialization for object into database
-                recipe => recipe.JsonData,
-                ownedNavigationBuilder => ownedNavigationBuilder.ToJson()
-            );
-    }
 }

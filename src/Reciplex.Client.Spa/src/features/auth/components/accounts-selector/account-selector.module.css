@@ -1,0 +1,19 @@
+.listWrapper {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.button {
+  display: block;
+  width: 100%;
+  padding: 0.5em;
+  margin-bottom: 1em;
+  text-align: start;
+}
+
+.header {
+  font-size: 1.3em;
+  font-weight: 500;
+  padding: 0;
+  margin: 0;
+}

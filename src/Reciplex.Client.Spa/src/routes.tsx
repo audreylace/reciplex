@@ -2,10 +2,25 @@ import { createBrowserRouter } from "react-router";
 
 export const router = createBrowserRouter([
   {
+    path: "/books",
+    lazy: async () => {
+      const Component =
+        await import("./features/recipes/layouts/book-layout/book-layout.component");
+      return { Component: Component.BookLayout };
+    },
+    children: [
+      {
+        path: "",
+        lazy: RecipeBooksLazy,
+      },
+    ],
+  },
+  {
     path: "/books/-/create",
     lazy: async () => {
-      const Component = await import("./layouts/default/default-layout");
-      return { Component: Component.DefaultLayout };
+      const Component =
+        await import("./features/recipes/layouts/book-layout/book-layout.component");
+      return { Component: Component.BookLayout };
     },
     children: [
       {
@@ -99,16 +114,12 @@ export const router = createBrowserRouter([
         },
       },
       {
-        path: "/recipe-books",
-        lazy: RecipeBooksLazy,
-      },
-      {
-        path: "/recipe-books/:source/:index",
-        lazy: RecipeBooksLazy,
-      },
-      {
-        path: "/recipe-books/:source",
-        lazy: RecipeBooksLazy,
+        path: "/sign-in",
+        lazy: async () => {
+          const Component =
+            await import("./features/auth/pages/sign-in/sign-in-page.component");
+          return { Component: Component.SignInPage };
+        },
       },
     ],
   },

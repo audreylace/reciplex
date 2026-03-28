@@ -65,8 +65,8 @@ export function EditRecipeForm({
         versionTag: versionTag,
       });
       onAfterUpdate({
-        name: newData.recipe.name,
-        shortDescription: newData.recipe.shortDescription,
+        name: newData.name,
+        shortDescription: newData.shortDescription,
       });
     }
   });

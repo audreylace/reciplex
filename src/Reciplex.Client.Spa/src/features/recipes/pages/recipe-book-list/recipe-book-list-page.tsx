@@ -36,8 +36,8 @@ export function RecipeBookListPage() {
         </div>
       </main>
       <PaginationBar
-        nextCursor={data?.nextCursor?.position}
-        previousCursor={data?.previousCursor?.position}
+        nextCursor={data?.nextCursor}
+        previousCursor={data?.previousCursor}
       />
     </>
   );
