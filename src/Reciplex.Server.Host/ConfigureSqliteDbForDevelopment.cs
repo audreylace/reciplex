@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using Reciplex.Server.Database;
 using Reciplex.Server.Database.RecipeBooksDomain;
+using Reciplex.Server.Database.RecipesDomain;
 using Reciplex.Server.Database.UsersDomain;
 
 namespace Reciplex.Server.Host;
@@ -42,6 +43,7 @@ class ConfigureSqliteDbForDevelopment(IServiceProvider rootServices) : IHostedSe
                 }
                 UserDao userRecord = userSuccess.User;
 
+                var recipeRepository = services.GetRequiredService<IRecipesRepository>();
                 var booksRepository = services.GetRequiredService<IRecipeBooksRepository>();
                 for (int i = 0; i < 100; i++)
                 {
@@ -50,9 +52,33 @@ class ConfigureSqliteDbForDevelopment(IServiceProvider rootServices) : IHostedSe
                         new() { Name = $"book {i}", ShortDescription = "" },
                         cancellationToken
                     );
-                    if (createBookResult is not CreateRecipeBookResult.Success)
+                    if (createBookResult is not CreateRecipeBookResult.Success bookSuccess)
                     {
                         throw new Exception();
+                    }
+
+                    if (i > 10)
+                    {
+                        continue;
+                    }
+
+                    for (int j = 0; j < 100; j++)
+                    {
+                        var recipeResult = await recipeRepository.CreateRecipeAsync(
+                            bookId: bookSuccess.RecipeBook.Id,
+                            userId: userRecord.Id,
+                            new()
+                            {
+                                Name = $"recipe {j}",
+                                ShortDescription = "",
+                                Details = $"# Recipe {j}\r\n",
+                            },
+                            cancellationToken
+                        );
+                        if (recipeResult is not CreateRecipeResult.Success)
+                        {
+                            throw new Exception();
+                        }
                     }
                 }
             }
