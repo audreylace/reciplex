@@ -1,0 +1,45 @@
+/* stack all text on top of each other so the size of the button is accurate */
+.textWrapper {
+  display: grid;
+  .visibleValue,
+  .hiddenValue {
+    grid-area: 1 / 1;
+    font-weight: 100;
+  }
+  .hiddenValue {
+    visibility: hidden;
+  }
+}
+
+/** container that appears when the button is pressed. Holds the drop down options. */
+.dropDownOptionContainer {
+  border-radius: var(--rcx-border-radius);
+  border: 2px solid var(--rcx-color-primary-border);
+  box-shadow: 0px 0px 10px 0px var(--rcx-color-shadow);
+  padding: 0.1em;
+  background: var(--rcx-color-lightest);
+  outline: none;
+
+  /* entry in the drop down menu */
+  .dropDownOption {
+    background: var(--rcx-color-lightest);
+    padding-left: 0.3em;
+    padding-right: 0.3em;
+  }
+
+  /* hover effect for the pagination drop down menu item */
+  .dropDownOption:hover,
+  .dropDownOption[data-focus] {
+    cursor: pointer;
+    background-color: var(--rcx-success-hover-bg-color);
+    color: var(--rcs-button-hover-text-color);
+    border-radius: var(--rcx-border-radius);
+    box-shadow: 0px 0px 8px 0px var(--rcx-color-shadow);
+  }
+}
+
+@media (max-width: 768px) {
+  .dropDownOption {
+    font-size: 1.3em;
+  }
+}
