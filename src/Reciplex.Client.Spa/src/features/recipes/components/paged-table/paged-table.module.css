@@ -4,9 +4,6 @@
   border: 1px solid var(--rcx-color-primary-border);
   border-radius: var(--rcx-border-radius);
   padding: 0 0.3rem;
-
-  max-height: 80vh;
-  overflow: scroll;
 }
 
 .table {
@@ -21,16 +18,11 @@
 }
 
 .tableHead {
-  position: sticky;
-  top: 0;
-  left: 0;
-  right: 0;
   background-color: var(--rcx-color-secondary-light);
 }
 
 .tableHeadCell,
 .tableBodyCell {
-  /*padding: 0.2em 0.6em;*/
   padding: 0.2rem 0.6rem;
 }
 
@@ -115,11 +107,6 @@
   gap: 0.2em;
   padding-top: 0.6em;
   padding-bottom: 0.3rem;
-
-  position: sticky;
-  bottom: 0;
-  left: 0;
-  right: 0;
   background-color: var(--rcx-color-secondary-light);
 }
 
