@@ -16,6 +16,7 @@ export function PageNavigationButton({
       buttonType="dotted"
       data-hide={visibilityHidden}
       disabled={visibilityHidden}
+      aria-hidden={visibilityHidden}
     >
       <span className={styles.buttonIconNormal}>
         <i className={icon}></i>
@@ -34,7 +35,7 @@ export interface PageNavigationButtonProps {
   /** icon on hover */
   hoverIcon: string;
   /** invoked on click */
-  onClick: () => void;
+  onClick?: () => void;
   /** hide the button with visibility hidden to still take of space */
   visibilityHidden: boolean;
 }

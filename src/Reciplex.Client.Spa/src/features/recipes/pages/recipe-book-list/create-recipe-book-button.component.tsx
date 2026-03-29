@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import styles from "./create-recipe-book-button.module.css";
-import { SuccessButton } from "../../../../../core/components/buttons/success-button.component";
-import { makeCreateRecipeBookPath } from "../../../../route-utils";
+import { SuccessButton } from "../../../core/components/buttons/success-button.component";
+import { makeCreateRecipeBookPath } from "../../route-utils";
 
 export function CreateRecipeBookButton() {
   const navigation = useNavigate();
