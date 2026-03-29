@@ -7,6 +7,7 @@ import {
 
 import componentStyles from "./option-selector.module.css";
 import { SuccessButton } from "../buttons/success-button.component";
+import { Fragment } from "preact/jsx-runtime";
 
 export function OptionSelector<T extends IOptionEntry>({
   options,
@@ -15,20 +16,25 @@ export function OptionSelector<T extends IOptionEntry>({
 }: IOptionSelectorProps<T>) {
   return (
     <Listbox value={value} onChange={(newValue) => onChange(newValue)}>
-      <ListboxButton as={SuccessButton} buttonType="dotted">
-        <div className={componentStyles.textWrapper}>
-          <div className={componentStyles.visibleValue}>{value.name}</div>
-          {options.map((sz) => (
-            <div
-              key={sz.key}
-              role="structure"
-              aria-hidden
-              tabIndex={-1}
-              className={componentStyles.hiddenValue}
-            >
-              {sz.name}
+      <ListboxButton as={Fragment}>
+        {/** must wrap success button inside fragment..div. Otherwise the option selector crashes. */}
+        <div>
+          <SuccessButton buttonType="dotted">
+            <div className={componentStyles.textWrapper}>
+              <div className={componentStyles.visibleValue}>{value.name}</div>
+              {options.map((sz) => (
+                <div
+                  key={sz.key}
+                  role="structure"
+                  aria-hidden
+                  tabIndex={-1}
+                  className={componentStyles.hiddenValue}
+                >
+                  {sz.name}
+                </div>
+              ))}
             </div>
-          ))}
+          </SuccessButton>
         </div>
       </ListboxButton>
       <ListboxOptions
