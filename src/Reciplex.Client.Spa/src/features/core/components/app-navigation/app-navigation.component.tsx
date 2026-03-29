@@ -9,14 +9,24 @@ export function AppNavigation({
 }: PropsWithChildren<{ childrenType?: AppNavigationChildrenType }>) {
   return (
     <div className={`${styles.appNavigationDiv}`}>
-      <ul className={`navbar-nav ${styles.navBar}`}>
-        <li>
-          <NavLink to="/">
-            <SuccessButton buttonType="hidden">Reciplex</SuccessButton>
+      <div className={styles.navBarInnerDiv}>
+        <ul className={`navbar-nav ${styles.navBar}`}>
+          <li>
+            <NavLink to="/">
+              <SuccessButton buttonType="hidden">Reciplex</SuccessButton>
+            </NavLink>
+          </li>
+          {childrenType == "list-elements" && <> {children} </>}
+          <li className={styles.grow}></li>
+        </ul>
+        <div className={styles.accountIcon}>
+          <NavLink to="/accounts/-/select">
+            <SuccessButton buttonType="hidden">
+              <i className="bi bi-person-circle"></i>
+            </SuccessButton>
           </NavLink>
-        </li>
-        {childrenType == "list-elements" && <> {children} </>}
-      </ul>
+        </div>
+      </div>
       {(childrenType ?? "second-row") === "second-row" && <> {children} </>}
     </div>
   );
