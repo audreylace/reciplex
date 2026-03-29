@@ -10,9 +10,9 @@ export function makeViewRecipeBookPath(bookId: string): string {
 /** Navigation actions for makeBookListPath */
 export const BookListNavigationAction = {
   /** Cursor for getting the next page of results */
-  next: "by_ascending",
+  next: "next",
   /** Cursor for getting the previous page of results */
-  previous: "by_descending",
+  previous: "previous",
 } as const;
 export type BookListNavigationAction =
   (typeof BookListNavigationAction)[keyof typeof BookListNavigationAction];

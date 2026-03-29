@@ -1,23 +1,29 @@
 import { useQuery } from "@tanstack/react-query";
-import { useRecipeStoreContext } from "../../../hooks/useRecipeStoreContext.hook";
-import { BookListNavigationAction } from "../../../route-utils";
+import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
+import { BookListNavigationAction } from "../route-utils";
 import {
   type IGetRecipeBooksArgs,
   CursorTypes,
-} from "../../../services/recipe-types";
-import { useActiveUserKey } from "../../../../auth/hooks/useActiveUser.hook";
-import { AssertString } from "../../../../sentinel/stringUtilities";
+} from "../services/recipe-types";
+import { useActiveUserKey } from "../../auth/hooks/useActiveUser.hook";
+import { AssertString } from "../../sentinel/stringUtilities";
 
-export function useRecipeBookListQuery(source?: string, index?: string) {
+export function useRecipeBookListQuery(
+  source?: string,
+  index?: string,
+  pageSize?: number,
+) {
   const userKey = useActiveUserKey();
   const recipeStore = useRecipeStoreContext();
   return useQuery({
-    queryKey: ["recipe-book-list", { source, index }],
+    queryKey: ["recipe-book-list", { source, index, pageSize }],
     queryFn: async () => {
       if (!recipeStore) {
         throw new Error("Require recipe store");
       }
-      const args: IGetRecipeBooksArgs = {};
+      const args: IGetRecipeBooksArgs = {
+        limit: pageSize,
+      };
       if (
         source &&
         (source === BookListNavigationAction.next ||

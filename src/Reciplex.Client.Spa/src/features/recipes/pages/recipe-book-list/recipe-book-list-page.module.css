@@ -1,12 +1,3 @@
-.recipeBookListTable {
-  width: 100%;
-}
-
-.recipeBookListTableBody {
-  width: inherit;
-  display: block;
-}
-
 .topLevelHeader {
   margin-top: 0.4em;
   margin-bottom: 0.6em;
@@ -30,50 +21,8 @@
   flex: 1;
 }
 
-.pageMain {
-  min-width: 100dvw;
-  max-width: 100dvh;
-  overflow-x: hidden;
-}
-
-/** styling for regular computers */
-@media (min-width: 768px) {
-  /* only table is allowed to scroll */
-  .pageMain {
-    display: flex;
-    flex-direction: column;
-    height: inherit;
-    min-height: inherit;
-    max-height: inherit;
-    min-width: 100dvw;
-    overflow: hidden;
-  }
-
-  .recipeBookList {
-    /* 
-     * Set a height and enable scroll on the table wrapper.
-     * This is needed so the table header is stick
-     */
-    overflow: scroll;
-    height: 100dvh;
-    max-height: 100dvh;
-    min-height: 100dvh;
-
-    /* fill remaining space below `.topLevelHeader` */
-    flex: 1;
-
-    /* extra padding since we have a floating nav bar */
-    padding-bottom: 8em;
-  }
-}
-
 /* Phone styling */
 @media (max-width: 768px) {
-  .recipeBookList {
-    /* extra padding since we have a floating nav bar */
-    padding-bottom: 4em;
-  }
-
   .topLevelHeaderWrapper {
     display: block;
     text-align: center;
