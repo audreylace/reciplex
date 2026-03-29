@@ -62,7 +62,9 @@ function BookLayoutBar() {
       <ul className={styles.crumbTrail}>
         <li className={styles.crumbElement}>
           <NavLink to={makeBookListPath()}>
-            <SuccessButton buttonType="hidden">Books</SuccessButton>
+            <SuccessButton buttonType="hidden">
+              <span className={styles.bookCrumb}>Books</span>
+            </SuccessButton>
           </NavLink>
         </li>
         {bookId && (
