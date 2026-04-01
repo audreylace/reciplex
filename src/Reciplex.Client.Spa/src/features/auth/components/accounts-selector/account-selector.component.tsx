@@ -5,16 +5,20 @@ import { DangerButton } from "../../../core/components/buttons/danger-button.com
 import { useGetAccountsQuery } from "../../hooks/useGetAccountsQuery.hook";
 import accountListStylesModule from "./account-selector.module.css";
 import { SignUpForm } from "../sign-up-form/sign-up-form.component";
-import { useNavigate } from "react-router";
+import { NavLink, useNavigate } from "react-router";
 import { PrimaryButton } from "../../../core/components/buttons/primary-button.component";
-import { SuccessButton } from "../../../core/components/buttons/success-button.component";
 import { makeBookListPath } from "../../../recipes/route-utils";
-import { useActiveUser } from "../../hooks/useActiveUser.hook";
+import {
+  useActiveUser,
+  useActiveUserKey,
+} from "../../hooks/useActiveUser.hook";
 import type { IHttpUserJson } from "../../http-clients/users-http-client";
+import { SuccessButton } from "../../../core/components/buttons/success-button.component";
 
 export function AccountSelector() {
   const accountQuery = useGetAccountsQuery();
   const [manualAddAccount, setManualAddAccount] = useState(false);
+  const activeUserKey = useActiveUserKey();
 
   switch (accountQuery.status) {
     case "error":
@@ -35,7 +39,26 @@ export function AccountSelector() {
             <h1>Whose Cooking?</h1>
             <div className={accountListStylesModule.listWrapper}>
               {accountQuery.data.map((acc) => (
-                <SelectAccountButton account={acc} key={acc.userKey} />
+                <div
+                  key={acc.userKey}
+                  className={accountListStylesModule.accountToolbarWrapper}
+                >
+                  <ul
+                    className={
+                      accountListStylesModule.accountToolbar +
+                      (acc.userKey === activeUserKey
+                        ? " " + accountListStylesModule.activeToolbar
+                        : "")
+                    }
+                  >
+                    <li className={accountListStylesModule.userButtonWrapper}>
+                      <SelectAccountButton account={acc} />
+                    </li>
+                    <li>
+                      <AccountSettingButton account={acc} />
+                    </li>
+                  </ul>
+                </div>
               ))}
             </div>
             <DangerButton onClick={() => setManualAddAccount(true)}>
@@ -71,14 +94,34 @@ function SelectAccountButton({ account }: { account: IHttpUserJson }) {
     navigate(makeBookListPath());
   };
 
-  const isActive = userKey == account.userKey;
-  const Button = isActive ? PrimaryButton : SuccessButton;
-
   return (
-    <Button className={accountListStylesModule.button} onClick={handleClick}>
-      <h3 className={accountListStylesModule.header}>
-        {account.displayName} {userKey === account.userKey ? "(active)" : ""}
-      </h3>
-    </Button>
+    <SuccessButton
+      className={
+        accountListStylesModule.button +
+        " " +
+        accountListStylesModule.userButton
+      }
+      onClick={handleClick}
+      buttonType="hidden"
+    >
+      {account.displayName} {userKey === account.userKey ? "(active)" : ""}
+    </SuccessButton>
+  );
+}
+
+function AccountSettingButton({ account }: { account: IHttpUserJson }) {
+  return (
+    <NavLink to={`/accounts/${encodeURIComponent(account.userKey)}/settings`}>
+      <PrimaryButton
+        className={
+          accountListStylesModule.button +
+          " " +
+          accountListStylesModule.gearButton
+        }
+        buttonType="hidden"
+      >
+        <i className="bi bi-gear"></i>
+      </PrimaryButton>
+    </NavLink>
   );
 }

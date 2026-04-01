@@ -100,6 +100,31 @@ export const router = createBrowserRouter([
     ],
   },
   {
+    path: "/accounts",
+    lazy: async () => {
+      const Component = await import("./layouts/default/default-layout");
+      return { Component: Component.DefaultLayout };
+    },
+    children: [
+      {
+        path: "-/select",
+        lazy: async () => {
+          const Component =
+            await import("./features/auth/pages/sign-in/sign-in-page.component");
+          return { Component: Component.SignInPage };
+        },
+      },
+      {
+        path: ":accountKey/settings",
+        lazy: async () => {
+          const Component =
+            await import("./features/auth/pages/account-settings/account-settings-page.component");
+          return { Component: Component.AccountSettingsPage };
+        },
+      },
+    ],
+  },
+  {
     path: "/",
     lazy: async () => {
       const Component = await import("./layouts/default/default-layout");
@@ -111,14 +136,6 @@ export const router = createBrowserRouter([
         lazy: async () => {
           const Component = await import("./pages/home/home-page.component");
           return { Component: Component.HomePage };
-        },
-      },
-      {
-        path: "/sign-in",
-        lazy: async () => {
-          const Component =
-            await import("./features/auth/pages/sign-in/sign-in-page.component");
-          return { Component: Component.SignInPage };
         },
       },
     ],

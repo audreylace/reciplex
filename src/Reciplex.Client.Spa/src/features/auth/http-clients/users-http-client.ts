@@ -19,8 +19,12 @@ export class UsersHttpClient {
    * the set of accounts the current
    * credentials grant access to
    */
-  public async getAccounts(): Promise<IHttpUserJson[]> {
-    const response = await this._client.httpGet("");
+  public async getAccounts(args?: {
+    noCache?: boolean;
+  }): Promise<IHttpUserJson[]> {
+    const response = await this._client.httpGet("", undefined, {
+      noCache: args?.noCache,
+    });
     return (await response.json()) as IHttpUserJson[];
   }
 
@@ -108,7 +112,7 @@ export interface IHttpUserJson {
   /**
    * records version
    */
-  concurrencyToken: string;
+  concurrencyTag: string;
 }
 
 /**

@@ -9,44 +9,14 @@ import {
   makeViewRecipeBookPath,
   makeViewRecipePath,
 } from "../../route-utils";
-import { useActiveUser } from "../../../auth/hooks/useActiveUser.hook";
-import { InformationBanner } from "../../../core/components/banner/banner.component";
-import { useEffect } from "preact/hooks";
-import { useRehydrateActiveUser } from "../../../auth/hooks/useRehydrateActiveUser.hook";
+import { AuthenticatedRouteGuard } from "../../../auth/components/authenticated-route-guard/authenticated-route-guard.component";
 
 export function BookLayout() {
-  useRehydrateActiveUser();
-
-  const isSynced = useActiveUser((s) => s.synced);
-  const challengeNeeded = useActiveUser((s) => s.challengeNeeded);
-  const userKey = useActiveUser((s) => s.userKey);
-
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (isSynced && (!userKey || challengeNeeded)) {
-      navigate("/sign-in", {
-        state: {
-          redirect: window.location.href,
-        },
-      });
-    }
-  }, [navigate, isSynced, userKey, challengeNeeded]);
-
-  if (!isSynced) {
-    return (
-      <InformationBanner title="Checking Sign-In status"></InformationBanner>
-    );
-  }
-  if (challengeNeeded || !userKey) {
-    return <InformationBanner title="Sign-In Needed"></InformationBanner>;
-  }
-
   return (
-    <>
+    <AuthenticatedRouteGuard>
       <BookLayoutBar />
       <Outlet />
-    </>
+    </AuthenticatedRouteGuard>
   );
 }
 
