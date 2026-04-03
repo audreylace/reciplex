@@ -20,7 +20,7 @@ export function AuthenticatedRouteGuard({
 
   useEffect(() => {
     if (isSynced && (!userKey || challengeNeeded)) {
-      navigate("/accounts/-/select", {
+      navigate("/accounts/-/sign-in", {
         state: {
           redirect: window.location.href,
         },

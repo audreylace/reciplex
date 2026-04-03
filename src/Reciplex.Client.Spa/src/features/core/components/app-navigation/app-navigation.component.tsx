@@ -20,7 +20,7 @@ export function AppNavigation({
           <li className={styles.grow}></li>
         </ul>
         <div className={styles.accountIcon}>
-          <NavLink to="/accounts/-/select">
+          <NavLink to="/accounts/-/sign-in">
             <SuccessButton buttonType="hidden">
               <i className="bi bi-person-circle"></i>
             </SuccessButton>

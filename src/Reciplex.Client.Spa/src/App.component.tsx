@@ -11,6 +11,12 @@ import {
   type IAuthClients,
 } from "./features/auth/hooks/useAuthClients.hook";
 
+import "@fontsource/roboto/300.css";
+import "@fontsource/roboto/400.css";
+import "@fontsource/roboto/500.css";
+import "@fontsource/roboto/700.css";
+import { AppTheme } from "./features/core/components/app-theme/app-theme.component";
+
 const queryClient = new QueryClient();
 const serverStore = new RecipeHttpBookStore("/api");
 const challengeClient = new ChallengeHttpClient("/api");
@@ -22,12 +28,14 @@ const authStoreContext: IAuthClients = {
 
 export function App() {
   return (
-    <AuthClients.Provider value={authStoreContext}>
-      <RecipeStore.Provider value={serverStore}>
-        <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-        </QueryClientProvider>
-      </RecipeStore.Provider>
-    </AuthClients.Provider>
+    <AppTheme>
+      <AuthClients.Provider value={authStoreContext}>
+        <RecipeStore.Provider value={serverStore}>
+          <QueryClientProvider client={queryClient}>
+            <RouterProvider router={router} />
+          </QueryClientProvider>
+        </RecipeStore.Provider>
+      </AuthClients.Provider>
+    </AppTheme>
   );
 }

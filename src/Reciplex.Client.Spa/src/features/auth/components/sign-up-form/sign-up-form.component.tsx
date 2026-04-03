@@ -1,22 +1,15 @@
-import { Fieldset, Field, Label, Input } from "@headlessui/react";
-import { useForm } from "react-hook-form";
+import { useForm, type UseFormReturn } from "react-hook-form";
 import { useNavigate } from "react-router";
-import { ApplicationErrorBanner } from "../../../core/components/banner/application-error-banner.component";
-import {
-  SuccessBanner,
-  InformationBanner,
-} from "../../../core/components/banner/banner.component";
-import { RetryBannerComponent } from "../../../core/components/banner/retry-banner.component";
-import { DangerButton } from "../../../core/components/buttons/danger-button.component";
-import { SuccessButton } from "../../../core/components/buttons/success-button.component";
-import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
 import { makeCreateRecipeBookPath } from "../../../recipes/route-utils";
 import { useActiveUser } from "../../hooks/useActiveUser.hook";
 import { useCreateAccountMutation } from "../../hooks/useCreateAccountMutation.hook";
-import formCommonStylesModule from "../../../core/form-common/form-common.module.css";
-import signUpFormStylesModule from "./sign-up-form.module.css";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import Alert from "@mui/material/Alert";
 
-export function SignUpForm({ cancel }: ISignUpFormProps) {
+export function SignUpForm() {
   const setActiveUser = useActiveUser((s) => s.setActiveUser);
   const navigate = useNavigate();
   const createAccountMutation = useCreateAccountMutation();
@@ -24,7 +17,7 @@ export function SignUpForm({ cancel }: ISignUpFormProps) {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<{ displayName: string }>();
+  } = useForm<IFormValues>();
 
   const onSubmit = handleSubmit(async (data) => {
     const newAccount = await createAccountMutation.mutateAsync(data);
@@ -32,75 +25,104 @@ export function SignUpForm({ cancel }: ISignUpFormProps) {
       userKey: newAccount.userKey,
       displayName: newAccount.displayName,
     });
+    navigate(makeCreateRecipeBookPath());
   });
 
-  switch (createAccountMutation.status) {
-    case "success":
-      return (
-        <SuccessBanner
-          title="Account Created"
-          message="Your account has been created. Create your first book and start cooking."
-          buttonCaption="Create Recipe Book"
-          onButtonClick={() => navigate(makeCreateRecipeBookPath())}
-        />
-      );
-    case "error":
-      return <RetryBannerComponent />;
+  const formDisabled = createAccountMutation.status !== "idle";
+
+  return (
+    <>
+      <Typography variant="h4">Welcome</Typography>
+      <Typography variant="subtitle1" gutterBottom>
+        Create an account and get cooking with Reciplex!
+      </Typography>
+      <form onSubmit={onSubmit}>
+        <Stack spacing={2} marginTop={3}>
+          {createAccountMutation.status === "success" && (
+            <Alert
+              severity="success"
+              variant="filled"
+              action={
+                <Button color="inherit" size="small">
+                  Create First Book
+                </Button>
+              }
+            >
+              Account created
+            </Alert>
+          )}
+          {isErrorState(createAccountMutation.status) && (
+            <Alert
+              severity="error"
+              variant="filled"
+              action={
+                <Button
+                  color="inherit"
+                  size="small"
+                  onClick={() => {
+                    createAccountMutation.reset();
+                  }}
+                >
+                  Retry
+                </Button>
+              }
+            >
+              Account creation failed
+            </Alert>
+          )}
+
+          <TextField
+            label="Display Name"
+            helperText={displayNameHelpText(errors)}
+            error={!!errors.displayName}
+            fullWidth
+            variant="filled"
+            disabled={formDisabled}
+            {...register("displayName", {
+              required: true,
+              maxLength: 64,
+            })}
+          />
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="contained"
+              type="submit"
+              loading={createAccountMutation.status === "pending"}
+              disabled={formDisabled}
+            >
+              Create Account
+            </Button>
+          </Stack>
+        </Stack>
+      </form>
+    </>
+  );
+}
+
+function isErrorState(mutationState: string) {
+  switch (mutationState) {
     case "pending":
-      return (
-        <InformationBanner
-          title="Creating User"
-          message="Creating your account. Do not leave or close this window."
-        />
-      );
-    default:
-      return <ApplicationErrorBanner />;
     case "idle":
-      return (
-        <>
-          <h2>Welcome</h2>
-          <p>Create an account and get cooking with Reciplex!</p>
-          <form
-            className={signUpFormStylesModule.createAccountForm}
-            onSubmit={onSubmit}
-          >
-            <Fieldset className={formCommonStylesModule.fieldSet}>
-              <Field className={formCommonStylesModule.inputGroup}>
-                <Label className={formCommonStylesModule.label}>
-                  Display Name
-                </Label>
-                <Input
-                  type="text"
-                  className={formCommonStylesModule.fieldControl}
-                  required
-                  maxLength={64}
-                  {...register("displayName", {
-                    required: true,
-                    maxLength: 64,
-                  })}
-                ></Input>
-                {errors.displayName?.type === "required" && (
-                  <span>
-                    Provide a display name so others can know what to call you
-                  </span>
-                )}
-                {errors.displayName?.type === "maxLength" && (
-                  <span>
-                    Display name must be no longer than {64} characters
-                  </span>
-                )}
-              </Field>
-            </Fieldset>
-            <FormButtons>
-              <SuccessButton type="submit">Create Account</SuccessButton>
-              {cancel && <DangerButton onClick={cancel}>Cancel</DangerButton>}
-            </FormButtons>
-          </form>
-        </>
-      );
+      return false;
+    default:
+      return true;
   }
 }
 
-interface ISignUpFormProps {
-  cancel?: () => void;
+interface IFormValues {
+  displayName: string;
+}
+
+function displayNameHelpText(
+  errors: UseFormReturn<IFormValues>["formState"]["errors"],
+) {
+  if (errors.displayName) {
+    if (errors.displayName.type === "required") {
+      return "Required to provide a display name to use this app";
+    } else if (errors.displayName.type === "maxLength") {
+      return "Display name must be no longer than 64 characters";
+    }
+  }
+
+  return "Name visible to others using the app";
 }

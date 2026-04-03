@@ -14,7 +14,9 @@ export function DefaultLayout() {
           </NavLink>
         </li>
       </AppNavigation>
-      <Outlet />
+      <main className="pageMain">
+        <Outlet />
+      </main>
     </>
   );
 }

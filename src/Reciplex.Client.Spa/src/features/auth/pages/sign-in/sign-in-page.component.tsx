@@ -2,12 +2,22 @@ import { InformationBanner } from "../../../core/components/banner/banner.compon
 import formCommonStyleModule from "../../../core/form-common/form-common.module.css";
 import { useChallenge } from "../../hooks/useChallenge.hook";
 import { useActiveUser } from "../../hooks/useActiveUser.hook";
-import { AccountSelector } from "../../components/accounts-selector/account-selector.component";
+import { useEffect } from "preact/hooks";
+import { useNavigate } from "react-router";
 
 export function SignInPage() {
   const isSynced = useActiveUser((s) => s.synced);
   const challengeNeeded = useActiveUser((s) => s.challengeNeeded);
   const startChallenge = useChallenge();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isSynced && !challengeNeeded) {
+      navigate("/accounts/-/select", {
+        replace: true, // back button should go back to the page that summoned us
+      });
+    }
+  }, [challengeNeeded, isSynced, navigate]);
 
   return (
     <main className={formCommonStyleModule.formMain}>
@@ -22,7 +32,6 @@ export function SignInPage() {
               onButtonClick={() => startChallenge()}
             />
           )}
-          {!challengeNeeded && <AccountSelector />}
         </>
       )}
     </main>
