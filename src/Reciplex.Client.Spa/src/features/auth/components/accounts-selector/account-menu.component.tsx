@@ -5,16 +5,16 @@ import Menu from "@mui/material/Menu";
 import CardActionArea from "@mui/material/CardActionArea";
 import MenuItem from "@mui/material/MenuItem";
 import SettingsIcon from "@mui/icons-material/Settings";
+import { useAccountDeletesNavigate } from "../../hooks/useDeleteAccountNavigate.hook";
 
 /** Menu for performing additional account actions  */
 export function AccountMenu({ userKey }: { userKey: string }) {
   const buttonId = useId();
   const [open, setOpen] = useState<boolean>(false);
   const buttonRef = useRef<SVGSVGElement | null>(null);
-  const [accountPath, accountNavigate] = useAccountSettingsNavigate(
-    userKey,
-    () => setOpen(false),
-  );
+  const [accountPath, accountNavigate] = useAccountSettingsNavigate(userKey);
+  const [deletePath, deleteAccountNavigate] =
+    useAccountDeletesNavigate(userKey);
   const handleClick = (e: Event) => {
     e.preventDefault();
     setOpen(true);
@@ -51,7 +51,9 @@ export function AccountMenu({ userKey }: { userKey: string }) {
         <MenuItem href={accountPath} onClick={accountNavigate}>
           Settings
         </MenuItem>
-        <MenuItem onClick={handleClose}>Delete</MenuItem>
+        <MenuItem href={deletePath} onClick={deleteAccountNavigate}>
+          Delete
+        </MenuItem>
       </Menu>
     </CardActionArea>
   );

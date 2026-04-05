@@ -107,6 +107,14 @@ export const router = createBrowserRouter([
     },
     children: [
       {
+        path: ":accountKey/delete",
+        lazy: async () => {
+          const Component =
+            await import("./features/auth/pages/delete-account/delete-account-page.component");
+          return { Component: Component.DeleteAccountPage };
+        },
+      },
+      {
         path: "-/select",
         lazy: async () => {
           const Component =

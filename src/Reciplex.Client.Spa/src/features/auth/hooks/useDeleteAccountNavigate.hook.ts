@@ -10,11 +10,11 @@ import { useNavigate } from "react-router";
  * path and arg1 is the navigate action.
  * Bind arg0 to href and arg1 to the event handler.
  */
-export function useAccountSettingsNavigate(
+export function useAccountDeletesNavigate(
   userKey: string,
 ): [string, () => void] {
   const navigate = useNavigate();
-  const path = `/accounts/${encodeURIComponent(userKey)}/settings`;
+  const path = `/accounts/${encodeURIComponent(userKey)}/delete`;
 
   const action = useCallback(() => {
     navigate(path);
