@@ -1,39 +1,39 @@
-import { InformationBanner } from "../../../core/components/banner/banner.component";
-import formCommonStyleModule from "../../../core/form-common/form-common.module.css";
-import { useChallenge } from "../../hooks/useChallenge.hook";
-import { useActiveUser } from "../../hooks/useActiveUser.hook";
 import { useEffect } from "preact/hooks";
 import { useNavigate } from "react-router";
+import { useSelectAccountNavigate } from "../../hooks/useSelectAccountNavigate.hook";
+import { useNeedChallengeQuery } from "../../hooks/useNeedChallengeQuery.hook";
+import { ChallengeGuard } from "../../components/challenge-guard/challenge-guard.component";
 
+/** Page that either shows the challenge UI or redirects the user to the account select page */
 export function SignInPage() {
-  const isSynced = useActiveUser((s) => s.synced);
-  const challengeNeeded = useActiveUser((s) => s.challengeNeeded);
-  const startChallenge = useChallenge();
+  const challengeQuery = useNeedChallengeQuery();
   const navigate = useNavigate();
+  const goToSelect = useSelectAccountNavigate()[1];
 
   useEffect(() => {
-    if (isSynced && !challengeNeeded) {
-      navigate("/accounts/-/select", {
+    if (challengeQuery.status === "success" && !challengeQuery.data) {
+      goToSelect({
         replace: true, // back button should go back to the page that summoned us
       });
     }
-  }, [challengeNeeded, isSynced, navigate]);
+  }, [challengeQuery.data, challengeQuery.status, goToSelect, navigate]);
 
   return (
-    <main className={formCommonStyleModule.formMain}>
-      {!isSynced && <InformationBanner title="Checking Sign-In Status" />}
-      {isSynced && (
-        <>
-          {challengeNeeded && (
-            <InformationBanner
-              title="Not Signed In"
-              message="You need to sign-in to use this app"
-              buttonCaption="Sign-In"
-              onButtonClick={() => startChallenge()}
-            />
-          )}
-        </>
-      )}
-    </main>
+    <ChallengeGuard>
+      <Redirect />
+    </ChallengeGuard>
   );
+}
+
+/** Component that when rendered goes to the account select page */
+function Redirect() {
+  const goToSelect = useSelectAccountNavigate()[1];
+
+  useEffect(() => {
+    goToSelect({
+      replace: true, // back button should go back to the page that summoned us
+    });
+  }, [goToSelect]);
+
+  return null;
 }

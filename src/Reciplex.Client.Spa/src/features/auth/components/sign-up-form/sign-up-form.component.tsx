@@ -9,6 +9,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 
+/** Form for creating an account */
 export function SignUpForm() {
   const setActiveUser = useActiveUser((s) => s.setActiveUser);
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ export function SignUpForm() {
       userKey: newAccount.userKey,
       displayName: newAccount.displayName,
     });
-    navigate(makeCreateRecipeBookPath());
+    navigate(makeCreateRecipeBookPath(), { replace: true });
   });
 
   const formDisabled = createAccountMutation.status !== "idle";
@@ -99,6 +100,11 @@ export function SignUpForm() {
   );
 }
 
+/**
+ * Helper to determine if the mutation is in an error state
+ * @param mutationState state of the mutation
+ * @returns true if mutation is in an error state
+ */
 function isErrorState(mutationState: string) {
   switch (mutationState) {
     case "pending":
@@ -109,10 +115,17 @@ function isErrorState(mutationState: string) {
   }
 }
 
+/** form model */
 interface IFormValues {
+  /** backing model for the display name field  */
   displayName: string;
 }
 
+/**
+ * Computes the help text for the display name
+ * @param errors input errors
+ * @returns the help text to show for the input field
+ */
 function displayNameHelpText(
   errors: UseFormReturn<IFormValues>["formState"]["errors"],
 ) {

@@ -1,10 +1,11 @@
 import { AccountSelector } from "../../components/accounts-selector/account-selector.component";
-import { AuthenticatedRouteGuard } from "../../components/authenticated-route-guard/authenticated-route-guard.component";
+import { ChallengeGuard } from "../../components/challenge-guard/challenge-guard.component";
 
+/** page for selecting an account */
 export function SelectAccountPage() {
   return (
-    <AuthenticatedRouteGuard>
-      <AccountSelector />
-    </AuthenticatedRouteGuard>
+    <ChallengeGuard>
+      <AccountSelector redirectToSignUpIfNeeded />
+    </ChallengeGuard>
   );
 }

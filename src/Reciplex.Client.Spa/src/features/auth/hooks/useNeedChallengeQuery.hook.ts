@@ -6,6 +6,7 @@ export function useNeedChallengeQuery() {
   const { challengeClient } = useAuthClients();
   return useQuery({
     queryKey: challengeQueryKey,
+    staleTime: 60 * 1000,
     queryFn: async () => {
       return await challengeClient.challengeRequired();
     },

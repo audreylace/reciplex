@@ -22,6 +22,7 @@ import { useAuthClients } from "../../hooks/useAuthClients.hook";
 import { useAsyncResult } from "../../../core/hooks/useAsyncResult.hook";
 import { useState } from "preact/hooks";
 import { useDeleteAccountMutation } from "../../hooks/useDeleteAccountMutation.hook";
+import { ChallengeGuard } from "../../components/challenge-guard/challenge-guard.component";
 
 export function AccountSettingsPage() {
   const { accountKey } = useParams<{ accountKey: string }>();
@@ -32,9 +33,9 @@ export function AccountSettingsPage() {
 
   return (
     <main className={formCommonStylesModule.formMain}>
-      <AuthenticatedRouteGuard>
+      <ChallengeGuard>
         <PageBody accountKey={accountKey} />
-      </AuthenticatedRouteGuard>
+      </ChallengeGuard>
     </main>
   );
 }

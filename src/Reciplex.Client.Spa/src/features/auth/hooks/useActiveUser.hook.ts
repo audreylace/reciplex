@@ -4,26 +4,13 @@ const localStoreKey = "selectedUserKey";
 
 export const useActiveUser = create<IUseActiveUser>((set) => ({
   userKey: null,
-  challengeNeeded: undefined,
-  synced: false,
   displayName: null,
   reset: () => {
     set((prev: IStateObject): IStateObject => {
       return {
         ...prev,
-        synced: false,
         userKey: null,
-        challengeNeeded: false,
         displayName: null,
-      };
-    });
-  },
-  setChallengeStatus: (flag: boolean) => {
-    set((prev: IStateObject): IStateObject => {
-      return {
-        ...prev,
-        challengeNeeded: flag,
-        synced: true,
       };
     });
   },
@@ -35,8 +22,6 @@ export const useActiveUser = create<IUseActiveUser>((set) => ({
           ...prev,
           userKey: null,
           displayName: null,
-          synced: true,
-          challengeNeeded: false,
         };
       } else {
         persistActiveUserId(args.userKey);
@@ -45,8 +30,6 @@ export const useActiveUser = create<IUseActiveUser>((set) => ({
         ...prev,
         userKey: args.userKey,
         displayName: args.displayName,
-        challengeNeeded: false,
-        synced: true,
       };
     }),
 }));
@@ -62,15 +45,12 @@ export function clearPersistedActiveUserId() {
 }
 export interface IUseActiveUser extends IStateObject {
   setActiveUser: (args?: ISetActiveUserArgs) => void;
-  setChallengeStatus: (flag: boolean) => void;
   reset: () => void;
 }
 
 interface IStateObject {
   userKey: string | null;
   displayName: string | null;
-  challengeNeeded: boolean | undefined;
-  synced: boolean;
 }
 
 export interface ISetActiveUserArgs {

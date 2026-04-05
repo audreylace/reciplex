@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate, useParams } from "react-router";
+import { NavLink, Outlet, useParams } from "react-router";
 import styles from "./book-layout.module.css";
 import { AppNavigation } from "../../../core/components/app-navigation/app-navigation.component";
 import { SuccessButton } from "../../../core/components/buttons/success-button.component";
