@@ -1,0 +1,138 @@
+import { useForm, type UseFormReturn } from "react-hook-form";
+import { ConcurrencyConflictAlert } from "../concurrency-conflict-alert/concurrency-conflict-alert.component";
+import Typography from "@mui/material/Typography";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import { SaveFailedAlert } from "./save-failed-alert.component";
+import { AccountSettingsFormSkeleton } from "./account-settings-form-skeleton.component";
+import { useEffect } from "preact/hooks";
+
+/** form for modifying an account */
+export function AccountSettingsForm({
+  displayName,
+  userKey,
+  showSaveError,
+  showSkeleton,
+  showConcurrencyError,
+  pending,
+  onSave,
+  onReset,
+}: IAccountSettingsFormProps) {
+  const {
+    register,
+    formState: { errors },
+    setValue,
+    handleSubmit,
+  } = useForm<IAccountSettingsFormModel>({
+    defaultValues: { displayName: displayName },
+  });
+
+  const onSubmit = handleSubmit(async (data) => {
+    onSave({
+      displayName: data.displayName,
+    });
+  });
+
+  useEffect(() => {
+    setValue("displayName", displayName);
+  }, [displayName, setValue]);
+
+  if (showSkeleton) {
+    return <AccountSettingsFormSkeleton />;
+  }
+
+  const formDisabled = showSaveError || pending || showConcurrencyError;
+  return (
+    <>
+      <Typography variant="h4">
+        <Stack direction={"row"} gap={2}>
+          <span>Modifying Account: {displayName}</span>
+        </Stack>
+      </Typography>
+      <Typography variant="subtitle1" gutterBottom>
+        <Stack direction={"row"} gap={1}>
+          <span>Account Key: </span>
+          <span>{userKey}</span>
+        </Stack>
+      </Typography>
+      {showConcurrencyError && <ConcurrencyConflictAlert onReset={onReset} />}
+      {showSaveError && <SaveFailedAlert onReset={onReset} />}
+      <form onSubmit={onSubmit}>
+        <Stack spacing={2} marginTop={3}>
+          <TextField
+            label="Display Name"
+            helperText={displayNameHelpText(errors)}
+            error={!!errors.displayName}
+            fullWidth
+            variant="filled"
+            maxLength={64}
+            disabled={formDisabled}
+            {...register("displayName", {
+              maxLength: 64,
+              required: true,
+            })}
+          />
+          <Box>
+            <Button
+              variant="contained"
+              type="submit"
+              disabled={formDisabled}
+              loading={pending}
+            >
+              Save
+            </Button>
+          </Box>
+        </Stack>
+      </form>
+    </>
+  );
+}
+
+/** properties for `AccountSettingsForm` */
+export interface IAccountSettingsFormProps {
+  /** the accounts display name */
+  displayName: string;
+  /** the accounts user key */
+  userKey: string;
+  /** when true the form appears as a loading skeleton */
+  showSkeleton: boolean;
+  /** invoked at deletion */
+  onSave: (args: IOnSaveData) => void;
+  /** invoked by the form as part of error recovery. Indicates likely that the user data should be reloaded. */
+  onReset: () => void;
+  /** controls if the pending deletion UI is active */
+  pending: boolean;
+  /** shows the save failed banner */
+  showSaveError: boolean;
+  /** shows the concurrency conflict banner */
+  showConcurrencyError: boolean;
+}
+
+/** model for useForm hook in `AccountSettingsForm` */
+interface IAccountSettingsFormModel {
+  displayName: string;
+}
+export interface IOnSaveData {
+  displayName: string;
+}
+
+/**
+ * Computes the help text for the display name
+ * @param errors input errors
+ * @returns the help text to show for the input field
+ */
+function displayNameHelpText(
+  errors: UseFormReturn<IAccountSettingsFormModel>["formState"]["errors"],
+) {
+  if (errors.displayName) {
+    if (errors.displayName.type === "required") {
+      return "Required to provide a display name to use this app";
+    } else if (errors.displayName.type === "maxLength") {
+      return "Display name must be no longer than 64 characters";
+    }
+  }
+
+  return "Name visible to others using the app";
+}

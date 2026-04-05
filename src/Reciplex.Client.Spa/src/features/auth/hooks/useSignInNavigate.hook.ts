@@ -12,18 +12,11 @@ const signUpPath = "/accounts/-/sign-in";
  * path and arg1 is the navigate action.
  * Bind arg0 to href and arg1 to the event handler.
  */
-export function useSignInNavigate(): [
-  string,
-  (e?: Event | null | undefined) => void,
-] {
+export function useSignInNavigate(): [string, () => void] {
   const navigate = useNavigate();
-  const navigateAction = useCallback(
-    (e: Event | null | undefined) => {
-      e?.preventDefault();
-      navigate(signUpPath);
-    },
-    [navigate],
-  );
+  const navigateAction = useCallback(() => {
+    navigate(signUpPath);
+  }, [navigate]);
 
   return [signUpPath, navigateAction];
 }

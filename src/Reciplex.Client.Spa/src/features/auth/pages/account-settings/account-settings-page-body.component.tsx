@@ -1,18 +1,21 @@
-import { useSelectAccountNavigate } from "../../hooks/useSelectAccountNavigate.hook";
-import { useDeleteAccountMutation } from "../../hooks/useDeleteAccountMutation.hook";
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
-import { DeleteAccountForm } from "../../components/delete-account-form/delete-account-form.component";
 import { AccountNotFoundAlert } from "../../components/account-not-found-alert/account-not-found-alert.component";
+import {
+  AccountSettingsForm,
+  type IOnSaveData,
+} from "../../components/account-settings-form/account-settings-form.component";
 import { useAccountMutationState } from "../../hooks/useAccountMutationState.hook";
 import {
   useActiveUser,
   useActiveUserKey,
 } from "../../hooks/useActiveUser.hook";
+import { useSelectAccountNavigate } from "../../hooks/useSelectAccountNavigate.hook";
+import { useUpdateAccountMutation } from "../../hooks/useUpdateAccountMutation.hook";
 
-/** body of the delete account page */
-export function DeleteAccountPageBody({
+/** body of the account settings page */
+export function AccountSettingsPageBody({
   userKey,
-}: IDeleteAccountPageBodyProps) {
+}: IAccountSettingsPageBodyProps) {
   const {
     query,
     concurrencyConflict,
@@ -22,24 +25,37 @@ export function DeleteAccountPageBody({
     resetCount,
   } = useAccountMutationState(userKey);
   const navigateSelectAccount = useSelectAccountNavigate()[1];
-  const deleteMutation = useDeleteAccountMutation();
+  const saveMutation = useUpdateAccountMutation();
 
   const activeUserKey = useActiveUserKey();
-  const resetActiveUser = useActiveUser((s) => s.reset);
+  const setActiveUser = useActiveUser((s) => s.setActiveUser);
 
   // reset the form by clearing the react-query cache
   const onReset = () => {
-    deleteMutation.reset();
-    resetState();
+    saveMutation.reset();
+    if (concurrencyConflict) {
+      saveMutation.reset();
+      resetState();
+    }
   };
 
-  const onDelete = async () => {
+  const onSave = async (data: IOnSaveData) => {
     if (!concurrencyToken) {
       return;
     }
-    await deleteMutation.mutateAsync({ userKey, concurrencyToken });
-    if (activeUserKey === userKey) {
-      resetActiveUser();
+    const result = await saveMutation.mutateAsync({
+      userKey: userKey,
+      concurrencyToken,
+      displayName: data.displayName,
+    });
+
+    // update app state cache if this user
+    // is the active user.
+    if (userKey === activeUserKey) {
+      setActiveUser({
+        userKey: result.userKey,
+        displayName: result.displayName,
+      });
     }
 
     navigateSelectAccount();
@@ -54,16 +70,14 @@ export function DeleteAccountPageBody({
   }
 
   return (
-    <DeleteAccountForm
+    <AccountSettingsForm
       showSkeleton={query.isPending}
       key={resetCount}
       displayName={account?.displayName ?? ""}
       userKey={account?.userKey ?? ""}
-      pending={deleteMutation.status === "pending"}
-      showDeleteError={
-        deleteMutation.status === "error" && !concurrencyConflict
-      }
-      onDelete={onDelete}
+      pending={saveMutation.status === "pending"}
+      showSaveError={saveMutation.status === "error" && !concurrencyConflict}
+      onSave={onSave}
       onReset={onReset}
       showConcurrencyError={concurrencyConflict}
     />
@@ -71,7 +85,7 @@ export function DeleteAccountPageBody({
 }
 
 /** properties for delete account page body */
-interface IDeleteAccountPageBodyProps {
+export interface IAccountSettingsPageBodyProps {
   /** the account key */
   userKey: string;
 }

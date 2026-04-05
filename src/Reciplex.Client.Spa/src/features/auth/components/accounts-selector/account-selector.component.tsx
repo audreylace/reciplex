@@ -1,4 +1,7 @@
-import { useGetAccountsQuery } from "../../hooks/useGetAccountsQuery.hook";
+import {
+  useGetAccountsQuery,
+  useResetAccountsQuery,
+} from "../../hooks/useGetAccountsQuery.hook";
 import Stack from "@mui/material/Stack";
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
 import { AddAccountButton } from "./add-account-button.component";
@@ -16,6 +19,7 @@ export function AccountSelector({
 }) {
   const accountQuery = useGetAccountsQuery();
   const goToSignUp = useSignUpNavigate()[1];
+  const resetAccountsQuery = useResetAccountsQuery();
 
   useEffect(() => {
     if (
@@ -42,7 +46,10 @@ export function AccountSelector({
     <>
       <TopBanner />
       <Stack spacing={2}>
-        <LoadingFailedAlert show={accountQuery.status === "error"} />
+        <LoadingFailedAlert
+          show={accountQuery.status === "error"}
+          onRetry={resetAccountsQuery}
+        />
         {accountQuery.data && accountQuery.status === "success" && (
           <>
             <AddAccountButton />

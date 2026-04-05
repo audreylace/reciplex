@@ -5,12 +5,16 @@ import { ActiveUserGuard } from "../active-user-guard/active-user-guard.componen
 /** Guards a route making sure a challenge is not needed and an account is selected */
 export function AuthenticatedRouteGuard({
   children,
+  allowNullUser,
 }: {
   children: ComponentChildren;
+  allowNullUser?: boolean;
 }) {
   return (
     <ChallengeGuard>
-      <ActiveUserGuard>{children}</ActiveUserGuard>
+      <ActiveUserGuard allowNullUser={allowNullUser}>
+        {children}
+      </ActiveUserGuard>
     </ChallengeGuard>
   );
 }

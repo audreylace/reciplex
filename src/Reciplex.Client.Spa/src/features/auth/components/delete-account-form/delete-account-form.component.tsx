@@ -4,7 +4,7 @@ import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
-import { ConcurrencyConflictAlert } from "./concurrency-conflict-alert.component";
+import { ConcurrencyConflictAlert } from "../concurrency-conflict-alert/concurrency-conflict-alert.component";
 import { DeleteFailedAlert } from "./delete-failed-alert.component";
 import { DeleteAccountFormSkeleton } from "./delete-account-form-skeleton.component";
 
@@ -38,7 +38,7 @@ export function DeleteAccountForm({
     <>
       <Typography variant="h4">
         <Stack direction={"row"} gap={2}>
-          <span>Deleting account {displayName}</span>
+          <span>Deleting Account: {displayName}</span>
         </Stack>
       </Typography>
       <Typography variant="subtitle1" gutterBottom>
@@ -62,7 +62,6 @@ export function DeleteAccountForm({
             variant="filled"
             disabled={formDisabled}
             {...register("displayName", {
-              required: true,
               validate: (value) => {
                 return displayName === value || `type "${displayName}"`;
               },

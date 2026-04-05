@@ -8,6 +8,7 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
+import { Fade } from "@mui/material";
 
 /** Form for creating an account */
 export function SignUpForm() {
@@ -40,17 +41,19 @@ export function SignUpForm() {
       <form onSubmit={onSubmit}>
         <Stack spacing={2} marginTop={3}>
           {createAccountMutation.status === "success" && (
-            <Alert
-              severity="success"
-              variant="filled"
-              action={
-                <Button color="inherit" size="small">
-                  Create First Book
-                </Button>
-              }
-            >
-              Account created
-            </Alert>
+            <Fade in={true} timeout={500}>
+              <Alert
+                severity="success"
+                variant="filled"
+                action={
+                  <Button color="inherit" size="small">
+                    Create First Book
+                  </Button>
+                }
+              >
+                Account created
+              </Alert>
+            </Fade>
           )}
           {isErrorState(createAccountMutation.status) && (
             <Alert
