@@ -8,7 +8,6 @@ import {
   useGetRecipeBookById,
   useGetRecipeBookByIdCacheKey,
 } from "../../hooks/useGetRecipeBookById.hook";
-import type { IRecipeBookModel } from "../../services/recipe-types";
 import { makeBookListPath, makeViewRecipeBookPath } from "../../route-utils";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
@@ -23,14 +22,14 @@ export function DeleteRecipeBookPageBody({
   const navigate = useNavigate();
   const { resetCount, resetState, concurrencyConflict, concurrencyToken } =
     useMutationFormState({
-      concurrencyTokenProvider: tokenProvider,
+      concurrencyTokenProvider: (b) => b.versionTag,
       queryKey: bookQueryKey,
       query: bookQuery,
       onReset: () => deleteRecipeBookMutation.reset(),
     });
 
   const onDelete = async () => {
-    if (!concurrencyToken) {
+    if (!concurrencyToken || concurrencyConflict) {
       return;
     }
     await deleteRecipeBookMutation.mutateAsync({
@@ -95,12 +94,4 @@ export function DeleteRecipeBookPageBody({
 export interface IDeleteRecipeBookPageBodyProps {
   /** the key of the book to delete */
   bookKey: string;
-}
-
-/**
- * delegate to retrieve version tag
- * @param book the book model
- */
-function tokenProvider(book: IRecipeBookModel) {
-  return book.versionTag;
 }

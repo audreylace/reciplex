@@ -45,7 +45,7 @@ export function DeleteWithNameVerification({
       </Typography>
       <Typography variant="h6">
         <Stack direction="row" gap={1}>
-          <span>{name}</span>{" "}
+          <span>{name}</span>
         </Stack>
       </Typography>
       {description && (

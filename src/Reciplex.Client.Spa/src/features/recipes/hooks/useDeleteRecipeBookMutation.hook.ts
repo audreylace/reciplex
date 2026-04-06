@@ -26,7 +26,7 @@ export function useDeleteRecipeBookMutation() {
         versionTag,
       );
       queryClient.invalidateQueries({
-        queryKey: getRecipeBookByIdCacheKey(bookId),
+        queryKey: getRecipeBookByIdCacheKey(AssertString(userKey), bookId),
       });
     },
   });

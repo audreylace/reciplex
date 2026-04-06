@@ -1,16 +1,23 @@
-import { useCallback, useMemo, useState } from "preact/hooks";
+import { useMemo } from "preact/hooks";
 import {
+  getAccountsQueryKey,
   useGetAccountsQuery,
-  useResetAccountsQuery,
 } from "./useGetAccountsQuery.hook";
+import { useMutationFormState } from "../../common/hooks/useMutationFormState.hook";
 
 export function useAccountMutationState(userKey: string) {
-  const resetAccountsQuery = useResetAccountsQuery();
   const accountsQuery = useGetAccountsQuery(undefined, { noCache: true });
-  const [concurrencyToken, setConcurrencyToken] = useState<string | null>();
-  // component key - incremented each time we reset the form
-  // to recycle the component
-  const [resetCount, setResetCount] = useState(1);
+
+  const { concurrencyToken, resetState, resetCount, concurrencyConflict } =
+    useMutationFormState({
+      queryKey: getAccountsQueryKey,
+      query: accountsQuery,
+      concurrencyTokenProvider: (data) => {
+        return (
+          data?.find((acc) => acc.userKey === userKey)?.concurrencyTag ?? null
+        );
+      },
+    });
 
   // extract account from the list
   const account = useMemo(() => {
@@ -20,29 +27,8 @@ export function useAccountMutationState(userKey: string) {
     return null;
   }, [accountsQuery.data, accountsQuery.isSuccess, userKey]);
 
-  // reset the form by clearing the react-query cache
-  const onReset = useCallback(() => {
-    resetAccountsQuery();
-    setConcurrencyToken(null);
-    setResetCount((k) => k + 1);
-  }, [resetAccountsQuery]);
-
-  // lock concurrency token to detect concurrent modifications
-  setConcurrencyToken((token) => {
-    if (!account || token) {
-      return token;
-    }
-    return account.concurrencyTag;
-  });
-
-  const concurrencyConflict = !!(
-    concurrencyToken &&
-    account &&
-    concurrencyToken !== account.concurrencyTag
-  );
-
   return {
-    resetState: onReset,
+    resetState: resetState,
     concurrencyConflict: concurrencyConflict,
     query: accountsQuery,
     concurrencyToken: concurrencyToken,

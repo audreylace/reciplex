@@ -40,7 +40,7 @@ export function AccountSettingsPageBody({
   };
 
   const onSave = async (data: IOnSaveData) => {
-    if (!concurrencyToken) {
+    if (!concurrencyToken || concurrencyConflict) {
       return;
     }
     const result = await saveMutation.mutateAsync({

@@ -34,7 +34,7 @@ export function DeleteAccountPageBody({
   };
 
   const onDelete = async () => {
-    if (!concurrencyToken) {
+    if (!concurrencyToken || concurrencyConflict) {
       return;
     }
     await deleteMutation.mutateAsync({ userKey, concurrencyToken });
