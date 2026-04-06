@@ -46,7 +46,15 @@ export function SignUpForm() {
                 severity="success"
                 variant="filled"
                 action={
-                  <Button color="inherit" size="small">
+                  <Button
+                    color="inherit"
+                    size="small"
+                    href={makeCreateRecipeBookPath()}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigate(makeCreateRecipeBookPath());
+                    }}
+                  >
                     Create First Book
                   </Button>
                 }

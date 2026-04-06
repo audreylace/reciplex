@@ -18,7 +18,17 @@ export function NotFoundAlert({
       severity="error"
       variant="filled"
       action={
-        <Button color="inherit" size="small" href={href} onClick={onClick}>
+        <Button
+          color="inherit"
+          size="small"
+          href={href}
+          onClick={(e) => {
+            if (onClick) {
+              e.preventDefault();
+              onClick();
+            }
+          }}
+        >
           {caption}
         </Button>
       }

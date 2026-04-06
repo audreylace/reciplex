@@ -25,9 +25,10 @@ export function useDeleteRecipeBookMutation() {
         bookId,
         versionTag,
       );
-      queryClient.invalidateQueries({
-        queryKey: getRecipeBookByIdCacheKey(AssertString(userKey), bookId),
-      });
+      queryClient.setQueryData(
+        getRecipeBookByIdCacheKey(AssertString(userKey), bookId),
+        null,
+      );
     },
   });
 }
