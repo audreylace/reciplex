@@ -15,7 +15,9 @@ export function BookLayout() {
   return (
     <AuthenticatedRouteGuard>
       <BookLayoutBar />
-      <Outlet />
+      <main className="pageMain">
+        <Outlet />
+      </main>
     </AuthenticatedRouteGuard>
   );
 }

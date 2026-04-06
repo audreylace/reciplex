@@ -1,0 +1,106 @@
+import { useNavigate } from "react-router";
+import { DeleteWithNameVerification } from "../../../common/components/delete-with-name-verification.component.tsx/delete-with-name-verification.component";
+import { useMutationFormState } from "../../../common/hooks/useMutationFormState.hook";
+import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
+import { RecipeBookNotFoundBanner } from "../../components/book-banners/recipe-book-not-found-banner.component";
+import { useDeleteRecipeBookMutation } from "../../hooks/useDeleteRecipeBookMutation.hook";
+import {
+  useGetRecipeBookById,
+  useGetRecipeBookByIdCacheKey,
+} from "../../hooks/useGetRecipeBookById.hook";
+import type { IRecipeBookModel } from "../../services/recipe-types";
+import { makeBookListPath, makeViewRecipeBookPath } from "../../route-utils";
+import Alert from "@mui/material/Alert";
+import Button from "@mui/material/Button";
+
+/** body of the delete recipe book page */
+export function DeleteRecipeBookPageBody({
+  bookKey,
+}: IDeleteRecipeBookPageBodyProps) {
+  const deleteRecipeBookMutation = useDeleteRecipeBookMutation();
+  const bookQueryKey = useGetRecipeBookByIdCacheKey(bookKey);
+  const bookQuery = useGetRecipeBookById(bookKey, { noCache: true });
+  const navigate = useNavigate();
+  const { resetCount, resetState, concurrencyConflict, concurrencyToken } =
+    useMutationFormState({
+      concurrencyTokenProvider: tokenProvider,
+      queryKey: bookQueryKey,
+      query: bookQuery,
+      onReset: () => deleteRecipeBookMutation.reset(),
+    });
+
+  const onDelete = async () => {
+    if (!concurrencyToken) {
+      return;
+    }
+    await deleteRecipeBookMutation.mutateAsync({
+      bookId: bookKey,
+      versionTag: concurrencyToken,
+    });
+
+    navigate(makeBookListPath());
+  };
+
+  if (bookQuery.status === "error") {
+    return <LoadingFailedAlert />;
+  }
+
+  if (bookQuery.isSuccess && !bookQuery.data) {
+    return <RecipeBookNotFoundBanner />;
+  }
+
+  if (bookQuery.isSuccess && bookQuery.data && !bookQuery.data.mayDelete) {
+    return (
+      <Alert
+        severity="error"
+        variant="filled"
+        action={
+          <Button
+            color="inherit"
+            size="small"
+            href={makeViewRecipeBookPath(bookKey)}
+            onClick={() => {
+              navigate(makeViewRecipeBookPath(bookKey));
+            }}
+          >
+            View Book
+          </Button>
+        }
+      >
+        You may not delete this book
+      </Alert>
+    );
+  }
+
+  return (
+    <DeleteWithNameVerification
+      entityType="Recipe Book"
+      showSkeleton={bookQuery.isPending}
+      key={resetCount}
+      name={bookQuery.data?.name ?? ""}
+      uniqueKey={bookQuery.data?.id ?? ""}
+      pending={deleteRecipeBookMutation.status === "pending"}
+      showDeleteError={
+        deleteRecipeBookMutation.status === "error" && !concurrencyConflict
+      }
+      onDelete={onDelete}
+      onReset={resetState}
+      showConcurrencyError={concurrencyConflict}
+      description={bookQuery.data?.shortDescription}
+    />
+  );
+}
+
+/** props for `DeleteRecipeBookPageBody` */
+export interface IDeleteRecipeBookPageBodyProps {
+  /** the key of the book to delete */
+  bookKey: string;
+}
+
+/**
+ * delegate to retrieve version tag
+ * @param book the book model
+ */
+function tokenProvider(book: IRecipeBookModel) {
+  return book.versionTag;
+}

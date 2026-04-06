@@ -7,7 +7,8 @@ export function NotFoundAlert({
   href,
   caption,
   onClick,
-}: ILoadingFailedAlertProps) {
+  entityName,
+}: INotFoundAlertProps) {
   if (show === false) {
     return null;
   }
@@ -22,16 +23,22 @@ export function NotFoundAlert({
         </Button>
       }
     >
-      Not Found
+      {entityName} Not Found
     </Alert>
   );
 }
-/** properties for `LoadingFailedAlert` */
-export interface ILoadingFailedAlertProps {
+/** properties for `NotFoundAlert` */
+export interface INotFoundAlertProps {
   /** flag controlling if the banner should render */
   show?: boolean | undefined | null;
-  /** optional callback overriding the default action. Invoked when the user clicks the retry button.  */
+  /**
+   * optional callback overriding the default
+   * action. Invoked when the user clicks the retry button.
+   */
   onClick?: () => void;
+  /** the path the button will navigate the user to */
   href?: string;
+  /** the button caption */
   caption?: string;
+  entityName?: string;
 }

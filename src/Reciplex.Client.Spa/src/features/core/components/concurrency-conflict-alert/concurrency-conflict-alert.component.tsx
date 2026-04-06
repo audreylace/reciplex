@@ -1,24 +1,29 @@
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 
-/** error banner shown when the delete fails because of a server error or other exception */
-export function DeleteFailedAlert({ onReset }: IConcurrencyConflictAlertProps) {
+/**
+ * Error banner shown when someone else modifies an entity
+ * at the same time as the current user.
+ */
+export function ConcurrencyConflictAlert({
+  onReset,
+}: IConcurrencyConflictAlertProps) {
   return (
     <Alert
       severity="error"
       variant="filled"
       action={
         <Button color="inherit" size="small" onClick={onReset}>
-          Retry
+          Reload
         </Button>
       }
     >
-      Account deletion failed
+      Someone else modified this
     </Alert>
   );
 }
 
-/** properties for `DeleteFailedAlert` */
+/** properties for `ConcurrencyConflictAlert` */
 export interface IConcurrencyConflictAlertProps {
   /** called when the user clicks reload */
   onReset: () => void;

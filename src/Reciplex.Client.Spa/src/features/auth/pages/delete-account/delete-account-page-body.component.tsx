@@ -1,13 +1,13 @@
 import { useSelectAccountNavigate } from "../../hooks/useSelectAccountNavigate.hook";
 import { useDeleteAccountMutation } from "../../hooks/useDeleteAccountMutation.hook";
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
-import { DeleteAccountForm } from "../../components/delete-account-form/delete-account-form.component";
 import { AccountNotFoundAlert } from "../../components/account-not-found-alert/account-not-found-alert.component";
 import { useAccountMutationState } from "../../hooks/useAccountMutationState.hook";
 import {
   useActiveUser,
   useActiveUserKey,
 } from "../../hooks/useActiveUser.hook";
+import { DeleteWithNameVerification } from "../../../common/components/delete-with-name-verification.component.tsx/delete-with-name-verification.component";
 
 /** body of the delete account page */
 export function DeleteAccountPageBody({
@@ -54,11 +54,12 @@ export function DeleteAccountPageBody({
   }
 
   return (
-    <DeleteAccountForm
+    <DeleteWithNameVerification
+      entityType="Account"
       showSkeleton={query.isPending}
       key={resetCount}
-      displayName={account?.displayName ?? ""}
-      userKey={account?.userKey ?? ""}
+      name={account?.displayName ?? ""}
+      uniqueKey={account?.userKey ?? ""}
       pending={deleteMutation.status === "pending"}
       showDeleteError={
         deleteMutation.status === "error" && !concurrencyConflict

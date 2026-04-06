@@ -1,13 +1,13 @@
-import { ErrorBanner } from "../../../core/components/banner/banner.component";
+import { NotFoundAlert } from "../../../core/components/not-found-alert/not-found-alert.component";
+import { makeBookListPath } from "../../route-utils";
 
 /** error banner shown when a recipe book was not found */
 export function RecipeBookNotFoundBanner() {
   return (
-    <ErrorBanner
-      to="/"
-      title="Not Found"
-      message="Requested recipe book was not found"
-      buttonCaption="Go Home"
+    <NotFoundAlert
+      href={makeBookListPath()}
+      caption="View Books"
+      entityName="Recipe Book"
     />
   );
 }

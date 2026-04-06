@@ -6,7 +6,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 
 /** skeleton for the form shown while it loads */
-export function DeleteAccountFormSkeleton() {
+export function DeleteWithNameVerificationSkeleton() {
   return (
     <>
       <Typography variant="h4">

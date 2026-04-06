@@ -1,5 +1,4 @@
 import { useForm, type UseFormReturn } from "react-hook-form";
-import { ConcurrencyConflictAlert } from "../concurrency-conflict-alert/concurrency-conflict-alert.component";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
@@ -8,6 +7,7 @@ import Button from "@mui/material/Button";
 import { SaveFailedAlert } from "./save-failed-alert.component";
 import { AccountSettingsFormSkeleton } from "./account-settings-form-skeleton.component";
 import { useEffect } from "preact/hooks";
+import { ConcurrencyConflictAlert } from "../../../core/components/concurrency-conflict-alert/concurrency-conflict-alert.component";
 
 /** form for modifying an account */
 export function AccountSettingsForm({
@@ -57,7 +57,9 @@ export function AccountSettingsForm({
           <span>{userKey}</span>
         </Stack>
       </Typography>
-      {showConcurrencyError && <ConcurrencyConflictAlert onReset={onReset} />}
+      {showConcurrencyError && (
+        <ConcurrencyConflictAlert onReset={onReset} entityName="Account" />
+      )}
       {showSaveError && <SaveFailedAlert onReset={onReset} />}
       <form onSubmit={onSubmit}>
         <Stack spacing={2} marginTop={3}>

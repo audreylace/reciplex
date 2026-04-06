@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type IUpdateRecipeBookArgs } from "../services/recipe-types";
 import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
-import { recipeBookByIdCacheKey } from "./useGetRecipeBookById.hook";
+import { getRecipeBookByIdCacheKey } from "./useGetRecipeBookById.hook";
 import { AssertString } from "../../sentinel/stringUtilities";
 import { useActiveUserKey } from "../../auth/hooks/useActiveUser.hook";
 
@@ -26,7 +26,7 @@ export function useUpdateRecipeBookMutation() {
           shortDescription: data.shortDescription,
         },
       );
-      queryClient.setQueryData(recipeBookByIdCacheKey(newData.id), newData);
+      queryClient.setQueryData(getRecipeBookByIdCacheKey(newData.id), newData);
       return newData;
     },
   });

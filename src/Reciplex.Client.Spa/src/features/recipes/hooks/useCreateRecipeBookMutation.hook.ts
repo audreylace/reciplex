@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
 import type { ICreateRecipeBookArgs } from "../services/recipe-types";
-import { recipeBookByIdCacheKey } from "./useGetRecipeBookById.hook";
+import { getRecipeBookByIdCacheKey } from "./useGetRecipeBookById.hook";
 import { useActiveUserKey } from "../../auth/hooks/useActiveUser.hook";
 import { AssertString } from "../../sentinel/stringUtilities";
 
@@ -19,7 +19,7 @@ export function useCreateRecipeBookMutation() {
         AssertString(userKey),
         args,
       );
-      queryClient.setQueryData(recipeBookByIdCacheKey(result.id), result);
+      queryClient.setQueryData(getRecipeBookByIdCacheKey(result.id), result);
       return result;
     },
   });

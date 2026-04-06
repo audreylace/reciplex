@@ -4,47 +4,61 @@ import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
-import { ConcurrencyConflictAlert } from "../concurrency-conflict-alert/concurrency-conflict-alert.component";
 import { DeleteFailedAlert } from "./delete-failed-alert.component";
-import { DeleteAccountFormSkeleton } from "./delete-account-form-skeleton.component";
+import { DeleteWithNameVerificationSkeleton } from "./delete-with-name-verification-skeleton.component";
+import { ConcurrencyConflictAlert } from "../../../core/components/concurrency-conflict-alert/concurrency-conflict-alert.component";
 
-/** component providing the form for deleting an account */
-export function DeleteAccountForm({
-  displayName,
-  userKey,
+/** component providing the form for deleting an entity */
+export function DeleteWithNameVerification({
+  name,
+  uniqueKey,
   showDeleteError,
   showSkeleton,
   showConcurrencyError,
   pending,
   onDelete,
   onReset,
-}: IDeleteAccountFormProps) {
+  entityType,
+  description,
+}: IDeleteWithNameVerificationProps) {
   const {
     register,
     formState: { errors },
     handleSubmit,
-  } = useForm<IDeleteAccountFormFields>();
+  } = useForm<IFormModel>();
 
   const onSubmit = handleSubmit(async () => {
     onDelete();
   });
 
   if (showSkeleton) {
-    return <DeleteAccountFormSkeleton />;
+    return <DeleteWithNameVerificationSkeleton />;
   }
 
   const formDisabled = showDeleteError || pending || showConcurrencyError;
   return (
     <>
-      <Typography variant="h4">
+      <Typography variant="h5" gutterBottom>
         <Stack direction={"row"} gap={2}>
-          <span>Deleting Account: {displayName}</span>
+          <span>Deleting {entityType}</span>
         </Stack>
       </Typography>
-      <Typography variant="subtitle1" gutterBottom>
-        <Stack direction={"row"} gap={1}>
-          <span>Account Key: </span>
-          <span>{userKey}</span>
+      <Typography variant="h6">
+        <Stack direction="row" gap={1}>
+          <span>{name}</span>{" "}
+        </Stack>
+      </Typography>
+      {description && (
+        <Typography variant="body1">
+          <Stack direction={"row"} gap={1}>
+            <span>{description}</span>
+          </Stack>
+        </Typography>
+      )}
+      <Typography variant="body2" gutterBottom>
+        <Stack direction="row" gap={1}>
+          <span>Key: </span>
+          <span>{uniqueKey}</span>
         </Stack>
       </Typography>
       {showConcurrencyError && <ConcurrencyConflictAlert onReset={onReset} />}
@@ -52,18 +66,18 @@ export function DeleteAccountForm({
       <form onSubmit={onSubmit}>
         <Stack spacing={2} marginTop={3}>
           <Typography variant="body1" gutterBottom>
-            Type {`'${displayName}'`} to delete account
+            Type {`'${name}'`} to confirm permanent deletion
           </Typography>
           <TextField
-            label="Display Name"
-            helperText={errors.displayName?.message}
-            error={!!errors.displayName}
+            label={`Type '${name}'`}
+            helperText={errors.name?.message}
+            error={!!errors.name}
             fullWidth
             variant="filled"
             disabled={formDisabled}
-            {...register("displayName", {
+            {...register("name", {
               validate: (value) => {
-                return displayName === value || `type "${displayName}"`;
+                return name === value || `type "${name}"`;
               },
             })}
           />
@@ -75,7 +89,7 @@ export function DeleteAccountForm({
               disabled={formDisabled}
               loading={pending}
             >
-              Delete Account
+              Delete
             </Button>
           </Box>
         </Stack>
@@ -85,11 +99,11 @@ export function DeleteAccountForm({
 }
 
 /** properties for the main form component */
-interface IDeleteAccountFormProps {
-  /** the accounts display name */
-  displayName: string;
-  /** the accounts user key */
-  userKey: string;
+interface IDeleteWithNameVerificationProps {
+  /** the name */
+  name: string;
+  /** the entities unique key */
+  uniqueKey: string;
   /** when true the form appears as a loading skeleton */
   showSkeleton: boolean;
   /** invoked at deletion */
@@ -102,10 +116,14 @@ interface IDeleteAccountFormProps {
   showDeleteError: boolean;
   /** shows the concurrency conflict banner */
   showConcurrencyError: boolean;
+  /** the entity type */
+  entityType: string;
+  /** additional description */
+  description?: string;
 }
 
-/** model use by the form control inside of `DeleteAccountForm` */
-interface IDeleteAccountFormFields {
-  /** account display name */
-  displayName: string;
+/** model use by the form control inside of `DeleteWithNameVerification` */
+interface IFormModel {
+  /** the name */
+  name: string;
 }
