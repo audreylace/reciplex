@@ -23,7 +23,7 @@ export function AccountSettingsForm({
   const {
     register,
     formState: { errors },
-    setValue,
+    reset,
     handleSubmit,
   } = useForm<IAccountSettingsFormModel>({
     defaultValues: { displayName: displayName },
@@ -36,8 +36,8 @@ export function AccountSettingsForm({
   });
 
   useEffect(() => {
-    setValue("displayName", displayName);
-  }, [displayName, setValue]);
+    reset({ displayName });
+  }, [displayName, reset]);
 
   if (showSkeleton) {
     return <AccountSettingsFormSkeleton />;

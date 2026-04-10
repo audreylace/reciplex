@@ -11,28 +11,28 @@ export function ChallengeGuard({ children }: { children: ComponentChildren }) {
   const challengeQuery = useNeedChallengeQuery();
   const startChallenge = useChallenge();
 
-  return (
-    <>
-      <LoadingIndicator show={challengeQuery.isPending} />
-      <LoadingFailedAlert show={challengeQuery.isError} />
-      {challengeQuery.isSuccess && challengeQuery.data && (
-        <Alert
-          severity="info"
-          variant="filled"
-          action={
-            <Button
-              color="inherit"
-              size="small"
-              onClick={() => startChallenge()}
-            >
-              Sign-In
-            </Button>
-          }
-        >
-          You need to sign-in to use this app
-        </Alert>
-      )}
-      {challengeQuery.isSuccess && !challengeQuery.data && children}
-    </>
-  );
+  if (challengeQuery.isPending) {
+    return <LoadingIndicator />;
+  }
+  if (challengeQuery.isError) {
+    return <LoadingFailedAlert />;
+  }
+
+  if (challengeQuery.isSuccess && challengeQuery.data) {
+    return (
+      <Alert
+        severity="info"
+        variant="filled"
+        action={
+          <Button color="inherit" size="small" onClick={() => startChallenge()}>
+            Sign-In
+          </Button>
+        }
+      >
+        You need to sign-in to use this app
+      </Alert>
+    );
+  }
+
+  return <>{children}</>;
 }

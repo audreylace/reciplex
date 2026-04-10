@@ -5,6 +5,18 @@ import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 
+/**
+ * A utility to create a "visual placeholder" that mimics
+ * the character count of a typical User Key (approx 8-10 chars)
+ */
+const KEY_PLACEHOLDER = "wwwwwwwwww";
+
+/**
+ * A utility to create a "visual placeholder" that mimics
+ * the character count of a typical title
+ */
+const TITLE_PLACEHOLDER = "wwwwwwwwwwwwwwwwwwwwwwwwwwwwww";
+
 /** skeleton for the form shown while it loads */
 export function AccountSettingsFormSkeleton() {
   return (
@@ -13,7 +25,7 @@ export function AccountSettingsFormSkeleton() {
         <Stack direction={"row"} gap={2}>
           <span>Modifying account: </span>
           <Skeleton>
-            <span>wwwwwwwwwwwww</span>
+            <span>{TITLE_PLACEHOLDER}</span>
           </Skeleton>
         </Stack>
       </Typography>
@@ -21,7 +33,7 @@ export function AccountSettingsFormSkeleton() {
         <Stack direction={"row"} gap={1}>
           <span>Account Key: </span>
           <Skeleton>
-            <span>wwwwwwwwwwwww</span>
+            <span>{KEY_PLACEHOLDER}</span>
           </Skeleton>
         </Stack>
       </Typography>

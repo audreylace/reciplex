@@ -9,6 +9,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import { Fade } from "@mui/material";
+import { Link } from "react-router";
 
 /** Form for creating an account */
 export function SignUpForm() {
@@ -40,20 +41,17 @@ export function SignUpForm() {
       </Typography>
       <form onSubmit={onSubmit}>
         <Stack spacing={2} marginTop={3}>
-          {createAccountMutation.status === "success" && (
+          {createAccountMutation.isSuccess && (
             <Fade in={true} timeout={500}>
               <Alert
                 severity="success"
                 variant="filled"
                 action={
                   <Button
+                    component={Link}
+                    to={makeCreateRecipeBookPath()}
                     color="inherit"
                     size="small"
-                    href={makeCreateRecipeBookPath()}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      navigate(makeCreateRecipeBookPath());
-                    }}
                   >
                     Create First Book
                   </Button>
@@ -63,7 +61,7 @@ export function SignUpForm() {
               </Alert>
             </Fade>
           )}
-          {isErrorState(createAccountMutation.status) && (
+          {createAccountMutation.isError && (
             <Alert
               severity="error"
               variant="filled"
@@ -91,15 +89,18 @@ export function SignUpForm() {
             variant="filled"
             disabled={formDisabled}
             {...register("displayName", {
-              required: true,
-              maxLength: 64,
+              required: "Required to provide a display name to use this app",
+              maxLength: {
+                value: 64,
+                message: "Display name must be no longer than 64 characters",
+              },
             })}
           />
           <Stack direction="row" spacing={1}>
             <Button
               variant="contained"
               type="submit"
-              loading={createAccountMutation.status === "pending"}
+              loading={createAccountMutation.isPending}
               disabled={formDisabled}
             >
               Create Account
@@ -109,21 +110,6 @@ export function SignUpForm() {
       </form>
     </>
   );
-}
-
-/**
- * Helper to determine if the mutation is in an error state
- * @param mutationState state of the mutation
- * @returns true if mutation is in an error state
- */
-function isErrorState(mutationState: string) {
-  switch (mutationState) {
-    case "pending":
-    case "idle":
-      return false;
-    default:
-      return true;
-  }
 }
 
 /** form model */
@@ -141,11 +127,7 @@ function displayNameHelpText(
   errors: UseFormReturn<IFormValues>["formState"]["errors"],
 ) {
   if (errors.displayName) {
-    if (errors.displayName.type === "required") {
-      return "Required to provide a display name to use this app";
-    } else if (errors.displayName.type === "maxLength") {
-      return "Display name must be no longer than 64 characters";
-    }
+    return errors.displayName.message;
   }
 
   return "Name visible to others using the app";

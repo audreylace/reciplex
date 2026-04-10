@@ -17,10 +17,12 @@ export function AccountMenu({ userKey }: { userKey: string }) {
     useAccountDeletesNavigate(userKey);
   const handleClick = (e: Event) => {
     e.preventDefault();
+    e.stopPropagation();
     setOpen(true);
   };
   const handleClose = (e: Event) => {
     e.preventDefault();
+    e.stopPropagation();
     setOpen(false);
   };
 

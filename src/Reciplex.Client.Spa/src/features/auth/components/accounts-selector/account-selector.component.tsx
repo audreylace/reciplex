@@ -21,22 +21,14 @@ export function AccountSelector({
   const goToSignUp = useSignUpNavigate()[1];
   const resetAccountsQuery = useResetAccountsQuery();
 
+  const length = accountQuery.data?.length ?? 0;
   useEffect(() => {
-    if (
-      accountQuery.isSuccess &&
-      accountQuery.data.length <= 0 &&
-      redirectToSignUpIfNeeded
-    ) {
+    if (accountQuery.isSuccess && length <= 0 && redirectToSignUpIfNeeded) {
       goToSignUp({
         replace: true,
       });
     }
-  }, [
-    accountQuery.data?.length,
-    accountQuery.isSuccess,
-    goToSignUp,
-    redirectToSignUpIfNeeded,
-  ]);
+  }, [length, accountQuery.isSuccess, goToSignUp, redirectToSignUpIfNeeded]);
 
   if (accountQuery.status === "pending") {
     return <ComponentSkeleton />;

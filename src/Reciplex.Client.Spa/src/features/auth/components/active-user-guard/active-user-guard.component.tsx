@@ -1,16 +1,7 @@
 import type { ComponentChildren } from "preact";
-import {
-  useActiveUser,
-  useActiveUserKey,
-} from "../../hooks/useActiveUser.hook";
-import { useLayoutEffect, useState } from "preact/hooks";
-import {
-  useGetAccountsQuery,
-  useResetAccountsQuery,
-} from "../../hooks/useGetAccountsQuery.hook";
-import { useSelectAccountNavigate } from "../../hooks/useSelectAccountNavigate.hook";
 import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
+import { useActiveUserGuard } from "../../hooks/useActiveUserGuard.hook";
 
 /**
  * Redirects the user to the select account if a account has not yet been selected.
@@ -23,62 +14,14 @@ export function ActiveUserGuard({
   allowNullUser?: boolean;
   children: ComponentChildren;
 }) {
-  const userKey = useActiveUserKey();
-  const setActiveUser = useActiveUser((s) => s.setActiveUser);
-  const resetUser = useActiveUser((s) => s.reset);
-  const accountListQuery = useGetAccountsQuery();
-  const goToSelectAccount = useSelectAccountNavigate()[1];
-  const [renderChildren, setRenderChildren] = useState(false);
-  const accountListQueryReset = useResetAccountsQuery();
+  const { renderChildren, status, retry } = useActiveUserGuard(allowNullUser);
 
-  // run as soon as we have data for minimal delay
-  useLayoutEffect(() => {
-    if (accountListQuery.isSuccess) {
-      if (userKey) {
-        const matchedAccount = accountListQuery.data.find(
-          (acc) => acc.userKey === userKey,
-        );
-
-        if (matchedAccount) {
-          setRenderChildren(true);
-          return;
-        }
-      }
-
-      if (accountListQuery.data.length === 1) {
-        setActiveUser({
-          userKey: accountListQuery.data[0].userKey,
-          displayName: accountListQuery.data[0].displayName,
-        });
-        setRenderChildren(true);
-        return;
-      }
-      resetUser();
-
-      if (allowNullUser) {
-        setRenderChildren(true);
-        return;
-      }
-
-      setRenderChildren(false);
-      goToSelectAccount({ replace: true });
-    }
-  }, [
-    accountListQuery.data,
-    accountListQuery.isSuccess,
-    allowNullUser,
-    goToSelectAccount,
-    resetUser,
-    setActiveUser,
-    userKey,
-  ]);
-
-  if (accountListQuery.status === "pending") {
+  if (status === "pending") {
     return <LoadingIndicator />;
   }
 
-  if (accountListQuery.status === "error") {
-    return <LoadingFailedAlert onRetry={accountListQueryReset} />;
+  if (status === "error") {
+    return <LoadingFailedAlert onRetry={retry} />;
   }
 
   if (!renderChildren) {
