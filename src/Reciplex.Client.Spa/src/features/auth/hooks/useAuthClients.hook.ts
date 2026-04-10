@@ -20,7 +20,7 @@ export interface IAuthClients {
 export function useAuthClients(): IAuthClients {
   const context = useContext(AuthClients);
   if (!context) {
-    throw Error();
+    throw Error("IAuthClients context missing");
   }
   return context;
 }

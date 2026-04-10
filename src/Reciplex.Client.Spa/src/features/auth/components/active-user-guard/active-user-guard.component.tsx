@@ -1,6 +1,5 @@
 import type { ComponentChildren } from "preact";
 import {
-  getPersistedActiveUser,
   useActiveUser,
   useActiveUserKey,
 } from "../../hooks/useActiveUser.hook";
@@ -26,6 +25,7 @@ export function ActiveUserGuard({
 }) {
   const userKey = useActiveUserKey();
   const setActiveUser = useActiveUser((s) => s.setActiveUser);
+  const resetUser = useActiveUser((s) => s.reset);
   const accountListQuery = useGetAccountsQuery();
   const goToSelectAccount = useSelectAccountNavigate()[1];
   const [renderChildren, setRenderChildren] = useState(false);
@@ -34,18 +34,12 @@ export function ActiveUserGuard({
   // run as soon as we have data for minimal delay
   useLayoutEffect(() => {
     if (accountListQuery.isSuccess) {
-      const activeKey = userKey ?? getPersistedActiveUser();
-
-      if (activeKey) {
+      if (userKey) {
         const matchedAccount = accountListQuery.data.find(
-          (acc) => acc.userKey === activeKey,
+          (acc) => acc.userKey === userKey,
         );
 
         if (matchedAccount) {
-          setActiveUser({
-            userKey: activeKey,
-            displayName: matchedAccount.displayName,
-          });
           setRenderChildren(true);
           return;
         }
@@ -59,6 +53,7 @@ export function ActiveUserGuard({
         setRenderChildren(true);
         return;
       }
+      resetUser();
 
       if (allowNullUser) {
         setRenderChildren(true);
@@ -73,6 +68,7 @@ export function ActiveUserGuard({
     accountListQuery.isSuccess,
     allowNullUser,
     goToSelectAccount,
+    resetUser,
     setActiveUser,
     userKey,
   ]);

@@ -27,3 +27,18 @@ export function maybeUpdateUserListCache(
 
   client.setQueryData(cacheKey, result);
 }
+
+export function doUserCacheUpdate(
+  queryClient: QueryClient,
+  data: IHttpUserJson,
+) {
+  maybeUpdateUserListCache(queryClient, (prev) => {
+    const exists = prev.some((a) => a.userKey === data.userKey);
+
+    if (exists) {
+      // Declarative Update: Map through and replace only the matching user
+      return prev.map((user) => (user.userKey === data.userKey ? data : user));
+    }
+    return [...prev, data];
+  });
+}

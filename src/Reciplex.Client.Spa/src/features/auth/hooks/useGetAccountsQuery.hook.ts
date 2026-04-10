@@ -6,13 +6,13 @@ import { accountListAuthQueryKey } from "../utils/auth-query-key-factory";
 export function useGetAccountsQuery(
   enable?: boolean,
   args?: {
-    noCache?: boolean;
+    alwaysFresh?: boolean;
   },
 ) {
   const { usersClient } = useAuthClients();
   return useQuery({
     enabled: enable,
-    staleTime: args?.noCache ? 0 : 60 * 1000, // todo - hard code this somewhere
+    refetchOnMount: args?.alwaysFresh ? "always" : true,
     queryKey: accountListAuthQueryKey(),
     queryFn: async () => {
       return await usersClient.getAccounts();

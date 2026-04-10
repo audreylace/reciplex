@@ -4,7 +4,7 @@ import { useMutationFormState } from "../../common/hooks/useMutationFormState.ho
 import { accountListAuthQueryKey } from "../utils/auth-query-key-factory";
 
 export function useAccountMutationState(userKey: string) {
-  const accountsQuery = useGetAccountsQuery(undefined, { noCache: true });
+  const accountsQuery = useGetAccountsQuery(undefined, { alwaysFresh: true });
 
   const { concurrencyToken, resetState, resetCount, concurrencyConflict } =
     useMutationFormState({
