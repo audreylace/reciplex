@@ -38,14 +38,7 @@ export class HttpClient {
     params?: [string, string][],
     args?: IHttpActionArgs,
   ): Promise<Response> {
-    const computedPath = `${this._basePath}/${path}${this.computeQueryParams(params)}`;
-
-    const response = await fetch(computedPath, {
-      credentials: "include",
-      cache: args?.noCache ? "reload" : "default",
-    });
-
-    return this.throwIfNotSuccessOtherwiseReturn(response);
+    return this.request("GET", path, params, args);
   }
 
   /**
@@ -62,19 +55,7 @@ export class HttpClient {
     params?: [string, string][],
     args?: IHttpActionArgs,
   ): Promise<Response> {
-    const computedPath = `${this._basePath}/${path}${this.computeQueryParams(params)}`;
-
-    const response = await fetch(computedPath, {
-      credentials: "include",
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-      cache: args?.noCache ? "reload" : "default",
-    });
-
-    return this.throwIfNotSuccessOtherwiseReturn(response);
+    return this.request("POST", path, params, args, undefined, body);
   }
 
   /**
@@ -93,20 +74,10 @@ export class HttpClient {
     params?: [string, string][],
     args?: IHttpActionArgs,
   ): Promise<Response> {
-    const computedPath = `${this._basePath}/${path}${this.computeQueryParams(params)}`;
-
-    const response = await fetch(computedPath, {
-      credentials: "include",
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "If-Match": `"${versionTag}"`,
-      },
-      body: JSON.stringify(body),
-      cache: args?.noCache ? "reload" : "default",
-    });
-
-    return this.throwIfNotSuccessOtherwiseReturn(response);
+    const headers = {
+      "If-Match": `"${versionTag}"`,
+    };
+    return this.request("PUT", path, params, args, headers, body);
   }
 
   /**
@@ -123,33 +94,61 @@ export class HttpClient {
     params?: [string, string][],
     args?: IHttpActionArgs,
   ): Promise<Response> {
-    const computedPath = `${this._basePath}/${path}${this.computeQueryParams(params)}`;
-
-    const response = await fetch(computedPath, {
-      credentials: "include",
-      method: "DELETE",
-      headers: {
-        "If-Match": `"${versionTag}"`,
-      },
-      cache: args?.noCache ? "reload" : "default",
-    });
-
-    return this.throwIfNotSuccessOtherwiseReturn(response);
+    const headers = {
+      "If-Match": `"${versionTag}"`,
+    };
+    return this.request("DELETE", path, params, args, headers);
   }
 
-  private computeQueryParams(params?: [string, string][]) {
-    if (!params || params.length < 1) {
+  private computeQueryParams(params?: [string, string][]): string {
+    if (!params || params.length === 0) {
       return "";
     }
 
-    return (
-      "?" +
-      params
-        .map((param: [string, string]) => {
-          return `${encodeURIComponent(param[0])}=${encodeURIComponent(param[1])}`;
-        })
-        .join("&")
-    );
+    const searchParams = new URLSearchParams();
+
+    // Iterating and appending is the most type-safe way to
+    // satisfy the TypeScript compiler across all environments.
+    for (const [key, value] of params) {
+      searchParams.append(key, value);
+    }
+
+    const queryString = searchParams.toString();
+    return queryString ? `?${queryString}` : "";
+  }
+
+  /**
+   * The core engine for all HTTP calls.
+   * Consolidates path computation, header management, and error handling.
+   */
+  private async request<T>(
+    method: string,
+    path: string,
+    params?: [string, string][],
+    args?: IHttpActionArgs,
+    customHeaders?: Record<string, string>,
+    body?: T,
+  ): Promise<Response> {
+    const computedPath = `${this._basePath}/${path}${this.computeQueryParams(params)}`;
+
+    // Start with only the custom headers provided (e.g., If-Match)
+    const headers: Record<string, string> = {
+      ...customHeaders,
+    };
+
+    // ONLY add Content-Type if there is actually a body to describe
+    if (body) {
+      headers["Content-Type"] = "application/json";
+    }
+    const response = await fetch(computedPath, {
+      method,
+      credentials: "include",
+      headers,
+      cache: args?.noCache ? "reload" : "default",
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+    return this.throwIfNotSuccessOtherwiseReturn(response);
   }
 
   private throwIfNotSuccessOtherwiseReturn(response: Response): Response {

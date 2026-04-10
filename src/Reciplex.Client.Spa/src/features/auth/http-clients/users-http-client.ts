@@ -25,7 +25,11 @@ export class UsersHttpClient {
     const response = await this._client.httpGet("", undefined, {
       noCache: args?.noCache,
     });
-    return (await response.json()) as IHttpUserJson[];
+    return validateOrThrow(
+      await response.json(),
+      isIHttpUserJsonArray,
+      "IHttpUserJson[]",
+    );
   }
 
   /**
@@ -43,7 +47,11 @@ export class UsersHttpClient {
       }
       throw error;
     }
-    return (await response.json()) as IHttpUserJson;
+    return validateOrThrow(
+      await response.json(),
+      isIHttpUserJson,
+      "IHttpUserJson",
+    );
   }
 
   /**
@@ -64,7 +72,11 @@ export class UsersHttpClient {
       data,
     );
 
-    return (await response.json()) as IHttpUserJson;
+    return validateOrThrow(
+      await response.json(),
+      isIHttpUserJson,
+      "IHttpUserJson",
+    );
   }
 
   /**
@@ -77,7 +89,11 @@ export class UsersHttpClient {
   ): Promise<IHttpUserJson> {
     const response = await this._client.httpPost("", data);
 
-    return (await response.json()) as IHttpUserJson;
+    return validateOrThrow(
+      await response.json(),
+      isIHttpUserJson,
+      "IHttpUserJson",
+    );
   }
 
   /**
@@ -123,4 +139,83 @@ export interface IHttpUserBodyRequest {
    * display name of the user
    */
   displayName: string;
+}
+
+/**
+ * A Type Guard to verify if an object adheres to the IHttpUserJson shape.
+ * Uses 'unknown' to satisfy ESLint and ensure type safety.
+ */
+function isIHttpUserJson(data: unknown): data is IHttpUserJson {
+  // 1. First, check if it's even an object and not null.
+  // This is a narrowing step that moves us away from 'unknown'.
+  if (typeof data !== "object" || data === null) {
+    return false;
+  }
+
+  // 2. Now that we know it's an object, cast it to a generic Record.
+  // We use 'Record<string, unknown>' because we still don't trust the content,
+  // but we need a way to look up keys like 'userKey'.
+  const record = data as Record<string, unknown>;
+
+  // 3. Final validation of the specific required properties.
+  return (
+    typeof record.userKey === "string" &&
+    typeof record.displayName === "string" &&
+    typeof record.concurrencyTag === "string"
+  );
+}
+
+/**
+ * A Type Guard to verify if an array contains only valid User objects.
+ */
+function isIHttpUserJsonArray(data: unknown): data is IHttpUserJson[] {
+  // We use the first guard to validate every element in the array.
+  return Array.isArray(data) && data.every(isIHttpUserJson);
+}
+
+/**
+ * Exception thrown when the API response does not match the expected TypeScript interface.
+ */
+export class BadHttpUserJson extends Error {
+  private _invalidData: unknown;
+
+  /**
+   * @param message A description of what was being validated (e.g., "User List")
+   * @param invalidData The actual payload that failed validation
+   */
+  constructor(message: string, invalidData: unknown) {
+    super(`[Schema Violation] ${message} : bad data : ${invalidData}`);
+    this._invalidData = invalidData;
+  }
+
+  /**
+   * The payload that caused the validation to fail.
+   * Useful for debugging in the console or logging to a service like Sentry.
+   */
+  public get invalidData(): unknown {
+    return this._invalidData;
+  }
+}
+
+/**
+ * A utility that executes a Type Guard.
+ * If the guard passes, it returns the typed data.
+ * If it fails, it throws a DataValidationError containing the bad payload.
+ *
+ * @template T The expected type
+ * @param data The unknown data to check
+ * @param predicate The Type Guard function (e.g., isIHttpUserJson)
+ * @param context A string describing what was being validated for error logging
+ * @returns The data cast to type T
+ */
+export function validateOrThrow<T>(
+  data: unknown,
+  predicate: (val: unknown) => val is T,
+  context: string,
+): T {
+  if (predicate(data)) {
+    return data;
+  }
+
+  throw new BadHttpUserJson(context, data);
 }
