@@ -1,8 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthClients } from "./useAuthClients.hook";
 import { useCallback } from "preact/hooks";
+import { accountListAuthQueryKey } from "../utils/auth-query-key-factory";
 
-export const getAccountsQueryKey = ["auth", "getAccounts"];
 export function useGetAccountsQuery(
   enable?: boolean,
   args?: {
@@ -12,9 +12,8 @@ export function useGetAccountsQuery(
   const { usersClient } = useAuthClients();
   return useQuery({
     enabled: enable,
-    gcTime: args?.noCache ? 0 : undefined,
-    staleTime: args?.noCache ? 0 : 60 * 1000,
-    queryKey: getAccountsQueryKey,
+    staleTime: args?.noCache ? 0 : 60 * 1000, // todo - hard code this somewhere
+    queryKey: accountListAuthQueryKey(),
     queryFn: async () => {
       return await usersClient.getAccounts();
     },
@@ -25,6 +24,6 @@ export function useGetAccountsQuery(
 export function useResetAccountsQuery() {
   const queryClient = useQueryClient();
   return useCallback(() => {
-    queryClient.resetQueries({ queryKey: getAccountsQueryKey });
+    queryClient.resetQueries({ queryKey: accountListAuthQueryKey() });
   }, [queryClient]);
 }

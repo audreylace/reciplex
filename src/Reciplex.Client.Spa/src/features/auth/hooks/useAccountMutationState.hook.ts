@@ -1,16 +1,14 @@
 import { useMemo } from "preact/hooks";
-import {
-  getAccountsQueryKey,
-  useGetAccountsQuery,
-} from "./useGetAccountsQuery.hook";
+import { useGetAccountsQuery } from "./useGetAccountsQuery.hook";
 import { useMutationFormState } from "../../common/hooks/useMutationFormState.hook";
+import { accountListAuthQueryKey } from "../utils/auth-query-key-factory";
 
 export function useAccountMutationState(userKey: string) {
   const accountsQuery = useGetAccountsQuery(undefined, { noCache: true });
 
   const { concurrencyToken, resetState, resetCount, concurrencyConflict } =
     useMutationFormState({
-      queryKey: getAccountsQueryKey,
+      queryKey: accountListAuthQueryKey(),
       query: accountsQuery,
       concurrencyTokenProvider: (data) => {
         return (

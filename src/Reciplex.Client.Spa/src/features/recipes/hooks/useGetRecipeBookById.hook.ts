@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
 import { useActiveUserKey } from "../../auth/hooks/useActiveUser.hook";
-import type { IRecipeBookStore } from "../services/recipe-types";
 import { useMemo } from "preact/hooks";
+import { recipeBookQueryKey } from "../utils/recipe-queries/recipe-query-key-factory";
 
 export function useGetRecipeBookById(
   bookId: string | null | undefined,
@@ -10,21 +10,10 @@ export function useGetRecipeBookById(
 ) {
   const userKey = useActiveUserKey();
   const recipeStore = useRecipeStoreContext();
-  return useQuery(
-    getRecipeBookByIdQueryArgs(userKey, bookId, recipeStore, args),
-  );
-}
 
-export function getRecipeBookByIdQueryArgs(
-  userKey: string | undefined | null,
-  bookId: string | undefined | null,
-  recipeStore: IRecipeBookStore,
-  args?: UseGetRecipeBookByIdArgs,
-) {
-  return {
-    queryKey: getRecipeBookByIdCacheKey(userKey ?? "", bookId ?? ""),
-    staleTime: args?.noCache ? 0 : undefined,
-    gcTime: args?.noCache ? 0 : undefined,
+  return useQuery({
+    queryKey: recipeBookQueryKey(userKey ?? "", bookId ?? ""),
+    staleTime: args?.noCache ? 0 : 60 * 1000, // todo - hard code this somewhere
     queryFn: async () => {
       if (!bookId || !userKey) {
         throw Error("need a recipe book id");
@@ -34,7 +23,7 @@ export function getRecipeBookByIdQueryArgs(
         noCache: args?.noCache,
       });
     },
-  };
+  });
 }
 
 export function useGetRecipeBookByIdCacheKey(
@@ -42,19 +31,9 @@ export function useGetRecipeBookByIdCacheKey(
 ) {
   const userKey = useActiveUserKey();
   return useMemo(
-    () => getRecipeBookByIdCacheKey(userKey ?? "", bookId ?? ""),
+    () => recipeBookQueryKey(userKey ?? "", bookId ?? ""),
     [bookId, userKey],
   );
-}
-
-/**
- * creates the cache key used for a recipe book by id fetch
- * @param userKey the user requesting the book
- * @param bookId the recipe book id
- * @returns the cache key
- */
-export function getRecipeBookByIdCacheKey(userKey: string, bookId: string) {
-  return ["feature:recipes", "getRecipeBookById", userKey, bookId];
 }
 
 /**

@@ -1,9 +1,9 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { type IUpdateRecipeBookArgs } from "../services/recipe-types";
 import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
-import { getRecipeBookByIdCacheKey } from "./useGetRecipeBookById.hook";
 import { AssertString } from "../../sentinel/stringUtilities";
 import { useActiveUserKey } from "../../auth/hooks/useActiveUser.hook";
+import { updateRecipeBookInCache } from "../utils/recipe-queries/recipe-query-helpers";
 
 /**
  * creates a mutation for updating a recipe book
@@ -12,10 +12,10 @@ import { useActiveUserKey } from "../../auth/hooks/useActiveUser.hook";
 export function useUpdateRecipeBookMutation() {
   const userKey = useActiveUserKey();
   const recipeStore = useRecipeStoreContext();
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (
       data: IUpdateRecipeBookArgs & { recipeBookId: string },
+      { client },
     ) => {
       const newData = await recipeStore.updateRecipeBook(
         AssertString(userKey),
@@ -26,7 +26,7 @@ export function useUpdateRecipeBookMutation() {
           shortDescription: data.shortDescription,
         },
       );
-      queryClient.setQueryData(getRecipeBookByIdCacheKey(newData.id), newData);
+      updateRecipeBookInCache(client, AssertString(userKey), newData);
       return newData;
     },
   });

@@ -5,6 +5,9 @@ import { useActiveUserKey } from "../../auth/hooks/useActiveUser.hook";
 import { getRecipeByIdQueryArgs } from "./useGetRecipeByIdQuery.hook";
 import { getRecipeBookByIdQueryArgs } from "./useGetRecipeBookById.hook";
 
+/**
+ * @obsolete
+ */
 export function useFusedRecipeByIdQuery(
   recipeId: string | null | undefined,
   args?: IUseFusedRecipeByIdQueryArgs,

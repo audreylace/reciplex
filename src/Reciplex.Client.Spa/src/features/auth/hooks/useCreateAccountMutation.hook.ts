@@ -1,7 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useAuthClients } from "./useAuthClients.hook";
-import { getAccountsQueryKey } from "./useGetAccountsQuery.hook";
-import type { IHttpUserJson } from "../http-clients/users-http-client";
+import { maybeUpdateUserListCache } from "../utils/auth-query-cache-utils";
 
 export function useCreateAccountMutation() {
   const { usersClient } = useAuthClients();
@@ -10,18 +9,13 @@ export function useCreateAccountMutation() {
     mutationFn: async ({ displayName }: { displayName: string }, context) => {
       const result = await usersClient.createAccount({ displayName });
 
-      const oldData =
-        context.client.getQueryData<IHttpUserJson[]>(getAccountsQueryKey);
-      if (oldData) {
-        if (!oldData.find((a) => a.userKey === result.userKey)) {
-          context.client.setQueryData(getAccountsQueryKey, [
-            ...oldData,
-            result,
-          ]);
+      maybeUpdateUserListCache(context.client, (prev) => {
+        if (!prev.find((a) => a.userKey === result.userKey)) {
+          return [...prev, result];
         }
-      } else {
-        context.client.removeQueries({ queryKey: getAccountsQueryKey });
-      }
+        return prev;
+      });
+
       return result;
     },
   });

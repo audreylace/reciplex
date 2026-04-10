@@ -1,7 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useAuthClients } from "./useAuthClients.hook";
-import { getAccountsQueryKey } from "./useGetAccountsQuery.hook";
-import type { IHttpUserJson } from "../http-clients/users-http-client";
+import { maybeUpdateUserListCache } from "../utils/auth-query-cache-utils";
 
 export function useDeleteAccountMutation() {
   const { usersClient } = useAuthClients();
@@ -18,14 +17,9 @@ export function useDeleteAccountMutation() {
       context,
     ) => {
       const result = await usersClient.deleteAccount(userKey, concurrencyToken);
-      const oldData =
-        context.client.getQueryData<IHttpUserJson[]>(getAccountsQueryKey);
-      if (oldData) {
-        context.client.setQueryData(
-          getAccountsQueryKey,
-          oldData.filter((b) => b.userKey !== userKey),
-        );
-      }
+      maybeUpdateUserListCache(context.client, (prev) =>
+        prev.filter((b) => b.userKey !== userKey),
+      );
       return result;
     },
   });

@@ -32,7 +32,7 @@ export function DeleteWithNameVerification({
   });
 
   if (showSkeleton) {
-    return <DeleteWithNameVerificationSkeleton />;
+    return <DeleteWithNameVerificationSkeleton entityType={entityType} />;
   }
 
   const formDisabled = showDeleteError || pending || showConcurrencyError;

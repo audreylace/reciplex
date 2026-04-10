@@ -17,7 +17,15 @@ import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 import { AppTheme } from "./features/core/components/app-theme/app-theme.component";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60, // todo - hard code this somewhere
+      gcTime: 5 * 1000 * 60,
+      retry: 2,
+    },
+  },
+});
 const serverStore = new RecipeHttpBookStore("/api");
 const challengeClient = new ChallengeHttpClient("/api");
 const userClient = new UsersHttpClient("/api");

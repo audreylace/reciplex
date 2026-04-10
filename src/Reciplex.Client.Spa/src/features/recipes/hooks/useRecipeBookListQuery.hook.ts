@@ -7,16 +7,22 @@ import {
 } from "../services/recipe-types";
 import { useActiveUserKey } from "../../auth/hooks/useActiveUser.hook";
 import { AssertString } from "../../sentinel/stringUtilities";
+import { recipeBookListQueryKey } from "../utils/recipe-queries/recipe-query-key-factory";
 
 export function useRecipeBookListQuery(
-  source?: string,
+  source?: "next" | "previous",
   index?: string,
   pageSize?: number,
 ) {
   const userKey = useActiveUserKey();
   const recipeStore = useRecipeStoreContext();
   return useQuery({
-    queryKey: ["recipe-book-list", { source, index, pageSize }],
+    queryKey: recipeBookListQueryKey(userKey ?? "", {
+      cursorType: source ?? "next",
+      limit: pageSize,
+      position: index,
+    }),
+    enabled: !!userKey,
     queryFn: async () => {
       if (!recipeStore) {
         throw new Error("Require recipe store");

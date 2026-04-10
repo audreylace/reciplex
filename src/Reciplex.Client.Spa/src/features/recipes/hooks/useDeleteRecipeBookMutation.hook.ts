@@ -1,8 +1,8 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
-import { getRecipeBookByIdCacheKey } from "./useGetRecipeBookById.hook";
 import { useActiveUserKey } from "../../auth/hooks/useActiveUser.hook";
 import { AssertString } from "../../sentinel/stringUtilities";
+import { updateRecipeBookInCache } from "../utils/recipe-queries/recipe-query-helpers";
 
 /**
  * Mutation for deleting a recipe
@@ -10,25 +10,24 @@ import { AssertString } from "../../sentinel/stringUtilities";
  */
 export function useDeleteRecipeBookMutation() {
   const userKey = useActiveUserKey();
-  const queryClient = useQueryClient();
   const recipeStore = useRecipeStoreContext();
   return useMutation({
-    mutationFn: async ({
-      bookId,
-      versionTag,
-    }: {
-      bookId: string;
-      versionTag: string;
-    }) => {
+    mutationFn: async (
+      {
+        bookId,
+        versionTag,
+      }: {
+        bookId: string;
+        versionTag: string;
+      },
+      { client },
+    ) => {
       await recipeStore.deleteRecipeBook(
         AssertString(userKey),
         bookId,
         versionTag,
       );
-      queryClient.setQueryData(
-        getRecipeBookByIdCacheKey(AssertString(userKey), bookId),
-        null,
-      );
+      updateRecipeBookInCache(client, AssertString(userKey), bookId);
     },
   });
 }

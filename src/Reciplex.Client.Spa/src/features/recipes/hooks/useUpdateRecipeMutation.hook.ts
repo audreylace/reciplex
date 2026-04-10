@@ -1,9 +1,9 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { type IUpdateRecipeArgs } from "../services/recipe-types";
-import { recipeByIdCacheKey } from "./useGetRecipeByIdQuery.hook";
 import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
 import { useActiveUserKey } from "../../auth/hooks/useActiveUser.hook";
 import { AssertString } from "../../sentinel/stringUtilities";
+import { updateRecipeInCache } from "../utils/recipe-queries/recipe-query-helpers";
 
 /**
  * creates a mutation for updating a recipe
@@ -12,9 +12,11 @@ import { AssertString } from "../../sentinel/stringUtilities";
 export function useUpdateRecipeMutation() {
   const userKey = useActiveUserKey();
   const recipeStore = useRecipeStoreContext();
-  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: IUpdateRecipeArgs & { recipeId: string }) => {
+    mutationFn: async (
+      data: IUpdateRecipeArgs & { recipeId: string },
+      { client },
+    ) => {
       const result = await recipeStore.updateRecipe(
         AssertString(userKey),
         data.recipeId,
@@ -26,7 +28,8 @@ export function useUpdateRecipeMutation() {
         },
       );
 
-      queryClient.setQueryData(recipeByIdCacheKey(result.id), result);
+      // update cache based on new recipe state
+      updateRecipeInCache(client, AssertString(userKey), result);
       return result;
     },
   });
