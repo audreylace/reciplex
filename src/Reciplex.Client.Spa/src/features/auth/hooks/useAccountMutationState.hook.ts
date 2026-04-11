@@ -1,6 +1,6 @@
 import { useMemo } from "preact/hooks";
 import { useGetAccountsQuery } from "./useGetAccountsQuery.hook";
-import { useMutationFormState } from "../../common/hooks/useMutationFormState.hook";
+import { useMutationFormState } from "../../core/hooks/useMutationFormState.hook";
 import { accountListAuthQueryKey } from "../utils/auth-query-key-factory";
 
 export function useAccountMutationState(userKey: string) {

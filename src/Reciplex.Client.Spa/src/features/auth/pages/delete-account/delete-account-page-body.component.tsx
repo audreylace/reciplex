@@ -7,7 +7,7 @@ import {
   useActiveUser,
   useActiveUserKey,
 } from "../../hooks/useActiveUser.hook";
-import { DeleteWithNameVerification } from "../../../common/components/delete-with-name-verification.component.tsx/delete-with-name-verification.component";
+import { DeleteWithNameVerification } from "../../../core/components/delete-with-name-verification/delete-with-name-verification.component";
 
 /** body of the delete account page */
 export function DeleteAccountPageBody({

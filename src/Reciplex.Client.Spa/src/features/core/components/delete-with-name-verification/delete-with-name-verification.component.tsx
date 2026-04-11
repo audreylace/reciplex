@@ -6,7 +6,7 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import { DeleteFailedAlert } from "./delete-failed-alert.component";
 import { DeleteWithNameVerificationSkeleton } from "./delete-with-name-verification-skeleton.component";
-import { ConcurrencyConflictAlert } from "../../../core/components/concurrency-conflict-alert/concurrency-conflict-alert.component";
+import { ConcurrencyConflictAlert } from "../concurrency-conflict-alert/concurrency-conflict-alert.component";
 
 /** component providing the form for deleting an entity */
 export function DeleteWithNameVerification({
