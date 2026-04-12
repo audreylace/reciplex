@@ -49,13 +49,13 @@ export function DeleteWithNameVerification({
         </Stack>
       </Typography>
       {description && (
-        <Typography variant="body1">
+        <Typography component={"div"} variant="body1">
           <Stack direction={"row"} gap={1}>
             <span>{description}</span>
           </Stack>
         </Typography>
       )}
-      <Typography variant="body2" gutterBottom>
+      <Typography component={"div"} variant="body2" gutterBottom>
         <Stack direction="row" gap={1}>
           <span>Key: </span>
           <span>{uniqueKey}</span>
