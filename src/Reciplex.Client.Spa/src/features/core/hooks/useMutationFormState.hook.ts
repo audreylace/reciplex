@@ -27,7 +27,22 @@ export function useMutationFormState<TData>({
   useLayoutEffect(() => {
     cbRef.current = onReset;
     queryKeyRef.current = queryKey;
-  });
+
+    // lock concurrency token to detect concurrent modifications
+    setConcurrencyToken((token) => {
+      if (token || !query.isSuccess || !query.data) {
+        return token;
+      }
+
+      return concurrencyTokenProvider(query.data);
+    });
+  }, [
+    onReset,
+    queryKey,
+    query.isSuccess,
+    query.data,
+    concurrencyTokenProvider,
+  ]);
 
   // reset the form by clearing the react-query cache
   const resetState = useCallback(() => {
@@ -38,15 +53,6 @@ export function useMutationFormState<TData>({
     setConcurrencyToken(null);
     setResetCount((k) => k + 1);
   }, [queryClient]);
-
-  // lock concurrency token to detect concurrent modifications
-  setConcurrencyToken((token) => {
-    if (token || !query.isSuccess || !query.data) {
-      return token;
-    }
-
-    return concurrencyTokenProvider(query.data);
-  });
 
   const concurrencyConflict = !!(
     query.data &&
