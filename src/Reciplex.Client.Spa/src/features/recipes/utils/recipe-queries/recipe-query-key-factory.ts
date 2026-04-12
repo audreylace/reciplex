@@ -1,3 +1,5 @@
+import type { IGetRecipeBooksArgs } from "../../services/recipe-types";
+
 /**
  * The root key holding all recipe and recipe book data for
  * a particular user.
@@ -55,11 +57,7 @@ export const recipeBookListCacheKeyBranch = "recipeBookList";
  */
 export function recipeBookListQueryKey(
   userKey: string,
-  args?: {
-    cursorType?: "next" | "previous";
-    position?: string;
-    limit?: number;
-  },
+  args?: IGetRecipeBooksArgs,
 ) {
   return [
     {

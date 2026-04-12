@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type IUpdateRecipeBookArgs } from "../services/recipe-types";
 import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
 import { AssertString } from "../../sentinel/stringUtilities";
@@ -10,24 +10,17 @@ import { updateRecipeBookInCache } from "../utils/recipe-queries/recipe-query-he
  * @returns mutation object
  */
 export function useUpdateRecipeBookMutation() {
+  const queryClient = useQueryClient();
   const userKey = useActiveUserKey();
   const recipeStore = useRecipeStoreContext();
   return useMutation({
-    mutationFn: async (
-      data: IUpdateRecipeBookArgs & { recipeBookId: string },
-      { client },
-    ) => {
-      const newData = await recipeStore.updateRecipeBook(
-        AssertString(userKey),
-        data.recipeBookId,
-        {
-          name: data.name,
-          versionTag: data.versionTag,
-          shortDescription: data.shortDescription,
-        },
-      );
-      updateRecipeBookInCache(client, AssertString(userKey), newData);
-      return newData;
-    },
+    mutationFn: (data: IUpdateRecipeBookArgs & { recipeBookId: string }) =>
+      recipeStore.updateRecipeBook(AssertString(userKey), data.recipeBookId, {
+        name: data.name,
+        versionTag: data.versionTag,
+        shortDescription: data.shortDescription,
+      }),
+    onSuccess: (newData) =>
+      updateRecipeBookInCache(queryClient, AssertString(userKey), newData),
   });
 }

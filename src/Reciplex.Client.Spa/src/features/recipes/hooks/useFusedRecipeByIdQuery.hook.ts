@@ -3,7 +3,7 @@ import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
 import { useMemo } from "preact/hooks";
 import { useActiveUserKey } from "../../auth/hooks/useActiveUser.hook";
 import { getRecipeByIdQueryArgs } from "./useGetRecipeByIdQuery.hook";
-import { getRecipeBookByIdQueryArgs } from "./useGetRecipeBookById.hook";
+//import { getRecipeBookByIdQueryArgs } from "./useGetRecipeBookById.hook";
 
 /**
  * @obsolete
@@ -32,41 +32,37 @@ export function useFusedRecipeByIdQuery(
     staleTime: args?.noCache ? 0 : undefined,
     refetchInterval: args?.refetchInterval,
     queryFn: async ({ client }) => {
-      if (!recipeId || !userKey) {
-        throw Error("invalid recipe id");
-      }
-
-      const recipe = await client.fetchQuery(
-        getRecipeByIdQueryArgs(userKey, recipeId, idForCache, recipeStore, {
-          noCache: args?.noCache,
-          refetchInterval: args?.refetchInterval,
-          enabled: true,
-        }),
-      );
-
-      if (!recipe) {
-        return null;
-      }
-
-      const book = await client.fetchQuery(
-        getRecipeBookByIdQueryArgs(
-          userKey,
-          recipe.bookId,
-          `${recipe.bookId}${keySuffix}`,
-          recipeStore,
-          {
-            noCache: args?.noCache,
-            refetchInterval: args?.refetchInterval,
-            enabled: true,
-          },
-        ),
-      );
-
-      if (!book) {
-        return null;
-      }
-
-      return { book, recipe };
+      throw Error();
+      // if (!recipeId || !userKey) {
+      //   throw Error("invalid recipe id");
+      // }
+      // const recipe = await client.fetchQuery(
+      //   getRecipeByIdQueryArgs(userKey, recipeId, idForCache, recipeStore, {
+      //     noCache: args?.noCache,
+      //     refetchInterval: args?.refetchInterval,
+      //     enabled: true,
+      //   }),
+      // );
+      // if (!recipe) {
+      //   return null;
+      // }
+      // const book = await client.fetchQuery(
+      //   getRecipeBookByIdQueryArgs(
+      //     userKey,
+      //     recipe.bookId,
+      //     `${recipe.bookId}${keySuffix}`,
+      //     recipeStore,
+      //     {
+      //       noCache: args?.noCache,
+      //       refetchInterval: args?.refetchInterval,
+      //       enabled: true,
+      //     },
+      //   ),
+      // );
+      // if (!book) {
+      //   return null;
+      // }
+      // return { book, recipe };
     },
   });
 }

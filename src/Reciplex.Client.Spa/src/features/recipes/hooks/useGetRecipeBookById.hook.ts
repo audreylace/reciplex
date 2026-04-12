@@ -6,21 +6,23 @@ import { recipeBookQueryKey } from "../utils/recipe-queries/recipe-query-key-fac
 
 export function useGetRecipeBookById(
   bookId: string | null | undefined,
-  args?: UseGetRecipeBookByIdArgs,
+  args?: IUseGetRecipeBookByIdArgs,
 ) {
   const userKey = useActiveUserKey();
   const recipeStore = useRecipeStoreContext();
+  const enabled = !!(bookId && userKey);
 
   return useQuery({
     queryKey: recipeBookQueryKey(userKey ?? "", bookId ?? ""),
-    staleTime: args?.noCache ? 0 : 60 * 1000, // todo - hard code this somewhere
+    refetchOnMount: args?.alwaysFresh ? "always" : true,
+    enabled: enabled,
     queryFn: async () => {
       if (!bookId || !userKey) {
         throw Error("need a recipe book id");
       }
 
-      return await recipeStore.getRecipeBook(userKey, bookId, {
-        noCache: args?.noCache,
+      return recipeStore.getRecipeBook(userKey, bookId, {
+        noCache: args?.alwaysFresh,
       });
     },
   });
@@ -36,12 +38,6 @@ export function useGetRecipeBookByIdCacheKey(
   );
 }
 
-/**
- * arguments for @see useGetRecipeBookById
- */
-export type UseGetRecipeBookByIdArgs = {
-  /**
-   * When true, data will be loaded directly from the remote
-   */
-  noCache?: boolean;
-};
+export interface IUseGetRecipeBookByIdArgs {
+  alwaysFresh?: boolean;
+}

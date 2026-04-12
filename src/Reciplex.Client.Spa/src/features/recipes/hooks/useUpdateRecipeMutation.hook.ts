@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type IUpdateRecipeArgs } from "../services/recipe-types";
 import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
 import { useActiveUserKey } from "../../auth/hooks/useActiveUser.hook";
@@ -10,27 +10,18 @@ import { updateRecipeInCache } from "../utils/recipe-queries/recipe-query-helper
  * @returns mutation object
  */
 export function useUpdateRecipeMutation() {
+  const queryClient = useQueryClient();
   const userKey = useActiveUserKey();
   const recipeStore = useRecipeStoreContext();
   return useMutation({
-    mutationFn: async (
-      data: IUpdateRecipeArgs & { recipeId: string },
-      { client },
-    ) => {
-      const result = await recipeStore.updateRecipe(
-        AssertString(userKey),
-        data.recipeId,
-        {
-          name: data.name,
-          details: data.details,
-          shortDescription: data.shortDescription,
-          versionTag: data.versionTag,
-        },
-      );
-
-      // update cache based on new recipe state
-      updateRecipeInCache(client, AssertString(userKey), result);
-      return result;
-    },
+    mutationFn: (data: IUpdateRecipeArgs & { recipeId: string }) =>
+      recipeStore.updateRecipe(AssertString(userKey), data.recipeId, {
+        name: data.name,
+        details: data.details,
+        shortDescription: data.shortDescription,
+        versionTag: data.versionTag,
+      }),
+    onSuccess: (result) =>
+      updateRecipeInCache(queryClient, AssertString(userKey), result),
   });
 }

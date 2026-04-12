@@ -1,58 +1,47 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
-import { BookListNavigationAction } from "../route-utils";
-import {
-  type IGetRecipeBooksArgs,
-  CursorTypes,
-} from "../services/recipe-types";
 import { useActiveUserKey } from "../../auth/hooks/useActiveUser.hook";
 import { AssertString } from "../../sentinel/stringUtilities";
 import { recipeBookListQueryKey } from "../utils/recipe-queries/recipe-query-key-factory";
+import type { IGetRecipeBooksArgs } from "../services/recipe-types";
 
 export function useRecipeBookListQuery(
+  source: "next" | "previous",
+  index: string,
+  pageSize?: number,
+): ReturnType<typeof useInnerHook>;
+export function useRecipeBookListQuery(): ReturnType<typeof useInnerHook>;
+export function useRecipeBookListQuery(
+  source?: "next" | "previous",
+  index?: string,
+  pageSize?: number,
+) {
+  return useInnerHook(source, index, pageSize);
+}
+
+function buildArgs(
+  source?: "next" | "previous",
+  index?: string,
+  pageSize?: number,
+): IGetRecipeBooksArgs {
+  return {
+    cursorType: source ?? "next",
+    limit: pageSize,
+    position: index,
+  };
+}
+
+function useInnerHook(
   source?: "next" | "previous",
   index?: string,
   pageSize?: number,
 ) {
   const userKey = useActiveUserKey();
   const recipeStore = useRecipeStoreContext();
+  const args = buildArgs(source, index, pageSize);
   return useQuery({
-    queryKey: recipeBookListQueryKey(userKey ?? "", {
-      cursorType: source ?? "next",
-      limit: pageSize,
-      position: index,
-    }),
+    queryKey: recipeBookListQueryKey(userKey ?? "", args),
     enabled: !!userKey,
-    queryFn: async () => {
-      if (!recipeStore) {
-        throw new Error("Require recipe store");
-      }
-      const args: IGetRecipeBooksArgs = {
-        limit: pageSize,
-      };
-      if (
-        source &&
-        (source === BookListNavigationAction.next ||
-          source === BookListNavigationAction.previous)
-      ) {
-        args.cursor = {
-          position: index,
-          type:
-            source === BookListNavigationAction.next
-              ? CursorTypes.next
-              : CursorTypes.previous,
-        };
-      }
-
-      const result = await recipeStore.getRecipeBooks(
-        AssertString(userKey),
-        args,
-      );
-      if (!result) {
-        throw new Error("Get book API failed");
-      }
-
-      return result;
-    },
+    queryFn: () => recipeStore.getRecipeBooks(AssertString(userKey), args),
   });
 }

@@ -124,14 +124,12 @@ export type CursorTypes = (typeof CursorTypes)[keyof typeof CursorTypes];
  * args for `getRecipeBooks` @see IRecipeBookStore
  */
 export interface IGetRecipeBooksArgs {
-  /**
-   * Cursor for getting the next page of data
-   */
-  cursor?: IPageRequestCursor;
+  cursorType?: CursorTypes;
   /**
    * Limit the number of results
    */
   limit?: number;
+  position?: string;
 }
 
 /**
@@ -242,7 +240,7 @@ export interface IRecipeBookStore {
   getRecipeBooks(
     userId: string,
     args?: IGetRecipeBooksArgs,
-  ): Promise<IGetRecipeBooksResult | null>;
+  ): Promise<IGetRecipeBooksResult>;
 
   /**
    * gets recipes for a book

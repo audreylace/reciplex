@@ -62,18 +62,18 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
   async getRecipeBooks(
     userId: string,
     args?: IGetRecipeBooksArgs,
-  ): Promise<IGetRecipeBooksResult | null> {
+  ): Promise<IGetRecipeBooksResult> {
     const queryParams: [string, string][] = this.makeQueryParams(userId);
     if (args) {
-      if (args.cursor) {
-        const { position, type } = args.cursor;
+      if (args.position && args.cursorType) {
+        const { position, cursorType } = args;
         let positionQuery;
-        if (type === "next") {
-          queryParams.push(["result-ordering", "id-increasing"]);
-          positionQuery = "after-id";
-        } else if (type === "previous") {
+        if (cursorType === "previous") {
           queryParams.push(["result-ordering", "id-decreasing"]);
           positionQuery = "before-id";
+        } else if (cursorType === "next") {
+          queryParams.push(["result-ordering", "id-increasing"]);
+          positionQuery = "after-id";
         }
 
         if (position && positionQuery) {
@@ -100,7 +100,7 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
       return { books };
     }
 
-    if (args?.cursor?.type === "previous") {
+    if (args?.cursorType === "previous") {
       books.reverse();
     }
 
@@ -109,13 +109,13 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
     const [next, prev] = await Promise.all([
       this.resolveCursor(
         userId,
-        books[books.length - 1]?.id ?? args?.cursor?.position,
+        books[books.length - 1]?.id ?? args?.position,
         true,
         executor,
       ),
       this.resolveCursor(
         userId,
-        books[0]?.id ?? args?.cursor?.position,
+        books[0]?.id ?? args?.position,
         false,
         executor,
       ),
@@ -124,11 +124,9 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
     return {
       books: books,
       nextCursor: next
-        ? (books[books.length - 1]?.id ?? args?.cursor?.position)
+        ? (books[books.length - 1]?.id ?? args?.position)
         : undefined,
-      previousCursor: prev
-        ? (books[0]?.id ?? args?.cursor?.position)
-        : undefined,
+      previousCursor: prev ? (books[0]?.id ?? args?.position) : undefined,
     };
   }
 
