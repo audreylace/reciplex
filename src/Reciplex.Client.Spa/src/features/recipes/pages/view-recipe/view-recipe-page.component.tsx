@@ -23,7 +23,7 @@ export function ViewRecipePage() {
       >
         {recipeData && (
           <RecipeMenu
-            bookId={recipeData.id}
+            bookId={recipeData.bookId}
             recipeId={recipeData.id}
             mayEdit={recipeData.mayEdit}
             name={recipeData.name}
