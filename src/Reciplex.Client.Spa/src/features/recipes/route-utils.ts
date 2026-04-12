@@ -1,52 +1,34 @@
 /**
  * make a path to the recipe list page for a book
  * @param bookId the book id
- * @returns `/recipe-book/{bookId}`
+ * @returns the path
  */
 export function makeViewRecipeBookPath(bookId: string): string {
   return `/books/${encodeURIComponent(bookId)}`;
 }
 
-/** Navigation actions for makeBookListPath */
-export const BookListNavigationAction = {
-  /** Cursor for getting the next page of results */
-  next: "next",
-  /** Cursor for getting the previous page of results */
-  previous: "previous",
-} as const;
-export type BookListNavigationAction =
-  (typeof BookListNavigationAction)[keyof typeof BookListNavigationAction];
 /**
  * computes a path to the book list page
  * @param args arguments for making the path
- * @returns `/books?source={by_ascending | by_descending}&index={cursor.index}?`
+ * @returns the path
  */
 export function makeBookListPath(args?: {
   cursor: {
     index?: string;
-    order: BookListNavigationAction;
+    order: "next" | "previous";
   };
 }): string {
-  if (!args || !args.cursor) {
-    return `/books`;
+  const params = new URLSearchParams();
+
+  if (args?.cursor) {
+    params.append("source", args.cursor.order);
+    if (args.cursor.index) {
+      params.append("index", args.cursor.index);
+    }
   }
 
-  if (
-    (args.cursor.order === BookListNavigationAction.previous ||
-      args.cursor.order === BookListNavigationAction.next) &&
-    args.cursor.index
-  ) {
-    return `/books?source=${encodeURIComponent(args.cursor.order)}&index=${encodeURIComponent(args.cursor.index)}`;
-  }
-
-  if (
-    args.cursor.order === BookListNavigationAction.previous ||
-    args.cursor.order === BookListNavigationAction.next
-  ) {
-    return `/books?source=${encodeURIComponent(args.cursor.order)}`;
-  }
-
-  throw Error("unable to create book list path");
+  const queryString = params.toString();
+  return queryString ? `/books?${queryString}` : `/books`;
 }
 
 /**
@@ -69,7 +51,7 @@ export function makeCreateRecipePath(bookId: string): string {
 /**
  * make a path to the recipe edit page
  * @param recipeId the recipe id
- * @returns `/edit-recipe/{bookId}`
+ * @returns the path
  */
 export function makeEditRecipePath(bookId: string, recipeId: string): string {
   return `/books/${encodeURIComponent(bookId)}/recipes/${encodeURIComponent(recipeId)}/edit`;
@@ -78,7 +60,7 @@ export function makeEditRecipePath(bookId: string, recipeId: string): string {
 /**
  * make a path to the recipe view page
  * @param recipeId the recipe id
- * @returns `/view-recipe/{bookId}`
+ * @returns the path
  */
 export function makeViewRecipePath(bookId: string, recipeId: string): string {
   return `/books/${encodeURIComponent(bookId)}/recipes/${encodeURIComponent(recipeId)}`;

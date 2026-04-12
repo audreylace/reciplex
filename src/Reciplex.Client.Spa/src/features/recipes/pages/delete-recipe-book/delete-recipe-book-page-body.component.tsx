@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { DeleteWithNameVerification } from "../../../core/components/delete-with-name-verification/delete-with-name-verification.component";
 import { useMutationFormState } from "../../../core/hooks/useMutationFormState.hook";
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
@@ -18,7 +18,7 @@ export function DeleteRecipeBookPageBody({
 }: IDeleteRecipeBookPageBodyProps) {
   const deleteRecipeBookMutation = useDeleteRecipeBookMutation();
   const bookQueryKey = useGetRecipeBookByIdCacheKey(bookKey);
-  const bookQuery = useGetRecipeBookById(bookKey, { noCache: true });
+  const bookQuery = useGetRecipeBookById(bookKey, { alwaysFresh: true });
   const navigate = useNavigate();
   const { resetCount, resetState, concurrencyConflict, concurrencyToken } =
     useMutationFormState({
@@ -57,10 +57,8 @@ export function DeleteRecipeBookPageBody({
           <Button
             color="inherit"
             size="small"
-            href={makeViewRecipeBookPath(bookKey)}
-            onClick={() => {
-              navigate(makeViewRecipeBookPath(bookKey));
-            }}
+            component={Link}
+            to={makeViewRecipeBookPath(bookKey)}
           >
             View Book
           </Button>

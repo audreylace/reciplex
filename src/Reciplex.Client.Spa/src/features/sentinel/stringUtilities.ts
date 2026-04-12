@@ -5,7 +5,7 @@
  */
 export function AssertString(s: string | null | undefined): string {
   if (!s) {
-    throw new Error("expected a not null string");
+    throw new Error("expected a non null string");
   }
 
   if (typeof s !== "string") {

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
 import { useActiveUserKey } from "../../auth/hooks/useActiveUser.hook";
 import { recipeQueryKey } from "../utils/recipe-queries/recipe-query-key-factory";
+import { useMemo } from "preact/hooks";
 
 /**
  * gets a recipe by id
@@ -31,6 +32,16 @@ export function useGetRecipeByIdQuery(
       });
     },
   });
+}
+
+export function useGetRecipeByIdQueryKey(recipeId: string) {
+  const userKey = useActiveUserKey() ?? "";
+  const normalizedRecipeId = recipeId ?? "";
+
+  return useMemo(
+    () => recipeQueryKey(userKey, normalizedRecipeId),
+    [normalizedRecipeId, userKey],
+  );
 }
 
 /**
