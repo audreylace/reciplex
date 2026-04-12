@@ -15,6 +15,7 @@ export function useGetRecipeBookById(
   return useQuery({
     queryKey: recipeBookQueryKey(userKey ?? "", bookId ?? ""),
     refetchOnMount: args?.alwaysFresh ? "always" : true,
+    refetchOnWindowFocus: args?.alwaysFresh ? "always" : true,
     enabled: enabled,
     queryFn: async () => {
       if (!bookId || !userKey) {
