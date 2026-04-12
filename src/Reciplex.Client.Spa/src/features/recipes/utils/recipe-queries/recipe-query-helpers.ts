@@ -1,4 +1,4 @@
-import { hashKey, type QueryClient } from "@tanstack/react-query";
+import { type QueryClient } from "@tanstack/react-query";
 import type {
   IGetRecipeBooksResult,
   IGetRecipesInBookResult,
@@ -21,7 +21,6 @@ import {
  * @param recipe recipe data to cache. string instead of the model means the recipe is deleted. Related
  * cached data is cleared.
  */
-
 export function updateRecipeInCache(
   client: QueryClient,
   userKey: string,
@@ -39,6 +38,96 @@ export function updateRecipeInCache(
   modelOrId: IRecipeModel | string,
   isNew?: boolean,
 ) {
+  const { idToFind, dataToCache } = extractModelAndId(modelOrId);
+
+  if (isNew) {
+    if (!dataToCache) {
+      throw Error("isNew can only be set when caching data");
+    }
+    client.setQueryData(recipeQueryKey(userKey, idToFind), dataToCache);
+    dropCachedRecipesPagesFilteredByBookKey(
+      client,
+      userKey,
+      dataToCache.bookId,
+    );
+    return;
+  }
+
+  // update recipe entry with new state
+  updateRecipeCacheData(client, userKey, idToFind, dataToCache);
+}
+
+export function updateRecipeBookInCache(
+  client: QueryClient,
+  userKey: string,
+  modelOrId: IRecipeBookModel | string,
+  isNew?: boolean,
+) {
+  const { idToFind, dataToCache } = extractModelAndId(modelOrId);
+
+  if (isNew) {
+    if (!dataToCache) {
+      throw Error("isNew can only be set when caching data");
+    }
+
+    client.setQueryData(recipeBookQueryKey(userKey, idToFind), dataToCache);
+    // invalidate all cache book list data
+    client.resetQueries({
+      queryKey: [recipeQueryKeyRoot(userKey), recipeBookListCacheKeyBranch],
+    });
+
+    return;
+  }
+
+  updateRecipeBookCacheData(client, userKey, idToFind, dataToCache);
+}
+
+function dropCachedRecipesFilteredByBook(
+  client: QueryClient,
+  userKey: string,
+  bookId: string,
+) {
+  const rootKey = recipeQueryKeyRoot(userKey);
+  // drop all recipes belonging to the book
+  client.setQueriesData(
+    { queryKey: [rootKey, recipeCacheKeyBranch] },
+    (old: IRecipeModel) => {
+      if (old.bookId === bookId) {
+        return null;
+      }
+      return old;
+    },
+  );
+}
+
+function dropCachedRecipesPagesFilteredByBookKey(
+  client: QueryClient,
+  userKey: string,
+  bookKey: string,
+) {
+  client.resetQueries({
+    queryKey: [recipeQueryKeyRoot(userKey), recipeListCacheKeyBranch],
+    predicate: (cacheEntry) => {
+      const cacheBookKey = (
+        cacheEntry.queryKey[2] as IRecipeListArgsKeyNode | undefined
+      )?.bookKey;
+
+      // if the entry is not scoped to a specific book, drop it
+      if (!cacheBookKey) {
+        return true;
+      }
+
+      // clear any pages scoped to the request book if
+      // the clear should be limited to a specific book.
+      if (cacheBookKey === bookKey) {
+        return true;
+      }
+      return false;
+    },
+  });
+}
+
+function extractModelAndId<T extends { id: string }>(modelOrId: T | string) {
   let dataToCache;
   let idToFind;
   if (typeof modelOrId === "string") {
@@ -49,58 +138,30 @@ export function updateRecipeInCache(
     idToFind = modelOrId.id;
   }
 
-  // update recipe entry with new state
-  client.setQueryData(recipeQueryKey(userKey, idToFind), dataToCache);
-  const rootKey = recipeQueryKeyRoot(userKey);
+  return { dataToCache, idToFind };
+}
 
-  if (isNew) {
-    if (!dataToCache) {
-      throw Error("isNew can only be set when caching data");
-    }
-
-    // if its new, then we don't know what page it belongs
-    // on so just invalidate all pages that it could belong in.
-    const cacheHash = hashKey([rootKey]);
-    client.resetQueries({
-      predicate: (cacheEntry) => {
-        if (cacheHash !== hashKey([cacheEntry.queryKey[0]])) {
-          return false;
-        }
-
-        if (cacheEntry.queryKey[1] !== recipeListCacheKeyBranch) {
-          return false;
-        }
-
-        const bookKey = (
-          cacheEntry.queryKey[2] as IRecipeListArgsKeyNode | undefined
-        )?.bookKey;
-        if (
-          // non-book specific page. Recipe could be here based on search.
-          !bookKey ||
-          // book specific page. Recipe could be here based on the ordering.
-          dataToCache.bookId === bookKey
-        ) {
-          return true;
-        }
-        return false;
-      },
-    });
-    return;
-  }
+function updateRecipeCacheData(
+  client: QueryClient,
+  userKey: string,
+  id: string,
+  data: IRecipeModel | null,
+) {
+  client.setQueryData(recipeQueryKey(userKey, id), data);
 
   // search through cache of recipe list pages deleting/updating the recipe anywhere
   // entries are found.
   client.setQueriesData(
-    { queryKey: [rootKey, recipeListCacheKeyBranch] },
+    { queryKey: [recipeQueryKeyRoot(userKey), recipeListCacheKeyBranch] },
     (old: IGetRecipesInBookResult) => {
-      const index = old.recipes.findIndex((r) => r.id === idToFind);
+      const index = old.recipes.findIndex((r) => r.id === id);
       if (index === -1) {
         return old;
       }
 
       const newList = old.recipes.slice(0);
-      if (dataToCache) {
-        newList.splice(index, 1, dataToCache);
+      if (data) {
+        newList.splice(index, 1, data);
       } else {
         newList.splice(index, 1);
       }
@@ -110,60 +171,24 @@ export function updateRecipeInCache(
   );
 }
 
-export function updateRecipeBookInCache(
+function updateRecipeBookCacheData(
   client: QueryClient,
   userKey: string,
-  modelOrId: IRecipeBookModel | string,
-  isNew?: boolean,
+  id: string,
+  dataToCache: IRecipeBookModel | null,
 ) {
-  let dataToCache;
-  let idToFind;
-  if (typeof modelOrId === "string") {
-    dataToCache = null;
-    idToFind = modelOrId;
-  } else {
-    dataToCache = modelOrId;
-    idToFind = modelOrId.id;
-  }
-
-  // update recipe book entry with new state
-  client.setQueryData(recipeBookQueryKey(userKey, idToFind), dataToCache);
-  const rootKey = recipeQueryKeyRoot(userKey);
-
-  if (isNew) {
-    if (!dataToCache) {
-      throw Error("isNew can only be set when caching data");
-    }
-
-    // invalidate all cache book list data
-    client.resetQueries({
-      queryKey: [rootKey, recipeBookListCacheKeyBranch],
-    });
-
-    return;
-  }
+  client.setQueryData(recipeBookQueryKey(userKey, id), dataToCache);
 
   if (!dataToCache) {
-    // drop all recipe list pages that could contain recipes related to the book
-    invalidateRecipePageSetViaBookId(client, userKey, idToFind);
-
-    // drop all recipes belonging to the book
-    client.setQueriesData(
-      { queryKey: [rootKey, recipeCacheKeyBranch] },
-      (old: IRecipeModel) => {
-        if (old.bookId === idToFind) {
-          return null;
-        }
-        return old;
-      },
-    );
+    dropCachedRecipesPagesFilteredByBookKey(client, userKey, id);
+    dropCachedRecipesFilteredByBook(client, userKey, id);
   }
 
   // delete/update the book in book list pages
   client.setQueriesData(
-    { queryKey: [rootKey, recipeBookListCacheKeyBranch] },
+    { queryKey: [recipeQueryKeyRoot(userKey), recipeBookListCacheKeyBranch] },
     (old: IGetRecipeBooksResult) => {
-      const index = old.books.findIndex((b) => b.id === idToFind);
+      const index = old.books.findIndex((b) => b.id === id);
       if (index === -1) {
         return old;
       }
@@ -178,42 +203,4 @@ export function updateRecipeBookInCache(
       return { ...old, books: newList };
     },
   );
-}
-
-function invalidateRecipePageSetViaBookId(
-  client: QueryClient,
-  userKey: string,
-  bookKey?: string,
-) {
-  const rootKey = recipeQueryKeyRoot(userKey);
-  const cacheHash = hashKey([rootKey]);
-
-  client.resetQueries({
-    predicate: (cacheEntry) => {
-      // scope to recipe cache entries
-      if (cacheHash !== hashKey([cacheEntry.queryKey[0]])) {
-        return false;
-      }
-
-      // scope to recipe list
-      if (cacheEntry.queryKey[1] === recipeListCacheKeyBranch) {
-        // if the entry is not scoped to a specific book, drop it
-        const cacheBookKey = (
-          cacheEntry.queryKey[2] as IRecipeListArgsKeyNode | undefined
-        )?.bookKey;
-
-        if (!cacheBookKey) {
-          return true;
-        }
-
-        // clear any pages scoped to the request book if
-        // the clear should be limited to a specific book.
-        if (bookKey && cacheBookKey === bookKey) {
-          return true;
-        }
-      }
-
-      return false;
-    },
-  });
 }

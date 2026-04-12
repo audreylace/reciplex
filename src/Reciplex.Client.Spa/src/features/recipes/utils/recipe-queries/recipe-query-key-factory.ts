@@ -1,5 +1,3 @@
-import type { IGetRecipeBooksArgs } from "../../services/recipe-types";
-
 /**
  * The root key holding all recipe and recipe book data for
  * a particular user.
@@ -20,15 +18,10 @@ export const recipeCacheKeyBranch = "recipe";
  * @param recipeKey the key of the recipe
  */
 export function recipeQueryKey(userKey: string, recipeKey: string) {
-  return [
-    {
-      type: "recipes",
-      userKey: userKey,
-    },
-    "recipe",
-    recipeKey,
-  ];
+  return [recipeQueryKeyRoot(userKey), recipeCacheKeyBranch, recipeKey];
 }
+
+export const recipeBookCacheKeyBranch = "recipeBook";
 
 /**
  * Computes the cache key for a recipe book
@@ -37,14 +30,7 @@ export function recipeQueryKey(userKey: string, recipeKey: string) {
  * @returns computed query cache key
  */
 export function recipeBookQueryKey(userKey: string, bookKey: string) {
-  return [
-    {
-      type: "recipes",
-      userKey: userKey,
-    },
-    "recipeBook",
-    bookKey,
-  ];
+  return [recipeQueryKeyRoot(userKey), recipeBookCacheKeyBranch, bookKey];
 }
 
 export const recipeBookListCacheKeyBranch = "recipeBookList";
@@ -57,15 +43,12 @@ export const recipeBookListCacheKeyBranch = "recipeBookList";
  */
 export function recipeBookListQueryKey(
   userKey: string,
-  args?: IGetRecipeBooksArgs,
+  args?: IRecipeBookListArgsKeyNode,
 ) {
   return [
-    {
-      type: "recipes",
-      userKey: userKey,
-    },
-    "recipeBookList",
-    args ?? {},
+    recipeQueryKeyRoot(userKey),
+    recipeBookListCacheKeyBranch,
+    normalizeRecipeBookListArgsKeyNode(args),
   ];
 }
 
@@ -82,18 +65,44 @@ export function recipeListQueryKey(
   args?: IRecipeListArgsKeyNode,
 ) {
   return [
-    {
-      type: "recipes",
-      userKey: userKey,
-    },
+    recipeQueryKeyRoot(userKey),
     recipeListCacheKeyBranch,
-    args ?? {},
+    normalizeRecipeListArgsKeyNode(args),
   ];
 }
 
 export interface IRecipeListArgsKeyNode {
-  cursorType?: "next" | "previous";
+  cursorType: "next" | "previous";
   position?: string;
-  limit?: number;
-  bookKey?: string;
+  pageSize?: number;
+  bookKey: string;
+}
+
+export interface IRecipeBookListArgsKeyNode {
+  cursorType: "next" | "previous";
+  position?: string;
+  pageSize?: number;
+}
+
+function normalizeRecipeListArgsKeyNode(
+  args: IRecipeListArgsKeyNode | undefined,
+): IRecipeListArgsKeyNode {
+  const { cursorType, position, pageSize, bookKey } = args ?? {};
+  return {
+    cursorType: cursorType ?? "next",
+    position,
+    pageSize,
+    bookKey: bookKey ?? "",
+  };
+}
+
+function normalizeRecipeBookListArgsKeyNode(
+  args: IRecipeBookListArgsKeyNode | undefined,
+): IRecipeBookListArgsKeyNode {
+  const { cursorType, position, pageSize } = args ?? {};
+  return {
+    cursorType: cursorType ?? "next",
+    position,
+    pageSize,
+  };
 }

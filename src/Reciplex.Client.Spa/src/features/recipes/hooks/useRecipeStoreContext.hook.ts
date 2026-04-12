@@ -14,7 +14,9 @@ export const RecipeStore = createContext<IRecipeBookStore | null>(null);
 export function useRecipeStoreContext() {
   const context = useContext(RecipeStore);
   if (!context) {
-    throw Error();
+    throw Error(
+      "useRecipeStoreContext must be used within a RecipeStore provider",
+    );
   }
   return context;
 }

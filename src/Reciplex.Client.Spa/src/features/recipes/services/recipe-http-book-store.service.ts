@@ -64,6 +64,8 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
     args?: IGetRecipeBooksArgs,
   ): Promise<IGetRecipeBooksResult> {
     const queryParams: [string, string][] = this.makeQueryParams(userId);
+
+    // fixme: janky code that needs refactor
     if (args) {
       if (args.position && args.cursorType) {
         const { position, cursorType } = args;
@@ -80,8 +82,8 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
           queryParams.push([positionQuery, position]);
         }
       }
-      if ((args.limit ?? 0) > 0) {
-        queryParams.push(["page-size", args.limit + ""]);
+      if ((args.pageSize ?? 0) > 0) {
+        queryParams.push(["page-size", args.pageSize + ""]);
       }
     }
     const responseJson: IRecipeBookJson[] | null | undefined = await (
@@ -100,12 +102,15 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
       return { books };
     }
 
+    // bug: if filters out cursorType earlier sometimes
     if (args?.cursorType === "previous") {
       books.reverse();
     }
 
     const executor = async (queryParams: [string, string][]) =>
       (await this._bookClient.httpGet("", queryParams)).json();
+
+    // bug: if filters out position earlier sometimes
     const [next, prev] = await Promise.all([
       this.resolveCursor(
         userId,
@@ -214,14 +219,16 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
 
     queryParams.push(["book", bookId]);
 
+    // fixme: janky code that needs refactor
     if (args) {
-      if (args.cursor) {
-        const { position, type } = args.cursor;
+      // todo - fix inconsistent reference. We check in the if but don't apply same conditions later.
+      if (args.position && args.cursorType) {
+        const { position, cursorType } = args;
         let positionQuery;
-        if (type === "next") {
+        if (cursorType === "next") {
           queryParams.push(["result-ordering", "id-increasing"]);
           positionQuery = "after-id";
-        } else if (type === "previous") {
+        } else if (cursorType === "previous") {
           queryParams.push(["result-ordering", "id-decreasing"]);
           positionQuery = "before-id";
         }
@@ -230,8 +237,8 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
           queryParams.push([positionQuery, position]);
         }
       }
-      if ((args.limit ?? 0) > 0) {
-        queryParams.push(["page-size", args.limit + ""]);
+      if ((args.pageSize ?? 0) > 0) {
+        queryParams.push(["page-size", args.pageSize + ""]);
       }
     }
 
@@ -248,7 +255,8 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
       return { recipes };
     }
 
-    if (args?.cursor?.type === "previous") {
+    if (args?.cursorType === "previous") {
+      // bug: if filters this out earlier sometimes
       recipes.reverse();
     }
 
@@ -256,16 +264,18 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
       (
         await this._recipeClient.httpGet("", [...queryParams, ["book", bookId]])
       ).json();
+
+    // bug: if filters out position earlier sometimes
     const [next, prev] = await Promise.all([
       this.resolveCursor(
         userId,
-        recipes[recipes.length - 1]?.id ?? args?.cursor?.position,
+        recipes[recipes.length - 1]?.id ?? args?.position,
         true,
         executor,
       ),
       this.resolveCursor(
         userId,
-        recipes[0]?.id ?? args?.cursor?.position,
+        recipes[0]?.id ?? args?.position,
         false,
         executor,
       ),
@@ -274,11 +284,9 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
     return {
       recipes: recipes,
       nextCursor: next
-        ? (recipes[recipes.length - 1]?.id ?? args?.cursor?.position)
+        ? (recipes[recipes.length - 1]?.id ?? args?.position)
         : undefined,
-      previousCursor: prev
-        ? (recipes[0]?.id ?? args?.cursor?.position)
-        : undefined,
+      previousCursor: prev ? (recipes[0]?.id ?? args?.position) : undefined,
     };
   }
 
