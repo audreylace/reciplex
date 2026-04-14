@@ -27,36 +27,27 @@ export function NameAndShortDescriptionForm({
   values,
   showConflict,
 }: ICreateFormProps) {
+  const { name: initialName, shortDescription: initialShortDescription } =
+    values ?? { name: "", shortDescription: "" };
   const {
     register,
     handleSubmit,
     formState: { errors },
     control,
-    setValue,
-    getValues,
+    reset,
   } = useForm<ICreateFormSuccessData>({
-    defaultValues: values,
+    defaultValues: {
+      name: initialName,
+      shortDescription: initialShortDescription,
+    },
   });
 
   useEffect(() => {
-    if (values?.name && getValues("name") !== values?.name) {
-      setValue("name", values?.name ?? "", {
-        shouldDirty: false,
-        shouldTouch: false,
-        shouldValidate: false,
-      });
-    }
-    if (
-      values?.shortDescription &&
-      getValues("shortDescription") !== values?.shortDescription
-    ) {
-      setValue("shortDescription", values?.shortDescription ?? "", {
-        shouldDirty: false,
-        shouldTouch: false,
-        shouldValidate: false,
-      });
-    }
-  }, [getValues, setValue, values?.name, values?.shortDescription]);
+    reset({
+      name: initialName,
+      shortDescription: initialShortDescription,
+    });
+  }, [initialName, initialShortDescription, reset]);
 
   const {
     field: { onChange, onBlur, value, ref },
