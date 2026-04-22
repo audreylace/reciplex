@@ -1,7 +1,7 @@
 import { makeViewRecipePath } from "../../route-utils";
 import { useNavigate, useParams } from "react-router";
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
-import { RecipeBookNotFoundBanner } from "../../components/book-banners/recipe-book-not-found-banner.component";
+import { RecipeBookNotFoundBanner } from "../../components/recipe-book-not-found-banner/recipe-book-not-found-banner.component";
 import { NameAndShortDescriptionForm } from "../../components/name-and-short-description-form/name-and-short-description-form.component";
 import { useCreateRecipeMutation } from "../../hooks/useCreateRecipeMutation.hook";
 import { BookMutationNotAuthorizedBanner } from "../../components/book-mutation-not-authorized-banner/book-mutation-not-authorized-banner.component";

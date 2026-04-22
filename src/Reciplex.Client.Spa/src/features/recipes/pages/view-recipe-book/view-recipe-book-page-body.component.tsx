@@ -1,7 +1,7 @@
 import Box from "@mui/material/Box";
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
 import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
-import { RecipeBookNotFoundBanner } from "../../components/book-banners/recipe-book-not-found-banner.component";
+import { RecipeBookNotFoundBanner } from "../../components/recipe-book-not-found-banner/recipe-book-not-found-banner.component";
 import { RecipeTable } from "../../components/recipe-table/recipe-table.component";
 import { useRecipeListTableContext } from "../../components/recipe-table/useRecipeListTableContext.hook";
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";

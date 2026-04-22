@@ -2,7 +2,7 @@ import { useNavigate } from "react-router";
 import { DeleteWithNameVerification } from "../../../core/components/delete-with-name-verification/delete-with-name-verification.component";
 import { useMutationFormState } from "../../../core/hooks/useMutationFormState.hook";
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
-import { RecipeBookNotFoundBanner } from "../../components/book-banners/recipe-book-not-found-banner.component";
+import { RecipeBookNotFoundBanner } from "../../components/recipe-book-not-found-banner/recipe-book-not-found-banner.component";
 import { useDeleteRecipeBookMutation } from "../../hooks/useDeleteRecipeBookMutation.hook";
 import {
   useGetRecipeBookById,

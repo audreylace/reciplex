@@ -1,5 +1,5 @@
 import { useParams } from "react-router";
-import { RecipeBookNotFoundBanner } from "../../components/book-banners/recipe-book-not-found-banner.component";
+import { RecipeBookNotFoundBanner } from "../../components/recipe-book-not-found-banner/recipe-book-not-found-banner.component";
 import { EditRecipeBookPageBody } from "./edit-recipe-book-page-body.component";
 
 /**

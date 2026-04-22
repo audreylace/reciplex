@@ -7,13 +7,13 @@ import { useCreateRecipeMutation } from "../../hooks/useCreateRecipeMutation.hoo
 import { makeViewRecipePath } from "../../route-utils";
 import type { IRecipeBookModel } from "../../services/recipe-types";
 import { ActionFailedTryAgainCancel } from "../action-failed-try-again-cancel/action-failed-try-again-cancel.component";
-import { BookIsReadonlyBanner } from "../book-banners/book-is-readonly-banner.component";
 import { RecipeMetaFieldSet } from "../recipe-meta-field-set/recipe-meta-field-set.component";
 import {
   InformationBanner,
   SuccessBanner,
 } from "../../../core/components/banner/banner.component";
 import { ApplicationErrorBanner } from "../../../core/components/banner/application-error-banner.component";
+import { BookMutationNotAuthorizedBanner } from "../book-mutation-not-authorized-banner/book-mutation-not-authorized-banner.component";
 
 /** form for creating a recipe */
 export function CreateRecipeForm({
@@ -49,7 +49,12 @@ export function CreateRecipeForm({
   // short circuit to a read-only banner
   // if the user does not have edit access
   if (!book.mayEdit) {
-    return <BookIsReadonlyBanner bookId={book.id} />;
+    return (
+      <BookMutationNotAuthorizedBanner
+        bookId={book.id}
+        message="You may not edit this recipe book"
+      />
+    );
   }
 
   switch (mutationStatus) {
