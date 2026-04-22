@@ -8,26 +8,8 @@ import {
   type IRecipeListArgsKeyNode,
 } from "../utils/recipe-queries/recipe-query-key-factory";
 
-export function useRecipeForBookQuery(
-  bookId: string,
-): ReturnType<typeof useInnerHook>;
-export function useRecipeForBookQuery(
-  bookId: string,
-  cursorType: "next" | "previous",
-  position: string,
-  pageSize?: number,
-): ReturnType<typeof useInnerHook>;
-export function useRecipeForBookQuery(
-  bookId: string,
-  cursorType?: "next" | "previous",
-  position?: string,
-  pageSize?: number,
-) {
-  return useInnerHook(bookId, cursorType, position, pageSize);
-}
-
-function useInnerHook(
-  bookId: string,
+export function useGetRecipesInBookQuery(
+  bookId: string | undefined | null,
   cursorType?: "next" | "previous",
   position?: string,
   pageSize?: number,
@@ -38,7 +20,7 @@ function useInnerHook(
   return useQuery({
     queryKey: recipeListQueryKey(
       userKey ?? "",
-      makeQueryKeyArgs(bookId, cursorType, position, pageSize),
+      makeQueryKeyArgs(bookId ?? "", cursorType, position, pageSize),
     ),
     enabled: enabled,
     queryFn: async () => {
