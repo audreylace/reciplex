@@ -91,7 +91,10 @@ function dropCachedRecipesFilteredByBook(
   // drop all recipes belonging to the book
   client.setQueriesData(
     { queryKey: [rootKey, recipeCacheKeyBranch] },
-    (old: IRecipeModel) => {
+    (old: IRecipeModel | null | undefined) => {
+      if (!old) {
+        return old;
+      }
       if (old.bookId === bookId) {
         return null;
       }
@@ -153,7 +156,10 @@ function updateRecipeCacheData(
   // entries are found.
   client.setQueriesData(
     { queryKey: [recipeQueryKeyRoot(userKey), recipeListCacheKeyBranch] },
-    (old: IGetRecipesInBookResult) => {
+    (old: IGetRecipesInBookResult | null | undefined) => {
+      if (!old) {
+        return old;
+      }
       const index = old.recipes.findIndex((r) => r.id === id);
       if (index === -1) {
         return old;
@@ -187,7 +193,10 @@ function updateRecipeBookCacheData(
   // delete/update the book in book list pages
   client.setQueriesData(
     { queryKey: [recipeQueryKeyRoot(userKey), recipeBookListCacheKeyBranch] },
-    (old: IGetRecipeBooksResult) => {
+    (old: IGetRecipeBooksResult | null | undefined) => {
+      if (!old) {
+        return old;
+      }
       const index = old.books.findIndex((b) => b.id === id);
       if (index === -1) {
         return old;
