@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { DeleteWithNameVerification } from "../../../core/components/delete-with-name-verification/delete-with-name-verification.component";
 import { useMutationFormState } from "../../../core/hooks/useMutationFormState.hook";
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
@@ -8,9 +8,8 @@ import {
   useGetRecipeBookById,
   useGetRecipeBookByIdCacheKey,
 } from "../../hooks/useGetRecipeBookById.hook";
-import { makeBookListPath, makeViewRecipeBookPath } from "../../route-utils";
-import Alert from "@mui/material/Alert";
-import Button from "@mui/material/Button";
+import { makeBookListPath } from "../../route-utils";
+import { BookMutationNotAuthorizedBanner } from "../../components/book-mutation-not-authorized-banner/book-mutation-not-authorized-banner.component";
 
 /** body of the delete recipe book page */
 export function DeleteRecipeBookPageBody({
@@ -50,22 +49,10 @@ export function DeleteRecipeBookPageBody({
 
   if (bookQuery.isSuccess && bookQuery.data && !bookQuery.data.mayDelete) {
     return (
-      <Alert
-        severity="error"
-        variant="filled"
-        action={
-          <Button
-            color="inherit"
-            size="small"
-            component={Link}
-            to={makeViewRecipeBookPath(bookKey)}
-          >
-            View Book
-          </Button>
-        }
-      >
-        You may not delete this book
-      </Alert>
+      <BookMutationNotAuthorizedBanner
+        bookId={bookQuery.data.id}
+        message="You may not delete this book"
+      />
     );
   }
 

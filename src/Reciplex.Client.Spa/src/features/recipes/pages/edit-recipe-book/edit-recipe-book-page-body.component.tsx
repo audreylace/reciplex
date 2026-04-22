@@ -8,9 +8,8 @@ import {
 import { useMutationFormState } from "../../../core/hooks/useMutationFormState.hook";
 import { useUpdateRecipeBookMutation } from "../../hooks/useUpdateRecipeBookMutation.hook";
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
-import Alert from "@mui/material/Alert";
-import Button from "@mui/material/Button";
 import { NameAndShortDescriptionForm } from "../../components/name-and-short-description-form/name-and-short-description-form.component";
+import { BookMutationNotAuthorizedBanner } from "../../components/book-mutation-not-authorized-banner/book-mutation-not-authorized-banner.component";
 
 export function EditRecipeBookPageBody({ bookId }: { bookId: string }) {
   const navigate = useNavigate();
@@ -40,22 +39,10 @@ export function EditRecipeBookPageBody({ bookId }: { bookId: string }) {
 
   if (bookQuery.isSuccess && bookQuery.data && !bookQuery.data.mayDelete) {
     return (
-      <Alert
-        severity="error"
-        variant="filled"
-        action={
-          <Button
-            color="inherit"
-            size="small"
-            component={Link}
-            to={makeViewRecipeBookPath(bookId)}
-          >
-            View Book
-          </Button>
-        }
-      >
-        You may not edit this book
-      </Alert>
+      <BookMutationNotAuthorizedBanner
+        bookId={bookQuery.data.id}
+        message="You may not edit  this book"
+      />
     );
   }
 

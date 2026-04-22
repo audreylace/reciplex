@@ -1,11 +1,10 @@
-import { makeViewRecipeBookPath, makeViewRecipePath } from "../../route-utils";
-import { Link, useNavigate, useParams } from "react-router";
+import { makeViewRecipePath } from "../../route-utils";
+import { useNavigate, useParams } from "react-router";
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
 import { RecipeBookNotFoundBanner } from "../../components/book-banners/recipe-book-not-found-banner.component";
 import { NameAndShortDescriptionForm } from "../../components/name-and-short-description-form/name-and-short-description-form.component";
 import { useCreateRecipeMutation } from "../../hooks/useCreateRecipeMutation.hook";
-import Alert from "@mui/material/Alert";
-import Button from "@mui/material/Button";
+import { BookMutationNotAuthorizedBanner } from "../../components/book-mutation-not-authorized-banner/book-mutation-not-authorized-banner.component";
 
 /**
  * Entry point for create recipe page component
@@ -30,22 +29,10 @@ export function CreateRecipePage() {
 
   if (querySuccess && book && !book.mayEdit) {
     return (
-      <Alert
-        severity="error"
-        variant="filled"
-        action={
-          <Button
-            color="inherit"
-            size="small"
-            component={Link}
-            to={makeViewRecipeBookPath(bookId)}
-          >
-            View Book
-          </Button>
-        }
-      >
-        You may not edit this book
-      </Alert>
+      <BookMutationNotAuthorizedBanner
+        bookId={book.id}
+        message="You may not add recipes to this book"
+      />
     );
   }
 
