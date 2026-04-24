@@ -8,18 +8,15 @@ import {
   LastPage,
 } from "@mui/icons-material";
 import { PageSizeSelect } from "../page-size-select/page-size-select.component";
-import { useRecipeClientStateContext } from "../../hooks/useRecipeClientStateContext.hook";
 
 export function TablePageControls({
   previous,
   next,
   nextLoading,
   previousLoading,
+  pageSize,
+  setPageSize,
 }: ITablePageControlsProps) {
-  const pageSize = useRecipeClientStateContext((s) => s.recipeListPageSize);
-  const setPageSize = useRecipeClientStateContext(
-    (s) => s.setRecipeListPageSize,
-  );
   return (
     <Stack direction={"row"} sx={{ width: "100%", py: 2 }}>
       <NavigationButton
@@ -66,6 +63,8 @@ export interface ITablePageControlsProps {
   next?: string;
   nextLoading?: boolean;
   previousLoading?: boolean;
+  pageSize: number;
+  setPageSize: (newSize: number) => void;
 }
 
 function FlexSpacer() {
