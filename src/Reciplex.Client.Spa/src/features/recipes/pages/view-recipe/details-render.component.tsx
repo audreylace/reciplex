@@ -1,7 +1,10 @@
 import detailsRenderStyleModule from "./details-render.module.css";
 import { useContext, useMemo } from "preact/hooks";
 import { RecipeDetailsContext } from "./recipe-details-context.component";
-import { usePipeline } from "./usePipeine.hook";
+import { usePipeline } from "./usePipeline.hook";
+import Paper from "@mui/material/Paper";
+import Box from "@mui/material/Box";
+import { Typography } from "@mui/material";
 
 const componentMap = {
   recipeIngredientExpression: RecipeIngredientRender,
@@ -19,13 +22,18 @@ export function DetailsRender({
   return (
     <>
       <RecipeDetailsContext.Provider value={detailsContextModel}>
-        <h4>Tools</h4>
+        <Typography variant="h5">Tools</Typography>
         <ToolList />
-        <h4>Ingredients</h4>
+        <Typography variant="h5">Ingredients</Typography>
         <IngredientList />
-        <div className={detailsRenderStyleModule.detailsWrapper}>
-          <DetailsMdRender mayEdit={mayEdit} goToEditAction={goToEditAction} />
-        </div>
+        <Paper>
+          <Box sx={{ p: 1 }}>
+            <DetailsMdRender
+              mayEdit={mayEdit}
+              goToEditAction={goToEditAction}
+            />
+          </Box>
+        </Paper>
       </RecipeDetailsContext.Provider>
     </>
   );
@@ -122,18 +130,21 @@ function DetailsMdRender({
   if (!detailsContext?.component) {
     if (!mayEdit) {
       return (
-        <p>
+        <Typography variant="body2">
           <i>No details</i>
-        </p>
+        </Typography>
       );
     }
     return (
-      <p
-        className={detailsRenderStyleModule.emptyDetails}
+      <Typography
+        variant="body2"
         onClick={goToEditAction}
+        sx={{
+          cursor: "pointer",
+        }}
       >
         <i>Click to edit and add details</i>
-      </p>
+      </Typography>
     );
   }
 
