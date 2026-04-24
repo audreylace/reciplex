@@ -1,19 +1,16 @@
 import TextField from "@mui/material/TextField";
-import { useRecipeListTableContext } from "./useRecipeListTableContext.hook";
 import MenuItem from "@mui/material/MenuItem";
 
 /**
- * Component for selecting the size of a page for the view recipe book page
+ * Component for selecting the number of results in a list
  */
-export function PageSizeSelect() {
-  const selectedSize = useRecipeListTableContext((state) => state.size);
-  const updateSize = useRecipeListTableContext((state) => state.updateSize);
+export function PageSizeSelect({ value, onChange }: IPageSizeSelectProps) {
   const textFieldOnChange = (event: Event) => {
     let parsedSize = parseInt((event.target as HTMLInputElement)?.value ?? "");
     if (isNaN(parsedSize)) {
       parsedSize = 10;
     }
-    updateSize(parsedSize);
+    onChange(parsedSize);
   };
 
   return (
@@ -22,16 +19,22 @@ export function PageSizeSelect() {
       select
       label="Count"
       defaultValue="10"
-      value={selectedSize}
+      value={value}
       size="small"
       sx={{
         width: "5em",
       }}
     >
+      <MenuItem value={5}>5</MenuItem>
       <MenuItem value={10}>10</MenuItem>
       <MenuItem value={20}>20</MenuItem>
       <MenuItem value={50}>50</MenuItem>
       <MenuItem value={100}>100</MenuItem>
     </TextField>
   );
+}
+
+export interface IPageSizeSelectProps {
+  value: number;
+  onChange: (value: number) => void;
 }

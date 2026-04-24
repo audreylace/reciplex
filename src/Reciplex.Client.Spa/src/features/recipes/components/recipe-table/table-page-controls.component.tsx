@@ -1,15 +1,20 @@
 import Stack from "@mui/material/Stack";
 import { NavigationButton } from "../navigation-button/navigation-button.component";
 import Box from "@mui/material/Box";
-import { PageSizeSelect } from "./page-size-select.component";
 import {
   ArrowBack,
   ArrowForward,
   FirstPage,
   LastPage,
 } from "@mui/icons-material";
+import { PageSizeSelect } from "../page-size-select/page-size-select.component";
+import { useRecipeClientStateContext } from "../../hooks/useRecipeClientStateContext.hook";
 
 export function TablePageControls({ previous, next }: ITablePageControlsProps) {
+  const pageSize = useRecipeClientStateContext((s) => s.recipeListPageSize);
+  const setPageSize = useRecipeClientStateContext(
+    (s) => s.setRecipeListPageSize,
+  );
   return (
     <Stack direction={"row"} sx={{ width: "100%", py: 2 }}>
       <NavigationButton disabled={!previous} source="next">
@@ -20,7 +25,7 @@ export function TablePageControls({ previous, next }: ITablePageControlsProps) {
       </NavigationButton>
       <FlexSpacer />
       <Box>
-        <PageSizeSelect />
+        <PageSizeSelect value={pageSize} onChange={setPageSize} />
       </Box>
       <FlexSpacer />
       <NavigationButton disabled={!next} source="next" at={next}>

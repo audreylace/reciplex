@@ -3,12 +3,12 @@ import { LoadingFailedAlert } from "../../../core/components/loading-failed-aler
 import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
 import { RecipeBookNotFoundBanner } from "../../components/recipe-book-not-found-banner/recipe-book-not-found-banner.component";
 import { RecipeTable } from "../../components/recipe-table/recipe-table.component";
-import { useRecipeListTableContext } from "../../components/recipe-table/useRecipeListTableContext.hook";
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
 import { useGetRecipesInBookQuery } from "../../hooks/useGetRecipesInBookQuery.hook";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { RecipeBookMenu } from "../../components/book-menu/recipe-book-menu.component";
+import { useRecipeClientStateContext } from "../../hooks/useRecipeClientStateContext.hook";
 
 export function ViewRecipeBookPageBody({
   bookId,
@@ -19,7 +19,9 @@ export function ViewRecipeBookPageBody({
   source: "next" | "previous";
   at?: string;
 }) {
-  const selectedSize = useRecipeListTableContext((state) => state.size);
+  const selectedSize = useRecipeClientStateContext(
+    (state) => state.recipeListPageSize,
+  );
   const {
     data: book,
     isError: getRecipeBookError,

@@ -14,10 +14,9 @@ export function RecipeTableBody({
 }) {
   return (
     <TableBody>
-      <TableRow></TableRow>
       {recipes && recipes.length <= 0 && (
         <TableRow>
-          <TableCell colspan={3} align="center">
+          <TableCell colSpan={3} align="center">
             No Recipes
           </TableCell>
         </TableRow>
@@ -31,17 +30,26 @@ export function RecipeTableBody({
 
 function RecipeTableRow({ recipe }: { recipe: IRecipeModel }) {
   const navigate = useNavigate();
+  const onClick = () => {
+    navigate(makeViewRecipePath(recipe.bookId, recipe.id));
+  };
   return (
     <TableRow
       hover
-      onClick={() => {
-        navigate(makeViewRecipePath(recipe.bookId, recipe.id));
+      sx={{
+        ":hover": {
+          cursor: "pointer",
+        },
       }}
     >
-      <TableCell>{recipe.name}</TableCell>
-      <TableCell>{recipe.details}</TableCell>
-      <TableCell scope="row" component="th">
-        <IconButton onClick={(e) => e.stopPropagation()}>
+      <TableCell onClick={onClick} role="button">
+        {recipe.name}
+      </TableCell>
+      <TableCell onClick={onClick} role="button">
+        {recipe.details}
+      </TableCell>
+      <TableCell onClick={(e) => e.stopPropagation()} role="button">
+        <IconButton>
           <MoreVert />
         </IconButton>
       </TableCell>

@@ -4,14 +4,7 @@ import Typography from "@mui/material/Typography";
 export function RecipeTableTitle() {
   return (
     <Box>
-      <Typography
-        variant="h5"
-        component="div"
-        sx={{
-          pt: 2,
-          pl: 2,
-        }}
-      >
+      <Typography variant="h5" component="div">
         Recipes
       </Typography>
     </Box>
