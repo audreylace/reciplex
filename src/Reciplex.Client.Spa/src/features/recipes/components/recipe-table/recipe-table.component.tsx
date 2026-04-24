@@ -6,24 +6,30 @@ import type { IRecipeModel } from "../../services/recipe-types";
 import { RecipeTableHeader } from "./recipe-table-header.component";
 import { TablePageControls } from "./table-page-controls.component";
 import { RecipeTableBody } from "./recipe-table-body.component";
+import type { Ref } from "preact";
+import { forwardRef } from "preact/compat";
 
-export function RecipeTable({
-  pending,
-  next,
-  previous,
-  recipes,
-  nextLoading,
-  previousLoading,
-}: {
-  pending?: boolean;
-  next?: string;
-  previous?: string;
-  recipes: IRecipeModel[] | undefined;
-  nextLoading?: boolean;
-  previousLoading?: boolean;
-}) {
+export const RecipeTable = forwardRef(RecipeTableInner);
+function RecipeTableInner(
+  {
+    pending,
+    next,
+    previous,
+    recipes,
+    nextLoading,
+    previousLoading,
+  }: {
+    pending?: boolean;
+    next?: string;
+    previous?: string;
+    recipes: IRecipeModel[] | undefined;
+    nextLoading?: boolean;
+    previousLoading?: boolean;
+  },
+  ref?: Ref<HTMLDivElement>,
+) {
   return (
-    <Paper>
+    <Paper ref={ref}>
       <TableContainer>
         <Table>
           <RecipeTableHeader pending={pending} />

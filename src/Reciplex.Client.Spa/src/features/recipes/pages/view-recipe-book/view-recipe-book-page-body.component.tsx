@@ -9,6 +9,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { RecipeBookMenu } from "../../components/book-menu/recipe-book-menu.component";
 import { useRecipeClientStateContext } from "../../hooks/useRecipeClientStateContext.hook";
+import { useEffect, useRef } from "preact/hooks";
 
 export function ViewRecipeBookPageBody({
   bookId,
@@ -71,6 +72,15 @@ export function ViewRecipeBookPageBody({
     !!previousQueryPos,
   );
 
+  const tablePaperRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (tablePaperRef.current) {
+      tablePaperRef.current.scrollIntoView({
+        behavior: "smooth",
+      });
+    }
+  }, [bookId, source, at]);
+
   if (
     getRecipesError ||
     getRecipeBookError ||
@@ -97,6 +107,7 @@ export function ViewRecipeBookPageBody({
         mayDeleteBook={book.mayDelete}
       />
       <RecipeTable
+        ref={tablePaperRef}
         pending={getRecipesPending}
         recipes={recipeList ?? undefined}
         nextLoading={nextRecipeEnabled && nextRecipePending}
