@@ -9,17 +9,22 @@ import {
 import type { IGetRecipeBooksArgs } from "../services/recipe-types";
 
 export function useRecipeBookListQuery(
-  cursorType: "next" | "previous",
-  position: string,
+  source?: "next" | "previous",
+  index?: string,
   pageSize?: number,
-): ReturnType<typeof useInnerHook>;
-export function useRecipeBookListQuery(): ReturnType<typeof useInnerHook>;
-export function useRecipeBookListQuery(
-  cursorType?: "next" | "previous",
-  position?: string,
-  pageSize?: number,
+  enabled?: boolean,
 ) {
-  return useInnerHook(cursorType, position, pageSize);
+  const userKey = useActiveUserKey();
+  const recipeStore = useRecipeStoreContext();
+  const args = buildArgs(source, index, pageSize);
+  return useQuery({
+    queryKey: recipeBookListQueryKey(
+      userKey ?? "",
+      buildQueryKeyArgs(source, index, pageSize),
+    ),
+    enabled: !!userKey && enabled !== false,
+    queryFn: () => recipeStore.getRecipeBooks(AssertString(userKey), args),
+  });
 }
 
 function buildArgs(
@@ -44,22 +49,4 @@ function buildQueryKeyArgs(
     pageSize,
     position,
   };
-}
-
-function useInnerHook(
-  source?: "next" | "previous",
-  index?: string,
-  pageSize?: number,
-) {
-  const userKey = useActiveUserKey();
-  const recipeStore = useRecipeStoreContext();
-  const args = buildArgs(source, index, pageSize);
-  return useQuery({
-    queryKey: recipeBookListQueryKey(
-      userKey ?? "",
-      buildQueryKeyArgs(source, index, pageSize),
-    ),
-    enabled: !!userKey,
-    queryFn: () => recipeStore.getRecipeBooks(AssertString(userKey), args),
-  });
 }

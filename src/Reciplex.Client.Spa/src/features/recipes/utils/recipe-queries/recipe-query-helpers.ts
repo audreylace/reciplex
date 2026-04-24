@@ -1,7 +1,5 @@
 import { type QueryClient } from "@tanstack/react-query";
 import type {
-  IGetRecipeBooksResult,
-  IGetRecipesInBookResult,
   IRecipeBookModel,
   IRecipeModel,
 } from "../../services/recipe-types";
@@ -156,16 +154,16 @@ function updateRecipeCacheData(
   // entries are found.
   client.setQueriesData(
     { queryKey: [recipeQueryKeyRoot(userKey), recipeListCacheKeyBranch] },
-    (old: IGetRecipesInBookResult | null | undefined) => {
+    (old: IRecipeModel[] | null | undefined) => {
       if (!old) {
         return old;
       }
-      const index = old.recipes.findIndex((r) => r.id === id);
+      const index = old.findIndex((r) => r.id === id);
       if (index === -1) {
         return old;
       }
 
-      const newList = old.recipes.slice(0);
+      const newList = old.slice(0);
       if (data) {
         newList.splice(index, 1, data);
       } else {
@@ -193,16 +191,16 @@ function updateRecipeBookCacheData(
   // delete/update the book in book list pages
   client.setQueriesData(
     { queryKey: [recipeQueryKeyRoot(userKey), recipeBookListCacheKeyBranch] },
-    (old: IGetRecipeBooksResult | null | undefined) => {
+    (old: IRecipeBookModel[] | null | undefined) => {
       if (!old) {
         return old;
       }
-      const index = old.books.findIndex((b) => b.id === id);
+      const index = old.findIndex((b) => b.id === id);
       if (index === -1) {
         return old;
       }
 
-      const newList = old.books.slice(0);
+      const newList = old.slice(0);
       if (dataToCache) {
         newList.splice(index, 1, dataToCache);
       } else {

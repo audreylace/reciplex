@@ -15,8 +15,7 @@ export function RecipeBookMenuButton({
   bookId,
   mayDelete,
   mayEdit,
-}: IRecipeBookMenuProps) {
-  const navigate = useNavigate();
+}: IRecipeBookMenuButtonProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -40,59 +39,104 @@ export function RecipeBookMenuButton({
       >
         <MoreVertIcon />
       </IconButton>
-      <Menu
-        id={menuId}
-        anchorEl={anchorEl}
+      <RecipeBookMenu
         open={open}
         onClose={handleClose}
-        slotProps={{
-          list: {
-            "aria-labelledby": buttonId,
-          },
-        }}
-      >
-        <MenuItem
-          onClick={() => navigate(makeCreateRecipePath(bookId))}
-          disabled={!mayEdit}
-        >
-          <ListItemIcon>
-            <AddIcon fontSize="small" />
-          </ListItemIcon>
-          Add Recipe
-        </MenuItem>
-        <Divider />
-        <MenuItem
-          onClick={() => {
-            navigate(`/books/${bookId}/edit`);
-          }}
-          disabled={!mayEdit}
-        >
-          <ListItemIcon>
-            <SettingsIcon fontSize="small" />
-          </ListItemIcon>
-          Settings
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            navigate(`/books/${bookId}/delete`);
-          }}
-          disabled={!mayDelete}
-        >
-          <ListItemIcon>
-            <Delete fontSize="small" />
-          </ListItemIcon>
-          Delete
-        </MenuItem>
-      </Menu>
+        getAnchorElement={() => anchorEl}
+        mayEdit={mayEdit}
+        mayDelete={mayDelete}
+        bookId={bookId}
+        menuId={menuId}
+        buttonId={buttonId}
+      />
     </div>
   );
 }
 
-export interface IRecipeBookMenuProps {
+export interface IRecipeBookMenuButtonProps {
   /** the id of the book */
   bookId: string;
   /** if the user has edit privileges */
   mayEdit?: boolean;
   /** if the user has delete privileges */
   mayDelete?: boolean;
+}
+
+export function RecipeBookMenu({
+  mayEdit,
+  mayDelete,
+  menuId,
+  onClose,
+  getAnchorElement,
+  open,
+  buttonId,
+  bookId,
+}: IRecipeBookMenuProps) {
+  const navigate = useNavigate();
+  return (
+    <Menu
+      id={menuId}
+      anchorEl={getAnchorElement}
+      open={open ?? false}
+      onClose={onClose}
+      slotProps={{
+        list: {
+          "aria-labelledby": buttonId,
+        },
+      }}
+    >
+      <MenuItem
+        onClick={() => navigate(makeCreateRecipePath(bookId))}
+        disabled={!mayEdit}
+      >
+        <ListItemIcon>
+          <AddIcon fontSize="small" />
+        </ListItemIcon>
+        Add Recipe
+      </MenuItem>
+      <Divider />
+      <MenuItem
+        onClick={() => {
+          navigate(`/books/${bookId}/edit`);
+        }}
+        disabled={!mayEdit}
+      >
+        <ListItemIcon>
+          <SettingsIcon fontSize="small" />
+        </ListItemIcon>
+        Settings
+      </MenuItem>
+      <MenuItem
+        onClick={() => {
+          navigate(`/books/${bookId}/delete`);
+        }}
+        disabled={!mayDelete}
+      >
+        <ListItemIcon>
+          <Delete fontSize="small" />
+        </ListItemIcon>
+        Delete
+      </MenuItem>
+    </Menu>
+  );
+}
+
+/** properties for `RecipeBookMenu` */
+export interface IRecipeBookMenuProps {
+  /** the id of the book */
+  bookId: string;
+  /** if the user has delete privileges */
+  mayDelete?: boolean;
+  /** if the user has edit privileges */
+  mayEdit?: boolean;
+  /** the id of the menu */
+  menuId?: string;
+  /** true opens menu */
+  open?: boolean;
+  /** invoked when the menu is closing */
+  onClose?: () => void;
+  /** id of the button launching the menu */
+  buttonId?: string;
+  /** invoked to get the element that the button should be anchored against */
+  getAnchorElement: () => HTMLElement | null;
 }

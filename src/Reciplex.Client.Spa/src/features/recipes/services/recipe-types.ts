@@ -89,27 +89,6 @@ export interface IRecipeModel {
   details: string;
 }
 
-/**
- * results from `getRecipeBooks` @see IRecipeBookStore
- */
-export interface IGetRecipeBooksResult {
-  /** cursor to fetch the next page */
-  nextCursor?: string;
-  /** cursor to fetch the previous page */
-  previousCursor?: string;
-  /**
-   * recipe books indexed by key
-   */
-  books: IRecipeBookModel[];
-}
-
-export interface IPageRequestCursor {
-  /** The cursor's position */
-  position?: string;
-  /** The type of the cursor */
-  type: CursorTypes;
-}
-
 /** Cursor types */
 export const CursorTypes = {
   /** Cursor for getting the next page of results */
@@ -238,7 +217,7 @@ export interface IRecipeBookStore {
   getRecipeBooks(
     userId: string,
     args?: IGetRecipeBooksArgs,
-  ): Promise<IGetRecipeBooksResult>;
+  ): Promise<IRecipeBookModel[]>;
 
   /**
    * gets recipes for a book
@@ -318,18 +297,4 @@ export interface IRecipeBookStore {
     recipeId: string,
     args: IUpdateRecipeArgs,
   ): Promise<IRecipeModel>;
-}
-
-/**
- * A single page holding a list of recipes for a book.
- * Use next and previous to determine if there is more data.
- * @todo return user data provided by the server
- */
-export interface IGetRecipesInBookResult {
-  /** list of recipes */
-  recipes: IRecipeModel[];
-  /** cursor to fetch the next page */
-  nextCursor?: string;
-  /** cursor to fetch the previous page */
-  previousCursor?: string;
 }

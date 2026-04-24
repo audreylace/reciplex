@@ -45,7 +45,7 @@ function RecipeTableRow({ recipe }: { recipe: IRecipeModel }) {
         {recipe.name}
       </TableCell>
       <TableCell onClick={onClick} role="button">
-        {recipe.details}
+        {recipe.shortDescription}
       </TableCell>
       <RecipeMenuButtonCell
         recipeName={recipe.name}

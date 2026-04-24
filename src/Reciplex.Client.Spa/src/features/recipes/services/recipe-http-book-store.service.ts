@@ -3,7 +3,6 @@ import {
   type ICreateRecipeArgs,
   type ICreateRecipeBookArgs,
   type IGetRecipeBooksArgs,
-  type IGetRecipeBooksResult,
   type IGetRecipesInBookArgs,
   type IRecipeBookModel,
   type IRecipeBookStore,
@@ -61,30 +60,33 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
   async getRecipeBooks(
     userId: string,
     args?: IGetRecipeBooksArgs,
-  ): Promise<IGetRecipeBooksResult> {
+  ): Promise<IRecipeBookModel[]> {
     const queryParams: [string, string][] = this.makeQueryParams(userId);
 
-    // fixme: janky code that needs refactor
+    let reverse = false;
     if (args) {
-      if (args.position && args.cursorType) {
-        const { position, cursorType } = args;
-        let positionQuery;
-        if (cursorType === "previous") {
-          queryParams.push(["result-ordering", "id-decreasing"]);
-          positionQuery = "before-id";
-        } else if (cursorType === "next") {
-          queryParams.push(["result-ordering", "id-increasing"]);
-          positionQuery = "after-id";
-        }
-
-        if (position && positionQuery) {
-          queryParams.push([positionQuery, position]);
-        }
+      const { cursorType, pageSize, position } = args;
+      let positionQuery;
+      if (cursorType === "previous") {
+        reverse = true;
+        queryParams.push(["result-ordering", "id-decreasing"]);
+        positionQuery = "before-id";
+      } else if (cursorType === "next" || typeof cursorType === "undefined") {
+        queryParams.push(["result-ordering", "id-increasing"]);
+        positionQuery = "after-id";
+      } else {
+        throw new Error("unrecognized cursor type");
       }
-      if ((args.pageSize ?? 0) > 0) {
-        queryParams.push(["page-size", args.pageSize + ""]);
+
+      if (position) {
+        queryParams.push([positionQuery, position]);
+      }
+
+      if ((pageSize ?? 0) > 0) {
+        queryParams.push(["page-size", `${pageSize}`]);
       }
     }
+
     const responseJson: IRecipeBookJson[] | null | undefined = await (
       await this._bookClient.httpGet("", queryParams)
     ).json();
@@ -97,70 +99,11 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
       this.decodeRecipeBookJson(b),
     );
 
-    if (books.length === 0 && !args) {
-      return { books };
-    }
-
-    // bug: if filters out cursorType earlier sometimes
-    if (args?.cursorType === "previous") {
+    if (reverse) {
       books.reverse();
     }
 
-    const executor = async (queryParams: [string, string][]) =>
-      (await this._bookClient.httpGet("", queryParams)).json();
-
-    // bug: if filters out position earlier sometimes
-    const [next, prev] = await Promise.all([
-      this.resolveCursor(
-        userId,
-        books[books.length - 1]?.id ?? args?.position,
-        true,
-        executor,
-      ),
-      this.resolveCursor(
-        userId,
-        books[0]?.id ?? args?.position,
-        false,
-        executor,
-      ),
-    ]);
-
-    return {
-      books: books,
-      nextCursor: next
-        ? (books[books.length - 1]?.id ?? args?.position)
-        : undefined,
-      previousCursor: prev ? (books[0]?.id ?? args?.position) : undefined,
-    };
-  }
-
-  private async resolveCursor<TJson>(
-    userId: string,
-    id: string | undefined,
-    isNext: boolean,
-    executor: (params: [string, string][]) => Promise<TJson[]>,
-  ) {
-    const queryParams: [string, string][] = this.makeQueryParams(userId);
-    queryParams.push(["page-size", "1"]);
-    if (isNext) {
-      if (id) {
-        queryParams.push(["after-id", id]);
-      }
-    } else {
-      if (id) {
-        queryParams.push(["before-id", id]);
-      }
-      queryParams.push(["result-ordering", "id-decreasing"]);
-    }
-
-    const responseJson: TJson[] | null | undefined =
-      await executor(queryParams);
-
-    if (!responseJson) {
-      throw Error("bad json");
-    }
-
-    return responseJson.length > 0;
+    return books;
   }
 
   async createRecipeBook(
@@ -220,24 +163,23 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
     let doReverse = false;
 
     if (args) {
-      if (args.cursorType) {
-        const { position, cursorType } = args;
-        let positionQuery;
-        if (cursorType === "next") {
-          queryParams.push(["result-ordering", "id-increasing"]);
-          positionQuery = "after-id";
-        } else if (cursorType === "previous") {
-          queryParams.push(["result-ordering", "id-decreasing"]);
-          positionQuery = "before-id";
-          doReverse = true;
-        }
-
-        if (position && positionQuery) {
-          queryParams.push([positionQuery, position]);
-        }
+      const { position, cursorType, pageSize } = args;
+      let positionQuery;
+      if (cursorType === "next") {
+        queryParams.push(["result-ordering", "id-increasing"]);
+        positionQuery = "after-id";
+      } else if (cursorType === "previous") {
+        queryParams.push(["result-ordering", "id-decreasing"]);
+        positionQuery = "before-id";
+        doReverse = true;
       }
-      if ((args.pageSize ?? 0) > 0) {
-        queryParams.push(["page-size", args.pageSize + ""]);
+
+      if (position && positionQuery) {
+        queryParams.push([positionQuery, position]);
+      }
+
+      if ((pageSize ?? 0) > 0) {
+        queryParams.push(["page-size", `${pageSize}`]);
       }
     }
 
@@ -261,10 +203,6 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
     }
 
     const recipes = recipeJson.map((r) => this.decodeRecipeJson(r));
-
-    if (recipes.length === 0 && !args) {
-      return recipes;
-    }
 
     if (doReverse) {
       recipes.reverse();
