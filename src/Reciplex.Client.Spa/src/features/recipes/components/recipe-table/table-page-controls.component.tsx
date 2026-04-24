@@ -10,17 +10,31 @@ import {
 import { PageSizeSelect } from "../page-size-select/page-size-select.component";
 import { useRecipeClientStateContext } from "../../hooks/useRecipeClientStateContext.hook";
 
-export function TablePageControls({ previous, next }: ITablePageControlsProps) {
+export function TablePageControls({
+  previous,
+  next,
+  nextLoading,
+  previousLoading,
+}: ITablePageControlsProps) {
   const pageSize = useRecipeClientStateContext((s) => s.recipeListPageSize);
   const setPageSize = useRecipeClientStateContext(
     (s) => s.setRecipeListPageSize,
   );
   return (
     <Stack direction={"row"} sx={{ width: "100%", py: 2 }}>
-      <NavigationButton disabled={!previous} source="next">
+      <NavigationButton
+        disabled={!previous}
+        source="next"
+        loading={previousLoading}
+      >
         <FirstPage />
       </NavigationButton>
-      <NavigationButton disabled={!previous} source="previous" at={previous}>
+      <NavigationButton
+        disabled={!previous}
+        source="previous"
+        at={previous}
+        loading={previousLoading}
+      >
         <ArrowBack />
       </NavigationButton>
       <FlexSpacer />
@@ -28,10 +42,19 @@ export function TablePageControls({ previous, next }: ITablePageControlsProps) {
         <PageSizeSelect value={pageSize} onChange={setPageSize} />
       </Box>
       <FlexSpacer />
-      <NavigationButton disabled={!next} source="next" at={next}>
+      <NavigationButton
+        disabled={!next}
+        source="next"
+        at={next}
+        loading={nextLoading}
+      >
         <ArrowForward />
       </NavigationButton>
-      <NavigationButton disabled={!next} source="previous">
+      <NavigationButton
+        disabled={!next}
+        source="previous"
+        loading={nextLoading}
+      >
         <LastPage />
       </NavigationButton>
     </Stack>
@@ -41,6 +64,8 @@ export function TablePageControls({ previous, next }: ITablePageControlsProps) {
 export interface ITablePageControlsProps {
   previous?: string;
   next?: string;
+  nextLoading?: boolean;
+  previousLoading?: boolean;
 }
 
 function FlexSpacer() {

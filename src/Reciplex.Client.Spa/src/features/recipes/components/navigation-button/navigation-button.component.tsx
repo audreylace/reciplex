@@ -7,11 +7,13 @@ export function NavigationButton({
   at,
   source,
   disabled,
+  loading,
 }: INavigationButtonProps) {
   const setSearchParams = useSearchParams()[1];
 
   return (
     <IconButton
+      loading={loading}
       disabled={disabled}
       onClick={() => {
         if (at) {
@@ -37,4 +39,5 @@ export interface INavigationButtonProps {
   source: "next" | "previous";
   disabled?: boolean;
   children?: ComponentChildren;
+  loading?: boolean;
 }

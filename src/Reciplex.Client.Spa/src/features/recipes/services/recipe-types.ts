@@ -249,7 +249,7 @@ export interface IRecipeBookStore {
     userId: string,
     bookId: string,
     args?: IGetRecipesInBookArgs,
-  ): Promise<IGetRecipesInBookResult | null>;
+  ): Promise<IRecipeModel[] | null>;
 
   /**
    * Creates a recipe book

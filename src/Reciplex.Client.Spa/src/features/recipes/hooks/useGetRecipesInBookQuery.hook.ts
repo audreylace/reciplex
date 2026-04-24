@@ -13,10 +13,11 @@ export function useGetRecipesInBookQuery(
   cursorType?: "next" | "previous",
   position?: string,
   pageSize?: number,
+  enable?: boolean,
 ) {
   const userKey = useActiveUserKey();
   const recipeStore = useRecipeStoreContext();
-  const enabled = !!bookId && !!userKey;
+  const enabled = !!bookId && !!userKey && enable !== false;
   return useQuery({
     queryKey: recipeListQueryKey(
       userKey ?? "",

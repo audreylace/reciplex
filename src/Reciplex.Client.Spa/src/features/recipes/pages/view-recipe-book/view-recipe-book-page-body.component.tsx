@@ -35,6 +35,42 @@ export function ViewRecipeBookPageBody({
     isSuccess: recipeListSuccess,
   } = useGetRecipesInBookQuery(bookId, source, at, selectedSize);
 
+  let nextQueryPos;
+  let previousQueryPos;
+  if (recipeListSuccess && recipeList) {
+    if (source !== "next" || recipeList.length > 0) {
+      nextQueryPos = recipeList[recipeList.length - 1]?.id ?? at;
+    }
+    if (source !== "previous" || recipeList.length > 0) {
+      previousQueryPos = recipeList[0]?.id ?? at;
+    }
+  }
+
+  const {
+    data: nextRecipe,
+    isSuccess: nextRecipeSuccess,
+    isPending: nextRecipePending,
+    isEnabled: nextRecipeEnabled,
+  } = useGetRecipesInBookQuery(
+    bookId,
+    "next",
+    nextQueryPos,
+    selectedSize,
+    !!nextQueryPos,
+  );
+  const {
+    data: previousRecipe,
+    isSuccess: previousRecipeSuccess,
+    isPending: previousRecipePending,
+    isEnabled: previousRecipeEnabled,
+  } = useGetRecipesInBookQuery(
+    bookId,
+    "previous",
+    previousQueryPos,
+    selectedSize,
+    !!previousQueryPos,
+  );
+
   if (
     getRecipesError ||
     getRecipeBookError ||
@@ -62,9 +98,23 @@ export function ViewRecipeBookPageBody({
       />
       <RecipeTable
         pending={getRecipesPending}
-        recipes={recipeList?.recipes}
-        next={recipeList?.nextCursor}
-        previous={recipeList?.previousCursor}
+        recipes={recipeList ?? undefined}
+        nextLoading={nextRecipeEnabled && nextRecipePending}
+        next={
+          nextRecipeEnabled &&
+          nextRecipeSuccess &&
+          (nextRecipe?.length ?? 0) > 0
+            ? nextQueryPos
+            : undefined
+        }
+        previousLoading={previousRecipeEnabled && previousRecipePending}
+        previous={
+          previousRecipeEnabled &&
+          previousRecipeSuccess &&
+          (previousRecipe?.length ?? 0) > 0
+            ? previousQueryPos
+            : undefined
+        }
       />
     </>
   );

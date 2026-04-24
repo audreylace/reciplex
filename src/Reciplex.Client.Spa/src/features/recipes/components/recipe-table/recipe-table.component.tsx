@@ -12,11 +12,15 @@ export function RecipeTable({
   next,
   previous,
   recipes,
+  nextLoading,
+  previousLoading,
 }: {
   pending?: boolean;
   next?: string;
   previous?: string;
   recipes: IRecipeModel[] | undefined;
+  nextLoading?: boolean;
+  previousLoading?: boolean;
 }) {
   return (
     <Paper>
@@ -26,7 +30,12 @@ export function RecipeTable({
           <RecipeTableBody recipes={recipes} />
         </Table>
       </TableContainer>
-      <TablePageControls next={next} previous={previous} />
+      <TablePageControls
+        next={next}
+        previous={previous}
+        nextLoading={nextLoading}
+        previousLoading={previousLoading}
+      />
       {pending && <LinearProgress aria-label="Loading…" />}
     </Paper>
   );

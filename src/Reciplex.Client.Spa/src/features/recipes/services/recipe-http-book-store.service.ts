@@ -5,7 +5,6 @@ import {
   type IGetRecipeBooksArgs,
   type IGetRecipeBooksResult,
   type IGetRecipesInBookArgs,
-  type IGetRecipesInBookResult,
   type IRecipeBookModel,
   type IRecipeBookStore,
   type IRecipeModel,
@@ -214,15 +213,14 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
     userId: string,
     bookId: string,
     args?: IGetRecipesInBookArgs,
-  ): Promise<IGetRecipesInBookResult | null> {
+  ): Promise<IRecipeModel[] | null> {
     const queryParams = this.makeQueryParams(userId);
-
     queryParams.push(["book", bookId]);
 
-    // fixme: janky code that needs refactor
+    let doReverse = false;
+
     if (args) {
-      // todo - fix inconsistent reference. We check in the if but don't apply same conditions later.
-      if (args.position && args.cursorType) {
+      if (args.cursorType) {
         const { position, cursorType } = args;
         let positionQuery;
         if (cursorType === "next") {
@@ -231,6 +229,7 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
         } else if (cursorType === "previous") {
           queryParams.push(["result-ordering", "id-decreasing"]);
           positionQuery = "before-id";
+          doReverse = true;
         }
 
         if (position && positionQuery) {
@@ -242,7 +241,19 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
       }
     }
 
-    const response = await this._recipeClient.httpGet("", queryParams);
+    let response: Response;
+    try {
+      response = await this._recipeClient.httpGet("", queryParams);
+    } catch (error) {
+      if (error instanceof HttpError) {
+        if (error.status === 404) {
+          return null;
+        }
+      }
+
+      throw error;
+    }
+
     const recipeJson: IRecipeJson[] | undefined | null = await response.json();
 
     if (!recipeJson) {
@@ -252,42 +263,14 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
     const recipes = recipeJson.map((r) => this.decodeRecipeJson(r));
 
     if (recipes.length === 0 && !args) {
-      return { recipes };
+      return recipes;
     }
 
-    if (args?.cursorType === "previous") {
-      // bug: if filters this out earlier sometimes
+    if (doReverse) {
       recipes.reverse();
     }
 
-    const executor = async (queryParams: [string, string][]) =>
-      (
-        await this._recipeClient.httpGet("", [...queryParams, ["book", bookId]])
-      ).json();
-
-    // bug: if filters out position earlier sometimes
-    const [next, prev] = await Promise.all([
-      this.resolveCursor(
-        userId,
-        recipes[recipes.length - 1]?.id ?? args?.position,
-        true,
-        executor,
-      ),
-      this.resolveCursor(
-        userId,
-        recipes[0]?.id ?? args?.position,
-        false,
-        executor,
-      ),
-    ]);
-
-    return {
-      recipes: recipes,
-      nextCursor: next
-        ? (recipes[recipes.length - 1]?.id ?? args?.position)
-        : undefined,
-      previousCursor: prev ? (recipes[0]?.id ?? args?.position) : undefined,
-    };
+    return recipes;
   }
 
   async getRecipeById(
