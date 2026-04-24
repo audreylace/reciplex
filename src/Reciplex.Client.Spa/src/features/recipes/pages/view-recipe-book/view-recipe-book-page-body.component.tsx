@@ -7,7 +7,7 @@ import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
 import { useGetRecipesInBookQuery } from "../../hooks/useGetRecipesInBookQuery.hook";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { RecipeBookMenu } from "../../components/book-menu/recipe-book-menu.component";
+import { RecipeBookMenuButton } from "../../components/book-menu/recipe-book-menu.component";
 import { useRecipeClientStateContext } from "../../hooks/useRecipeClientStateContext.hook";
 import { useEffect, useRef } from "preact/hooks";
 
@@ -73,7 +73,12 @@ export function ViewRecipeBookPageBody({
   );
 
   const tablePaperRef = useRef<HTMLDivElement>(null);
+  const firstMountRef = useRef<boolean>(true);
   useEffect(() => {
+    if (firstMountRef.current) {
+      firstMountRef.current = false;
+      return;
+    }
     if (tablePaperRef.current) {
       tablePaperRef.current.scrollIntoView({
         behavior: "smooth",
@@ -152,7 +157,7 @@ function BodyHeader({
         >
           <Typography variant="h4">{bookName}</Typography>
         </Box>
-        <RecipeBookMenu
+        <RecipeBookMenuButton
           bookId={bookId}
           mayEdit={mayEditBook}
           mayDelete={mayDeleteBook}

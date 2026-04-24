@@ -4,8 +4,7 @@ import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import { useNavigate } from "react-router";
 import { makeViewRecipePath } from "../../route-utils";
-import IconButton from "@mui/material/IconButton";
-import { MoreVert } from "@mui/icons-material";
+import { RecipeMenuButtonCell } from "./recipe-menu-button-cell.component";
 
 export function RecipeTableBody({
   recipes,
@@ -48,11 +47,12 @@ function RecipeTableRow({ recipe }: { recipe: IRecipeModel }) {
       <TableCell onClick={onClick} role="button">
         {recipe.details}
       </TableCell>
-      <TableCell onClick={(e) => e.stopPropagation()} role="button">
-        <IconButton>
-          <MoreVert />
-        </IconButton>
-      </TableCell>
+      <RecipeMenuButtonCell
+        recipeName={recipe.name}
+        recipeId={recipe.id}
+        bookId={recipe.bookId}
+        mayEdit={recipe.mayEdit}
+      />
     </TableRow>
   );
 }

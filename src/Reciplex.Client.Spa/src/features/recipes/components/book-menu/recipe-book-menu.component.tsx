@@ -11,7 +11,7 @@ import AddIcon from "@mui/icons-material/Add";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { Delete } from "@mui/icons-material";
 
-export function RecipeBookMenu({
+export function RecipeBookMenuButton({
   bookId,
   mayDelete,
   mayEdit,
