@@ -207,7 +207,7 @@ function updateRecipeBookCacheData(
         newList.splice(index, 1);
       }
 
-      return { ...old, books: newList };
+      return newList;
     },
   );
 }
