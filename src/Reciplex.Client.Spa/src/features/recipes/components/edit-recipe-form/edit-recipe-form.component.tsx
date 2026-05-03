@@ -21,13 +21,11 @@ export function EditRecipeForm({
   concurrencyConflict,
   concurrencyToken,
   onReset,
-  onCancel,
 }: {
   data: IRecipeModel;
   concurrencyConflict?: boolean;
   onReset: () => void;
   concurrencyToken: string;
-  onCancel: () => void;
 }) {
   const {
     handleSubmit,
@@ -123,9 +121,6 @@ export function EditRecipeForm({
               disabled={formDisabled && !recipeMutation.isPending}
             >
               Save
-            </Button>
-            <Button variant="outlined" color="error" onClick={onCancel}>
-              Cancel
             </Button>
           </Stack>
         </Box>

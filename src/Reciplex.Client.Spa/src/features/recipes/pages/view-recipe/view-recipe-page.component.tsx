@@ -51,6 +51,7 @@ export function ViewRecipePage() {
             recipeId={recipeId}
             mayEdit={data.mayEdit}
             bookId={data.bookId}
+            hideViewRecipeLink
           />
         </Stack>
         <Typography variant="subtitle1">{data.shortDescription}</Typography>

@@ -1,6 +1,6 @@
 import TableCell from "@mui/material/TableCell";
 import IconButton from "@mui/material/IconButton";
-import { MoreVert } from "@mui/icons-material";
+import MoreVert from "@mui/icons-material/MoreVert";
 import { useId, useRef, useState } from "preact/hooks";
 import { RecipeMenu } from "../recipe-menu/recipe-menu.component";
 

@@ -8,13 +8,10 @@ import { LoadingFailedAlert } from "../../../core/components/loading-failed-aler
 import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
 import Alert from "@mui/material/Alert";
 import { EditRecipeForm } from "../../components/edit-recipe-form/edit-recipe-form.component";
-import { useNavigate } from "react-router";
-import { makeViewRecipePath } from "../../route-utils";
 
 export function EditRecipePageBody({ recipeId }: { recipeId: string }) {
   const recipeQueryKey = useGetRecipeByIdQueryKey(recipeId);
   const recipeQuery = useGetRecipeByIdQuery(recipeId, { alwaysFresh: true });
-  const navigate = useNavigate();
 
   const { resetState, concurrencyConflict, concurrencyToken } =
     useMutationFormState({
@@ -44,7 +41,6 @@ export function EditRecipePageBody({ recipeId }: { recipeId: string }) {
         }}
         concurrencyToken={concurrencyToken}
         data={recipe}
-        onCancel={() => navigate(makeViewRecipePath(recipe.bookId, recipe.id))}
       />
     );
   }

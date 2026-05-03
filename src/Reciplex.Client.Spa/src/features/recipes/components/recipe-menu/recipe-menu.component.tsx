@@ -11,7 +11,7 @@ import IconButton from "@mui/material/IconButton";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import Divider from "@mui/material/Divider";
 import ListItemIcon from "@mui/material/ListItemIcon";
-import { Delete } from "@mui/icons-material";
+import Delete from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import LaunchIcon from "@mui/icons-material/Launch";
 
@@ -19,6 +19,7 @@ export function RecipeMenuButton({
   recipeId,
   bookId,
   mayEdit,
+  hideViewRecipeLink,
 }: IRecipeMenuButtonProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -52,6 +53,7 @@ export function RecipeMenuButton({
         menuId={menuId}
         onClose={handleClose}
         buttonId={buttonId}
+        hideViewRecipeLink={hideViewRecipeLink}
       />
     </div>
   );
@@ -64,6 +66,8 @@ export interface IRecipeMenuButtonProps {
   recipeId: string;
   /** if the user has edit privileges */
   mayEdit?: boolean;
+  /** Hides the link to the view recipe page */
+  hideViewRecipeLink?: boolean;
 }
 
 export function RecipeMenu({
@@ -75,6 +79,7 @@ export function RecipeMenu({
   onClose,
   buttonId,
   getAnchorElement,
+  hideViewRecipeLink,
 }: IRecipeMenuProps) {
   const navigate = useNavigate();
   return (
@@ -89,18 +94,22 @@ export function RecipeMenu({
         },
       }}
     >
-      <MenuItem
-        onClick={() => {
-          onClose?.();
-          navigate(makeViewRecipePath(bookId, recipeId));
-        }}
-      >
-        <ListItemIcon>
-          <LaunchIcon fontSize="small" />
-        </ListItemIcon>
-        View
-      </MenuItem>
-      <Divider />
+      {!hideViewRecipeLink && (
+        <>
+          <MenuItem
+            onClick={() => {
+              onClose?.();
+              navigate(makeViewRecipePath(bookId, recipeId));
+            }}
+          >
+            <ListItemIcon>
+              <LaunchIcon fontSize="small" />
+            </ListItemIcon>
+            View
+          </MenuItem>
+          <Divider />
+        </>
+      )}
       <MenuItem
         onClick={() => {
           onClose?.();
@@ -147,4 +156,6 @@ export interface IRecipeMenuProps {
   buttonId?: string;
   /** invoked to get the element that the button should be anchored against */
   getAnchorElement: () => HTMLElement | null;
+  /** Hides the link to the view recipe page */
+  hideViewRecipeLink?: boolean;
 }
