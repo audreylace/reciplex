@@ -18,7 +18,7 @@ export function NameInput({ disabled, errorText, register }: INameInput) {
   return (
     <TextField
       disabled={disabled}
-      variant="filled"
+      variant="outlined"
       fullWidth
       label="Title"
       error={!!errorText}

@@ -30,8 +30,8 @@ const authStoreContext: IAuthClients = {
 export function App() {
   return (
     <>
-      <CssBaseline />
       <AppTheme>
+        <CssBaseline />
         <AuthClients.Provider value={authStoreContext}>
           <RecipeStore.Provider value={serverStore}>
             <QueryClientProvider client={queryClient}>

@@ -4,25 +4,21 @@ import { useRecipeDetailsMenuBarCommandHandler } from "../recipe-details-menu-ba
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import cssStyles from "./recipe-details-editor.module.css";
-import FilledInput from "@mui/material/FilledInput";
 import { useEffect, useRef, useState } from "preact/hooks";
 import Dialog from "@mui/material/Dialog";
+import InputBase from "@mui/material/InputBase";
 
 export interface RecipeDetailsEditorProps {
   value: string;
   onChange: (e: Event | string) => void;
   onBlur?: (e: Event) => void;
   disabled?: boolean;
-  minRows?: number;
-  maxRows?: number;
 }
 export function RecipeDetailsEditor({
   value,
   onChange,
-  minRows,
   disabled,
   onBlur,
-  maxRows,
 }: RecipeDetailsEditorProps) {
   const { textAreaRef, onKeyDown, orchestratorRef } = useMarkdownEditor();
   const menuCommandHandler =
@@ -46,7 +42,7 @@ export function RecipeDetailsEditor({
         hiddenLabel
         multiline
         fullWidth
-        variant="filled"
+        variant="outlined"
         aria-label={"markdown content describing the recipe"}
         inputRef={(element) => {
           textAreaRef(element);
@@ -54,8 +50,7 @@ export function RecipeDetailsEditor({
         }}
         onKeyDown={onKeyDown}
         value={value}
-        minRows={minRows}
-        maxRows={maxRows}
+        rows={8}
         onChange={onChange}
         disabled={disabled}
         onBlur={onBlur}
@@ -106,7 +101,7 @@ function FullScreenEditor({
         isFullscreen={true}
         onSizeToggle={() => onExit(value)}
       />
-      <FilledInput
+      <InputBase
         inputRef={(element) => {
           textAreaRef(element);
           elRef.current = element;

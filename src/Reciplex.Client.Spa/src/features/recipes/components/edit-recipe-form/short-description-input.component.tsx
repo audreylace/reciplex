@@ -36,7 +36,6 @@ export function ShortDescriptionInput({
   return (
     <TextField
       disabled={disabled}
-      variant="filled"
       fullWidth
       multiline
       minRows={3}

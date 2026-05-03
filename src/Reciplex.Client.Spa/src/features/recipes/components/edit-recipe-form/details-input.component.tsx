@@ -32,8 +32,6 @@ export function DetailsInput({ disabled, control }: IDetailsInput) {
       value={value}
       onChange={onChange}
       onBlur={onBlur}
-      minRows={8}
-      maxRows={20}
       disabled={disabled}
     />
   );

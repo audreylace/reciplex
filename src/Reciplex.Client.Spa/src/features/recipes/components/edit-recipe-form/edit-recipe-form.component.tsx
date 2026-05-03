@@ -109,9 +109,26 @@ export function EditRecipeForm({
             my: 2,
           }}
         >
-          <Typography variant="h4" gutterBottom>
-            Editing Recipe
-          </Typography>
+          <Stack direction={"row"}>
+            <Typography variant="h4" gutterBottom>
+              Editing Recipe
+            </Typography>
+            <Box
+              sx={{
+                flex: " 1 0 auto",
+              }}
+            ></Box>
+            <Box>
+              <Button
+                variant="contained"
+                type="submit"
+                loading={recipeMutation.isPending}
+                disabled={formDisabled && !recipeMutation.isPending}
+              >
+                Save
+              </Button>
+            </Box>
+          </Stack>
           {showConflictBanner && (
             <ConcurrencyConflictAlert
               onReset={() => {
@@ -163,7 +180,7 @@ export function EditRecipeForm({
           <Box>
             <Stack spacing={1} direction="row">
               <Button
-                variant="outlined"
+                variant="contained"
                 type="submit"
                 loading={recipeMutation.isPending}
                 disabled={formDisabled && !recipeMutation.isPending}
