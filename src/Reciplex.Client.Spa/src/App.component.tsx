@@ -1,9 +1,8 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { RecipeHttpBookStore } from "./features/recipes/services/recipe-http-book-store.service";
 import { RouterProvider } from "react-router";
 import { RecipeStore } from "./features/recipes/hooks/useRecipeStoreContext.hook";
 import { router } from "./routes";
-import "./index.css";
 import { ChallengeHttpClient } from "./features/auth/http-clients/challenge-http-client";
 import { UsersHttpClient } from "./features/auth/http-clients/users-http-client";
 import {
@@ -17,6 +16,7 @@ import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 import { AppTheme } from "./features/core/components/app-theme/app-theme.component";
 import { makeClient } from "./features/core/utils/react-query-config";
+import CssBaseline from "@mui/material/CssBaseline";
 
 const queryClient = makeClient();
 const serverStore = new RecipeHttpBookStore("/api");
@@ -29,14 +29,17 @@ const authStoreContext: IAuthClients = {
 
 export function App() {
   return (
-    <AppTheme>
-      <AuthClients.Provider value={authStoreContext}>
-        <RecipeStore.Provider value={serverStore}>
-          <QueryClientProvider client={queryClient}>
-            <RouterProvider router={router} />
-          </QueryClientProvider>
-        </RecipeStore.Provider>
-      </AuthClients.Provider>
-    </AppTheme>
+    <>
+      <CssBaseline />
+      <AppTheme>
+        <AuthClients.Provider value={authStoreContext}>
+          <RecipeStore.Provider value={serverStore}>
+            <QueryClientProvider client={queryClient}>
+              <RouterProvider router={router} />
+            </QueryClientProvider>
+          </RecipeStore.Provider>
+        </AuthClients.Provider>
+      </AppTheme>
+    </>
   );
 }
