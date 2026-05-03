@@ -21,6 +21,7 @@ export function useGetRecipeByIdQuery(
   return useQuery({
     queryKey: recipeQueryKey(userKey ?? "", recipeId ?? ""),
     refetchOnMount: args?.alwaysFresh ? "always" : true,
+    refetchOnWindowFocus: args?.alwaysFresh ? "always" : true,
     enabled: enabled,
     queryFn: async () => {
       if (!recipeId || !userKey) {

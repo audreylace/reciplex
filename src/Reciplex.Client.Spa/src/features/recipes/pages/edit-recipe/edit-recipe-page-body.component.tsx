@@ -37,7 +37,11 @@ export function EditRecipePageBody({ recipeId }: { recipeId: string }) {
       <EditRecipeForm
         concurrencyConflict={concurrencyConflict}
         onReset={() => {
-          resetState();
+          if (concurrencyConflict) {
+            resetState();
+          } else {
+            recipeQuery.refetch();
+          }
         }}
         concurrencyToken={concurrencyToken}
         data={recipe}

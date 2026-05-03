@@ -5,7 +5,7 @@ import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import cssStyles from "./recipe-details-editor.module.css";
 import FilledInput from "@mui/material/FilledInput";
-import { useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import Dialog from "@mui/material/Dialog";
 
 export interface RecipeDetailsEditorProps {
@@ -34,6 +34,7 @@ export function RecipeDetailsEditor({
   return (
     <Stack direction="column">
       <RecipeDetailsMenuBar
+        disabled={disabled}
         commandHandler={menuCommandHandler}
         isFullscreen={false}
         onSizeToggle={() => {
@@ -60,9 +61,10 @@ export function RecipeDetailsEditor({
         onBlur={onBlur}
       />
 
-      {fullScreen && !disabled && (
+      {fullScreen && (
         <Dialog open fullScreen key={key}>
           <FullScreenEditor
+            disabled={disabled}
             value={value}
             onExit={(value) => {
               setIsFullscreen(false);
@@ -79,15 +81,23 @@ export function RecipeDetailsEditor({
 function FullScreenEditor({
   onExit,
   value: propValue,
+  disabled,
 }: {
   onExit: (s: string) => void;
   value: string;
+  disabled?: boolean;
 }) {
   const { textAreaRef, onKeyDown, orchestratorRef } = useMarkdownEditor();
   const menuCommandHandler =
     useRecipeDetailsMenuBarCommandHandler(orchestratorRef);
   const [value, setValue] = useState(propValue);
   const elRef = useRef<HTMLTextAreaElement>();
+
+  useEffect(() => {
+    if (disabled) {
+      onExit(value);
+    }
+  }, [disabled, onExit, value]);
 
   return (
     <Stack direction="column" height={"100%"}>

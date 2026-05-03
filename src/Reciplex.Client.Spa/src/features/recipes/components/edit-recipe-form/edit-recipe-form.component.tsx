@@ -9,12 +9,17 @@ import Typography from "@mui/material/Typography";
 import LinearProgress from "@mui/material/LinearProgress";
 import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
-import { useNavigate } from "react-router";
+import { useBlocker, useNavigate } from "react-router";
 import { makeViewRecipePath } from "../../route-utils";
 import type { IFormModel } from "./form-model";
 import { DetailsInput } from "./details-input.component";
 import { NameInput } from "./name-input.component";
 import { ShortDescriptionInput } from "./short-description-input.component";
+import Dialog from "@mui/material/Dialog";
+import { useEffect } from "preact/hooks";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import CardActions from "@mui/material/CardActions";
 
 export function EditRecipeForm({
   data,
@@ -31,7 +36,7 @@ export function EditRecipeForm({
     handleSubmit,
     register,
     control,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<IFormModel>({
     defaultValues: {
       name: data.name,
@@ -42,89 +47,133 @@ export function EditRecipeForm({
   const navigate = useNavigate();
   const recipeMutation = useUpdateRecipeMutation();
   const formDisabled = !recipeMutation.isIdle || concurrencyConflict;
+  const blocker = useBlocker(isDirty && !recipeMutation.isSuccess);
+  const showConflictBanner = concurrencyConflict && recipeMutation.isIdle;
+
+  useEffect(() => {
+    if (recipeMutation.isSuccess) {
+      if (blocker.state === "blocked") {
+        blocker.proceed();
+      }
+    }
+  }, [blocker, recipeMutation.isSuccess]);
 
   return (
-    <form
-      onSubmit={handleSubmit(async (newValues) => {
-        if (formDisabled || !recipeMutation.isIdle) {
-          return;
-        }
+    <>
+      <Dialog open={blocker.state === "blocked" && !recipeMutation.isSuccess}>
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="h5" gutterBottom>
+              You have unsaved changed
+            </Typography>
+            <Typography variant="subtitle1">
+              Continue and discard all in progress modifications?
+            </Typography>
+          </CardContent>
+          <CardActions>
+            <Stack direction="row" gap={1}>
+              <Button
+                onClick={() => blocker.state === "blocked" && blocker.reset()}
+              >
+                Go Back
+              </Button>
+              <Button
+                color="error"
+                onClick={() => blocker.state === "blocked" && blocker.proceed()}
+              >
+                Continue
+              </Button>
+            </Stack>
+          </CardActions>
+        </Card>
+      </Dialog>
+      <form
+        onSubmit={handleSubmit(async (newValues) => {
+          if (formDisabled || !recipeMutation.isIdle) {
+            return;
+          }
 
-        const newRecipe = await recipeMutation.mutateAsync({
-          name: newValues.name,
-          shortDescription: newValues.shortDescription,
-          details: newValues.details,
-          recipeId: data.id,
-          versionTag: concurrencyToken,
-        });
+          const newRecipe = await recipeMutation.mutateAsync({
+            name: newValues.name,
+            shortDescription: newValues.shortDescription,
+            details: newValues.details,
+            recipeId: data.id,
+            versionTag: concurrencyToken,
+          });
 
-        navigate(makeViewRecipePath(newRecipe.bookId, newRecipe.id));
-      })}
-    >
-      <Box
-        sx={{
-          my: 2,
-        }}
+          navigate(makeViewRecipePath(newRecipe.bookId, newRecipe.id));
+        })}
       >
-        <Typography variant="h4" gutterBottom>
-          Editing Recipe
-        </Typography>
-        {concurrencyConflict && (
-          <ConcurrencyConflictAlert
-            onReset={() => {
-              onReset();
-              recipeMutation.reset();
-            }}
-          />
-        )}
-        {recipeMutation.isPending && (
-          <LinearProgress aria-label="Creating..." />
-        )}
-        {recipeMutation.isError && (
-          <OperationFailedAlert onRetry={() => recipeMutation.reset()} />
-        )}
-      </Box>
-      <Stack gap={2}>
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="h5">Metadata</Typography>
-          <Typography variant="subtitle1">
-            High level information used for searching and quick overview
+        <Box
+          sx={{
+            my: 2,
+          }}
+        >
+          <Typography variant="h4" gutterBottom>
+            Editing Recipe
           </Typography>
-          <Stack gap={2} sx={{ mt: 2 }}>
-            <NameInput
-              register={register}
-              disabled={formDisabled}
-              errorText={errors.name?.message}
+          {showConflictBanner && (
+            <ConcurrencyConflictAlert
+              onReset={() => {
+                onReset();
+                recipeMutation.reset();
+              }}
             />
-            <ShortDescriptionInput
-              disabled={formDisabled}
-              errorText={errors.shortDescription?.message}
-              control={control}
+          )}
+          {recipeMutation.isPending && (
+            <LinearProgress aria-label="Creating..." />
+          )}
+          {recipeMutation.isError && (
+            <OperationFailedAlert
+              onRetry={() => {
+                recipeMutation.reset();
+                onReset();
+              }}
             />
-          </Stack>
-        </Paper>
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="h5">Details</Typography>
-          <Typography variant="subtitle1">
-            Recipe instructions and other information
-          </Typography>
-          <Stack gap={2} sx={{ mt: 2 }}>
-            <DetailsInput control={control} disabled={formDisabled} />
-          </Stack>
-        </Paper>
-        <Box>
-          <Stack spacing={1} direction="row">
-            <Button
-              variant="outlined"
-              type="submit"
-              loading={recipeMutation.isPending}
-              disabled={formDisabled && !recipeMutation.isPending}
-            >
-              Save
-            </Button>
-          </Stack>
+          )}
         </Box>
-      </Stack>
-    </form>
+        <Stack gap={2}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h5">Metadata</Typography>
+            <Typography variant="subtitle1">
+              High level information used for searching and quick overview
+            </Typography>
+            <Stack gap={2} sx={{ mt: 2 }}>
+              <NameInput
+                register={register}
+                disabled={formDisabled}
+                errorText={errors.name?.message}
+              />
+              <ShortDescriptionInput
+                disabled={formDisabled}
+                errorText={errors.shortDescription?.message}
+                control={control}
+              />
+            </Stack>
+          </Paper>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h5">Details</Typography>
+            <Typography variant="subtitle1">
+              Recipe instructions and other information
+            </Typography>
+            <Stack gap={2} sx={{ mt: 2 }}>
+              <DetailsInput control={control} disabled={formDisabled} />
+            </Stack>
+          </Paper>
+          <Box>
+            <Stack spacing={1} direction="row">
+              <Button
+                variant="outlined"
+                type="submit"
+                loading={recipeMutation.isPending}
+                disabled={formDisabled && !recipeMutation.isPending}
+              >
+                Save
+              </Button>
+            </Stack>
+          </Box>
+        </Stack>
+      </form>
+    </>
   );
 }
