@@ -170,7 +170,7 @@ function updateRecipeCacheData(
         newList.splice(index, 1);
       }
 
-      return { ...old, recipes: newList };
+      return newList;
     },
   );
 }
