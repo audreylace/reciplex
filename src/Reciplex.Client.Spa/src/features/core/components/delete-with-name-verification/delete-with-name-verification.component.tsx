@@ -7,6 +7,7 @@ import Button from "@mui/material/Button";
 import { DeleteFailedAlert } from "./delete-failed-alert.component";
 import { DeleteWithNameVerificationSkeleton } from "./delete-with-name-verification-skeleton.component";
 import { ConcurrencyConflictAlert } from "../concurrency-conflict-alert/concurrency-conflict-alert.component";
+import Paper from "@mui/material/Paper";
 
 /** component providing the form for deleting an entity */
 export function DeleteWithNameVerification({
@@ -43,57 +44,61 @@ export function DeleteWithNameVerification({
           <span>Deleting {entityType}</span>
         </Stack>
       </Typography>
-      <Typography variant="h6">
-        <Stack direction="row" gap={1}>
-          <span>{name}</span>
-        </Stack>
-      </Typography>
-      {description && (
-        <Typography component={"div"} variant="body1">
-          <Stack direction={"row"} gap={1}>
-            <span>{description}</span>
+      <Paper sx={{ p: 2 }}>
+        <Typography variant="h5" gutterBottom>
+          <Stack direction="row" gap={1}>
+            <span>{name}</span>
           </Stack>
         </Typography>
-      )}
-      <Typography component={"div"} variant="body2" gutterBottom>
-        <Stack direction="row" gap={1}>
-          <span>Key: </span>
-          <span>{uniqueKey}</span>
-        </Stack>
-      </Typography>
-      {showConcurrencyError && <ConcurrencyConflictAlert onReset={onReset} />}
-      {showDeleteError && <DeleteFailedAlert onReset={onReset} />}
-      <form onSubmit={onSubmit}>
-        <Stack spacing={2} marginTop={3}>
-          <Typography variant="body1" gutterBottom>
-            Type {`'${name}'`} to confirm permanent deletion
+        {description && (
+          <Typography component={"div"} variant="body2">
+            <Stack direction={"row"} gap={1}>
+              <span>Description: </span>
+              <span>{description}</span>
+            </Stack>
           </Typography>
-          <TextField
-            label={`Type '${name}'`}
-            helperText={errors.name?.message}
-            error={!!errors.name}
-            fullWidth
-            variant="filled"
-            disabled={formDisabled}
-            {...register("name", {
-              validate: (value) => {
-                return name === value || `type "${name}"`;
-              },
-            })}
-          />
-          <Box>
-            <Button
-              variant="contained"
-              type="submit"
-              color="error"
+        )}
+        <Typography component={"div"} variant="caption" gutterBottom>
+          <Stack direction="row" gap={1}>
+            <span>Key: </span>
+            <span>{uniqueKey}</span>
+          </Stack>
+        </Typography>
+
+        {showConcurrencyError && <ConcurrencyConflictAlert onReset={onReset} />}
+        {showDeleteError && <DeleteFailedAlert onReset={onReset} />}
+        <form onSubmit={onSubmit}>
+          <Stack spacing={2} marginTop={3}>
+            <Typography variant="body1" gutterBottom>
+              Type {`'${name}'`} to confirm permanent deletion
+            </Typography>
+            <TextField
+              label={`Type '${name}'`}
+              helperText={errors.name?.message}
+              error={!!errors.name}
+              fullWidth
+              variant="filled"
               disabled={formDisabled}
-              loading={pending}
-            >
-              Delete
-            </Button>
-          </Box>
-        </Stack>
-      </form>
+              {...register("name", {
+                validate: (value) => {
+                  return name === value || `type "${name}"`;
+                },
+              })}
+            />
+            <Box>
+              <Button
+                variant="contained"
+                type="submit"
+                color="error"
+                disabled={formDisabled}
+                loading={pending}
+              >
+                Delete
+              </Button>
+            </Box>
+          </Stack>
+        </form>
+      </Paper>
     </>
   );
 }

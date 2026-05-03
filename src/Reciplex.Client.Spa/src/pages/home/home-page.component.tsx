@@ -7,7 +7,7 @@ export function HomePage() {
   return (
     <>
       <h1>Welcome to Reciplex!</h1>
-      <p>Version: Alpha A</p>
+      <p>Version: Alpha B</p>
     </>
   );
 }

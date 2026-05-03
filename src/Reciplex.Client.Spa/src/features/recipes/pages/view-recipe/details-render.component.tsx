@@ -4,7 +4,18 @@ import { RecipeDetailsContext } from "./recipe-details-context.component";
 import { usePipeline } from "./usePipeline.hook";
 import Paper from "@mui/material/Paper";
 import Box from "@mui/material/Box";
-import { Typography } from "@mui/material";
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+} from "@mui/material";
 
 const componentMap = {
   recipeIngredientExpression: RecipeIngredientRender,
@@ -22,18 +33,19 @@ export function DetailsRender({
   return (
     <>
       <RecipeDetailsContext.Provider value={detailsContextModel}>
-        <Typography variant="h5">Tools</Typography>
         <ToolList />
-        <Typography variant="h5">Ingredients</Typography>
         <IngredientList />
-        <Paper>
-          <Box sx={{ p: 1 }}>
+        <Accordion defaultExpanded>
+          <AccordionSummary>
+            <Typography variant="h5">Details</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
             <DetailsMdRender
               mayEdit={mayEdit}
               goToEditAction={goToEditAction}
             />
-          </Box>
-        </Paper>
+          </AccordionDetails>
+        </Accordion>
       </RecipeDetailsContext.Provider>
     </>
   );
@@ -63,22 +75,37 @@ function IngredientList() {
 
   return (
     <>
-      <ul>
-        {list.map((listEntry) => {
-          let unitString = "";
-          if (listEntry.unit && listEntry.amount) {
-            unitString = ` - ${listEntry.amount} ${listEntry.unit}`;
-          } else if (listEntry.amount) {
-            unitString = ` - ${listEntry.amount}`;
-          }
-          return (
-            <li key={listEntry.key}>
-              {listEntry.title}
-              {unitString}
-            </li>
-          );
-        })}
-      </ul>
+      <Accordion>
+        <AccordionSummary>
+          <Typography variant="h5">Ingredients</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Unit</TableCell>
+                  <TableCell>Amount</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {list.map((listEntry) => {
+                  return (
+                    <TableRow key={listEntry.key}>
+                      <TableCell>{listEntry.title}</TableCell>
+                      <TableCell>
+                        {listEntry.unit ? listEntry.unit : "-"}
+                      </TableCell>
+                      <TableCell>{listEntry.amount}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </AccordionDetails>
+      </Accordion>
     </>
   );
 }
@@ -99,22 +126,39 @@ function ToolList() {
   }
 
   return (
-    <>
-      <ul>
-        {list.map((listEntry) => {
-          let unitString = "";
-          if (listEntry.sizeUnit && listEntry.size) {
-            unitString = ` - ${listEntry.size} ${listEntry.sizeUnit}`;
-          }
-          return (
-            <li key={listEntry.key}>
-              {listEntry.toolName} x{listEntry.quantity}
-              {unitString}
-            </li>
-          );
-        })}
-      </ul>
-    </>
+    <Accordion>
+      <AccordionSummary>
+        <Typography variant="h5">Tools</Typography>
+      </AccordionSummary>
+      <AccordionDetails>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>Size</TableCell>
+                <TableCell>Quantity</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {list.map((listEntry) => {
+                let unitString = "-";
+                if (listEntry.sizeUnit && listEntry.size) {
+                  unitString = `${listEntry.size} ${listEntry.sizeUnit}`;
+                }
+                return (
+                  <TableRow key={listEntry.key}>
+                    <TableCell>{listEntry.toolName}</TableCell>
+                    <TableCell>{unitString}</TableCell>
+                    <TableCell>{listEntry.quantity}</TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </AccordionDetails>
+    </Accordion>
   );
 }
 

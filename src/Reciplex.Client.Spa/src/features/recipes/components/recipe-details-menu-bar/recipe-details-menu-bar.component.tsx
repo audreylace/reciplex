@@ -99,7 +99,7 @@ export function RecipeDetailsMenuBar({
             onSizeToggle();
           }}
         >
-          {isFullscreen ? <FullscreenIcon /> : <FullscreenExitIcon />}
+          {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
         </IconButton>
       </ButtonGroup>
     </>

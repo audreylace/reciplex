@@ -17,6 +17,7 @@ import "@fontsource/roboto/700.css";
 import { AppTheme } from "./features/core/components/app-theme/app-theme.component";
 import { makeClient } from "./features/core/utils/react-query-config";
 import CssBaseline from "@mui/material/CssBaseline";
+import "./index.css";
 
 const queryClient = makeClient();
 const serverStore = new RecipeHttpBookStore("/api");
