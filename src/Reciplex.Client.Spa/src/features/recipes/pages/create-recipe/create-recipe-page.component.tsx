@@ -1,4 +1,4 @@
-import { makeViewRecipePath } from "../../route-utils";
+import { makeEditRecipePath } from "../../route-utils";
 import { useNavigate, useParams } from "react-router";
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
 import { RecipeBookNotFoundBanner } from "../../components/recipe-book-not-found-banner/recipe-book-not-found-banner.component";
@@ -51,7 +51,7 @@ export function CreateRecipePage() {
           shortDescription: data.shortDescription,
           bookId: bookId,
         });
-        navigate(makeViewRecipePath(recipe.bookId, recipe.id));
+        navigate(makeEditRecipePath(recipe.bookId, recipe.id));
       }}
       onReset={() => {
         if (isError) {
