@@ -106,13 +106,11 @@ export function EditRecipeForm({
       >
         <Box
           sx={{
-            my: 2,
+            mb: 3,
           }}
         >
           <Stack direction={"row"}>
-            <Typography variant="h4" gutterBottom>
-              Editing Recipe
-            </Typography>
+            <Typography variant="h2">Editing Recipe</Typography>
             <Box
               sx={{
                 flex: " 1 0 auto",

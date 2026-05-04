@@ -39,7 +39,7 @@ export function DeleteWithNameVerification({
   const formDisabled = showDeleteError || pending || showConcurrencyError;
   return (
     <>
-      <Typography variant="h2" sx={{ mb: 2 }}>
+      <Typography variant="h2" sx={{ mb: 3 }}>
         <Stack direction={"row"} gap={2}>
           <span>Confirm Deletion</span>
         </Stack>
@@ -50,6 +50,9 @@ export function DeleteWithNameVerification({
         {showDeleteError && <DeleteFailedAlert onReset={onReset} />}
         <Paper sx={{ p: 2 }}>
           <Stack gap={1}>
+            <Typography variant="h5" gutterBottom>
+              What will be deleted
+            </Typography>
             <Typography variant="body1">
               <Stack direction="column" gap={0}>
                 <Typography variant="subtitle2">Name</Typography>
@@ -57,20 +60,20 @@ export function DeleteWithNameVerification({
               </Stack>
             </Typography>
             {description && (
-              <Typography component={"div"} variant="body1">
+              <Typography variant="body1">
                 <Stack direction="column" gap={0}>
                   <Typography variant="subtitle2">Description</Typography>
                   <span>{description}</span>
                 </Stack>
               </Typography>
             )}
-            <Typography component={"div"} variant="caption">
+            <Typography variant="body1">
               <Stack direction="column" gap={0}>
                 <Typography variant="subtitle2">Record Type</Typography>
                 <span>{entityType}</span>
               </Stack>
             </Typography>
-            <Typography component={"div"} variant="caption" gutterBottom>
+            <Typography variant="body1" gutterBottom>
               <Stack direction="column" gap={0}>
                 <Typography variant="subtitle2">Key</Typography>
                 <span>{uniqueKey}</span>
@@ -82,9 +85,11 @@ export function DeleteWithNameVerification({
         <Paper sx={{ p: 2 }}>
           <form onSubmit={onSubmit}>
             <Stack spacing={2}>
-              <Typography variant="body1" gutterBottom>
-                Type {`'${name}'`} to confirm permanent deletion
-              </Typography>
+              <legend>
+                <Typography variant="h5" gutterBottom>
+                  Type {`'${name}'`} to confirm permanent deletion
+                </Typography>
+              </legend>
               <TextField
                 label={`Type '${name}'`}
                 helperText={errors.name?.message}

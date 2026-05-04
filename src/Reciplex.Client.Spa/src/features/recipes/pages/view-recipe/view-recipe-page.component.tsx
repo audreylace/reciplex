@@ -34,18 +34,14 @@ export function ViewRecipePage() {
 
   return (
     <>
-      <Box
-        sx={{
-          my: 2,
-        }}
-      >
-        <Stack direction={"row"} sx={{ width: "100%" }}>
+      <Box sx={{ mb: 3 }}>
+        <Stack direction={"row"} sx={{ width: "100%", mb: 1 }}>
           <Box
             sx={{
               flex: "1 1 auto",
             }}
           >
-            <Typography variant="h4">{data.name}</Typography>
+            <Typography variant="h2">{data.name}</Typography>
           </Box>
           <RecipeMenuButton
             recipeId={recipeId}
@@ -54,7 +50,7 @@ export function ViewRecipePage() {
             hideViewRecipeLink
           />
         </Stack>
-        <Typography variant="subtitle1">{data.shortDescription}</Typography>
+        <Typography variant="h5">{data.shortDescription}</Typography>
       </Box>
       <DetailsRender
         detailsMd={data.details}

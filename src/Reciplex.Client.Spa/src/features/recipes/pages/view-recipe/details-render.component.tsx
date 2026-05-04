@@ -1,4 +1,3 @@
-import detailsRenderStyleModule from "./details-render.module.css";
 import { useContext, useMemo } from "preact/hooks";
 import { RecipeDetailsContext } from "./recipe-details-context.component";
 import { usePipeline } from "./usePipeline.hook";
@@ -6,6 +5,7 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Paper,
   Table,
   TableBody,
   TableCell,
@@ -33,17 +33,12 @@ export function DetailsRender({
       <RecipeDetailsContext.Provider value={detailsContextModel}>
         <ToolList />
         <IngredientList />
-        <Accordion defaultExpanded>
-          <AccordionSummary>
-            <Typography variant="h5">Details</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <DetailsMdRender
-              mayEdit={mayEdit}
-              goToEditAction={goToEditAction}
-            />
-          </AccordionDetails>
-        </Accordion>
+
+        <Paper sx={{ p: 2, mt: 2 }}>
+          <Typography variant="h5">Details</Typography>
+
+          <DetailsMdRender mayEdit={mayEdit} goToEditAction={goToEditAction} />
+        </Paper>
       </RecipeDetailsContext.Provider>
     </>
   );
@@ -212,17 +207,13 @@ function RecipeIngredientRender({ position }: { position: number }) {
 
   if (amount) {
     return (
-      <span className={detailsRenderStyleModule.ingredientText}>
+      <span>
         {amount} {unit} {inlineText}
       </span>
     );
   }
 
-  return (
-    <span className={detailsRenderStyleModule.ingredientText}>
-      {inlineText}
-    </span>
-  );
+  return <span>{inlineText}</span>;
 }
 
 function RecipeToolRender({ position }: { position: number }) {
@@ -244,15 +235,11 @@ function RecipeToolRender({ position }: { position: number }) {
   const toolQuantity = concept.getToolQuantityByPosition(position);
 
   if (inlineText) {
-    return (
-      <span className={detailsRenderStyleModule.ingredientText}>
-        {inlineText}
-      </span>
-    );
+    return <span>{inlineText}</span>;
   }
 
   return (
-    <span className={detailsRenderStyleModule.ingredientText}>
+    <span>
       {toolSize} {toolSizeUnit} {toolQuantity !== 1 ? "x" + toolQuantity : ""}
       {toolName}
     </span>

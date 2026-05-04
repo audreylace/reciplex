@@ -27,7 +27,7 @@ export function NameAndShortDescriptionForm({
   showSkeleton,
   values,
   showConflict,
-}: ICreateFormProps) {
+}: INameAndShortDescriptionFormProps) {
   const { name: initialName, shortDescription: initialShortDescription } =
     values ?? { name: "", shortDescription: "" };
   const {
@@ -78,7 +78,7 @@ export function NameAndShortDescriptionForm({
       <form onSubmit={handleSubmit(onSuccess)}>
         <Stack spacing={2}>
           <legend>
-            <Typography variant="h4" gutterBottom>
+            <Typography variant="h5" gutterBottom>
               {legendText}
             </Typography>
           </legend>
@@ -144,8 +144,8 @@ export function NameAndShortDescriptionForm({
   );
 }
 
-/** props for `<CreateForm />` */
-export interface ICreateFormProps {
+/** props for `<NameAndShortDescriptionForm />` */
+export interface INameAndShortDescriptionFormProps {
   /** form title. Appears inside `<legend>` */
   legendText: string;
   /** label for the short description text area */
@@ -219,8 +219,8 @@ function NameAndShortDescriptionFormSkeleton({
 
 /** props for `<NameAndShortDescriptionFormSkeleton />` */
 interface INameAndShortDescriptionFormSkeletonProps {
-  /** @see ICreateFormProps.legendText */
+  /** @see INameAndShortDescriptionFormProps.legendText */
   legendText: string;
-  /** @see ICreateFormProps.submitText */
+  /** @see INameAndShortDescriptionFormProps.submitText */
   submitText: string;
 }

@@ -5,6 +5,8 @@ import { RecipeBookNotFoundBanner } from "../../components/recipe-book-not-found
 import { NameAndShortDescriptionForm } from "../../components/name-and-short-description-form/name-and-short-description-form.component";
 import { useCreateRecipeMutation } from "../../hooks/useCreateRecipeMutation.hook";
 import { BookMutationNotAuthorizedBanner } from "../../components/book-mutation-not-authorized-banner/book-mutation-not-authorized-banner.component";
+import Typography from "@mui/material/Typography";
+import Stack from "@mui/material/Stack";
 
 /**
  * Entry point for create recipe page component
@@ -37,34 +39,41 @@ export function CreateRecipePage() {
   }
 
   return (
-    <NameAndShortDescriptionForm
-      legendText="Create New Recipe"
-      nameLabel="Recipe Title"
-      nameHelpText="Title of the recipe"
-      nameMaxLength={128}
-      shortDescriptionHelpText="Concise description of the recipe"
-      shortDescriptionLabel="Recipe Short Description"
-      shortDescriptionMaxLength={256}
-      onSuccess={async (data) => {
-        const recipe = await mutateAsync({
-          name: data.name,
-          shortDescription: data.shortDescription,
-          bookId: bookId,
-        });
-        navigate(makeEditRecipePath(recipe.bookId, recipe.id));
-      }}
-      onReset={() => {
-        if (isError) {
-          reset();
-        }
-        if (queryError) {
-          refetch();
-        }
-      }}
-      pending={isPending}
-      showError={isError || queryError}
-      submitText="Create Recipe"
-      showSkeleton={queryPending}
-    />
+    <>
+      <Typography variant="h2" sx={{ mb: 3 }}>
+        <Stack direction={"row"} gap={2}>
+          Creating New Recipe
+        </Stack>
+      </Typography>
+      <NameAndShortDescriptionForm
+        legendText="Describe the new recipe"
+        nameLabel="Recipe Title"
+        nameHelpText="Title of the recipe"
+        nameMaxLength={128}
+        shortDescriptionHelpText="Concise description of the recipe"
+        shortDescriptionLabel="Recipe Short Description"
+        shortDescriptionMaxLength={256}
+        onSuccess={async (data) => {
+          const recipe = await mutateAsync({
+            name: data.name,
+            shortDescription: data.shortDescription,
+            bookId: bookId,
+          });
+          navigate(makeEditRecipePath(recipe.bookId, recipe.id));
+        }}
+        onReset={() => {
+          if (isError) {
+            reset();
+          }
+          if (queryError) {
+            refetch();
+          }
+        }}
+        pending={isPending}
+        showError={isError || queryError}
+        submitText="Create Recipe"
+        showSkeleton={queryPending}
+      />
+    </>
   );
 }

@@ -47,7 +47,7 @@ export function AccountSettingsForm({
   const formDisabled = showSaveError || pending || showConcurrencyError;
   return (
     <>
-      <Typography variant="h4">
+      <Typography variant="h2" sx={{ mb: 3 }}>
         <Stack direction={"row"} gap={2}>
           <span>Modifying Account</span>
         </Stack>
@@ -56,6 +56,9 @@ export function AccountSettingsForm({
       {showSaveError && <SaveFailedAlert onReset={onReset} />}
       <Paper sx={{ p: 2, mt: 2 }}>
         <Stack direction={"column"} gap={2}>
+          <Typography variant="h5" gutterBottom>
+            Current account settings
+          </Typography>
           <Typography variant="body1">
             <Stack direction="column" gap={0}>
               <Typography variant="subtitle2">Current Display Name</Typography>
@@ -69,7 +72,14 @@ export function AccountSettingsForm({
             </Stack>
           </Typography>
         </Stack>
+      </Paper>
+      <Paper sx={{ p: 2, mt: 2 }}>
         <form onSubmit={onSubmit}>
+          <legend>
+            <Typography variant="h5" gutterBottom>
+              Update account settings
+            </Typography>
+          </legend>
           <Stack spacing={2} marginTop={3}>
             <TextField
               label="New Display Name"

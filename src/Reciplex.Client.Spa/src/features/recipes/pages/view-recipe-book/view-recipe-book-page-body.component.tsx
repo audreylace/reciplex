@@ -146,16 +146,16 @@ function BodyHeader({
   return (
     <Box
       sx={{
-        my: 2,
+        mb: 3,
       }}
     >
-      <Stack direction={"row"} sx={{ width: "100%" }}>
+      <Stack direction={"row"} sx={{ width: "100%", mb: 1 }}>
         <Box
           sx={{
             flex: "1 1 auto",
           }}
         >
-          <Typography variant="h4">{bookName}</Typography>
+          <Typography variant="h2">{bookName}</Typography>
         </Box>
         <RecipeBookMenuButton
           bookId={bookId}
@@ -163,7 +163,7 @@ function BodyHeader({
           mayDelete={mayDeleteBook}
         />
       </Stack>
-      <Typography variant="subtitle1">{bookDescription}</Typography>
+      <Typography variant="h5">{bookDescription}</Typography>
     </Box>
   );
 }
