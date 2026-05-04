@@ -8,6 +8,7 @@ import { SaveFailedAlert } from "./save-failed-alert.component";
 import { AccountSettingsFormSkeleton } from "./account-settings-form-skeleton.component";
 import { useEffect } from "preact/hooks";
 import { ConcurrencyConflictAlert } from "../../../core/components/concurrency-conflict-alert/concurrency-conflict-alert.component";
+import Paper from "@mui/material/Paper";
 
 /** form for modifying an account */
 export function AccountSettingsForm({
@@ -48,46 +49,54 @@ export function AccountSettingsForm({
     <>
       <Typography variant="h4">
         <Stack direction={"row"} gap={2}>
-          <span>Modifying Account: {displayName}</span>
+          <span>Modifying Account</span>
         </Stack>
       </Typography>
-      <Typography variant="subtitle1" gutterBottom>
-        <Stack direction={"row"} gap={1}>
-          <span>Account Key: </span>
-          <span>{userKey}</span>
-        </Stack>
-      </Typography>
-      {showConcurrencyError && (
-        <ConcurrencyConflictAlert onReset={onReset} entityName="Account" />
-      )}
+      {showConcurrencyError && <ConcurrencyConflictAlert onReset={onReset} />}
       {showSaveError && <SaveFailedAlert onReset={onReset} />}
-      <form onSubmit={onSubmit}>
-        <Stack spacing={2} marginTop={3}>
-          <TextField
-            label="Display Name"
-            helperText={displayNameHelpText(errors)}
-            error={!!errors.displayName}
-            fullWidth
-            variant="filled"
-            maxLength={64}
-            disabled={formDisabled}
-            {...register("displayName", {
-              maxLength: 64,
-              required: true,
-            })}
-          />
-          <Box>
-            <Button
-              variant="contained"
-              type="submit"
-              disabled={formDisabled}
-              loading={pending}
-            >
-              Save
-            </Button>
-          </Box>
+      <Paper sx={{ p: 2, mt: 2 }}>
+        <Stack direction={"column"} gap={2}>
+          <Typography variant="body1">
+            <Stack direction="column" gap={0}>
+              <Typography variant="subtitle2">Current Display Name</Typography>
+              <span>{displayName}</span>
+            </Stack>
+          </Typography>
+          <Typography variant="caption" gutterBottom>
+            <Stack direction={"column"}>
+              <Typography variant="subtitle2">Account Key</Typography>
+              <span>{userKey}</span>
+            </Stack>
+          </Typography>
         </Stack>
-      </form>
+        <form onSubmit={onSubmit}>
+          <Stack spacing={2} marginTop={3}>
+            <TextField
+              label="New Display Name"
+              helperText={displayNameHelpText(errors)}
+              error={!!errors.displayName}
+              fullWidth
+              variant="outlined"
+              maxLength={64}
+              disabled={formDisabled}
+              {...register("displayName", {
+                maxLength: 64,
+                required: true,
+              })}
+            />
+            <Box>
+              <Button
+                variant="contained"
+                type="submit"
+                disabled={formDisabled}
+                loading={pending}
+              >
+                Save
+              </Button>
+            </Box>
+          </Stack>
+        </form>
+      </Paper>
     </>
   );
 }

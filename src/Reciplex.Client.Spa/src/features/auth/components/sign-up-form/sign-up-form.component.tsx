@@ -8,8 +8,9 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
-import { Fade } from "@mui/material";
+import Fade from "@mui/material/Fade";
 import { Link } from "react-router";
+import Paper from "@mui/material/Paper";
 
 /** Form for creating an account */
 export function SignUpForm() {
@@ -35,8 +36,11 @@ export function SignUpForm() {
 
   return (
     <>
-      <Typography variant="h4">Welcome</Typography>
-      <Typography variant="subtitle1" gutterBottom>
+      <Typography variant="h1" sx={{ mb: 5 }}>
+        Welcome
+      </Typography>
+
+      <Typography variant="h4" gutterBottom>
         Create an account and get cooking with Reciplex!
       </Typography>
       <form onSubmit={onSubmit}>
@@ -86,7 +90,7 @@ export function SignUpForm() {
             helperText={displayNameHelpText(errors)}
             error={!!errors.displayName}
             fullWidth
-            variant="filled"
+            variant="outlined"
             disabled={formDisabled}
             {...register("displayName", {
               required: "Required to provide a display name to use this app",

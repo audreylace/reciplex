@@ -8,6 +8,7 @@ import Skeleton from "@mui/material/Skeleton";
 import { useController, useForm } from "react-hook-form";
 import { useEffect } from "preact/hooks";
 import { ConcurrencyConflictAlert } from "../../../core/components/concurrency-conflict-alert/concurrency-conflict-alert.component";
+import Paper from "@mui/material/Paper";
 
 /** form for creating a new book/recipe. Also used to modify a book. */
 export function NameAndShortDescriptionForm({
@@ -73,71 +74,73 @@ export function NameAndShortDescriptionForm({
 
   const fieldsDisabled = showError || pending || showConflict;
   return (
-    <form onSubmit={handleSubmit(onSuccess)}>
-      <Stack spacing={2} marginTop={3}>
-        <legend>
-          <Typography variant="h5" gutterBottom>
-            {legendText}
-          </Typography>
-        </legend>
-        {pending && <LinearProgress aria-label="Creating..." />}
-        {showConflict && <ConcurrencyConflictAlert onReset={onReset} />}
-        {showError && (
-          <Alert
-            severity="error"
-            variant="filled"
-            action={
-              <Button color="inherit" size="small" onClick={onReset}>
-                Retry
-              </Button>
+    <Paper sx={{ p: 2, mt: 3 }}>
+      <form onSubmit={handleSubmit(onSuccess)}>
+        <Stack spacing={2}>
+          <legend>
+            <Typography variant="h4" gutterBottom>
+              {legendText}
+            </Typography>
+          </legend>
+          {pending && <LinearProgress aria-label="Creating..." />}
+          {showConflict && <ConcurrencyConflictAlert onReset={onReset} />}
+          {showError && (
+            <Alert
+              severity="error"
+              variant="filled"
+              action={
+                <Button color="inherit" size="small" onClick={onReset}>
+                  Retry
+                </Button>
+              }
+            >
+              Something went wrong
+            </Alert>
+          )}
+          <TextField
+            label={nameLabel}
+            error={!!errors.name}
+            helperText={errors?.name?.message ?? nameHelpText}
+            fullWidth
+            maxLength={nameMaxLength}
+            variant="outlined"
+            disabled={fieldsDisabled}
+            {...register("name", {
+              maxLength: {
+                value: nameMaxLength,
+                message: `Max length is ${nameMaxLength} characters`,
+              },
+              required: "This field is required",
+            })}
+          />
+          <TextField
+            label={shortDescriptionLabel}
+            error={!!errors.shortDescription}
+            helperText={
+              errors?.shortDescription?.message ?? shortDescriptionHelpText
             }
-          >
-            Something went wrong
-          </Alert>
-        )}
-        <TextField
-          label={nameLabel}
-          error={!!errors.name}
-          helperText={errors?.name?.message ?? nameHelpText}
-          fullWidth
-          maxLength={nameMaxLength}
-          variant="filled"
-          disabled={fieldsDisabled}
-          {...register("name", {
-            maxLength: {
-              value: nameMaxLength,
-              message: `Max length is ${nameMaxLength} characters`,
-            },
-            required: "This field is required",
-          })}
-        />
-        <TextField
-          label={shortDescriptionLabel}
-          error={!!errors.shortDescription}
-          helperText={
-            errors?.shortDescription?.message ?? shortDescriptionHelpText
-          }
-          inputRef={ref}
-          multiline
-          fullWidth
-          variant="filled"
-          value={value}
-          onChange={onChange}
-          onBlur={onBlur}
-          disabled={fieldsDisabled}
-        />
-        <Stack gap={1} direction={"row"}>
-          <Button
-            variant="contained"
-            type="submit"
-            disabled={showError}
-            loading={pending && !showError && !showConflict}
-          >
-            {submitText}
-          </Button>
+            inputRef={ref}
+            multiline
+            fullWidth
+            variant="outlined"
+            value={value}
+            onChange={onChange}
+            onBlur={onBlur}
+            disabled={fieldsDisabled}
+          />
+          <Stack gap={1} direction={"row"}>
+            <Button
+              variant="contained"
+              type="submit"
+              disabled={showError}
+              loading={pending && !showError && !showConflict}
+            >
+              {submitText}
+            </Button>
+          </Stack>
         </Stack>
-      </Stack>
-    </form>
+      </form>
+    </Paper>
   );
 }
 

@@ -1,13 +1,16 @@
-import { ErrorBanner } from "../../../core/components/banner/banner.component";
+import { useNavigate } from "react-router";
+import { NotFoundAlert } from "../../../core/components/not-found-alert/not-found-alert.component";
+import { makeBookListPath } from "../../route-utils";
 
 /** banner when a user tries to load a non-existent recipe */
 export function RecipeNotFoundBanner() {
+  const navigate = useNavigate();
   return (
-    <ErrorBanner
-      to="/"
-      title="Not Found"
-      message="Requested recipe was not found"
-      buttonCaption="Go Home"
+    <NotFoundAlert
+      href={makeBookListPath()}
+      onClick={() => navigate(makeBookListPath())}
+      caption="View Books"
+      entityName="Recipe"
     />
   );
 }

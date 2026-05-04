@@ -2,8 +2,6 @@ import detailsRenderStyleModule from "./details-render.module.css";
 import { useContext, useMemo } from "preact/hooks";
 import { RecipeDetailsContext } from "./recipe-details-context.component";
 import { usePipeline } from "./usePipeline.hook";
-import Paper from "@mui/material/Paper";
-import Box from "@mui/material/Box";
 import {
   Accordion,
   AccordionDetails,
@@ -69,7 +67,7 @@ function IngredientList() {
     return detailsContext.ingredientCollection.getIngredientList();
   }, [detailsContext?.ingredientCollection]);
 
-  if (!list) {
+  if (!list || list.length < 1) {
     return null;
   }
 
@@ -121,7 +119,7 @@ function ToolList() {
     return detailsContext.toolCollection.getToolList();
   }, [detailsContext?.toolCollection]);
 
-  if (!list) {
+  if (!list || list.length < 1) {
     return null;
   }
 

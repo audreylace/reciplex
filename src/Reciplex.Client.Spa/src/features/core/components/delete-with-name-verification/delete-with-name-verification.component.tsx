@@ -39,66 +39,80 @@ export function DeleteWithNameVerification({
   const formDisabled = showDeleteError || pending || showConcurrencyError;
   return (
     <>
-      <Typography variant="h5" gutterBottom>
+      <Typography variant="h2" sx={{ mb: 2 }}>
         <Stack direction={"row"} gap={2}>
-          <span>Deleting {entityType}</span>
+          <span>Confirm Deletion</span>
         </Stack>
       </Typography>
-      <Paper sx={{ p: 2 }}>
-        <Typography variant="h5" gutterBottom>
-          <Stack direction="row" gap={1}>
-            <span>{name}</span>
-          </Stack>
-        </Typography>
-        {description && (
-          <Typography component={"div"} variant="body2">
-            <Stack direction={"row"} gap={1}>
-              <span>Description: </span>
-              <span>{description}</span>
-            </Stack>
-          </Typography>
-        )}
-        <Typography component={"div"} variant="caption" gutterBottom>
-          <Stack direction="row" gap={1}>
-            <span>Key: </span>
-            <span>{uniqueKey}</span>
-          </Stack>
-        </Typography>
 
+      <Stack gap={3}>
         {showConcurrencyError && <ConcurrencyConflictAlert onReset={onReset} />}
         {showDeleteError && <DeleteFailedAlert onReset={onReset} />}
-        <form onSubmit={onSubmit}>
-          <Stack spacing={2} marginTop={3}>
-            <Typography variant="body1" gutterBottom>
-              Type {`'${name}'`} to confirm permanent deletion
+        <Paper sx={{ p: 2 }}>
+          <Stack gap={1}>
+            <Typography variant="body1">
+              <Stack direction="column" gap={0}>
+                <Typography variant="subtitle2">Name</Typography>
+                <span>{name}</span>
+              </Stack>
             </Typography>
-            <TextField
-              label={`Type '${name}'`}
-              helperText={errors.name?.message}
-              error={!!errors.name}
-              fullWidth
-              variant="filled"
-              disabled={formDisabled}
-              {...register("name", {
-                validate: (value) => {
-                  return name === value || `type "${name}"`;
-                },
-              })}
-            />
-            <Box>
-              <Button
-                variant="contained"
-                type="submit"
-                color="error"
-                disabled={formDisabled}
-                loading={pending}
-              >
-                Delete
-              </Button>
-            </Box>
+            {description && (
+              <Typography component={"div"} variant="body1">
+                <Stack direction="column" gap={0}>
+                  <Typography variant="subtitle2">Description</Typography>
+                  <span>{description}</span>
+                </Stack>
+              </Typography>
+            )}
+            <Typography component={"div"} variant="caption">
+              <Stack direction="column" gap={0}>
+                <Typography variant="subtitle2">Record Type</Typography>
+                <span>{entityType}</span>
+              </Stack>
+            </Typography>
+            <Typography component={"div"} variant="caption" gutterBottom>
+              <Stack direction="column" gap={0}>
+                <Typography variant="subtitle2">Key</Typography>
+                <span>{uniqueKey}</span>
+              </Stack>
+            </Typography>
           </Stack>
-        </form>
-      </Paper>
+        </Paper>
+
+        <Paper sx={{ p: 2 }}>
+          <form onSubmit={onSubmit}>
+            <Stack spacing={2}>
+              <Typography variant="body1" gutterBottom>
+                Type {`'${name}'`} to confirm permanent deletion
+              </Typography>
+              <TextField
+                label={`Type '${name}'`}
+                helperText={errors.name?.message}
+                error={!!errors.name}
+                fullWidth
+                variant="outlined"
+                disabled={formDisabled}
+                {...register("name", {
+                  validate: (value) => {
+                    return name === value || `type "${name}"`;
+                  },
+                })}
+              />
+              <Box>
+                <Button
+                  variant="contained"
+                  type="submit"
+                  color="error"
+                  disabled={formDisabled}
+                  loading={pending}
+                >
+                  Delete
+                </Button>
+              </Box>
+            </Stack>
+          </form>
+        </Paper>
+      </Stack>
     </>
   );
 }
