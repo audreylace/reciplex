@@ -5,10 +5,8 @@ import { RecipeMenuButton } from "../../components/recipe-menu/recipe-menu.compo
 import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
 import { DetailsRender } from "./details-render.component";
-import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
-import Stack from "@mui/material/Stack";
 import { makeEditRecipePath } from "../../route-utils";
+import { PageHeader } from "../../../core/components/page-header/page-header.component";
 
 /**
  * page for viewing a recipe
@@ -34,24 +32,18 @@ export function ViewRecipePage() {
 
   return (
     <>
-      <Box sx={{ mb: 3 }}>
-        <Stack direction={"row"} sx={{ width: "100%", mb: 1 }}>
-          <Box
-            sx={{
-              flex: "1 1 auto",
-            }}
-          >
-            <Typography variant="h2">{data.name}</Typography>
-          </Box>
+      <PageHeader
+        title={data.name}
+        subTitle={data.shortDescription}
+        sideComponent={
           <RecipeMenuButton
             recipeId={recipeId}
             mayEdit={data.mayEdit}
             bookId={data.bookId}
             hideViewRecipeLink
           />
-        </Stack>
-        <Typography variant="h5">{data.shortDescription}</Typography>
-      </Box>
+        }
+      />
       <DetailsRender
         detailsMd={data.details}
         mayEdit={data.mayEdit}

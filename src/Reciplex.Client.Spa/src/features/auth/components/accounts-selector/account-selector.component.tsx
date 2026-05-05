@@ -5,11 +5,10 @@ import {
 import Stack from "@mui/material/Stack";
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
 import { AddAccountButton } from "./add-account-button.component";
-import { TopBanner } from "./top-banner.component";
-import { ComponentSkeleton } from "./component-skeleton.component";
 import { AccountCard } from "./account-card.component";
 import { useEffect } from "preact/hooks";
 import { useSignUpNavigate } from "../../hooks/useSignUpNavigate.hook";
+import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
 
 export function AccountSelector({
   redirectToSignUpIfNeeded,
@@ -31,12 +30,11 @@ export function AccountSelector({
   }, [length, accountQuery.isSuccess, goToSignUp, redirectToSignUpIfNeeded]);
 
   if (accountQuery.status === "pending") {
-    return <ComponentSkeleton />;
+    return <LoadingIndicator />;
   }
 
   return (
     <>
-      <TopBanner />
       <Stack spacing={2}>
         <LoadingFailedAlert
           show={accountQuery.status === "error"}

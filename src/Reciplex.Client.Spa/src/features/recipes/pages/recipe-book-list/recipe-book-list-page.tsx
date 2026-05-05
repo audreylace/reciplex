@@ -4,6 +4,7 @@ import { LoadingFailedAlert } from "../../../core/components/loading-failed-aler
 import { BookTable } from "../../components/book-table/book-table.component";
 import { useRecipeClientStateContext } from "../../hooks/useRecipeClientStateContext.hook";
 import { useEffect, useRef } from "preact/hooks";
+import { PageHeader } from "../../../core/components/page-header/page-header.component";
 
 /**
  * Entry point for recipe book list page component
@@ -71,6 +72,7 @@ export function RecipeBookListPage() {
 
   return (
     <>
+      <PageHeader title="Recipe Books" />
       <BookTable
         ref={tablePaperRef}
         pending={isPending}

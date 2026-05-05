@@ -5,8 +5,7 @@ import { RecipeBookNotFoundBanner } from "../../components/recipe-book-not-found
 import { NameAndShortDescriptionForm } from "../../components/name-and-short-description-form/name-and-short-description-form.component";
 import { useCreateRecipeMutation } from "../../hooks/useCreateRecipeMutation.hook";
 import { BookMutationNotAuthorizedBanner } from "../../components/book-mutation-not-authorized-banner/book-mutation-not-authorized-banner.component";
-import Typography from "@mui/material/Typography";
-import Stack from "@mui/material/Stack";
+import { PageHeader } from "../../../core/components/page-header/page-header.component";
 
 /**
  * Entry point for create recipe page component
@@ -40,11 +39,7 @@ export function CreateRecipePage() {
 
   return (
     <>
-      <Typography variant="h2" sx={{ mb: 3 }}>
-        <Stack direction={"row"} gap={2}>
-          Creating New Recipe
-        </Stack>
-      </Typography>
+      <PageHeader title="Creating New Recipe" />
       <NameAndShortDescriptionForm
         legendText="Describe the new recipe"
         nameLabel="Recipe Title"

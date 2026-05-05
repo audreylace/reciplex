@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { makeViewRecipeBookPath } from "../../route-utils";
 import { RecipeBookNotFoundBanner } from "../../components/recipe-book-not-found-banner/recipe-book-not-found-banner.component";
 import {
@@ -10,8 +10,7 @@ import { useUpdateRecipeBookMutation } from "../../hooks/useUpdateRecipeBookMuta
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
 import { NameAndShortDescriptionForm } from "../../components/name-and-short-description-form/name-and-short-description-form.component";
 import { BookMutationNotAuthorizedBanner } from "../../components/book-mutation-not-authorized-banner/book-mutation-not-authorized-banner.component";
-import Typography from "@mui/material/Typography";
-import Stack from "@mui/material/Stack";
+import { PageHeader } from "../../../core/components/page-header/page-header.component";
 
 export function EditRecipeBookPageBody({ bookId }: { bookId: string }) {
   const navigate = useNavigate();
@@ -50,11 +49,7 @@ export function EditRecipeBookPageBody({ bookId }: { bookId: string }) {
 
   return (
     <>
-      <Typography variant="h2" sx={{ mb: 2 }}>
-        <Stack direction={"row"} gap={2}>
-          Editing Recipe Book
-        </Stack>
-      </Typography>
+      <PageHeader title="Editing Recipe Book" />
       <NameAndShortDescriptionForm
         key={resetCount}
         legendText={`Modify recipe book title and description`}

@@ -1,15 +1,13 @@
-import Box from "@mui/material/Box";
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
 import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
 import { RecipeBookNotFoundBanner } from "../../components/recipe-book-not-found-banner/recipe-book-not-found-banner.component";
 import { RecipeTable } from "../../components/recipe-table/recipe-table.component";
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
 import { useGetRecipesInBookQuery } from "../../hooks/useGetRecipesInBookQuery.hook";
-import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
 import { RecipeBookMenuButton } from "../../components/book-menu/recipe-book-menu.component";
 import { useRecipeClientStateContext } from "../../hooks/useRecipeClientStateContext.hook";
 import { useEffect, useRef } from "preact/hooks";
+import { PageHeader } from "../../../core/components/page-header/page-header.component";
 
 export function ViewRecipeBookPageBody({
   bookId,
@@ -104,12 +102,16 @@ export function ViewRecipeBookPageBody({
 
   return (
     <>
-      <BodyHeader
-        bookId={book.id}
-        bookName={book.name}
-        bookDescription={book.shortDescription}
-        mayEditBook={book.mayEdit}
-        mayDeleteBook={book.mayDelete}
+      <PageHeader
+        title={book.name}
+        subTitle={book.shortDescription}
+        sideComponent={
+          <RecipeBookMenuButton
+            bookId={book.id}
+            mayEdit={book.mayEdit}
+            mayDelete={book.mayDelete}
+          />
+        }
       />
       <RecipeTable
         ref={tablePaperRef}
@@ -134,44 +136,4 @@ export function ViewRecipeBookPageBody({
       />
     </>
   );
-}
-
-function BodyHeader({
-  bookId,
-  mayEditBook,
-  mayDeleteBook,
-  bookName,
-  bookDescription,
-}: IBodyHeaderProps) {
-  return (
-    <Box
-      sx={{
-        mb: 3,
-      }}
-    >
-      <Stack direction={"row"} sx={{ width: "100%", mb: 1 }}>
-        <Box
-          sx={{
-            flex: "1 1 auto",
-          }}
-        >
-          <Typography variant="h2">{bookName}</Typography>
-        </Box>
-        <RecipeBookMenuButton
-          bookId={bookId}
-          mayEdit={mayEditBook}
-          mayDelete={mayDeleteBook}
-        />
-      </Stack>
-      <Typography variant="h5">{bookDescription}</Typography>
-    </Box>
-  );
-}
-
-interface IBodyHeaderProps {
-  bookId: string;
-  mayEditBook: boolean | undefined;
-  mayDeleteBook: boolean | undefined;
-  bookName: string;
-  bookDescription: string;
 }

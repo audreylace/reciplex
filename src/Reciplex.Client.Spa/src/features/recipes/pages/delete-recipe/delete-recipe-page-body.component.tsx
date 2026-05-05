@@ -11,6 +11,8 @@ import { RecipeNotFoundBanner } from "../../components/recipe-banners/recipe-not
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import { DeleteWithNameVerification } from "../../../core/components/delete-with-name-verification/delete-with-name-verification.component";
+import { PageHeader } from "../../../core/components/page-header/page-header.component";
+import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
 
 export function DeleteRecipePageBody({ recipeId }: IDeleteRecipePageBodyProps) {
   const {
@@ -58,6 +60,10 @@ export function DeleteRecipePageBody({ recipeId }: IDeleteRecipePageBodyProps) {
     return <RecipeNotFoundBanner />;
   }
 
+  if (queryIsPending) {
+    return <LoadingIndicator />;
+  }
+
   if (queryIsSuccess && recipe && !recipe.mayEdit) {
     return (
       <Alert
@@ -80,19 +86,24 @@ export function DeleteRecipePageBody({ recipeId }: IDeleteRecipePageBodyProps) {
   }
 
   return (
-    <DeleteWithNameVerification
-      entityType="Recipe"
-      showSkeleton={queryIsPending}
-      key={resetCount}
-      name={recipe?.name ?? ""}
-      uniqueKey={recipe?.id ?? ""}
-      pending={mutateIsPending}
-      showDeleteError={mutateIsError && !concurrencyConflict}
-      onDelete={onDelete}
-      onReset={resetState}
-      showConcurrencyError={concurrencyConflict}
-      description={recipe?.shortDescription}
-    />
+    <>
+      <PageHeader
+        title="Confirm Permanent Recipe Deletion"
+        subTitle="All deletions are final and can not be undone. Verify that this is the correct recipe before continuing."
+      />
+      <DeleteWithNameVerification
+        entityType="Recipe"
+        key={resetCount}
+        name={recipe?.name ?? ""}
+        uniqueKey={recipe?.id ?? ""}
+        pending={mutateIsPending}
+        showDeleteError={mutateIsError && !concurrencyConflict}
+        onDelete={onDelete}
+        onReset={resetState}
+        showConcurrencyError={concurrencyConflict}
+        description={recipe?.shortDescription}
+      />
+    </>
   );
 }
 

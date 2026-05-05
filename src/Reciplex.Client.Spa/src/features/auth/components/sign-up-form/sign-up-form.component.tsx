@@ -10,7 +10,6 @@ import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import Fade from "@mui/material/Fade";
 import { Link } from "react-router";
-import Paper from "@mui/material/Paper";
 
 /** Form for creating an account */
 export function SignUpForm() {

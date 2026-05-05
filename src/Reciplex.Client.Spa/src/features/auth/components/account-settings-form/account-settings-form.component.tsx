@@ -5,7 +5,6 @@ import TextField from "@mui/material/TextField";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import { SaveFailedAlert } from "./save-failed-alert.component";
-import { AccountSettingsFormSkeleton } from "./account-settings-form-skeleton.component";
 import { useEffect } from "preact/hooks";
 import { ConcurrencyConflictAlert } from "../../../core/components/concurrency-conflict-alert/concurrency-conflict-alert.component";
 import Paper from "@mui/material/Paper";
@@ -15,7 +14,6 @@ export function AccountSettingsForm({
   displayName,
   userKey,
   showSaveError,
-  showSkeleton,
   showConcurrencyError,
   pending,
   onSave,
@@ -40,18 +38,9 @@ export function AccountSettingsForm({
     reset({ displayName });
   }, [displayName, reset]);
 
-  if (showSkeleton) {
-    return <AccountSettingsFormSkeleton />;
-  }
-
   const formDisabled = showSaveError || pending || showConcurrencyError;
   return (
     <>
-      <Typography variant="h2" sx={{ mb: 3 }}>
-        <Stack direction={"row"} gap={2}>
-          <span>Modifying Account</span>
-        </Stack>
-      </Typography>
       {showConcurrencyError && <ConcurrencyConflictAlert onReset={onReset} />}
       {showSaveError && <SaveFailedAlert onReset={onReset} />}
       <Paper sx={{ p: 2, mt: 2 }}>
@@ -59,15 +48,28 @@ export function AccountSettingsForm({
           <Typography variant="h5" gutterBottom>
             Current account settings
           </Typography>
-          <Typography variant="body1">
+          <Typography
+            variant="body1"
+            component={
+              /* needed to prevent `improper element nesting error from preact` */
+              "div"
+            }
+          >
             <Stack direction="column" gap={0}>
-              <Typography variant="subtitle2">Current Display Name</Typography>
+              <span>Current Display Name</span>
               <span>{displayName}</span>
             </Stack>
           </Typography>
-          <Typography variant="caption" gutterBottom>
+          <Typography
+            variant="body1"
+            component={
+              /* needed to prevent `improper element nesting error from preact` */
+              "div"
+            }
+            gutterBottom
+          >
             <Stack direction={"column"}>
-              <Typography variant="subtitle2">Account Key</Typography>
+              <span>Account Key</span>
               <span>{userKey}</span>
             </Stack>
           </Typography>
@@ -117,8 +119,6 @@ export interface IAccountSettingsFormProps {
   displayName: string;
   /** the accounts user key */
   userKey: string;
-  /** when true the form appears as a loading skeleton */
-  showSkeleton: boolean;
   /** invoked at deletion */
   onSave: (args: IOnSaveData) => void;
   /** invoked by the form as part of error recovery. Indicates likely that the user data should be reloaded. */

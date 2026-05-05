@@ -1,4 +1,6 @@
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
+import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
+import { PageHeader } from "../../../core/components/page-header/page-header.component";
 import { AccountNotFoundAlert } from "../../components/account-not-found-alert/account-not-found-alert.component";
 import {
   AccountSettingsForm,
@@ -69,18 +71,24 @@ export function AccountSettingsPageBody({
     return <AccountNotFoundAlert />;
   }
 
+  if (query.isPending) {
+    return <LoadingIndicator />;
+  }
+
   return (
-    <AccountSettingsForm
-      showSkeleton={query.isPending}
-      key={resetCount}
-      displayName={account?.displayName ?? ""}
-      userKey={account?.userKey ?? ""}
-      pending={saveMutation.status === "pending"}
-      showSaveError={saveMutation.status === "error" && !concurrencyConflict}
-      onSave={onSave}
-      onReset={onReset}
-      showConcurrencyError={concurrencyConflict}
-    />
+    <>
+      <PageHeader title="Modifying Account" />
+      <AccountSettingsForm
+        key={resetCount}
+        displayName={account?.displayName ?? ""}
+        userKey={account?.userKey ?? ""}
+        pending={saveMutation.status === "pending"}
+        showSaveError={saveMutation.status === "error" && !concurrencyConflict}
+        onSave={onSave}
+        onReset={onReset}
+        showConcurrencyError={concurrencyConflict}
+      />
+    </>
   );
 }
 

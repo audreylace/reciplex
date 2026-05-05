@@ -8,6 +8,7 @@ import { LoadingFailedAlert } from "../../../core/components/loading-failed-aler
 import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
 import Alert from "@mui/material/Alert";
 import { EditRecipeForm } from "../../components/edit-recipe-form/edit-recipe-form.component";
+import { PageHeader } from "../../../core/components/page-header/page-header.component";
 
 export function EditRecipePageBody({ recipeId }: { recipeId: string }) {
   const recipeQueryKey = useGetRecipeByIdQueryKey(recipeId);
@@ -34,18 +35,21 @@ export function EditRecipePageBody({ recipeId }: { recipeId: string }) {
       return <Alert>May not edit this recipe</Alert>;
     }
     return (
-      <EditRecipeForm
-        concurrencyConflict={concurrencyConflict}
-        onReset={() => {
-          if (concurrencyConflict) {
-            resetState();
-          } else {
-            recipeQuery.refetch();
-          }
-        }}
-        concurrencyToken={concurrencyToken}
-        data={recipe}
-      />
+      <>
+        <PageHeader title="Editing Recipe" />
+        <EditRecipeForm
+          concurrencyConflict={concurrencyConflict}
+          onReset={() => {
+            if (concurrencyConflict) {
+              resetState();
+            } else {
+              recipeQuery.refetch();
+            }
+          }}
+          concurrencyToken={concurrencyToken}
+          data={recipe}
+        />
+      </>
     );
   }
 

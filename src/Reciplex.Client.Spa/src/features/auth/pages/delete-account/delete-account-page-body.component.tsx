@@ -8,6 +8,8 @@ import {
   useActiveUserKey,
 } from "../../hooks/useActiveUser.hook";
 import { DeleteWithNameVerification } from "../../../core/components/delete-with-name-verification/delete-with-name-verification.component";
+import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
+import { PageHeader } from "../../../core/components/page-header/page-header.component";
 
 /** body of the delete account page */
 export function DeleteAccountPageBody({
@@ -53,21 +55,30 @@ export function DeleteAccountPageBody({
     return <AccountNotFoundAlert />;
   }
 
+  if (query.isPending) {
+    return <LoadingIndicator />;
+  }
+
   return (
-    <DeleteWithNameVerification
-      entityType="Account"
-      showSkeleton={query.isPending}
-      key={resetCount}
-      name={account?.displayName ?? ""}
-      uniqueKey={account?.userKey ?? ""}
-      pending={deleteMutation.status === "pending"}
-      showDeleteError={
-        deleteMutation.status === "error" && !concurrencyConflict
-      }
-      onDelete={onDelete}
-      onReset={onReset}
-      showConcurrencyError={concurrencyConflict}
-    />
+    <>
+      <PageHeader
+        title="Confirm Permanent Account Deletion"
+        subTitle="Delete account including all recipes and books this account owns? This includes shared recipe and recipe books. Verify that this is the correct account before continuing. This is permanent and can not be undone."
+      />
+      <DeleteWithNameVerification
+        entityType="Account"
+        key={resetCount}
+        name={account?.displayName ?? ""}
+        uniqueKey={account?.userKey ?? ""}
+        pending={deleteMutation.status === "pending"}
+        showDeleteError={
+          deleteMutation.status === "error" && !concurrencyConflict
+        }
+        onDelete={onDelete}
+        onReset={onReset}
+        showConcurrencyError={concurrencyConflict}
+      />
+    </>
   );
 }
 

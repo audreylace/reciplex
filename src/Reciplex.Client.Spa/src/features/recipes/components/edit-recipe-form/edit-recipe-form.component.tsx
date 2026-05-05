@@ -87,6 +87,31 @@ export function EditRecipeForm({
           </CardActions>
         </Card>
       </Dialog>
+      <Box
+        sx={{
+          mb: 3,
+        }}
+      >
+        {showConflictBanner && (
+          <ConcurrencyConflictAlert
+            onReset={() => {
+              onReset();
+              recipeMutation.reset();
+            }}
+          />
+        )}
+        {recipeMutation.isPending && (
+          <LinearProgress aria-label="Creating..." />
+        )}
+        {recipeMutation.isError && (
+          <OperationFailedAlert
+            onRetry={() => {
+              recipeMutation.reset();
+              onReset();
+            }}
+          />
+        )}
+      </Box>
       <form
         onSubmit={handleSubmit(async (newValues) => {
           if (formDisabled || !recipeMutation.isIdle) {
@@ -104,49 +129,6 @@ export function EditRecipeForm({
           navigate(makeViewRecipePath(newRecipe.bookId, newRecipe.id));
         })}
       >
-        <Box
-          sx={{
-            mb: 3,
-          }}
-        >
-          <Stack direction={"row"}>
-            <Typography variant="h2">Editing Recipe</Typography>
-            <Box
-              sx={{
-                flex: " 1 0 auto",
-              }}
-            ></Box>
-            <Box>
-              <Button
-                variant="contained"
-                type="submit"
-                loading={recipeMutation.isPending}
-                disabled={formDisabled && !recipeMutation.isPending}
-              >
-                Save
-              </Button>
-            </Box>
-          </Stack>
-          {showConflictBanner && (
-            <ConcurrencyConflictAlert
-              onReset={() => {
-                onReset();
-                recipeMutation.reset();
-              }}
-            />
-          )}
-          {recipeMutation.isPending && (
-            <LinearProgress aria-label="Creating..." />
-          )}
-          {recipeMutation.isError && (
-            <OperationFailedAlert
-              onRetry={() => {
-                recipeMutation.reset();
-                onReset();
-              }}
-            />
-          )}
-        </Box>
         <Stack gap={2}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h5">Metadata</Typography>

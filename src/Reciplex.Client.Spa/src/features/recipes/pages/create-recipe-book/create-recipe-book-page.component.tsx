@@ -2,8 +2,7 @@ import { NameAndShortDescriptionForm } from "../../components/name-and-short-des
 import { useCreateRecipeBookMutation } from "../../hooks/useCreateRecipeBookMutation.hook";
 import { useNavigate } from "react-router";
 import { makeViewRecipeBookPath } from "../../route-utils";
-import Typography from "@mui/material/Typography";
-import Stack from "@mui/material/Stack";
+import { PageHeader } from "../../../core/components/page-header/page-header.component";
 
 /**
  * Create recipe book page component
@@ -15,11 +14,7 @@ export function CreateRecipeBookPage() {
 
   return (
     <>
-      <Typography variant="h2" sx={{ mb: 3 }}>
-        <Stack direction={"row"} gap={2}>
-          Creating New Recipe Book
-        </Stack>
-      </Typography>
+      <PageHeader title="Creating New Recipe Book" />
       <NameAndShortDescriptionForm
         legendText="Describe the new recipe book"
         nameLabel="Book Title"

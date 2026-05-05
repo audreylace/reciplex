@@ -5,7 +5,6 @@ import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import { DeleteFailedAlert } from "./delete-failed-alert.component";
-import { DeleteWithNameVerificationSkeleton } from "./delete-with-name-verification-skeleton.component";
 import { ConcurrencyConflictAlert } from "../concurrency-conflict-alert/concurrency-conflict-alert.component";
 import Paper from "@mui/material/Paper";
 
@@ -14,7 +13,6 @@ export function DeleteWithNameVerification({
   name,
   uniqueKey,
   showDeleteError,
-  showSkeleton,
   showConcurrencyError,
   pending,
   onDelete,
@@ -32,19 +30,9 @@ export function DeleteWithNameVerification({
     onDelete();
   });
 
-  if (showSkeleton) {
-    return <DeleteWithNameVerificationSkeleton entityType={entityType} />;
-  }
-
   const formDisabled = showDeleteError || pending || showConcurrencyError;
   return (
     <>
-      <Typography variant="h2" sx={{ mb: 3 }}>
-        <Stack direction={"row"} gap={2}>
-          <span>Confirm Deletion</span>
-        </Stack>
-      </Typography>
-
       <Stack gap={3}>
         {showConcurrencyError && <ConcurrencyConflictAlert onReset={onReset} />}
         {showDeleteError && <DeleteFailedAlert onReset={onReset} />}
@@ -128,8 +116,6 @@ interface IDeleteWithNameVerificationProps {
   name: string;
   /** the entities unique key */
   uniqueKey: string;
-  /** when true the form appears as a loading skeleton */
-  showSkeleton: boolean;
   /** invoked at deletion */
   onDelete: () => void;
   /** invoked by the form as part of error recovery. Indicates likely that the user data should be reloaded. */

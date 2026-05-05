@@ -10,6 +10,8 @@ import {
 } from "../../hooks/useGetRecipeBookById.hook";
 import { makeBookListPath } from "../../route-utils";
 import { BookMutationNotAuthorizedBanner } from "../../components/book-mutation-not-authorized-banner/book-mutation-not-authorized-banner.component";
+import { PageHeader } from "../../../core/components/page-header/page-header.component";
+import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
 
 /** body of the delete recipe book page */
 export function DeleteRecipeBookPageBody({
@@ -56,22 +58,31 @@ export function DeleteRecipeBookPageBody({
     );
   }
 
+  if (bookQuery.isPending) {
+    return <LoadingIndicator />;
+  }
+
   return (
-    <DeleteWithNameVerification
-      entityType="Recipe Book"
-      showSkeleton={bookQuery.isPending}
-      key={resetCount}
-      name={bookQuery.data?.name ?? ""}
-      uniqueKey={bookQuery.data?.id ?? ""}
-      pending={deleteRecipeBookMutation.status === "pending"}
-      showDeleteError={
-        deleteRecipeBookMutation.status === "error" && !concurrencyConflict
-      }
-      onDelete={onDelete}
-      onReset={resetState}
-      showConcurrencyError={concurrencyConflict}
-      description={bookQuery.data?.shortDescription}
-    />
+    <>
+      <PageHeader
+        title="Confirm Permanent Recipe Book Deletion"
+        subTitle="This book and all of its recipes will be permanently deleted. Verify that this is the correct recipe book before continuing. Once confirmed, this action can not be undone."
+      />
+      <DeleteWithNameVerification
+        entityType="Recipe Book"
+        key={resetCount}
+        name={bookQuery.data?.name ?? ""}
+        uniqueKey={bookQuery.data?.id ?? ""}
+        pending={deleteRecipeBookMutation.status === "pending"}
+        showDeleteError={
+          deleteRecipeBookMutation.status === "error" && !concurrencyConflict
+        }
+        onDelete={onDelete}
+        onReset={resetState}
+        showConcurrencyError={concurrencyConflict}
+        description={bookQuery.data?.shortDescription}
+      />
+    </>
   );
 }
 
