@@ -19,6 +19,8 @@ export default defineConfig([
   {
     rules: {
       "react/no-multi-comp": ["error", { ignoreStateless: false }],
+      "react/destructuring-assignment": ["error", "always"],
+      "react/hook-use-state": ["error", { allowDestructuredState: false }],
       "no-restricted-imports": [
         "error",
         {
