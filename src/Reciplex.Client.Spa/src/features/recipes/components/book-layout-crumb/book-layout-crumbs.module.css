@@ -1,0 +1,39 @@
+.crumbTrail {
+  list-style: none;
+  display: flex;
+  flex-direction: row;
+  padding: 0;
+  margin: 0;
+  align-items: center;
+  min-width: 0;
+  flex: 1 0;
+  overflow: hidden;
+  gap: 10px;
+  li {
+    flex: 0 1 auto;
+    min-width: 20px;
+    overflow: hidden;
+  }
+  a {
+    text-decoration: none;
+    color: white;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+}
+
+.bookCrumb,
+.recipeCrumb {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline;
+}
+
+li.crumbDivider {
+  display: inline;
+  flex: 0 1 auto;
+  overflow: visible;
+  min-width: fit-content;
+}
