@@ -10,6 +10,7 @@ import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import Fade from "@mui/material/Fade";
 import { Link } from "react-router";
+import Paper from "@mui/material/Paper";
 
 /** Form for creating an account */
 export function SignUpForm() {
@@ -35,82 +36,80 @@ export function SignUpForm() {
 
   return (
     <>
-      <Typography variant="h1" sx={{ mb: 5 }}>
-        Welcome
-      </Typography>
-
-      <Typography variant="h4" gutterBottom>
-        Create an account and get cooking with Reciplex!
-      </Typography>
-      <form onSubmit={onSubmit}>
-        <Stack spacing={2} marginTop={3}>
-          {createAccountMutation.isSuccess && (
-            <Fade in={true} timeout={500}>
+      <Paper sx={{ p: 2 }}>
+        <Typography variant="h4" gutterBottom>
+          Create an account and get cooking with Reciplex!
+        </Typography>
+        <form onSubmit={onSubmit}>
+          <Stack spacing={2} marginTop={3}>
+            {createAccountMutation.isSuccess && (
+              <Fade in={true} timeout={500}>
+                <Alert
+                  severity="success"
+                  variant="filled"
+                  action={
+                    <Button
+                      component={Link}
+                      to={makeCreateRecipeBookPath()}
+                      color="inherit"
+                      size="small"
+                    >
+                      Create First Book
+                    </Button>
+                  }
+                >
+                  Account created
+                </Alert>
+              </Fade>
+            )}
+            {createAccountMutation.isError && (
               <Alert
-                severity="success"
+                severity="error"
                 variant="filled"
                 action={
                   <Button
-                    component={Link}
-                    to={makeCreateRecipeBookPath()}
                     color="inherit"
                     size="small"
+                    onClick={() => {
+                      createAccountMutation.reset();
+                    }}
                   >
-                    Create First Book
+                    Retry
                   </Button>
                 }
               >
-                Account created
+                Account creation failed
               </Alert>
-            </Fade>
-          )}
-          {createAccountMutation.isError && (
-            <Alert
-              severity="error"
-              variant="filled"
-              action={
-                <Button
-                  color="inherit"
-                  size="small"
-                  onClick={() => {
-                    createAccountMutation.reset();
-                  }}
-                >
-                  Retry
-                </Button>
-              }
-            >
-              Account creation failed
-            </Alert>
-          )}
+            )}
 
-          <TextField
-            label="Display Name"
-            helperText={displayNameHelpText(errors)}
-            error={!!errors.displayName}
-            fullWidth
-            variant="outlined"
-            disabled={formDisabled}
-            {...register("displayName", {
-              required: "Required to provide a display name to use this app",
-              maxLength: {
-                value: 64,
-                message: "Display name must be no longer than 64 characters",
-              },
-            })}
-          />
-          <Stack direction="row" spacing={1}>
-            <Button
-              variant="contained"
-              type="submit"
-              loading={createAccountMutation.isPending}
+            <TextField
+              label="Display Name"
+              helperText={displayNameHelpText(errors)}
+              error={!!errors.displayName}
+              fullWidth
+              variant="outlined"
               disabled={formDisabled}
-            >
-              Create Account
-            </Button>
+              {...register("displayName", {
+                required: "Required to provide a display name to use this app",
+                maxLength: {
+                  value: 64,
+                  message: "Display name must be no longer than 64 characters",
+                },
+              })}
+            />
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="contained"
+                type="submit"
+                loading={createAccountMutation.isPending}
+                disabled={formDisabled}
+              >
+                Create Account
+              </Button>
+            </Stack>
           </Stack>
-        </Stack>
-      </form>
+        </form>
+      </Paper>
     </>
   );
 }
