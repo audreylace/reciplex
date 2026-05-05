@@ -18,6 +18,7 @@ export default defineConfig([
   reactHooks.configs.flat.recommended,
   {
     rules: {
+      "react/no-multi-comp": ["error", { ignoreStateless: false }],
       "no-restricted-imports": [
         "error",
         {
