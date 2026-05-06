@@ -20,6 +20,7 @@ import { useEffect } from "preact/hooks";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import CardActions from "@mui/material/CardActions";
+import { SyntaxReference } from "./syntax-reference.component";
 
 export function EditRecipeForm({
   data,
@@ -148,6 +149,7 @@ export function EditRecipeForm({
               />
             </Stack>
           </Paper>
+          <SyntaxReference />
           <Paper sx={{ p: 2 }}>
             <Typography variant="h5">Details</Typography>
             <Typography variant="subtitle1">
