@@ -7,7 +7,7 @@ import {
 import { useMutationFormState } from "../../../core/hooks/useMutationFormState.hook";
 import { makeViewRecipeBookPath, makeViewRecipePath } from "../../route-utils";
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
-import { RecipeNotFoundBanner } from "../../components/recipe-banners/recipe-not-found-banner.component";
+import { RecipeNotFoundBanner } from "../../components/recipe-not-found-banner/recipe-not-found-banner.component";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import { DeleteWithNameVerification } from "../../../core/components/delete-with-name-verification/delete-with-name-verification.component";

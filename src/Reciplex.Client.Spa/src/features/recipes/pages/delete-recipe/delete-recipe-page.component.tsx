@@ -1,5 +1,5 @@
 import { useParams } from "react-router";
-import { RecipeNotFoundBanner } from "../../components/recipe-banners/recipe-not-found-banner.component";
+import { RecipeNotFoundBanner } from "../../components/recipe-not-found-banner/recipe-not-found-banner.component";
 import { DeleteRecipePageBody } from "./delete-recipe-page-body.component";
 
 /**
