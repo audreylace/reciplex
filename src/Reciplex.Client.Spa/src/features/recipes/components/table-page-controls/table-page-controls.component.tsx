@@ -1,13 +1,12 @@
 import Stack from "@mui/material/Stack";
 import { NavigationButton } from "../navigation-button/navigation-button.component";
 import Box from "@mui/material/Box";
-import {
-  ArrowBack,
-  ArrowForward,
-  FirstPage,
-  LastPage,
-} from "@mui/icons-material";
+import ArrowBack from "@mui/icons-material/ArrowBack";
+import ArrowForward from "@mui/icons-material/ArrowForward";
+import FirstPage from "@mui/icons-material/FirstPage";
+import LastPage from "@mui/icons-material/LastPage";
 import { PageSizeSelect } from "../page-size-select/page-size-select.component";
+import { FlexSpacer } from "./flex-spacer.component";
 
 export function TablePageControls({
   previous,
@@ -65,14 +64,4 @@ export interface ITablePageControlsProps {
   previousLoading?: boolean;
   pageSize: number;
   setPageSize: (newSize: number) => void;
-}
-
-function FlexSpacer() {
-  return (
-    <Box
-      sx={{
-        flex: "1 1 auto",
-      }}
-    ></Box>
-  );
 }

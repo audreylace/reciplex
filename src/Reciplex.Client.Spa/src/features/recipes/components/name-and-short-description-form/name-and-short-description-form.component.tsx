@@ -4,7 +4,6 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import LinearProgress from "@mui/material/LinearProgress";
-import Skeleton from "@mui/material/Skeleton";
 import { useController, useForm } from "react-hook-form";
 import { useEffect } from "preact/hooks";
 import { ConcurrencyConflictAlert } from "../../../core/components/concurrency-conflict-alert/concurrency-conflict-alert.component";
@@ -24,7 +23,6 @@ export function NameAndShortDescriptionForm({
   showError,
   onReset,
   submitText,
-  showSkeleton,
   values,
   showConflict,
 }: INameAndShortDescriptionFormProps) {
@@ -62,15 +60,6 @@ export function NameAndShortDescriptionForm({
       },
     },
   });
-
-  if (showSkeleton) {
-    return (
-      <NameAndShortDescriptionFormSkeleton
-        legendText={legendText}
-        submitText={submitText}
-      />
-    );
-  }
 
   const fieldsDisabled = showError || pending || showConflict;
   return (
@@ -170,8 +159,6 @@ export interface INameAndShortDescriptionFormProps {
   showError?: boolean;
   /** text for the button */
   submitText: string;
-  /** when true the form appears as a skeleton */
-  showSkeleton?: boolean;
   /** starting values for the form */
   values?: ICreateFormSuccessData;
   /** set to true to show the conflict alert and disable the form */
@@ -184,43 +171,4 @@ export interface ICreateFormSuccessData {
   name: string;
   /** user supplied value for short description */
   shortDescription: string;
-}
-
-/** loading skeleton for the form */
-function NameAndShortDescriptionFormSkeleton({
-  legendText,
-  submitText,
-}: INameAndShortDescriptionFormSkeletonProps) {
-  return (
-    <form onSubmit={(e) => e.preventDefault()}>
-      <Stack spacing={2} marginTop={3}>
-        <legend>
-          <Skeleton>
-            <Typography variant="h5" gutterBottom>
-              {legendText}
-            </Typography>
-          </Skeleton>
-        </legend>
-        <Skeleton width={"100%"}>
-          <TextField fullWidth variant="filled" />
-        </Skeleton>
-        <Skeleton width={"100%"}>
-          <TextField multiline fullWidth variant="filled" rows={4} />
-        </Skeleton>
-        <Stack gap={1} direction={"row"}>
-          <Skeleton>
-            <Button variant="contained">{submitText}</Button>
-          </Skeleton>
-        </Stack>
-      </Stack>
-    </form>
-  );
-}
-
-/** props for `<NameAndShortDescriptionFormSkeleton />` */
-interface INameAndShortDescriptionFormSkeletonProps {
-  /** @see INameAndShortDescriptionFormProps.legendText */
-  legendText: string;
-  /** @see INameAndShortDescriptionFormProps.submitText */
-  submitText: string;
 }

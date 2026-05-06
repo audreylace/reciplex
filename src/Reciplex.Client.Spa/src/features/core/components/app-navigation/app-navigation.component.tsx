@@ -12,7 +12,7 @@ import IconButton from "@mui/material/IconButton";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import { makeBookListPath } from "../../../recipes/route-utils";
 import useScrollTrigger from "@mui/material/useScrollTrigger";
-import type { ComponentChildren } from "preact";
+import { MaybeRenderInvisible } from "../maybe-render-invisible/maybe-render-invisible.component";
 
 export function AppNavigation({
   children,
@@ -29,7 +29,7 @@ export function AppNavigation({
   });
 
   return (
-    <VisibilityBox invisible={invisible}>
+    <MaybeRenderInvisible invisible={invisible}>
       <Slide appear={false} direction="down" in={!trigger}>
         <AppBar position={fixed ? "fixed" : "static"}>
           <Toolbar>
@@ -65,24 +65,12 @@ export function AppNavigation({
           </Toolbar>
         </AppBar>
       </Slide>
-    </VisibilityBox>
+    </MaybeRenderInvisible>
   );
-}
-
-function VisibilityBox({ children, invisible }: IVisibilityBoxProps) {
-  if (!invisible) {
-    return <Box>{children}</Box>;
-  }
-  return <Box sx={{ visibility: "hidden" }}>{children}</Box>;
 }
 
 export interface IAppNavigationProps extends PropsWithChildren {
   fixed?: boolean;
   invisible?: boolean;
   removeLinks?: boolean;
-}
-
-export interface IVisibilityBoxProps {
-  invisible?: boolean;
-  children: ComponentChildren;
 }

@@ -3,6 +3,7 @@ import { useCreateRecipeBookMutation } from "../../hooks/useCreateRecipeBookMuta
 import { useNavigate } from "react-router";
 import { makeViewRecipeBookPath } from "../../route-utils";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
+import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
 
 /**
  * Create recipe book page component
@@ -11,6 +12,10 @@ export function CreateRecipeBookPage() {
   const { mutateAsync, reset, isError, isPending } =
     useCreateRecipeBookMutation();
   const navigate = useNavigate();
+
+  if (isPending) {
+    return <LoadingIndicator />;
+  }
 
   return (
     <>

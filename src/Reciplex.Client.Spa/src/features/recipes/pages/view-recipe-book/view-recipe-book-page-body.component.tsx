@@ -4,10 +4,10 @@ import { RecipeBookNotFoundBanner } from "../../components/recipe-book-not-found
 import { RecipeTable } from "../../components/recipe-table/recipe-table.component";
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
 import { useGetRecipesInBookQuery } from "../../hooks/useGetRecipesInBookQuery.hook";
-import { RecipeBookMenuButton } from "../../components/book-menu/recipe-book-menu.component";
 import { useRecipeClientStateContext } from "../../hooks/useRecipeClientStateContext.hook";
 import { useEffect, useRef } from "preact/hooks";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
+import { BookMenuButton } from "../../components/book-menu-button/book-menu-button.component";
 
 export function ViewRecipeBookPageBody({
   bookId,
@@ -106,7 +106,7 @@ export function ViewRecipeBookPageBody({
         title={book.name}
         subTitle={book.shortDescription}
         sideComponent={
-          <RecipeBookMenuButton
+          <BookMenuButton
             bookId={book.id}
             mayEdit={book.mayEdit}
             mayDelete={book.mayDelete}

@@ -1,12 +1,12 @@
 import { useNavigate, useParams } from "react-router";
 import { useGetRecipeByIdQuery } from "../../hooks/useGetRecipeByIdQuery.hook";
 import { NotFoundAlert } from "../../../core/components/not-found-alert/not-found-alert.component";
-import { RecipeMenuButton } from "../../components/recipe-menu/recipe-menu.component";
 import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
-import { DetailsRender } from "./details-render.component";
 import { makeEditRecipePath } from "../../route-utils";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
+import { RecipeMenuButton } from "../../components/recipe-menu-button/recipe-menu-button.component";
+import { RecipeDetailsViewer } from "../../components/recipe-details-viewer/recipe-details-viewer.component";
 
 /**
  * page for viewing a recipe
@@ -44,7 +44,7 @@ export function ViewRecipePage() {
           />
         }
       />
-      <DetailsRender
+      <RecipeDetailsViewer
         detailsMd={data.details}
         mayEdit={data.mayEdit}
         goToEditAction={() => {

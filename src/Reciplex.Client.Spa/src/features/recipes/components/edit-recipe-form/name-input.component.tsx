@@ -1,4 +1,4 @@
-import { TextField } from "@mui/material";
+import TextField from "@mui/material/TextField";
 import type { UseFormRegister } from "react-hook-form";
 import { RecipeNameMaxLength } from "../../services/recipe-types";
 import type { IFormModel } from "./form-model";

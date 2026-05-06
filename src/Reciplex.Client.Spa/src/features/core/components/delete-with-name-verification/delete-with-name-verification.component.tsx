@@ -7,6 +7,7 @@ import Button from "@mui/material/Button";
 import { DeleteFailedAlert } from "./delete-failed-alert.component";
 import { ConcurrencyConflictAlert } from "../concurrency-conflict-alert/concurrency-conflict-alert.component";
 import Paper from "@mui/material/Paper";
+import { StackedLabelValue } from "../stacked-label-value/stacked-label-value.component";
 
 /** component providing the form for deleting an entity */
 export function DeleteWithNameVerification({
@@ -41,32 +42,12 @@ export function DeleteWithNameVerification({
             <Typography variant="h5" gutterBottom>
               What will be deleted
             </Typography>
-            <Typography variant="body1">
-              <Stack direction="column" gap={0}>
-                <Typography variant="subtitle2">Name</Typography>
-                <span>{name}</span>
-              </Stack>
-            </Typography>
+            <StackedLabelValue label="Name" value={name} />
             {description && (
-              <Typography variant="body1">
-                <Stack direction="column" gap={0}>
-                  <Typography variant="subtitle2">Description</Typography>
-                  <span>{description}</span>
-                </Stack>
-              </Typography>
+              <StackedLabelValue label="Description" value={description} />
             )}
-            <Typography variant="body1">
-              <Stack direction="column" gap={0}>
-                <Typography variant="subtitle2">Record Type</Typography>
-                <span>{entityType}</span>
-              </Stack>
-            </Typography>
-            <Typography variant="body1" gutterBottom>
-              <Stack direction="column" gap={0}>
-                <Typography variant="subtitle2">Key</Typography>
-                <span>{uniqueKey}</span>
-              </Stack>
-            </Typography>
+            <StackedLabelValue label="Record Type" value={entityType} />
+            <StackedLabelValue label="Key" value={uniqueKey} />
           </Stack>
         </Paper>
 

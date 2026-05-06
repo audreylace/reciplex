@@ -2,9 +2,7 @@ import TableBody from "@mui/material/TableBody";
 import type { IRecipeModel } from "../../services/recipe-types";
 import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
-import { useNavigate } from "react-router";
-import { makeViewRecipePath } from "../../route-utils";
-import { RecipeMenuButtonCell } from "./recipe-menu-button-cell.component";
+import { RecipeTableRow } from "./recipe-table-row.component";
 
 export function RecipeTableBody({
   recipes,
@@ -24,35 +22,5 @@ export function RecipeTableBody({
         <RecipeTableRow key={recipe.id} recipe={recipe} />
       ))}
     </TableBody>
-  );
-}
-
-function RecipeTableRow({ recipe }: { recipe: IRecipeModel }) {
-  const navigate = useNavigate();
-  const onClick = () => {
-    navigate(makeViewRecipePath(recipe.bookId, recipe.id));
-  };
-  return (
-    <TableRow
-      hover
-      sx={{
-        ":hover": {
-          cursor: "pointer",
-        },
-      }}
-    >
-      <TableCell onClick={onClick} role="button">
-        {recipe.name}
-      </TableCell>
-      <TableCell onClick={onClick} role="button">
-        {recipe.shortDescription}
-      </TableCell>
-      <RecipeMenuButtonCell
-        recipeName={recipe.name}
-        recipeId={recipe.id}
-        bookId={recipe.bookId}
-        mayEdit={recipe.mayEdit}
-      />
-    </TableRow>
   );
 }

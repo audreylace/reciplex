@@ -11,6 +11,7 @@ import { LoadingFailedAlert } from "../../../core/components/loading-failed-aler
 import { NameAndShortDescriptionForm } from "../../components/name-and-short-description-form/name-and-short-description-form.component";
 import { BookMutationNotAuthorizedBanner } from "../../components/book-mutation-not-authorized-banner/book-mutation-not-authorized-banner.component";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
+import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
 
 export function EditRecipeBookPageBody({ bookId }: { bookId: string }) {
   const navigate = useNavigate();
@@ -47,6 +48,10 @@ export function EditRecipeBookPageBody({ bookId }: { bookId: string }) {
     );
   }
 
+  if (bookQuery.isPending) {
+    return <LoadingIndicator />;
+  }
+
   return (
     <>
       <PageHeader title="Editing Recipe Book" />
@@ -81,7 +86,6 @@ export function EditRecipeBookPageBody({ bookId }: { bookId: string }) {
         pending={mutationPending}
         showError={mutationError}
         submitText="Save"
-        showSkeleton={bookQuery.isPending}
         showConflict={concurrencyConflict}
         values={{
           name: bookQuery.data?.name ?? "",

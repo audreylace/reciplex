@@ -8,6 +8,7 @@ import { SaveFailedAlert } from "./save-failed-alert.component";
 import { useEffect } from "preact/hooks";
 import { ConcurrencyConflictAlert } from "../../../core/components/concurrency-conflict-alert/concurrency-conflict-alert.component";
 import Paper from "@mui/material/Paper";
+import { StackedLabelValue } from "../../../core/components/stacked-label-value/stacked-label-value.component";
 
 /** form for modifying an account */
 export function AccountSettingsForm({
@@ -48,31 +49,8 @@ export function AccountSettingsForm({
           <Typography variant="h5" gutterBottom>
             Current account settings
           </Typography>
-          <Typography
-            variant="body1"
-            component={
-              /* needed to prevent `improper element nesting error from preact` */
-              "div"
-            }
-          >
-            <Stack direction="column" gap={0}>
-              <span>Current Display Name</span>
-              <span>{displayName}</span>
-            </Stack>
-          </Typography>
-          <Typography
-            variant="body1"
-            component={
-              /* needed to prevent `improper element nesting error from preact` */
-              "div"
-            }
-            gutterBottom
-          >
-            <Stack direction={"column"}>
-              <span>Account Key</span>
-              <span>{userKey}</span>
-            </Stack>
-          </Typography>
+          <StackedLabelValue label="Current Display Name" value={displayName} />
+          <StackedLabelValue label="Account Key" value={userKey} gutterBottom />
         </Stack>
       </Paper>
       <Paper sx={{ p: 2, mt: 2 }}>

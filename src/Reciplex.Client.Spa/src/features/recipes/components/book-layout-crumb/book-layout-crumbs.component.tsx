@@ -8,6 +8,7 @@ import {
 } from "../../route-utils";
 import Typography from "@mui/material/Typography";
 import bookLayoutCrumbsStyleModule from "./book-layout-crumbs.module.css";
+import { CrumbDivider } from "./crumb-divider.component";
 
 export function BookLayoutCrumbs({ bookId, recipeId }: IBookLayoutCrumbsProps) {
   const bookQuery = useGetRecipeBookById(bookId);
@@ -57,8 +58,4 @@ export function BookLayoutCrumbs({ bookId, recipeId }: IBookLayoutCrumbsProps) {
 export interface IBookLayoutCrumbsProps {
   bookId?: string;
   recipeId?: string;
-}
-
-function CrumbDivider() {
-  return <li className={bookLayoutCrumbsStyleModule.crumbDivider}>/</li>;
 }

@@ -6,6 +6,7 @@ import { NameAndShortDescriptionForm } from "../../components/name-and-short-des
 import { useCreateRecipeMutation } from "../../hooks/useCreateRecipeMutation.hook";
 import { BookMutationNotAuthorizedBanner } from "../../components/book-mutation-not-authorized-banner/book-mutation-not-authorized-banner.component";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
+import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
 
 /**
  * Entry point for create recipe page component
@@ -35,6 +36,10 @@ export function CreateRecipePage() {
         message="You may not add recipes to this book"
       />
     );
+  }
+
+  if (queryPending) {
+    return <LoadingIndicator />;
   }
 
   return (
@@ -67,7 +72,6 @@ export function CreateRecipePage() {
         pending={isPending}
         showError={isError || queryError}
         submitText="Create Recipe"
-        showSkeleton={queryPending}
       />
     </>
   );

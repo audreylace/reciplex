@@ -1,8 +1,8 @@
 import TableCell from "@mui/material/TableCell";
 import IconButton from "@mui/material/IconButton";
-import { MoreVert } from "@mui/icons-material";
+import MoreVert from "@mui/icons-material/MoreVert";
 import { useId, useRef, useState } from "preact/hooks";
-import { RecipeBookMenu } from "../book-menu/recipe-book-menu.component";
+import { BookMenu } from "../book-menu/book-menu.component";
 
 export function BookMenuButtonCell({
   bookId,
@@ -38,7 +38,7 @@ export function BookMenuButtonCell({
       >
         <MoreVert />
       </IconButton>
-      <RecipeBookMenu
+      <BookMenu
         bookId={bookId}
         mayEdit={mayEdit}
         mayDelete={mayDelete}
