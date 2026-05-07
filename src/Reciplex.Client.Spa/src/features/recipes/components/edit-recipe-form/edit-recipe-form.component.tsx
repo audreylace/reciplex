@@ -20,7 +20,7 @@ import { useEffect } from "preact/hooks";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import CardActions from "@mui/material/CardActions";
-import { SyntaxReference } from "./syntax-reference.component";
+import { SyntaxReference } from "../syntax-reference/syntax-reference-component.component";
 
 export function EditRecipeForm({
   data,
