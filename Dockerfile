@@ -1,7 +1,10 @@
-FROM node:current-alpine3.22 AS website
+FROM node:24 AS website
+RUN corepack enable && corepack prepare yarn@4.x --activate
 WORKDIR /build
 COPY src/Reciplex.Client.Spa/package*.json ./
-RUN npm install
+COPY src/Reciplex.Client.Spa/yarn.lock ./yarn.lock
+COPY src/Reciplex.Client.Spa/.yarnrc.yml ./.yarnrc.yml
+RUN yarn install
 COPY src/Reciplex.Client.Spa ./
 RUN npm run build
 
