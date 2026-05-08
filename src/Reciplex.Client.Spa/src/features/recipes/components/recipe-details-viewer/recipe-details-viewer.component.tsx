@@ -7,7 +7,6 @@ import { RecipeToolRender } from "./recipe-tool-render.component";
 import { IngredientList } from "./ingredient-list.component";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
 
 const componentMap = {
   recipeIngredientExpression: RecipeIngredientRender,
