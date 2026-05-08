@@ -1,4 +1,5 @@
 import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
 import type { ComponentChild } from "preact";
 
 /**
@@ -34,16 +35,17 @@ export function MenuButton<TCommandType>({
   tooltip: string;
 }) {
   return (
-    <IconButton
-      title={tooltip}
-      role="menuitem"
-      disabled={disabled}
-      onClick={(e) => {
-        e.preventDefault();
-        onClick(command);
-      }}
-    >
-      {icon}
-    </IconButton>
+    <Tooltip title={tooltip}>
+      <IconButton
+        role="menuitem"
+        disabled={disabled}
+        onClick={(e) => {
+          e.preventDefault();
+          onClick(command);
+        }}
+      >
+        {icon}
+      </IconButton>
+    </Tooltip>
   );
 }

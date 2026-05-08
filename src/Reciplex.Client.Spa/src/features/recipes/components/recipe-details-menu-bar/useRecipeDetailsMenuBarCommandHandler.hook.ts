@@ -35,8 +35,6 @@ export type MenuBarCommands =
   | "number-list"
   | "hyperlink"
   | "ingredient-reference"
-  | "recipe-section-reference"
-  | "recipe-link"
   | "recipe-tool-reference";
 
 /**
@@ -112,22 +110,16 @@ function handleCommand(
     case "ingredient-reference":
       textSwap(
         orchestrator,
-        "`{{@ingredient ###}}`",
-        middleSwap("`{{@ingredient ", "}}`"),
-      );
-      break;
-    case "recipe-section-reference":
-      textSwap(
-        orchestrator,
-        "`{{@section ###}}`",
-        middleSwap("`{{@section ", "}}`"),
+        '(( i 1/2 "INGREDIENT UNIT" "INGREDIENT NAME" ))',
+        middleSwap('(( i 1 "-" "', '" ))'),
       );
       break;
     case "recipe-tool-reference":
-      textSwap(orchestrator, "`{{@tool ###}}`", middleSwap("`{{@tool ", "}}`"));
-      break;
-    case "recipe-link":
-      textSwap(orchestrator, "()[recipe://]", middleSwap("(", ")[recipe://]"));
+      textSwap(
+        orchestrator,
+        '(( t 1/2 "TOOL UNIT" "TOOL NAME" ))',
+        middleSwap('(( tQ 1 "', '" ))'),
+      );
       break;
     default:
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -168,5 +160,5 @@ function textSwap(
  * @returns function to perform the swap
  */
 function middleSwap(start: string, end: string): (value: string) => string {
-  return (s) => `${start}${s}${end}`;
+  return (s) => `${start}${s.replaceAll('"', '""')}${end}`;
 }

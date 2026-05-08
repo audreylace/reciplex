@@ -8,11 +8,12 @@ import FormatListNumberedIcon from "@mui/icons-material/FormatListNumbered";
 import LinkIcon from "@mui/icons-material/Link";
 import RestaurantIcon from "@mui/icons-material/Restaurant";
 import EggIcon from "@mui/icons-material/Egg";
-import TitleIcon from "@mui/icons-material/Title";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import ButtonGroup from "@mui/material/ButtonGroup";
 import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
+import TextIncrease from "@mui/icons-material/TextIncrease";
 
 export function RecipeDetailsMenuBar({
   disabled,
@@ -44,7 +45,7 @@ export function RecipeDetailsMenuBar({
         />
         <MenuButton
           command="h1"
-          icon={<TitleIcon />}
+          icon={<TextIncrease />}
           tooltip="header 1"
           disabled={disabled}
           onClick={commandHandler}
@@ -91,16 +92,17 @@ export function RecipeDetailsMenuBar({
           disabled={disabled}
           onClick={commandHandler}
         />
-        <IconButton
-          title={isFullscreen ? "exit fullscreen" : "enter fullscreen"}
-          role="menuitem"
-          disabled={disabled}
-          onClick={() => {
-            onSizeToggle();
-          }}
-        >
-          {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
-        </IconButton>
+        <Tooltip title={isFullscreen ? "exit fullscreen" : "enter fullscreen"}>
+          <IconButton
+            role="menuitem"
+            disabled={disabled}
+            onClick={() => {
+              onSizeToggle();
+            }}
+          >
+            {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+          </IconButton>
+        </Tooltip>
       </ButtonGroup>
     </>
   );
