@@ -89,27 +89,6 @@ export interface IRecipeModel {
   details: string;
 }
 
-/**
- * results from `getRecipeBooks` @see IRecipeBookStore
- */
-export interface IGetRecipeBooksResult {
-  /** cursor to fetch the next page */
-  nextCursor?: string;
-  /** cursor to fetch the previous page */
-  previousCursor?: string;
-  /**
-   * recipe books indexed by key
-   */
-  books: IRecipeBookModel[];
-}
-
-export interface IPageRequestCursor {
-  /** The cursor's position */
-  position?: string;
-  /** The type of the cursor */
-  type: CursorTypes;
-}
-
 /** Cursor types */
 export const CursorTypes = {
   /** Cursor for getting the next page of results */
@@ -124,28 +103,24 @@ export type CursorTypes = (typeof CursorTypes)[keyof typeof CursorTypes];
  * args for `getRecipeBooks` @see IRecipeBookStore
  */
 export interface IGetRecipeBooksArgs {
-  /**
-   * Cursor for getting the next page of data
-   */
-  cursor?: IPageRequestCursor;
+  cursorType?: CursorTypes;
   /**
    * Limit the number of results
    */
-  limit?: number;
+  pageSize?: number;
+  position?: string;
 }
 
 /**
  * args for `getRecipesInBook` @see IRecipeBookStore
  */
 export interface IGetRecipesInBookArgs {
-  /**
-   * Cursor for getting the next page of data
-   */
-  cursor?: IPageRequestCursor;
+  cursorType?: CursorTypes;
   /**
    * Limit the number of results
    */
-  limit?: number;
+  pageSize?: number;
+  position?: string;
 }
 
 /**
@@ -242,7 +217,7 @@ export interface IRecipeBookStore {
   getRecipeBooks(
     userId: string,
     args?: IGetRecipeBooksArgs,
-  ): Promise<IGetRecipeBooksResult | null>;
+  ): Promise<IRecipeBookModel[]>;
 
   /**
    * gets recipes for a book
@@ -253,7 +228,7 @@ export interface IRecipeBookStore {
     userId: string,
     bookId: string,
     args?: IGetRecipesInBookArgs,
-  ): Promise<IGetRecipesInBookResult | null>;
+  ): Promise<IRecipeModel[] | null>;
 
   /**
    * Creates a recipe book
@@ -322,18 +297,4 @@ export interface IRecipeBookStore {
     recipeId: string,
     args: IUpdateRecipeArgs,
   ): Promise<IRecipeModel>;
-}
-
-/**
- * A single page holding a list of recipes for a book.
- * Use next and previous to determine if there is more data.
- * @todo return user data provided by the server
- */
-export interface IGetRecipesInBookResult {
-  /** list of recipes */
-  recipes: IRecipeModel[];
-  /** cursor to fetch the next page */
-  nextCursor?: string;
-  /** cursor to fetch the previous page */
-  previousCursor?: string;
 }

@@ -1,9 +1,12 @@
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { useGetRecipeByIdQuery } from "../../hooks/useGetRecipeByIdQuery.hook";
-import { ApplicationErrorBanner } from "../../../core/components/banner/application-error-banner.component";
-import { RecipeNameAndDescription } from "../../components/recipe-title-and-description/recipe-title-and-description.component";
-import { ViewRecipePageBody } from "./view-recipe-page-body.component";
-import { RecipeMenu } from "./recipe-menu.component";
+import { NotFoundAlert } from "../../../core/components/not-found-alert/not-found-alert.component";
+import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
+import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
+import { makeEditRecipePath } from "../../route-utils";
+import { PageHeader } from "../../../core/components/page-header/page-header.component";
+import { RecipeMenuButton } from "../../components/recipe-menu-button/recipe-menu-button.component";
+import { RecipeDetailsViewer } from "../../components/recipe-details-viewer/recipe-details-viewer.component";
 
 /**
  * page for viewing a recipe
@@ -12,33 +15,42 @@ export function ViewRecipePage() {
   const { recipeId } = useParams<{
     recipeId: string;
   }>();
-  const recipeQuery = useGetRecipeByIdQuery(recipeId);
+  const { data, isPending, isError } = useGetRecipeByIdQuery(recipeId);
+  const navigate = useNavigate();
 
-  const recipeData = recipeQuery.data;
+  if (isPending) {
+    return <LoadingIndicator />;
+  }
+
+  if (isError) {
+    return <LoadingFailedAlert />;
+  }
+
+  if (!recipeId || !data) {
+    return <NotFoundAlert />;
+  }
+
   return (
-    <main className="pageMain">
-      <RecipeNameAndDescription
-        name={recipeData?.name}
-        shortDescription={recipeData?.shortDescription}
-      >
-        {recipeData && (
-          <RecipeMenu
-            bookId={recipeData.id}
-            recipeId={recipeData.id}
-            mayEdit={recipeData.mayEdit}
-            name={recipeData.name}
-            shortDescription={recipeData.shortDescription}
+    <>
+      <PageHeader
+        title={data.name}
+        subTitle={data.shortDescription}
+        sideComponent={
+          <RecipeMenuButton
+            recipeId={recipeId}
+            mayEdit={data.mayEdit}
+            bookId={data.bookId}
+            hideViewRecipeLink
           />
-        )}
-      </RecipeNameAndDescription>
-      {!recipeId && <ApplicationErrorBanner />}
-      {recipeId && (
-        <ViewRecipePageBody
-          data={recipeQuery.data}
-          loadingStatus={recipeQuery.status}
-          fetchStatus={recipeQuery.fetchStatus}
-        />
-      )}
-    </main>
+        }
+      />
+      <RecipeDetailsViewer
+        detailsMd={data.details}
+        mayEdit={data.mayEdit}
+        goToEditAction={() => {
+          navigate(makeEditRecipePath(data.bookId, data.id));
+        }}
+      />
+    </>
   );
 }

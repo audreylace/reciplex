@@ -1,180 +1,178 @@
-import { DangerButton } from "../../../core/components/buttons/danger-button.component";
-import { SuccessButton } from "../../../core/components/buttons/success-button.component";
-import { RecipeDetailsFieldSet } from "../recipe-details-field-set/recipe-details-field-set.component";
-import {
-  RecipeMetaFieldSet,
-  type RecipeMetaFormModel,
-} from "../recipe-meta-field-set/recipe-meta-field-set.component";
-import editRecipeFormStylesModule from "./edit-recipe-form.module.css";
-import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
-import { useState } from "preact/hooks";
-import type { IRecipeModel } from "../../services/recipe-types";
+import Paper from "@mui/material/Paper";
 import { useForm } from "react-hook-form";
+import { type IRecipeModel } from "../../services/recipe-types";
+import { ConcurrencyConflictAlert } from "../../../core/components/concurrency-conflict-alert/concurrency-conflict-alert.component";
+import { OperationFailedAlert } from "../../../core/components/operation-failed-alert/operation-failed-alert.component";
 import { useUpdateRecipeMutation } from "../../hooks/useUpdateRecipeMutation.hook";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import LinearProgress from "@mui/material/LinearProgress";
+import Stack from "@mui/material/Stack";
+import Button from "@mui/material/Button";
+import { useBlocker, useNavigate } from "react-router";
 import { makeViewRecipePath } from "../../route-utils";
-import { RecipeIsReadonlyBanner } from "../recipe-banners/recipe-is-readonly-banner.component";
-import {
-  ErrorBanner,
-  InformationBanner,
-} from "../../../core/components/banner/banner.component";
-import { PrimaryButton } from "../../../core/components/buttons/primary-button.component";
-import { useNavigate } from "react-router";
-
-/**
- * Fields in the form
- */
-export type FormFields = {
-  /** recipe instruction section */
-  recipeDetails: string;
-} & RecipeMetaFormModel;
+import type { IFormModel } from "./form-model";
+import { DetailsInput } from "./details-input.component";
+import { NameInput } from "./name-input.component";
+import { ShortDescriptionInput } from "./short-description-input.component";
+import Dialog from "@mui/material/Dialog";
+import { useEffect } from "preact/hooks";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import CardActions from "@mui/material/CardActions";
+import { SyntaxReference } from "../syntax-reference/syntax-reference-component.component";
 
 export function EditRecipeForm({
-  recipe,
-  onAfterUpdate,
-  onCancel,
+  data,
+  concurrencyConflict,
+  concurrencyToken,
+  onReset,
 }: {
-  recipe: IRecipeModel;
-  onAfterUpdate: (args: { name: string; shortDescription: string }) => void;
-  onCancel: () => void;
+  data: IRecipeModel;
+  concurrencyConflict?: boolean;
+  onReset: () => void;
+  concurrencyToken: string;
 }) {
-  const navigate = useNavigate();
-  const [versionTag, setVersionTag] = useState<string | null>(null);
-  const recipeMutation = useUpdateRecipeMutation();
   const {
-    register,
     handleSubmit,
-    formState: { errors },
-    setValue,
-    watch,
-  } = useForm<FormFields>({
+    register,
+    control,
+    formState: { errors, isDirty },
+  } = useForm<IFormModel>({
     defaultValues: {
-      recipeName: recipe.name,
-      recipeDescription: recipe.shortDescription,
-      recipeDetails: recipe.details,
+      name: data.name,
+      shortDescription: data.shortDescription,
+      details: data.details,
     },
   });
+  const navigate = useNavigate();
+  const recipeMutation = useUpdateRecipeMutation();
+  const formDisabled = !recipeMutation.isIdle || concurrencyConflict;
+  const blocker = useBlocker(isDirty && !recipeMutation.isSuccess);
+  const showConflictBanner = concurrencyConflict && recipeMutation.isIdle;
 
-  // handles the submit from the form hook
-  const onSubmit = handleSubmit(async (formData) => {
-    if (recipeMutation.status === "idle" && versionTag) {
-      const newData = await recipeMutation.mutateAsync({
-        recipeId: recipe.id,
-        name: formData.recipeName,
-        shortDescription: formData.recipeDescription,
-        details: formData.recipeDetails,
-        versionTag: versionTag,
-      });
-      onAfterUpdate({
-        name: newData.name,
-        shortDescription: newData.shortDescription,
-      });
+  useEffect(() => {
+    if (recipeMutation.isSuccess) {
+      if (blocker.state === "blocked") {
+        blocker.proceed();
+      }
     }
-  });
-
-  // recipe MD editor is controlled so we need to watch its value
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const recipeDetailsValue = watch("recipeDetails");
-
-  if (recipe.versionTag && !versionTag) {
-    setVersionTag(recipe.versionTag);
-    return null;
-  }
-
-  // short circuit to read-only banner if the user does not have edit access
-  if (!recipe.mayEdit) {
-    return (
-      <RecipeIsReadonlyBanner bookId={recipe.bookId} recipeId={recipe.id} />
-    );
-  }
-
-  const conflict = versionTag !== recipe.versionTag;
-
-  // unlike most other form components in this app,
-  // we take a different approach here disabling the form
-  // so that if something does go wrong users can
-  // at least manually copy and paste the data
-  // to a new form instance or save off locally.
-  //
-  const enableForm = !conflict && recipeMutation.status === "idle";
-  const disableCancel = recipeMutation.status === "pending" || conflict;
-  const navigateToViewRecipe = () => {
-    navigate(makeViewRecipePath(recipe.bookId, recipe.id));
-  };
+  }, [blocker, recipeMutation.isSuccess]);
 
   return (
-    <form onSubmit={onSubmit}>
-      <FormButtons>
-        <SuccessButton disabled={!enableForm} type="submit">
-          Save
-        </SuccessButton>
-        <DangerButton disabled={disableCancel} onClick={onCancel}>
-          Cancel
-        </DangerButton>
-      </FormButtons>
-      {conflict && (
-        <ErrorBanner
-          title="Conflict"
-          message="Another user has changed this recipe. Existing changes must be discarded and the recipe data reloaded."
-        >
-          <FormButtons notInForm>
-            <SuccessButton onClick={() => navigate(0)}>
-              Reload Recipe
-            </SuccessButton>
-            <PrimaryButton onClick={onCancel}>End Editing</PrimaryButton>
-          </FormButtons>
-        </ErrorBanner>
-      )}
-      {recipeMutation.isError && (
-        <ErrorBanner
-          title="Save Failed"
-          message="The save failed. Existing changes must be discarded and the recipe data reloaded."
-        >
-          <FormButtons notInForm>
-            <SuccessButton onClick={() => navigate(0)}>
-              Reload Recipe
-            </SuccessButton>
-            <PrimaryButton onClick={onCancel}>End Editing</PrimaryButton>
-          </FormButtons>
-        </ErrorBanner>
-      )}
-      {recipeMutation.isPending && (
-        <InformationBanner
-          title="Saving Changes"
-          message="New changes are being published to the cloud. Do not leave or close this window."
-        ></InformationBanner>
-      )}
-      {recipeMutation.isSuccess && (
-        <InformationBanner
-          title="Recipe saved"
-          message="Changes published to the cloud."
-        >
-          <SuccessButton onClick={navigateToViewRecipe}>
-            View Recipe
-          </SuccessButton>
-        </InformationBanner>
-      )}
-      <div className={editRecipeFormStylesModule.recipeInfoFields}>
-        <RecipeMetaFieldSet
-          register={register}
-          disabled={!enableForm}
-          legendText="Recipe Information"
-          errors={errors}
-        />
-      </div>
-      <RecipeDetailsFieldSet
-        value={recipeDetailsValue}
-        showMaxLengthError={errors["recipeDetails"]?.type === "maxLength"}
-        onChange={(s) => setValue("recipeDetails", s)}
-        disabled={!enableForm}
-      />
-      <FormButtons>
-        <SuccessButton disabled={!enableForm} type="submit">
-          Save
-        </SuccessButton>
-        <DangerButton disabled={disableCancel} onClick={onCancel}>
-          Cancel
-        </DangerButton>
-      </FormButtons>
-    </form>
+    <>
+      <Dialog open={blocker.state === "blocked" && !recipeMutation.isSuccess}>
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="h5" gutterBottom>
+              You have unsaved changed
+            </Typography>
+            <Typography variant="subtitle1">
+              Continue and discard all in progress modifications?
+            </Typography>
+          </CardContent>
+          <CardActions>
+            <Stack direction="row" gap={1}>
+              <Button
+                onClick={() => blocker.state === "blocked" && blocker.reset()}
+              >
+                Go Back
+              </Button>
+              <Button
+                color="error"
+                onClick={() => blocker.state === "blocked" && blocker.proceed()}
+              >
+                Continue
+              </Button>
+            </Stack>
+          </CardActions>
+        </Card>
+      </Dialog>
+      <Box
+        sx={{
+          mb: 3,
+        }}
+      >
+        {showConflictBanner && (
+          <ConcurrencyConflictAlert
+            onReset={() => {
+              onReset();
+              recipeMutation.reset();
+            }}
+          />
+        )}
+        {recipeMutation.isPending && (
+          <LinearProgress aria-label="Creating..." />
+        )}
+        {recipeMutation.isError && (
+          <OperationFailedAlert
+            onRetry={() => {
+              recipeMutation.reset();
+              onReset();
+            }}
+          />
+        )}
+      </Box>
+      <form
+        onSubmit={handleSubmit(async (newValues) => {
+          if (formDisabled || !recipeMutation.isIdle) {
+            return;
+          }
+
+          const newRecipe = await recipeMutation.mutateAsync({
+            name: newValues.name,
+            shortDescription: newValues.shortDescription,
+            details: newValues.details,
+            recipeId: data.id,
+            versionTag: concurrencyToken,
+          });
+
+          navigate(makeViewRecipePath(newRecipe.bookId, newRecipe.id));
+        })}
+      >
+        <Stack gap={2}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h5">Metadata</Typography>
+            <Typography variant="subtitle1">
+              High level information used for searching and quick overview
+            </Typography>
+            <Stack gap={2} sx={{ mt: 2 }}>
+              <NameInput
+                register={register}
+                disabled={formDisabled}
+                errorText={errors.name?.message}
+              />
+              <ShortDescriptionInput
+                disabled={formDisabled}
+                errorText={errors.shortDescription?.message}
+                control={control}
+              />
+            </Stack>
+          </Paper>
+          <SyntaxReference />
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h5">Details</Typography>
+            <Typography variant="subtitle1">
+              Recipe instructions and other information
+            </Typography>
+            <Stack gap={2} sx={{ mt: 2 }}>
+              <DetailsInput control={control} disabled={formDisabled} />
+            </Stack>
+          </Paper>
+          <Box>
+            <Stack spacing={1} direction="row">
+              <Button
+                variant="contained"
+                type="submit"
+                loading={recipeMutation.isPending}
+                disabled={formDisabled && !recipeMutation.isPending}
+              >
+                Save
+              </Button>
+            </Stack>
+          </Box>
+        </Stack>
+      </form>
+    </>
   );
 }

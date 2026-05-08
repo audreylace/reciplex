@@ -107,11 +107,35 @@ export const router = createBrowserRouter([
     },
     children: [
       {
+        path: ":accountKey/delete",
+        lazy: async () => {
+          const Component =
+            await import("./features/auth/pages/delete-account/delete-account-page.component");
+          return { Component: Component.DeleteAccountPage };
+        },
+      },
+      {
         path: "-/select",
+        lazy: async () => {
+          const Component =
+            await import("./features/auth/pages/select-account/select-account-page.component");
+          return { Component: Component.SelectAccountPage };
+        },
+      },
+      {
+        path: "-/sign-in",
         lazy: async () => {
           const Component =
             await import("./features/auth/pages/sign-in/sign-in-page.component");
           return { Component: Component.SignInPage };
+        },
+      },
+      {
+        path: "-/sign-up",
+        lazy: async () => {
+          const Component =
+            await import("./features/auth/pages/sign-up/sign-up-page.component");
+          return { Component: Component.SignUpPage };
         },
       },
       {

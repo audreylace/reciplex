@@ -1,91 +1,3 @@
-/** holds global, unscoped styles for the entire application */
-
-:root {
-  --rcx-border-radius: 0.3em;
-  --rcx-button-row-gap: 0.3em;
-  --rcx-body-padding: 0.8em;
-
-  /* colors */
-  --rcx-color-primary-border: oklch(80.8% 0.114 19.571);
-  --rcx-color-primary-row: oklch(93.6% 0.032 17.717);
-  --rcx-color-primary-row-hover: oklch(89.2% 0.058 10.001);
-
-  --rcx-color-secondary-light: oklch(95.4% 0.038 75.164);
-  --rcx-color-secondary-row-hover: oklch(92.4% 0.12 95.746);
-  --rcx-color-secondary-skeleton-middle: oklch(83.7% 0.128 66.29);
-
-  --rcx-color-text: oklch(20.5% 0 0);
-
-  --rcx-color-body-background: oklch(96.9% 0.015 12.422);
-
-  --rcx-color-lightest: white;
-  --rcx-color-shadow: oklch(70.7% 0.022 261.325);
-
-  /* form styles */
-  --rcx-form-control-border: 2px;
-
-  /** button */
-  --rcx-success-hover-bg-color: oklch(70.5% 0.213 47.604);
-  --rcs-button-hover-text-color: oklch(96.7% 0.001 286.375);
-}
-
-html,
-body,
-#app {
-  margin: 0;
-}
-
-body {
-  background: var(--rcx-color-body-background);
-  color: var(--rcx-color-text);
-  min-height: 100dvh;
-}
-
-/* Make links behave like any other element */
-a {
-  color: inherit;
-  text-decoration: inherit;
-  &:hover {
-    color: inherit;
-    text-decoration: inherit;
-  }
-}
-
-/** 
-* Swap Reboot's units for headers from rem to em
-*/
-h1 {
-  font-size: calc(1.375em + 1.5vw);
-}
-
-h2 {
-  font-size: calc(1.325em + 0.6vw);
-}
-
-h3 {
-  font-size: calc(1.3em + 0.6vw);
-}
-
-h4 {
-  font-size: calc(1.275em + 0.3vw);
-}
-
-h5 {
-  font-size: 1.25em;
-}
-h6 {
-  font-size: 1em;
-}
-.pageMain {
-  padding: var(--rcx-body-padding);
-  max-width: 40em;
-  margin: auto;
-}
-
-body {
-  font-size: 20px;
-}
-
 @media (max-width: 800px) {
   body {
     font-size: 18px;
@@ -93,4 +5,10 @@ body {
   .pageMain {
     padding: 0.4em;
   }
+}
+
+.pageMain {
+  padding: 0.8em;
+  max-width: 1024px;
+  margin: auto;
 }

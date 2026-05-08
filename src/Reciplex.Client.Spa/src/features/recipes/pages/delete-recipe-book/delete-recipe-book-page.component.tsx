@@ -1,58 +1,14 @@
-import { ApplicationErrorBanner } from "../../../core/components/banner/application-error-banner.component";
-import { useNavigate, useParams } from "react-router";
-import { makeBookListPath, makeViewRecipeBookPath } from "../../route-utils";
-import { makeBookNameAndDescriptionState } from "../../components/book-information-header/book-information-header.component";
-import { RecipeBookMutationLoader } from "../../components/recipe-book-loader/recipe-book-mutation-loader.component";
-import { DeleteRecipeBookForm } from "../../components/delete-recipe-book-form/delete-recipe-book-form.component";
-import { BookInformationHeaderWithQuery } from "../../components/book-information-header/book-information-header-with-query.component";
+import { useParams } from "react-router";
+import { DeleteRecipeBookPageBody } from "./delete-recipe-book-page-body.component";
+import { RecipeBookNotFoundBanner } from "../../components/recipe-book-not-found-banner/recipe-book-not-found-banner.component";
 
-import formStyles from "../../../core/form-common/form-common.module.css";
-
+/** page for deleting a recipe book */
 export function DeleteRecipeBookPage() {
   const { bookId } = useParams<{ bookId: string }>();
-  const navigate = useNavigate();
-  const goBackToBook = (args?: {
-    name: string;
-    bookId: string;
-    shortDescription: string;
-  }) => {
-    const id = bookId ?? args?.bookId;
-    if (id) {
-      navigate(makeViewRecipeBookPath(id), {
-        state: makeBookNameAndDescriptionState(
-          args?.name,
-          args?.shortDescription,
-        ),
-      });
-    }
-  };
 
-  const onDeleted = () => {
-    navigate(makeBookListPath());
-  };
-  return (
-    <main className={`${formStyles.formMain}`}>
-      {!bookId && <ApplicationErrorBanner />}
-      {bookId && (
-        <>
-          <BookInformationHeaderWithQuery bookId={bookId} />
-          <RecipeBookMutationLoader
-            key={bookId}
-            bookId={bookId}
-            noCache={true}
-            refetchInterval={10000}
-            onRender={(book) => {
-              return (
-                <DeleteRecipeBookForm
-                  onCancel={goBackToBook}
-                  onDeleted={onDeleted}
-                  data={book}
-                />
-              );
-            }}
-          />
-        </>
-      )}
-    </main>
-  );
+  if (!bookId) {
+    return <RecipeBookNotFoundBanner />;
+  }
+
+  return <DeleteRecipeBookPageBody key={bookId} bookKey={bookId} />;
 }

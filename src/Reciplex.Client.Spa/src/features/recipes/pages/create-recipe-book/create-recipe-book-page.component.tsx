@@ -1,53 +1,42 @@
-import { DangerButton } from "../../../core/components/buttons/danger-button.component";
-import { FormButtons } from "../../../core/components/form-buttons/form-buttons.component";
-import { SuccessButton } from "../../../core/components/buttons/success-button.component";
-import { RecipeBookMetaFields } from "../../components/recipe-book-meta-fields/recipe-book-meta-fields.component";
-import { RetryBannerComponent } from "../../../core/components/banner/retry-banner.component";
-import { useCreateRecipeBookPage } from "./useCreateRecipeBookPage.hook";
-import formStyles from "../../../core/form-common/form-common.module.css";
-import { InformationBanner } from "../../../core/components/banner/banner.component";
-import { ApplicationErrorBanner } from "../../../core/components/banner/application-error-banner.component";
+import { NameAndShortDescriptionForm } from "../../components/name-and-short-description-form/name-and-short-description-form.component";
+import { useCreateRecipeBookMutation } from "../../hooks/useCreateRecipeBookMutation.hook";
+import { useNavigate } from "react-router";
+import { makeViewRecipeBookPath } from "../../route-utils";
+import { PageHeader } from "../../../core/components/page-header/page-header.component";
+import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
 
 /**
  * Create recipe book page component
  */
 export function CreateRecipeBookPage() {
-  const { state, onSubmit, register, errors, onCancel } =
-    useCreateRecipeBookPage();
+  const { mutateAsync, reset, isError, isPending } =
+    useCreateRecipeBookMutation();
+  const navigate = useNavigate();
+
+  if (isPending) {
+    return <LoadingIndicator />;
+  }
 
   return (
-    <main className={`${formStyles.formMain}`}>
-      {(() => {
-        switch (state) {
-          case "idle":
-            return (
-              <form onSubmit={onSubmit}>
-                <RecipeBookMetaFields
-                  register={register}
-                  legend="Create New Recipe Book"
-                  errors={errors}
-                />
-                <FormButtons>
-                  <SuccessButton type="submit">Create</SuccessButton>
-                  <DangerButton onClick={onCancel}>Cancel</DangerButton>
-                </FormButtons>
-              </form>
-            );
-          case "pending":
-            return (
-              <InformationBanner
-                title="Creating Recipe Book"
-                message="Publishing new recipe book to the cloud. Do not leave or close this window."
-              />
-            );
-          case "error":
-            return (
-              <RetryBannerComponent message="Creating recipe book failed." />
-            );
-          default:
-            <ApplicationErrorBanner />;
-        }
-      })()}
-    </main>
+    <>
+      <PageHeader title="Creating New Recipe Book" />
+      <NameAndShortDescriptionForm
+        legendText="Describe the new recipe book"
+        nameLabel="Book Title"
+        nameHelpText="Title of the recipe book"
+        nameMaxLength={128}
+        shortDescriptionHelpText="Concise description of the book's content or purpose"
+        shortDescriptionLabel="Book Short Description"
+        shortDescriptionMaxLength={256}
+        onSuccess={async (data) => {
+          const book = await mutateAsync(data);
+          navigate(makeViewRecipeBookPath(book.id));
+        }}
+        onReset={reset}
+        pending={isPending}
+        showError={isError}
+        submitText="Create Book"
+      />
+    </>
   );
 }

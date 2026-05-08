@@ -1,14 +1,4 @@
-.recipeDetailsEditor {
-  outline: none;
-  display: flex;
-  flex-direction: column;
-  background-color: var(--rcx-color-lightest);
-  border-radius: var(--rcx-border-radius);
-}
-
-.textArea {
-  outline: none;
-  border: var(--rcx-form-control-border);
-  border-bottom-left-radius: var(--rcx-border-radius);
-  border-bottom-right-radius: var(--rcx-border-radius);
+.fullscreenTextBox {
+  width: 100% !important;
+  height: 100% !important;
 }

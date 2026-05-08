@@ -1,10 +1,12 @@
-import { SuccessButton } from "../../../core/components/buttons/success-button.component";
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
+import type { ComponentChild } from "preact";
 
 /**
  * Menu button component inside the markdown recipe details editor menu bar
  */
 export function MenuButton<TCommandType>({
-  iconName,
+  icon,
   onClick,
   command,
   disabled,
@@ -16,9 +18,9 @@ export function MenuButton<TCommandType>({
    */
   onClick: (command: TCommandType) => void;
   /**
-   * icon name passed to `<i class={iconName}></i>`
+   * icon shown to the end user
    */
-  iconName: string;
+  icon: ComponentChild;
   /**
    * Passing in true disables this button and styles it as disabled
    */
@@ -33,10 +35,8 @@ export function MenuButton<TCommandType>({
   tooltip: string;
 }) {
   return (
-    <li>
-      <SuccessButton
-        buttonType="hidden"
-        title={tooltip}
+    <Tooltip title={tooltip}>
+      <IconButton
         role="menuitem"
         disabled={disabled}
         onClick={(e) => {
@@ -44,8 +44,8 @@ export function MenuButton<TCommandType>({
           onClick(command);
         }}
       >
-        <i className={iconName}></i>
-      </SuccessButton>
-    </li>
+        {icon}
+      </IconButton>
+    </Tooltip>
   );
 }

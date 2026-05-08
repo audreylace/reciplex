@@ -1,76 +1,35 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
-const localStoreKey = "selectedUserKey";
-
-export const useActiveUser = create<IUseActiveUser>((set) => ({
-  userKey: null,
-  challengeNeeded: undefined,
-  synced: false,
-  displayName: null,
-  reset: () => {
-    set((prev: IStateObject): IStateObject => {
-      return {
-        ...prev,
-        synced: false,
-        userKey: null,
-        challengeNeeded: false,
-        displayName: null,
-      };
-    });
-  },
-  setChallengeStatus: (flag: boolean) => {
-    set((prev: IStateObject): IStateObject => {
-      return {
-        ...prev,
-        challengeNeeded: flag,
-        synced: true,
-      };
-    });
-  },
-  setActiveUser: (args?: ISetActiveUserArgs) =>
-    set((prev: IStateObject): IStateObject => {
-      if (!args) {
-        clearPersistedActiveUserId();
-        return {
-          ...prev,
-          userKey: null,
-          displayName: null,
-          synced: true,
-          challengeNeeded: false,
-        };
-      } else {
-        persistActiveUserId(args.userKey);
-      }
-      return {
-        ...prev,
-        userKey: args.userKey,
-        displayName: args.displayName,
-        challengeNeeded: false,
-        synced: true,
-      };
+export const useActiveUser = create<IUseActiveUser>()(
+  persist(
+    (set) => ({
+      userKey: null,
+      displayName: null,
+      reset: () => set({ userKey: null, displayName: null }),
+      setActiveUser: (args) => {
+        if (!args) {
+          set({ userKey: null, displayName: null });
+        } else {
+          set({ userKey: args.userKey, displayName: args.displayName });
+        }
+      },
     }),
-}));
+    {
+      name: "active-user-storage", // name of the item in localStorage
+      storage: createJSONStorage(() => localStorage),
+    },
+  ),
+);
 
-export function getPersistedActiveUser(): string | null {
-  return localStorage.getItem(localStoreKey);
-}
-export function persistActiveUserId(id: string): void {
-  localStorage.setItem(localStoreKey, id);
-}
-export function clearPersistedActiveUserId() {
-  localStorage.removeItem(localStoreKey);
-}
 export interface IUseActiveUser extends IStateObject {
   setActiveUser: (args?: ISetActiveUserArgs) => void;
-  setChallengeStatus: (flag: boolean) => void;
   reset: () => void;
 }
 
 interface IStateObject {
   userKey: string | null;
   displayName: string | null;
-  challengeNeeded: boolean | undefined;
-  synced: boolean;
 }
 
 export interface ISetActiveUserArgs {

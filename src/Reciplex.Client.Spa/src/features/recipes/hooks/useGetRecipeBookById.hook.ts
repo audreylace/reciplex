@@ -1,77 +1,45 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
-import { useMemo } from "preact/hooks";
 import { useActiveUserKey } from "../../auth/hooks/useActiveUser.hook";
-import type { IRecipeBookStore } from "../services/recipe-types";
+import { useMemo } from "preact/hooks";
+import { recipeBookQueryKey } from "../utils/recipe-queries/recipe-query-key-factory";
 
 export function useGetRecipeBookById(
   bookId: string | null | undefined,
-  args?: UseGetRecipeBookByIdArgs,
+  args?: IUseGetRecipeBookByIdArgs,
 ) {
   const userKey = useActiveUserKey();
   const recipeStore = useRecipeStoreContext();
-  const idForCache = useMemo(() => {
-    if (!bookId) {
-      return "";
-    }
-    if (args?.noCache) {
-      return `${bookId}?${Date.now()}`;
-    }
-    return bookId;
-  }, [args?.noCache, bookId]);
-  return useQuery(
-    getRecipeBookByIdQueryArgs(userKey, bookId, idForCache, recipeStore, args),
-  );
-}
+  const enabled = !!(bookId && userKey) && args?.enabled !== false;
 
-export function getRecipeBookByIdQueryArgs(
-  userKey: string | undefined | null,
-  bookId: string | undefined | null,
-  cacheKey: string,
-  recipeStore: IRecipeBookStore,
-  args?: UseGetRecipeBookByIdArgs,
-) {
-  return {
-    queryKey: recipeBookByIdCacheKey(cacheKey ?? ""),
-    enabled: bookId ? args?.enabled : false,
-    staleTime: args?.noCache ? 0 : undefined,
-    refetchInterval: args?.refetchInterval,
-    gcTime: args?.noCache ? 0 : undefined,
+  return useQuery({
+    queryKey: recipeBookQueryKey(userKey ?? "", bookId ?? ""),
+    refetchOnMount: args?.alwaysFresh ? "always" : true,
+    refetchOnWindowFocus: args?.alwaysFresh ? "always" : true,
+    enabled: enabled,
     queryFn: async () => {
       if (!bookId || !userKey) {
         throw Error("need a recipe book id");
       }
 
-      return await recipeStore.getRecipeBook(userKey, bookId, {
-        noCache: args?.noCache,
+      return recipeStore.getRecipeBook(userKey, bookId, {
+        noCache: args?.alwaysFresh,
       });
     },
-  };
+  });
 }
 
-/**
- * creates the cache key used for a recipe book by id fetch
- * @param bookId the recipe book id
- * @returns the cache key
- */
-export function recipeBookByIdCacheKey(bookId: string) {
-  return ["feature:recipes", "getRecipeBookById", bookId];
+export function useGetRecipeBookByIdCacheKey(
+  bookId: string | null | undefined,
+) {
+  const userKey = useActiveUserKey();
+  return useMemo(
+    () => recipeBookQueryKey(userKey ?? "", bookId ?? ""),
+    [bookId, userKey],
+  );
 }
 
-/**
- * arguments for @see useGetRecipeBookById
- */
-export type UseGetRecipeBookByIdArgs = {
-  /**
-   * if the query is enabled
-   */
+export interface IUseGetRecipeBookByIdArgs {
+  alwaysFresh?: boolean;
   enabled?: boolean;
-  /**
-   * sets the fetch interval behavior
-   */
-  refetchInterval?: number | false;
-  /**
-   * When true, data will be loaded directly from the remote
-   */
-  noCache?: boolean;
-};
+}

@@ -1,56 +1,73 @@
-import { Textarea } from "@headlessui/react";
-import type { RefCallBack } from "react-hook-form";
 import { RecipeDetailsMenuBar } from "../recipe-details-menu-bar/recipe-details-menu-bar.component";
 import { useMarkdownEditor } from "../../../core/hooks/useMarkdownEditor.hook";
 import { useRecipeDetailsMenuBarCommandHandler } from "../recipe-details-menu-bar/useRecipeDetailsMenuBarCommandHandler.hook";
-import styles from "./recipe-details-editor.module.css";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+import { useRef, useState } from "preact/hooks";
+import Dialog from "@mui/material/Dialog";
+import { FullScreenEditor } from "./fullscreen-editor.component";
 
 export interface RecipeDetailsEditorProps {
-  maxLength?: number;
   value: string;
-  onChange: (s: string) => void;
-  onSizeToggle: () => void;
-  className?: string;
-  textAreaClassName?: string;
-  isFullscreen?: boolean;
-  rows?: number;
+  onChange: (e: Event | string) => void;
+  onBlur?: (e: Event) => void;
+  disabled?: boolean;
 }
 export function RecipeDetailsEditor({
   value,
-  maxLength,
   onChange,
-  onSizeToggle,
-  className,
-  textAreaClassName,
-  isFullscreen,
-  rows,
+  disabled,
+  onBlur,
 }: RecipeDetailsEditorProps) {
   const { textAreaRef, onKeyDown, orchestratorRef } = useMarkdownEditor();
   const menuCommandHandler =
     useRecipeDetailsMenuBarCommandHandler(orchestratorRef);
+  const [fullScreen, setIsFullscreen] = useState(false);
+  const [key, setKey] = useState(0);
+  const elRef = useRef<HTMLTextAreaElement>();
 
   return (
-    <div className={`${styles.recipeDetailsEditor} ${className ?? ""}`}>
+    <Stack direction="column">
       <RecipeDetailsMenuBar
+        disabled={disabled}
         commandHandler={menuCommandHandler}
-        isFullscreen={isFullscreen ?? false}
-        onSizeToggle={onSizeToggle}
+        isFullscreen={false}
+        onSizeToggle={() => {
+          setKey((k) => k + 1);
+          setIsFullscreen(true);
+        }}
       />
-      <Textarea
+      <TextField
+        hiddenLabel
+        multiline
+        fullWidth
+        variant="outlined"
         aria-label={"markdown content describing the recipe"}
-        className={`${styles.textArea} ${textAreaClassName ?? ""}`}
-        ref={textAreaRef as unknown as RefCallBack}
+        inputRef={(element) => {
+          textAreaRef(element);
+          elRef.current = element;
+        }}
         onKeyDown={onKeyDown}
-        maxlength={maxLength}
         value={value}
-        rows={rows}
-        onChange={(e) =>
-          onChange(
-            (e.target as unknown as HTMLTextAreaElement | undefined)?.value ??
-              "",
-          )
-        }
+        rows={8}
+        onChange={onChange}
+        disabled={disabled}
+        onBlur={onBlur}
       />
-    </div>
+
+      {fullScreen && (
+        <Dialog open fullScreen key={key}>
+          <FullScreenEditor
+            disabled={disabled}
+            value={value}
+            onExit={(value) => {
+              setIsFullscreen(false);
+              setKey((k) => k + 1);
+              onChange(value);
+            }}
+          />
+        </Dialog>
+      )}
+    </Stack>
   );
 }

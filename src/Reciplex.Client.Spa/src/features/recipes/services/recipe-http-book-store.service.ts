@@ -3,9 +3,7 @@ import {
   type ICreateRecipeArgs,
   type ICreateRecipeBookArgs,
   type IGetRecipeBooksArgs,
-  type IGetRecipeBooksResult,
   type IGetRecipesInBookArgs,
-  type IGetRecipesInBookResult,
   type IRecipeBookModel,
   type IRecipeBookStore,
   type IRecipeModel,
@@ -62,28 +60,33 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
   async getRecipeBooks(
     userId: string,
     args?: IGetRecipeBooksArgs,
-  ): Promise<IGetRecipeBooksResult | null> {
+  ): Promise<IRecipeBookModel[]> {
     const queryParams: [string, string][] = this.makeQueryParams(userId);
-    if (args) {
-      if (args.cursor) {
-        const { position, type } = args.cursor;
-        let positionQuery;
-        if (type === "next") {
-          queryParams.push(["result-ordering", "id-increasing"]);
-          positionQuery = "after-id";
-        } else if (type === "previous") {
-          queryParams.push(["result-ordering", "id-decreasing"]);
-          positionQuery = "before-id";
-        }
 
-        if (position && positionQuery) {
-          queryParams.push([positionQuery, position]);
-        }
+    let reverse = false;
+    if (args) {
+      const { cursorType, pageSize, position } = args;
+      let positionQuery;
+      if (cursorType === "previous") {
+        reverse = true;
+        queryParams.push(["result-ordering", "id-decreasing"]);
+        positionQuery = "before-id";
+      } else if (cursorType === "next" || typeof cursorType === "undefined") {
+        queryParams.push(["result-ordering", "id-increasing"]);
+        positionQuery = "after-id";
+      } else {
+        throw new Error("unrecognized cursor type");
       }
-      if ((args.limit ?? 0) > 0) {
-        queryParams.push(["page-size", args.limit + ""]);
+
+      if (position) {
+        queryParams.push([positionQuery, position]);
+      }
+
+      if ((pageSize ?? 0) > 0) {
+        queryParams.push(["page-size", `${pageSize}`]);
       }
     }
+
     const responseJson: IRecipeBookJson[] | null | undefined = await (
       await this._bookClient.httpGet("", queryParams)
     ).json();
@@ -96,69 +99,11 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
       this.decodeRecipeBookJson(b),
     );
 
-    if (books.length === 0 && !args) {
-      return { books };
-    }
-
-    if (args?.cursor?.type === "previous") {
+    if (reverse) {
       books.reverse();
     }
 
-    const executor = async (queryParams: [string, string][]) =>
-      (await this._bookClient.httpGet("", queryParams)).json();
-    const [next, prev] = await Promise.all([
-      this.resolveCursor(
-        userId,
-        books[books.length - 1]?.id ?? args?.cursor?.position,
-        true,
-        executor,
-      ),
-      this.resolveCursor(
-        userId,
-        books[0]?.id ?? args?.cursor?.position,
-        false,
-        executor,
-      ),
-    ]);
-
-    return {
-      books: books,
-      nextCursor: next
-        ? (books[books.length - 1]?.id ?? args?.cursor?.position)
-        : undefined,
-      previousCursor: prev
-        ? (books[0]?.id ?? args?.cursor?.position)
-        : undefined,
-    };
-  }
-
-  private async resolveCursor<TJson>(
-    userId: string,
-    id: string | undefined,
-    isNext: boolean,
-    executor: (params: [string, string][]) => Promise<TJson[]>,
-  ) {
-    const queryParams: [string, string][] = this.makeQueryParams(userId);
-    queryParams.push(["page-size", "1"]);
-    if (isNext) {
-      if (id) {
-        queryParams.push(["after-id", id]);
-      }
-    } else {
-      if (id) {
-        queryParams.push(["before-id", id]);
-      }
-      queryParams.push(["result-ordering", "id-decreasing"]);
-    }
-
-    const responseJson: TJson[] | null | undefined =
-      await executor(queryParams);
-
-    if (!responseJson) {
-      throw Error("bad json");
-    }
-
-    return responseJson.length > 0;
+    return books;
   }
 
   async createRecipeBook(
@@ -211,33 +156,46 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
     userId: string,
     bookId: string,
     args?: IGetRecipesInBookArgs,
-  ): Promise<IGetRecipesInBookResult | null> {
+  ): Promise<IRecipeModel[] | null> {
     const queryParams = this.makeQueryParams(userId);
-
     queryParams.push(["book", bookId]);
 
-    if (args) {
-      if (args.cursor) {
-        const { position, type } = args.cursor;
-        let positionQuery;
-        if (type === "next") {
-          queryParams.push(["result-ordering", "id-increasing"]);
-          positionQuery = "after-id";
-        } else if (type === "previous") {
-          queryParams.push(["result-ordering", "id-decreasing"]);
-          positionQuery = "before-id";
-        }
+    let doReverse = false;
 
-        if (position && positionQuery) {
-          queryParams.push([positionQuery, position]);
-        }
+    if (args) {
+      const { position, cursorType, pageSize } = args;
+      let positionQuery;
+      if (cursorType === "next") {
+        queryParams.push(["result-ordering", "id-increasing"]);
+        positionQuery = "after-id";
+      } else if (cursorType === "previous") {
+        queryParams.push(["result-ordering", "id-decreasing"]);
+        positionQuery = "before-id";
+        doReverse = true;
       }
-      if ((args.limit ?? 0) > 0) {
-        queryParams.push(["page-size", args.limit + ""]);
+
+      if (position && positionQuery) {
+        queryParams.push([positionQuery, position]);
+      }
+
+      if ((pageSize ?? 0) > 0) {
+        queryParams.push(["page-size", `${pageSize}`]);
       }
     }
 
-    const response = await this._recipeClient.httpGet("", queryParams);
+    let response: Response;
+    try {
+      response = await this._recipeClient.httpGet("", queryParams);
+    } catch (error) {
+      if (error instanceof HttpError) {
+        if (error.status === 404) {
+          return null;
+        }
+      }
+
+      throw error;
+    }
+
     const recipeJson: IRecipeJson[] | undefined | null = await response.json();
 
     if (!recipeJson) {
@@ -246,42 +204,11 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
 
     const recipes = recipeJson.map((r) => this.decodeRecipeJson(r));
 
-    if (recipes.length === 0 && !args) {
-      return { recipes };
-    }
-
-    if (args?.cursor?.type === "previous") {
+    if (doReverse) {
       recipes.reverse();
     }
 
-    const executor = async (queryParams: [string, string][]) =>
-      (
-        await this._recipeClient.httpGet("", [...queryParams, ["book", bookId]])
-      ).json();
-    const [next, prev] = await Promise.all([
-      this.resolveCursor(
-        userId,
-        recipes[recipes.length - 1]?.id ?? args?.cursor?.position,
-        true,
-        executor,
-      ),
-      this.resolveCursor(
-        userId,
-        recipes[0]?.id ?? args?.cursor?.position,
-        false,
-        executor,
-      ),
-    ]);
-
-    return {
-      recipes: recipes,
-      nextCursor: next
-        ? (recipes[recipes.length - 1]?.id ?? args?.cursor?.position)
-        : undefined,
-      previousCursor: prev
-        ? (recipes[0]?.id ?? args?.cursor?.position)
-        : undefined,
-    };
+    return recipes;
   }
 
   async getRecipeById(

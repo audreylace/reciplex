@@ -16,4 +16,17 @@ export default defineConfig([
   react.configs.flat.recommended,
   react.configs.flat["jsx-runtime"],
   reactHooks.configs.flat.recommended,
+  {
+    rules: {
+      "react/no-multi-comp": ["error", { ignoreStateless: false }],
+      "react/destructuring-assignment": ["error", "always"],
+      "react/hook-use-state": ["error", { allowDestructuredState: false }],
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [{ regex: "^@mui/[^/]+$" }],
+        },
+      ],
+    },
+  },
 ]);
