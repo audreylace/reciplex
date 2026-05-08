@@ -2,6 +2,7 @@ import { useContext } from "preact/hooks";
 import type { IRecipeDetailsViewerProps } from "./recipe-details-viewer.component";
 import Typography from "@mui/material/Typography";
 import { RecipeDetailsContext } from "./recipe-details-context.component";
+import Box from "@mui/material/Box";
 
 /** inner md render */
 export function DetailsMdRender({
@@ -30,7 +31,26 @@ export function DetailsMdRender({
     );
   }
 
-  return detailsContext?.component;
+  return (
+    <Box
+      sx={{
+        ul: {
+          pl: 3,
+          mb: 1,
+          mt: 0,
+          pt: 0,
+        },
+        ol: {
+          pl: 3,
+          mb: 1,
+          mt: 0,
+          pt: 0,
+        },
+      }}
+    >
+      {detailsContext?.component}
+    </Box>
+  );
 }
 
 export interface IDetailsMdRenderProps {
