@@ -8,11 +8,13 @@ export function BookLayout() {
     recipeId?: string;
   }>();
   return (
-    <AuthenticatedRouteGuard>
+    <>
       <BookLayoutNavigationBar bookId={bookId} recipeId={recipeId} />
       <main className="pageMain">
-        <Outlet />
+        <AuthenticatedRouteGuard>
+          <Outlet />
+        </AuthenticatedRouteGuard>
       </main>
-    </AuthenticatedRouteGuard>
+    </>
   );
 }

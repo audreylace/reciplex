@@ -9,10 +9,16 @@ import {
 import Typography from "@mui/material/Typography";
 import bookLayoutCrumbsStyleModule from "./book-layout-crumbs.module.css";
 import { CrumbDivider } from "./crumb-divider.component";
+import { useNeedChallengeQuery } from "../../../auth/hooks/useNeedChallengeQuery.hook";
 
 export function BookLayoutCrumbs({ bookId, recipeId }: IBookLayoutCrumbsProps) {
-  const bookQuery = useGetRecipeBookById(bookId);
-  const recipeQuery = useGetRecipeByIdQuery(recipeId);
+  const challengeQuery = useNeedChallengeQuery();
+  const bookQuery = useGetRecipeBookById(bookId, {
+    enabled: challengeQuery.isSuccess && !challengeQuery.data,
+  });
+  const recipeQuery = useGetRecipeByIdQuery(recipeId, {
+    enabled: challengeQuery.isSuccess && !challengeQuery.data,
+  });
 
   return (
     <ul className={bookLayoutCrumbsStyleModule.crumbTrail}>

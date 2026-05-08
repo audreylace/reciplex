@@ -10,7 +10,7 @@ export function useGetRecipeBookById(
 ) {
   const userKey = useActiveUserKey();
   const recipeStore = useRecipeStoreContext();
-  const enabled = !!(bookId && userKey);
+  const enabled = !!(bookId && userKey) && args?.enabled !== false;
 
   return useQuery({
     queryKey: recipeBookQueryKey(userKey ?? "", bookId ?? ""),
@@ -41,4 +41,5 @@ export function useGetRecipeBookByIdCacheKey(
 
 export interface IUseGetRecipeBookByIdArgs {
   alwaysFresh?: boolean;
+  enabled?: boolean;
 }
