@@ -7,6 +7,7 @@ import { makeEditRecipePath } from "../../route-utils";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
 import { RecipeMenuButton } from "../../components/recipe-menu-button/recipe-menu-button.component";
 import { RecipeDetailsViewer } from "../../components/recipe-details-viewer/recipe-details-viewer.component";
+import { SharedRecipeBookIndicator } from "../../components/shared-recipe-book-indicator/shared-recipe-book-indicator.component";
 
 /**
  * page for viewing a recipe
@@ -35,6 +36,7 @@ export function ViewRecipePage() {
       <PageHeader
         title={data.name}
         subTitle={data.shortDescription}
+        titleComponent={<SharedRecipeBookIndicator bookId={data.bookId} />}
         sideComponent={
           <RecipeMenuButton
             recipeId={recipeId}

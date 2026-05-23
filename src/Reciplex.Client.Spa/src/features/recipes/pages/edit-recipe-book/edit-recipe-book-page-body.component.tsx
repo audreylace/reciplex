@@ -12,6 +12,8 @@ import { NameAndShortDescriptionForm } from "../../components/name-and-short-des
 import { BookMutationNotAuthorizedBanner } from "../../components/book-mutation-not-authorized-banner/book-mutation-not-authorized-banner.component";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
 import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
+import { BookSettingsMenuButton } from "../../components/book-settings-menu/book-settings-menu-button.component";
+import { SharedRecipeBookIndicator } from "../../components/shared-recipe-book-indicator/shared-recipe-book-indicator.component";
 
 export function EditRecipeBookPageBody({ bookId }: { bookId: string }) {
   const navigate = useNavigate();
@@ -39,7 +41,7 @@ export function EditRecipeBookPageBody({ bookId }: { bookId: string }) {
     return <RecipeBookNotFoundBanner />;
   }
 
-  if (bookQuery.isSuccess && bookQuery.data && !bookQuery.data.mayDelete) {
+  if (bookQuery.isSuccess && bookQuery.data && !bookQuery.data.mayEdit) {
     return (
       <BookMutationNotAuthorizedBanner
         bookId={bookQuery.data.id}
@@ -54,7 +56,21 @@ export function EditRecipeBookPageBody({ bookId }: { bookId: string }) {
 
   return (
     <>
-      <PageHeader title="Editing Recipe Book" />
+      <PageHeader
+        title="Editing Recipe Book Details"
+        subTitle={`Book - ${bookQuery.data?.name}`}
+        titleComponent={<SharedRecipeBookIndicator bookId={bookId} />}
+        sideComponent={
+          bookQuery.data && (
+            <BookSettingsMenuButton
+              bookId={bookId}
+              mayEdit={bookQuery.data.mayEdit ?? false}
+              mayDelete={bookQuery.data.mayDelete ?? false}
+              mayManageShareAccess={bookQuery.data.mayManageAccess ?? false}
+            />
+          )
+        }
+      />
       <NameAndShortDescriptionForm
         key={resetCount}
         legendText={`Modify recipe book title and description`}

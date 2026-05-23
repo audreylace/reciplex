@@ -1,14 +1,15 @@
 import { useNavigate } from "react-router";
 import { makeViewRecipePath } from "../../route-utils";
-import type { IRecipeModel } from "../../services/recipe-types";
+import type { IRecipeListEntryJsonResponse } from "../../services/recipe-types";
 import { RecipeMenuButtonCell } from "./recipe-menu-button-cell.component";
 import TableCell from "@mui/material/TableCell";
 import TableRow from "@mui/material/TableRow";
 
-export function RecipeTableRow({ recipe }: { recipe: IRecipeModel }) {
+/** a single row in a recipe list */
+export function RecipeTableRow({ recipe, mayEdit }: IRecipeTableRowProps) {
   const navigate = useNavigate();
   const onClick = () => {
-    navigate(makeViewRecipePath(recipe.bookId, recipe.id));
+    navigate(makeViewRecipePath(recipe.bookKey, recipe.recipeKey));
   };
   return (
     <TableRow
@@ -27,10 +28,18 @@ export function RecipeTableRow({ recipe }: { recipe: IRecipeModel }) {
       </TableCell>
       <RecipeMenuButtonCell
         recipeName={recipe.name}
-        recipeId={recipe.id}
-        bookId={recipe.bookId}
-        mayEdit={recipe.mayEdit}
+        recipeId={recipe.recipeKey}
+        bookId={recipe.bookKey}
+        mayEdit={mayEdit}
       />
     </TableRow>
   );
+}
+
+/** props for `<RecipeTableRow />` */
+export interface IRecipeTableRowProps {
+  /** recipe model for this row */
+  recipe: IRecipeListEntryJsonResponse;
+  /** if the user can edit this recipe */
+  mayEdit: boolean;
 }

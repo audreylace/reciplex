@@ -16,6 +16,21 @@ public class RecipeBookJsonResponse
     public required bool MayDelete { get; init; }
 
     /// <summary>
+    /// If the user can share the book
+    /// </summary>
+    public required bool MayShare { get; init; }
+
+    /// <summary>
+    /// If the user can manage book access
+    /// </summary>
+    public required bool MayManageAccess { get; init; }
+
+    /// <summary>
+    /// The key used to create share links for the recipe book
+    /// </summary>
+    public required string? ShareKey { get; init; }
+
+    /// <summary>
     /// Default constructor
     /// </summary>
     public RecipeBookJsonResponse() { }
@@ -36,5 +51,8 @@ public class RecipeBookJsonResponse
         ConcurrencyTag = book.ConcurrencyTag;
         MayEdit = book.MayEditBook;
         MayDelete = book.MayDeleteBook;
+        MayShare = book.MayShareBook;
+        MayManageAccess = book.MayManageAccess;
+        ShareKey = book.MayShareBook ? book.ShareKey : null;
     }
 }

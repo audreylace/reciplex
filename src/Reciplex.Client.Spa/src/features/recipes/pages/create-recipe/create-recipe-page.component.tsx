@@ -7,6 +7,7 @@ import { useCreateRecipeMutation } from "../../hooks/useCreateRecipeMutation.hoo
 import { BookMutationNotAuthorizedBanner } from "../../components/book-mutation-not-authorized-banner/book-mutation-not-authorized-banner.component";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
 import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
+import { SharedRecipeBookIndicator } from "../../components/shared-recipe-book-indicator/shared-recipe-book-indicator.component";
 
 /**
  * Entry point for create recipe page component
@@ -44,7 +45,10 @@ export function CreateRecipePage() {
 
   return (
     <>
-      <PageHeader title="Creating New Recipe" />
+      <PageHeader
+        title="Creating New Recipe"
+        titleComponent={<SharedRecipeBookIndicator bookId={bookId} />}
+      />
       <NameAndShortDescriptionForm
         legendText="Describe the new recipe"
         nameLabel="Recipe Title"

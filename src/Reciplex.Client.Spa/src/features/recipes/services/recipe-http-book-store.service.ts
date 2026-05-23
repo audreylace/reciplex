@@ -6,7 +6,11 @@ import {
   type IGetRecipesInBookArgs,
   type IRecipeBookModel,
   type IRecipeBookStore,
+  type IRecipeBookUserPermissionsJsonRequest,
+  type IRecipeBookUserPermissionsJsonResponse,
+  type IRecipeListEntryJsonResponse,
   type IRecipeModel,
+  type IRequestAccessToRecipeBookStatus,
   type IUpdateRecipeArgs,
   type IUpdateRecipeBookArgs,
 } from "./recipe-types";
@@ -152,11 +156,87 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
     return this.decodeRecipeBookJson(await response.json());
   }
 
+  /** @inheritdoc */
+  async updateRecipeBookShareKey(
+    userId: string,
+    bookId: string,
+    kind: "regenerate" | "clear",
+    versionTag: string,
+  ): Promise<IRecipeBookModel> {
+    const response = await this._bookClient.httpPost(
+      `${encodeURIComponent(bookId)}/shared-access/-/share-key`,
+      undefined,
+      [...this.makeQueryParams(userId), ["kind", kind]],
+      { headers: { "If-Match": `"${versionTag}"` } },
+    );
+
+    return this.decodeRecipeBookJson(await response.json());
+  }
+
+  /** @inheritdoc */
+  async getRecipeBookShareStatus(
+    userId: string,
+    bookId: string,
+    shareKey?: string,
+  ): Promise<IRequestAccessToRecipeBookStatus | null> {
+    try {
+      const response = await this._bookClient.httpGet(
+        `${encodeURIComponent(bookId)}/shared-access/${encodeURIComponent(userId)}`,
+        shareKey ? [["share-key", shareKey]] : undefined,
+      );
+      return await response.json();
+    } catch (error) {
+      if (error instanceof HttpError && error.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /** @inheritdoc */
+  async postRecipeBookAccessRequest(
+    userId: string,
+    bookId: string,
+    shareKey: string,
+  ): Promise<IRequestAccessToRecipeBookStatus | null> {
+    try {
+      const response = await this._bookClient.httpPost(
+        `${encodeURIComponent(bookId)}/shared-access/${encodeURIComponent(userId)}`,
+        undefined,
+        shareKey ? [["share-key", shareKey]] : undefined,
+      );
+      return await response.json();
+    } catch (error) {
+      if (error instanceof HttpError && error.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /** @inheritdoc */
+  async deleteRecipeBookAccessRequest(
+    userId: string,
+    bookId: string,
+  ): Promise<void> {
+    try {
+      await this._bookClient.httpDelete(
+        `${encodeURIComponent(bookId)}/shared-access/${encodeURIComponent(userId)}`,
+      );
+    } catch (error) {
+      if (error instanceof HttpError && error.status === 404) {
+        return;
+      }
+      throw error;
+    }
+  }
+
+  /** @inheritdoc */
   async getRecipesInBook(
     userId: string,
     bookId: string,
     args?: IGetRecipesInBookArgs,
-  ): Promise<IRecipeModel[] | null> {
+  ): Promise<IRecipeListEntryJsonResponse[] | null> {
     const queryParams = this.makeQueryParams(userId);
     queryParams.push(["book", bookId]);
 
@@ -196,19 +276,18 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
       throw error;
     }
 
-    const recipeJson: IRecipeJson[] | undefined | null = await response.json();
+    const recipeJson: IRecipeListEntryJsonResponse[] | undefined | null =
+      await response.json();
 
     if (!recipeJson) {
       throw new Error("unexpected recipe json");
     }
 
-    const recipes = recipeJson.map((r) => this.decodeRecipeJson(r));
-
     if (doReverse) {
-      recipes.reverse();
+      recipeJson.reverse();
     }
 
-    return recipes;
+    return recipeJson;
   }
 
   async getRecipeById(
@@ -224,10 +303,7 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
       );
       return this.decodeRecipeJson(await response.json());
     } catch (error) {
-      if (
-        error instanceof HttpError &&
-        (error.status === 404 || error.status === 400)
-      ) {
+      if (error instanceof HttpError && error.status === 404) {
         return null;
       }
       throw error;
@@ -282,6 +358,45 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
     return this.decodeRecipeJson(await response.json());
   }
 
+  /** @inheritdoc */
+  async getUsersWithBookAccess(
+    userId: string,
+    bookId: string,
+    args?: { noCache?: boolean },
+  ): Promise<IRecipeBookUserPermissionsJsonResponse[] | null> {
+    try {
+      const response = await this._bookClient.httpGet(
+        `${encodeURIComponent(bookId)}/shared-access`,
+        this.makeQueryParams(userId),
+        { noCache: args?.noCache },
+      );
+      return await response.json();
+    } catch (error) {
+      if (error instanceof HttpError && error.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /** @inheritdoc */
+  async patchUsersWithBookAccess(
+    userId: string,
+    bookId: string,
+    changes: [
+      string,
+      IRecipeBookUserPermissionsJsonRequest | undefined | null,
+    ][],
+  ): Promise<void> {
+    await this._bookClient.httpPatch(
+      `${encodeURIComponent(bookId)}/shared-access`,
+      changes.map((v) => {
+        return { key: v[0], value: v[1] ?? null };
+      }),
+      this.makeQueryParams(userId),
+    );
+  }
+
   decodeRecipeJson(json: IRecipeJson): IRecipeModel {
     const recipe = {
       id: json.recipeKey,
@@ -297,7 +412,7 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
   }
 
   decodeRecipeBookJson(recipeBook: IRecipeBookJson): IRecipeBookModel {
-    const book = {
+    const book: IRecipeBookModel = {
       id: recipeBook.bookKey,
       name: recipeBook.name,
       shortDescription: recipeBook.shortDescription,
@@ -305,6 +420,9 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
       mayDelete: recipeBook.mayDelete,
       mayEdit: recipeBook.mayEdit,
       versionTag: recipeBook.concurrencyTag,
+      mayShare: recipeBook.mayShare,
+      mayManageAccess: recipeBook.mayManageAccess,
+      shareKey: recipeBook.shareKey,
     };
 
     return book;
@@ -362,6 +480,16 @@ interface IRecipeBookJson {
    * fields and manipulate recipes.
    */
   mayEdit?: boolean;
+  /**
+   * True if the user can share this book.
+   */
+  mayShare?: boolean;
+  /**
+   * True if this user can manage who has access to the book.
+   */
+  mayManageAccess?: boolean;
+  /** the share key used to authenticate access */
+  shareKey?: string;
 }
 
 /**

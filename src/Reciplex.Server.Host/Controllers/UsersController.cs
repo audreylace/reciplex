@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Reciplex.Server.Database.Results;
 using Reciplex.Server.Database.UsersDomain;
 using Reciplex.Server.Host.AccessControl;
 using Reciplex.Server.Host.Models;
@@ -11,65 +12,69 @@ namespace Reciplex.Server.Host.Controllers;
 [ApiController]
 [Route("users")]
 [Authorize]
-public class UsersController(IUsersRepository userServiceRepository) : ControllerBase
+public class UsersController(IUsersService userServiceRepository) : ControllerBase
 {
     /// <summary>
     /// Returns list of accounts the current user has access to
     /// </summary>
     /// <returns>List of use accounts</returns>
-    /// <exception cref="NotImplementedException"></exception>
     [HttpGet]
-    public Ok<IAsyncEnumerable<UserJsonResponse>> GetAccounts()
+    public async Task<Ok<IEnumerable<UserJsonResponse>>> HttpGetAccounts(CancellationToken ct)
     {
         (string Authority, string Subject) = HttpContext.RequireOpenIdConnectCredentials();
         return TypedResults.Ok(
-            userServiceRepository
-                .GetUsersBySubjectAsync(Authority, Subject)
-                .Select(u => new UserJsonResponse(u))
+            (await userServiceRepository.GetUsersBySubjectAsync(Authority, Subject, ct)).Select(
+                u => new UserJsonResponse(u)
+            )
         );
     }
 
     [HttpGet("{userKey}")]
-    public async Task<Results<Ok<UserJsonResponse>, NotFound>> GetUser(
+    public async Task<Results<Ok<UserJsonResponse>, NotFound>> HttpGetUser(
         [FromRoute] string userKey,
         CancellationToken ct
     )
     {
-        UserDao? user = await userServiceRepository.GetUserAsync(userKey, ct);
-        if (user is null)
-        {
-            return TypedResults.NotFound();
-        }
+        DatabaseResultVariant<SuccessResult<UserDao>, UserNotFoundResult> result =
+            await userServiceRepository.GetUserAsync(userKey, ct);
 
-        return TypedResults.Ok(new UserJsonResponse(user));
+        return result.Result switch
+        {
+            UserNotFoundResult => TypedResults.NotFound(),
+            SuccessResult<UserDao> successResult => TypedResults.Ok(
+                new UserJsonResponse(successResult.Value)
+            ),
+            _ => throw new NotImplementedException(),
+        };
     }
 
     [HttpPost]
     public async Task<
         Results<Created<UserJsonResponse>, NotFound, InternalServerError, ValidationProblem>
-    > PostUser([FromBody] UserJsonRequest userJsonBody, CancellationToken ct)
+    > HttpPostUser([FromBody] UserJsonRequest userJsonBody, CancellationToken ct)
     {
         var (Authority, Subject) = HttpContext.RequireOpenIdConnectCredentials();
-        CreateUserResult createResult = await userServiceRepository.CreateUserAsync(
-            new()
-            {
-                DisplayName = userJsonBody.DisplayName,
-                Authority = Authority,
-                Subject = Subject,
-            },
-            ct
-        );
+        DatabaseResultVariant<SuccessResult<UserDao>, ValidationFailureResult> createResult =
+            await userServiceRepository.CreateUserAsync(
+                new()
+                {
+                    DisplayName = userJsonBody.DisplayName,
+                    Authority = Authority,
+                    Subject = Subject,
+                },
+                ct
+            );
 
-        return createResult switch
+        return createResult.Result switch
         {
-            CreateUserResult.ValidationFailure validationFailure => TypedResults.ValidationProblem(
+            ValidationFailureResult validationFailure => TypedResults.ValidationProblem(
                 validationFailure.Errors
             ),
-            CreateUserResult.Success success => TypedResults.Created(
+            SuccessResult<UserDao> success => TypedResults.Created(
                 (string?)null,
-                new UserJsonResponse(success.User)
+                new UserJsonResponse(success.Value)
             ),
-            _ => TypedResults.InternalServerError(),
+            _ => throw new NotImplementedException(),
         };
     }
 
@@ -83,7 +88,7 @@ public class UsersController(IUsersRepository userServiceRepository) : Controlle
             PreconditionFailedHttpResult,
             ForbidHttpResult
         >
-    > PutUser(
+    > HttpPutUser(
         [FromRoute] string userKey,
         [FromBody] UserJsonRequest userJsonBody,
         [BindRequired] [FromHeader(Name = "If-Match")] EtagValue ifMatch,
@@ -92,49 +97,65 @@ public class UsersController(IUsersRepository userServiceRepository) : Controlle
     {
         (string Authority, string Subject) = HttpContext.RequireOpenIdConnectCredentials();
 
-        AuthorizationCheckResult hasAccessCheck =
-            await userServiceRepository.CheckAuthorizationAsync(Authority, Subject, userKey, ct);
+        DatabaseResultVariant<
+            SuccessResult<UserDao>,
+            UserNotFoundResult,
+            ForbiddenResult
+        > hasAccessCheck = await userServiceRepository.CheckAuthorizationAsync(
+            Authority,
+            Subject,
+            userKey,
+            ct
+        );
 
-        switch (hasAccessCheck)
+        switch (hasAccessCheck.Result)
         {
-            case AuthorizationCheckResult.Forbidden:
+            case ForbiddenResult:
                 return TypedResults.Forbid();
 
-            case AuthorizationCheckResult.NotFound:
+            case UserNotFoundResult:
                 return TypedResults.NotFound();
 
-            case AuthorizationCheckResult.Authorized hasAccess:
+            case SuccessResult<UserDao> successResult:
 
-                if (hasAccess.ConcurrencyTag != ifMatch.Value)
+                if (successResult.Value.ConcurrencyTag != ifMatch.Value)
                 {
                     return new PreconditionFailedHttpResult("If-Match");
                 }
 
-                UpdateUserResult result = await userServiceRepository.UpdateUserAsync(
+                DatabaseResultVariant<
+                    SuccessResult<UserDao>,
+                    ValidationFailureResult,
+                    UserNotFoundResult,
+                    Database.Results.ConflictResult
+                > updateResult = await userServiceRepository.UpdateUserAsync(
                     userKey,
                     ifMatch.Value,
                     new() { DisplayName = userJsonBody.DisplayName },
                     ct
                 );
 
-                return result switch
+                return updateResult.Result switch
                 {
-                    UpdateUserResult.Success success => TypedResults.Ok(
-                        new UserJsonResponse(success.User)
+                    SuccessResult<UserDao> success => TypedResults.Ok(
+                        new UserJsonResponse(success.Value)
                     ),
-                    UpdateUserResult.Conflict => new PreconditionFailedHttpResult("If-Match"),
-                    _ => TypedResults.InternalServerError(),
+                    ValidationFailureResult validationFailureResult =>
+                        TypedResults.ValidationProblem(validationFailureResult.Errors),
+                    UserNotFoundResult => TypedResults.NotFound(),
+                    Database.Results.ConflictResult => new PreconditionFailedHttpResult("If-Match"),
+                    _ => throw new NotImplementedException(),
                 };
 
             default:
-                return TypedResults.InternalServerError();
+                throw new NotImplementedException();
         }
     }
 
     [HttpDelete("{userKey}")]
     public async Task<
         Results<Ok, NotFound, ForbidHttpResult, PreconditionFailedHttpResult, InternalServerError>
-    > DeleteUser(
+    > HttpDeleteUser(
         [FromRoute] string userKey,
         [BindRequired] [FromHeader(Name = "If-Match")] EtagValue ifMatch,
         CancellationToken ct
@@ -142,39 +163,48 @@ public class UsersController(IUsersRepository userServiceRepository) : Controlle
     {
         (string Authority, string Subject) = HttpContext.RequireOpenIdConnectCredentials();
 
-        AuthorizationCheckResult hasAccessCheck =
-            await userServiceRepository.CheckAuthorizationAsync(Authority, Subject, userKey, ct);
+        DatabaseResultVariant<
+            SuccessResult<UserDao>,
+            UserNotFoundResult,
+            ForbiddenResult
+        > hasAccessCheck = await userServiceRepository.CheckAuthorizationAsync(
+            Authority,
+            Subject,
+            userKey,
+            ct
+        );
 
-        switch (hasAccessCheck)
+        switch (hasAccessCheck.Result)
         {
-            case AuthorizationCheckResult.Forbidden:
+            case ForbiddenResult:
                 return TypedResults.Forbid();
 
-            case AuthorizationCheckResult.NotFound:
+            case UserNotFoundResult:
                 return TypedResults.NotFound();
 
-            case AuthorizationCheckResult.Authorized hasAccess:
+            case SuccessResult<UserDao> hasAccess:
 
-                if (hasAccess.ConcurrencyTag != ifMatch.Value)
+                if (hasAccess.Value.ConcurrencyTag != ifMatch.Value)
                 {
                     return new PreconditionFailedHttpResult("If-Match");
                 }
 
-                DeleteUserResult result = await userServiceRepository.DeleteUserAsync(
-                    userKey,
-                    ifMatch.Value,
-                    ct
-                );
+                DatabaseResultVariant<
+                    EmptySuccessResult,
+                    Database.Results.ConflictResult,
+                    UserNotFoundResult
+                > result = await userServiceRepository.DeleteUserAsync(userKey, ifMatch.Value, ct);
 
-                return result switch
+                return result.Result switch
                 {
-                    DeleteUserResult.Success => TypedResults.Ok(),
-                    DeleteUserResult.Conflict => new PreconditionFailedHttpResult("If-Match"),
-                    _ => TypedResults.InternalServerError(),
+                    UserNotFoundResult => TypedResults.NotFound(),
+                    EmptySuccessResult => TypedResults.Ok(),
+                    Database.Results.ConflictResult => new PreconditionFailedHttpResult("If-Match"),
+                    _ => throw new NotImplementedException(),
                 };
 
             default:
-                return TypedResults.InternalServerError();
+                throw new NotImplementedException();
         }
     }
 }

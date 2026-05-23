@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Reciplex.Server.Database.RecipeBooksDomain;
 using Reciplex.Server.Database.RecipesDomain;
+using Reciplex.Server.Database.Results;
 using Reciplex.Server.Host.AccessControl;
 using Reciplex.Server.Host.Models;
 
@@ -13,15 +13,10 @@ namespace Reciplex.Server.Host.Controllers;
 /// Endpoints for working with a recipes
 /// </summary>
 /// <param name="recipeService">Provides services for getting recipe data</param>
-/// <param name="recipeBookService">Provides services for get recipe books</param>
-/// <param name="userService">Provides services for get user data</param>
 [ApiController]
 [Route("recipes")]
 [Authorize]
-public class RecipesController(
-    IRecipesRepository recipeService,
-    IRecipeBooksRepository recipeBookService
-) : ControllerBase
+public class RecipesController(IRecipesService recipeService) : ControllerBase
 {
     private const string OrderIdIncreasing = "id-increasing";
     private const string OrderIdDecreasing = "id-decreasing";
@@ -45,22 +40,26 @@ public class RecipesController(
         CancellationToken cancellationToken
     )
     {
-        if (!await HttpContext.IsUser(userKey, cancellationToken))
+        if (!await HttpContext.RequestHasAccessToUserKey(userKey, cancellationToken))
         {
             return TypedResults.Forbid();
         }
 
-        RecipeDao? recipe = await recipeService.GetRecipeAsync(
-            recipeKey,
-            userKey,
-            cancellationToken
-        );
-        if (recipe is null)
-        {
-            return TypedResults.NotFound();
-        }
+        DatabaseResultVariant<
+            SuccessResult<RecipeDao>,
+            Database.Results.NotFoundResult,
+            UserNotFoundResult
+        > result = await recipeService.GetRecipeAsync(recipeKey, userKey, cancellationToken);
 
-        return TypedResults.Ok(new RecipeJsonResponse(recipe));
+        return result.Result switch
+        {
+            Database.Results.NotFoundResult => TypedResults.NotFound(),
+            UserNotFoundResult => TypedResults.Forbid(),
+            SuccessResult<RecipeDao> success => TypedResults.Ok(
+                new RecipeJsonResponse(success.Value)
+            ),
+            _ => throw new NotImplementedException(),
+        };
     }
 
     /// <summary>
@@ -87,24 +86,30 @@ public class RecipesController(
         CancellationToken cancellationToken
     )
     {
-        if (!await HttpContext.IsUser(userKey, cancellationToken))
+        if (!await HttpContext.RequestHasAccessToUserKey(userKey, cancellationToken))
         {
             return TypedResults.Forbid();
         }
 
-        DeleteRecipeByIdResult deleteResult = await recipeService.DeleteRecipeAsync(
+        DatabaseResultVariant<
+            EmptySuccessResult,
+            Database.Results.NotFoundResult,
+            ForbiddenResult,
+            UserNotFoundResult,
+            Database.Results.ConflictResult
+        > deleteResult = await recipeService.DeleteRecipeAsync(
             recipeKey,
             userKey,
             ifMatch.Value,
             cancellationToken
         );
 
-        return deleteResult switch
+        return deleteResult.Result switch
         {
-            DeleteRecipeByIdResult.Success => TypedResults.NoContent(),
-            DeleteRecipeByIdResult.NotFound => TypedResults.NotFound(),
-            DeleteRecipeByIdResult.Forbidden => TypedResults.Forbid(),
-            DeleteRecipeByIdResult.Conflict => new PreconditionFailedHttpResult("If-Match"),
+            EmptySuccessResult => TypedResults.NoContent(),
+            Database.Results.NotFoundResult => TypedResults.NotFound(),
+            ForbiddenResult or UserNotFoundResult => TypedResults.Forbid(),
+            Database.Results.ConflictResult => new PreconditionFailedHttpResult("If-Match"),
             _ => throw new NotImplementedException(),
         };
     }
@@ -147,12 +152,19 @@ public class RecipesController(
         CancellationToken cancellationToken
     )
     {
-        if (!await HttpContext.IsUser(userKey, cancellationToken))
+        if (!await HttpContext.RequestHasAccessToUserKey(userKey, cancellationToken))
         {
             return TypedResults.Forbid();
         }
 
-        UpdateRecipeResult updateResult = await recipeService.UpdateRecipeAsync(
+        DatabaseResultVariant<
+            SuccessResult<RecipeDao>,
+            ForbiddenResult,
+            Database.Results.NotFoundResult,
+            UserNotFoundResult,
+            ValidationFailureResult,
+            Database.Results.ConflictResult
+        > updateResult = await recipeService.UpdateRecipeAsync(
             recipeKey,
             userKey,
             ifMatch.Value,
@@ -165,16 +177,16 @@ public class RecipesController(
             cancellationToken
         );
 
-        return updateResult switch
+        return updateResult.Result switch
         {
-            UpdateRecipeResult.Conflict => new PreconditionFailedHttpResult("If-Match"),
-            UpdateRecipeResult.NotFound => TypedResults.NotFound(),
-            UpdateRecipeResult.Forbidden => TypedResults.Forbid(),
-            UpdateRecipeResult.ValidationFailure validationError => TypedResults.ValidationProblem(
+            Database.Results.ConflictResult => new PreconditionFailedHttpResult("If-Match"),
+            Database.Results.NotFoundResult => TypedResults.NotFound(),
+            ForbiddenResult or UserNotFoundResult => TypedResults.Forbid(),
+            ValidationFailureResult validationError => TypedResults.ValidationProblem(
                 validationError.Errors
             ),
-            UpdateRecipeResult.Success success => TypedResults.Ok(
-                new RecipeJsonResponse(success.Recipe)
+            SuccessResult<RecipeDao> success => TypedResults.Ok(
+                new RecipeJsonResponse(success.Value)
             ),
             _ => throw new NotImplementedException(),
         };
@@ -207,12 +219,18 @@ public class RecipesController(
         CancellationToken cancellationToken
     )
     {
-        if (!await HttpContext.IsUser(userKey, cancellationToken))
+        if (!await HttpContext.RequestHasAccessToUserKey(userKey, cancellationToken))
         {
             return TypedResults.Forbid();
         }
 
-        CreateRecipeResult createRecipeResult = await recipeService.CreateRecipeAsync(
+        DatabaseResultVariant<
+            SuccessResult<RecipeDao>,
+            ForbiddenResult,
+            Database.Results.NotFoundResult,
+            UserNotFoundResult,
+            ValidationFailureResult
+        > createRecipeResult = await recipeService.CreateRecipeAsync(
             bookKey,
             userKey,
             new()
@@ -224,16 +242,14 @@ public class RecipesController(
             cancellationToken
         );
 
-        return createRecipeResult switch
+        return createRecipeResult.Result switch
         {
-            CreateRecipeResult.NotFound => TypedResults.NotFound(),
-            CreateRecipeResult.Forbidden => TypedResults.Forbid(),
-            CreateRecipeResult.ValidationFailure validation => TypedResults.ValidationProblem(
-                validation.Errors
-            ),
-            CreateRecipeResult.Success success => TypedResults.Created(
+            Database.Results.NotFoundResult => TypedResults.NotFound(),
+            ForbiddenResult or UserNotFoundResult => TypedResults.Forbid(),
+            ValidationFailureResult validation => TypedResults.ValidationProblem(validation.Errors),
+            SuccessResult<RecipeDao> success => TypedResults.Created(
                 (string?)null,
-                new RecipeJsonResponse(success.Recipe)
+                new RecipeJsonResponse(success.Value)
             ),
             _ => throw new NotImplementedException(),
         };
@@ -256,13 +272,18 @@ public class RecipesController(
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     [HttpGet]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Design",
+        "CA1068:CancellationToken parameters must come last",
+        Justification = "This is a ASP.NET controller method"
+    )]
     public async Task<
         Results<
             ValidationProblem,
             NotFound,
             ForbidHttpResult,
             InternalServerError,
-            Ok<IAsyncEnumerable<RecipeJsonResponse>>
+            Ok<IEnumerable<RecipeListEntryJsonResponse>>
         >
     > GetRecipes(
         [FromQuery(Name = "user")] string userKey,
@@ -274,23 +295,9 @@ public class RecipesController(
         [FromQuery(Name = "page-size")] int pageSize = 50
     )
     {
-        if (!await HttpContext.IsUser(userKey, cancellationToken))
+        if (!await HttpContext.RequestHasAccessToUserKey(userKey, cancellationToken))
         {
             return TypedResults.Forbid();
-        }
-
-        if (bookId is not null)
-        {
-            RecipeBookDao? book = await recipeBookService.GetRecipeBookAsync(
-                bookId,
-                userKey,
-                cancellationToken
-            );
-
-            if (book is null)
-            {
-                return TypedResults.NotFound();
-            }
         }
 
         Database.RecordOrdering? recordOrdering = resultOrdering switch
@@ -310,21 +317,35 @@ public class RecipesController(
             );
         }
 
-        return TypedResults.Ok(
-            recipeService
-                .ListRecipesAsync(
-                    userKey,
-                    new()
-                    {
-                        RecipeBookId = bookId,
-                        AfterRecipeId = afterId,
-                        BeforeRecipeId = beforeId,
-                        ResultOrder = recordOrdering.Value,
-                        ResultCount = Math.Min(100, Math.Max(1, pageSize)),
-                    },
-                    cancellationToken
-                )
-                .Select(r => new RecipeJsonResponse(r))
+        DatabaseResultVariant<
+            SuccessResult<List<RecipeListEntryDao>>,
+            Database.Results.NotFoundResult,
+            UserNotFoundResult,
+            ValidationFailureResult
+        > result = await recipeService.ListRecipesAsync(
+            userKey,
+            new()
+            {
+                RecipeBookKey = bookId,
+                AfterRecipeKey = afterId,
+                BeforeRecipeKey = beforeId,
+                ResultOrder = recordOrdering.Value,
+                ResultCount = Math.Min(100, Math.Max(1, pageSize)),
+            },
+            cancellationToken
         );
+
+        return result.Result switch
+        {
+            Database.Results.NotFoundResult => TypedResults.NotFound(),
+            UserNotFoundResult => TypedResults.Forbid(),
+            ValidationFailureResult validationFailureResult => TypedResults.ValidationProblem(
+                validationFailureResult.Errors
+            ),
+            SuccessResult<List<RecipeListEntryDao>> successResult => TypedResults.Ok(
+                successResult.Value.Select(r => new RecipeListEntryJsonResponse(r))
+            ),
+            _ => throw new NotImplementedException(),
+        };
     }
 }

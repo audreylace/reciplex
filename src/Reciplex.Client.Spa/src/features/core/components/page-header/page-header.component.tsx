@@ -3,15 +3,13 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import type { ComponentChild } from "preact";
 
+/** reusable header for all Reciplex pages */
 export function PageHeader({
   title,
   sideComponent,
   subTitle,
-}: {
-  title?: string;
-  subTitle?: string;
-  sideComponent?: ComponentChild;
-}) {
+  titleComponent,
+}: IPageHeaderProps) {
   if (
     typeof title !== "string" &&
     !sideComponent &&
@@ -28,13 +26,17 @@ export function PageHeader({
     >
       {(typeof title === "string" || sideComponent) && (
         <Stack direction={"row"} sx={{ width: "100%", mb: 1 }}>
-          <Box
+          <Stack
+            direction={"row"}
+            alignItems={"center"}
+            gap={2}
             sx={{
               flex: "1 1 auto",
             }}
           >
             <Typography variant="h2">{title}</Typography>
-          </Box>
+            {titleComponent}
+          </Stack>
           {sideComponent}
         </Stack>
       )}
@@ -43,4 +45,16 @@ export function PageHeader({
       )}
     </Box>
   );
+}
+
+/** props for `<PageHeader />` */
+export interface IPageHeaderProps {
+  /** page title */
+  title?: string;
+  /** page sub title */
+  subTitle?: string;
+  /** component to render on the right */
+  sideComponent?: ComponentChild;
+  /** component to render after the title string */
+  titleComponent?: ComponentChild;
 }

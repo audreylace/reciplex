@@ -4,7 +4,7 @@ namespace Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 
 public class RandomNumberGeneratorConcurrencyTagProvider : IConcurrencyTagProvider
 {
-    public string Next()
+    public string NextTag()
     {
         return RandomNumberGenerator.GetHexString(32);
     }

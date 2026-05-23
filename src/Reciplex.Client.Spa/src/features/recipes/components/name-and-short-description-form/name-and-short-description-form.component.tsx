@@ -2,12 +2,12 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import Alert from "@mui/material/Alert";
 import LinearProgress from "@mui/material/LinearProgress";
 import { useController, useForm } from "react-hook-form";
 import { useEffect } from "preact/hooks";
 import { ConcurrencyConflictAlert } from "../../../core/components/concurrency-conflict-alert/concurrency-conflict-alert.component";
 import Paper from "@mui/material/Paper";
+import { OperationFailedAlert } from "../../../core/components/operation-failed-alert/operation-failed-alert.component";
 
 /** form for creating a new book/recipe. Also used to modify a book. */
 export function NameAndShortDescriptionForm({
@@ -63,7 +63,7 @@ export function NameAndShortDescriptionForm({
 
   const fieldsDisabled = showError || pending || showConflict;
   return (
-    <Paper sx={{ p: 2, mt: 3 }}>
+    <Paper sx={{ p: 2, mt: 2 }}>
       <form onSubmit={handleSubmit(onSuccess)}>
         <Stack spacing={2}>
           <legend>
@@ -73,19 +73,7 @@ export function NameAndShortDescriptionForm({
           </legend>
           {pending && <LinearProgress aria-label="Creating..." />}
           {showConflict && <ConcurrencyConflictAlert onReset={onReset} />}
-          {showError && (
-            <Alert
-              severity="error"
-              variant="filled"
-              action={
-                <Button color="inherit" size="small" onClick={onReset}>
-                  Retry
-                </Button>
-              }
-            >
-              Something went wrong
-            </Alert>
-          )}
+          {showError && <OperationFailedAlert onRetry={onReset} />}
           <TextField
             label={nameLabel}
             error={!!errors.name}

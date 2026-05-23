@@ -33,6 +33,26 @@ export function recipeBookQueryKey(userKey: string, bookKey: string) {
   return [recipeQueryKeyRoot(userKey), recipeBookCacheKeyBranch, bookKey];
 }
 
+/**
+ * computes the cache key for the status of a recipe share request
+ * @param userKey the user requesting access to the book
+ * @param bookKey the key of the book
+ * @param shareKey the share key to authenticate the request
+ * @returns computed query cache key
+ */
+export function recipeBookSharedAccessQueryKey(
+  userKey: string,
+  bookKey: string,
+  shareKey?: string,
+) {
+  return [
+    recipeQueryKeyRoot(userKey),
+    "recipeBookSharedAccess",
+    bookKey,
+    shareKey ?? "",
+  ];
+}
+
 export const recipeBookListCacheKeyBranch = "recipeBookList";
 
 /**
@@ -105,4 +125,16 @@ function normalizeRecipeBookListArgsKeyNode(
     position,
     pageSize,
   };
+}
+
+/** key for the recipe book access list cache */
+export const recipeBookAccessCacheKeyBranch = "recipeBookAccessList";
+
+/**
+ * Computes the cache key for a recipe book access list
+ * @param userKey the user requesting the recipe
+ * @param recipeKey the key of the recipe
+ */
+export function recipeBookAccessQueryKey(userKey: string, bookKey: string) {
+  return [recipeQueryKeyRoot(userKey), recipeBookAccessCacheKeyBranch, bookKey];
 }

@@ -169,6 +169,15 @@ export function EditRecipeForm({
               >
                 Save
               </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={() =>
+                  navigate(makeViewRecipePath(data.bookId, data.id))
+                }
+              >
+                Discard
+              </Button>
             </Stack>
           </Box>
         </Stack>

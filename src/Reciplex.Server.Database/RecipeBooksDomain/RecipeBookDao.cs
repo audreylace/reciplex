@@ -45,10 +45,25 @@ public class RecipeBookDao
     /// <summary>
     /// User can edit book information
     /// </summary>
-    public bool MayEditBook { get; set; }
+    public required bool MayEditBook { get; init; }
 
     /// <summary>
     /// User can delete book
     /// </summary>
-    public bool MayDeleteBook { get; set; }
+    public required bool MayDeleteBook { get; init; }
+
+    /// <summary>
+    /// If the user can share the book
+    /// </summary>
+    public required bool MayShareBook { get; init; }
+
+    /// <summary>
+    /// If the user can manage book access
+    /// </summary>
+    public required bool MayManageAccess { get; init; }
+
+    /// <summary>
+    /// The key used to create share links for the recipe book
+    /// </summary>
+    public required string ShareKey { get; init; }
 }

@@ -4,17 +4,14 @@ import MoreVert from "@mui/icons-material/MoreVert";
 import { useId, useRef, useState } from "preact/hooks";
 import { BookMenu } from "../book-menu/book-menu.component";
 
+/** table cell with a button for opening a book specific menu */
 export function BookMenuButtonCell({
   bookId,
   mayEdit,
   bookName,
-  mayDelete,
-}: {
-  bookName: string;
-  bookId: string;
-  mayEdit: boolean;
-  mayDelete: boolean;
-}) {
+  mayShare,
+  mayLeave,
+}: IBookMenuButtonCellProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const handleClick = () => {
@@ -41,13 +38,31 @@ export function BookMenuButtonCell({
       <BookMenu
         bookId={bookId}
         mayEdit={mayEdit}
-        mayDelete={mayDelete}
         getAnchorElement={() => buttonRef.current}
         buttonId={buttonId}
         menuId={menuId}
         onClose={handleClose}
         open={open}
+        mayShare={mayShare}
+        mayLeave={mayLeave}
       />
     </TableCell>
   );
+}
+
+/** props for `<BookMenuButtonCell />` */
+export interface IBookMenuButtonCellProps {
+  /** name of the book */
+  bookName: string;
+  /** if of the book */
+  bookId: string;
+  /** if the user can edit the book */
+  mayEdit: boolean;
+  /** if the user can share the book */
+  mayShare: boolean;
+  /**
+   * if the use can invoke the leave action on a book.
+   * User must not own the book for this to be available.
+   */
+  mayLeave: boolean;
 }

@@ -51,6 +51,16 @@ export interface IRecipeBookModel {
    * fields and add recipes.
    */
   mayEdit?: boolean;
+  /**
+   * True if the user can share this book.
+   */
+  mayShare?: boolean;
+  /**
+   * True if this user can manage who has access to the book.
+   */
+  mayManageAccess?: boolean;
+  /** the key used to authenticate join requests */
+  shareKey?: string;
 }
 
 /**
@@ -87,6 +97,30 @@ export interface IRecipeModel {
    * recipe details and other info. Has max length @see RecipeDetailsMaxLength
    */
   details: string;
+}
+
+/**
+ * see `RecipeListEntryJsonResponse.cs`
+ */
+export interface IRecipeListEntryJsonResponse {
+  /**
+   * Unique ID of the recipe
+   */
+  recipeKey: string;
+  /**
+   * the book this belongs to
+   */
+  bookKey: string;
+  /**
+   * name of the recipe
+   * @see RecipeNameMaxLength Max length of this property
+   */
+  name: string;
+  /**
+   * short description of the recipe
+   * @see RecipeShortDescriptionMaxLength Max length of this property
+   */
+  shortDescription: string;
 }
 
 /** Cursor types */
@@ -198,6 +232,64 @@ export interface IUpdateRecipeBookArgs {
   versionTag: string;
 }
 
+/** possible states of a recipe book access request */
+export const RequestAccessToRecipeBookStatus = {
+  /** Not set. Some sort of bug. */
+  Unset: 0,
+  /** Request approved. */
+  Approved: 2,
+  /** Request pending. */
+  Pending: 1,
+  /** Share key is valid and book exists but a request has not been submitted. */
+  NoRequestInProgress: 3,
+} as const;
+type RequestAccessToRecipeBookStatus =
+  (typeof RequestAccessToRecipeBookStatus)[keyof typeof RequestAccessToRecipeBookStatus];
+
+/** recipe book access request status */
+export interface IRequestAccessToRecipeBookStatus {
+  /** the book key */
+  bookKey: string;
+  /** the book name */
+  name: string;
+  /** the book short description */
+  shortDescription: string;
+  /** the request status */
+  status: RequestAccessToRecipeBookStatus;
+}
+
+/**
+ * Model describing a single user's access
+ * @see `src/Reciplex.Server.Host/Models/RecipeBookUserPermissionsJsonResponse.cs`
+ */
+export interface IRecipeBookUserPermissionsJsonResponse {
+  /** id of the user this represents */
+  userKey: string;
+  /** the if of the book */
+  bookKey: string;
+  /** if the user may view the book */
+  mayViewBook: boolean;
+  /** if the user may edit book */
+  mayEditBook: boolean;
+  /** if the entry has been reviewed */
+  reviewed: boolean;
+  /** the display name */
+  userDisplayName: string;
+}
+
+/**
+ * Model to update a single user
+ * @see `src/Reciplex.Server.Host/Models/RecipeBookUserPermissionsJsonRequest.cs`
+ */
+export interface IRecipeBookUserPermissionsJsonRequest {
+  /** if the user may view the book */
+  mayViewBook: boolean;
+  /** if the user may edit book */
+  mayEditBook: boolean;
+  /** if the entry has been reviewed */
+  reviewed: boolean;
+}
+
 /**
  * Store for recipe books and recipe data
  */
@@ -228,7 +320,7 @@ export interface IRecipeBookStore {
     userId: string,
     bookId: string,
     args?: IGetRecipesInBookArgs,
-  ): Promise<IRecipeModel[] | null>;
+  ): Promise<IRecipeListEntryJsonResponse[] | null>;
 
   /**
    * Creates a recipe book
@@ -281,10 +373,30 @@ export interface IRecipeBookStore {
     versionTag: string,
   ): Promise<void>;
 
+  /**
+   * updates a recipe book
+   * @param userId the id of the user performing the action
+   * @param bookId the book id
+   * @param args additional arguments
+   */
   updateRecipeBook(
     userId: string,
     bookId: string,
     args: IUpdateRecipeBookArgs,
+  ): Promise<IRecipeBookModel>;
+
+  /**
+   * Mutates a book's share key by calling the remote server
+   * @param userId the id of the user performing the action
+   * @param bookId the book id
+   * @param kind the regeneration kind
+   * @param versionTag the version tag for opportunistic concurrency
+   */
+  updateRecipeBookShareKey(
+    userId: string,
+    bookId: string,
+    kind: "regenerate" | "clear",
+    versionTag: string,
   ): Promise<IRecipeBookModel>;
 
   /**
@@ -297,4 +409,61 @@ export interface IRecipeBookStore {
     recipeId: string,
     args: IUpdateRecipeArgs,
   ): Promise<IRecipeModel>;
+
+  /**
+   * Gets the status of a request to access a recipe book
+   * @param userId the user requesting access
+   * @param bookId the id of the book
+   * @param shareKey the share key used to validate that the user has an invite
+   */
+  getRecipeBookShareStatus(
+    userId: string,
+    bookId: string,
+    shareKey?: string,
+  ): Promise<IRequestAccessToRecipeBookStatus | null>;
+
+  /**
+   * Submits a request to access recipe book
+   * @param userId the user requesting access
+   * @param bookId the id of the book
+   * @param shareKey the share key used to validate that the user has an invite
+   */
+  postRecipeBookAccessRequest(
+    userId: string,
+    bookId: string,
+    shareKey: string,
+  ): Promise<IRequestAccessToRecipeBookStatus | null>;
+
+  /**
+   * deletes a book access request
+   * @param userId the id of the user
+   * @param bookId the id of the book
+   */
+  deleteRecipeBookAccessRequest(userId: string, bookId: string): Promise<void>;
+
+  /**
+   * lists of users with book access
+   * @param userId the id of the user running the request
+   * @param bookId the id of the book
+   */
+  getUsersWithBookAccess(
+    userId: string,
+    bookId: string,
+    args?: { noCache?: boolean },
+  ): Promise<IRecipeBookUserPermissionsJsonResponse[] | null>;
+
+  /**
+   * patches set of users with access
+   * @param userId the id of the user
+   * @param bookId the id of the book
+   * @param changes the set of changes to make
+   */
+  patchUsersWithBookAccess(
+    userId: string,
+    bookId: string,
+    changes: [
+      string,
+      IRecipeBookUserPermissionsJsonRequest | undefined | null,
+    ][],
+  ): Promise<void>;
 }

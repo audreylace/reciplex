@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using Reciplex.Server.Database.Results;
 using Reciplex.Server.Database.UsersDomain;
 
 namespace Reciplex.Server.Host.AccessControl;
@@ -49,21 +50,25 @@ static class HttpContextExtensions
         return credentials;
     }
 
-    public static async Task<bool> IsUser(
+    public static async Task<bool> RequestHasAccessToUserKey(
         this HttpContext context,
         string userKey,
         CancellationToken ct
     )
     {
         (string authority, string subject) = context.RequireOpenIdConnectCredentials();
-        AuthorizationCheckResult userCheck = await context
-            .RequestServices.GetRequiredService<IUsersRepository>()
+        DatabaseResultVariant<
+            SuccessResult<UserDao>,
+            UserNotFoundResult,
+            ForbiddenResult
+        > userCheck = await context
+            .RequestServices.GetRequiredService<IUsersService>()
             .CheckAuthorizationAsync(authority, subject, userKey, ct);
 
-        return userCheck switch
+        return userCheck.Result switch
         {
-            AuthorizationCheckResult.Authorized => true,
-            AuthorizationCheckResult.NotFound or AuthorizationCheckResult.Forbidden => false,
+            SuccessResult<UserDao> => true,
+            UserNotFoundResult or ForbiddenResult => false,
             _ => throw new NotImplementedException(),
         };
     }

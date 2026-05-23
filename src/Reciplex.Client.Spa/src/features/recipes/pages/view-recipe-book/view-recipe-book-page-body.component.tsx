@@ -8,6 +8,8 @@ import { useRecipeClientStateContext } from "../../hooks/useRecipeClientStateCon
 import { useEffect, useRef } from "preact/hooks";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
 import { BookMenuButton } from "../../components/book-menu-button/book-menu-button.component";
+import { useActiveUserKey } from "../../../auth/hooks/useActiveUser.hook";
+import { SharedRecipeBookIndicator } from "../../components/shared-recipe-book-indicator/shared-recipe-book-indicator.component";
 
 export function ViewRecipeBookPageBody({
   bookId,
@@ -21,6 +23,7 @@ export function ViewRecipeBookPageBody({
   const selectedSize = useRecipeClientStateContext(
     (state) => state.recipeListPageSize,
   );
+  const currentUser = useActiveUserKey();
   const {
     data: book,
     isError: getRecipeBookError,
@@ -38,10 +41,10 @@ export function ViewRecipeBookPageBody({
   let previousQueryPos;
   if (recipeListSuccess && recipeList) {
     if (source !== "next" || recipeList.length > 0) {
-      nextQueryPos = recipeList[recipeList.length - 1]?.id ?? at;
+      nextQueryPos = recipeList[recipeList.length - 1]?.recipeKey ?? at;
     }
     if (source !== "previous" || recipeList.length > 0) {
-      previousQueryPos = recipeList[0]?.id ?? at;
+      previousQueryPos = recipeList[0]?.recipeKey ?? at;
     }
   }
 
@@ -84,11 +87,7 @@ export function ViewRecipeBookPageBody({
     }
   }, [bookId, source, at]);
 
-  if (
-    getRecipesError ||
-    getRecipeBookError ||
-    (recipeListSuccess && !recipeList)
-  ) {
+  if (getRecipesError || getRecipeBookError) {
     return <LoadingFailedAlert />;
   }
 
@@ -96,7 +95,7 @@ export function ViewRecipeBookPageBody({
     return <LoadingIndicator />;
   }
 
-  if (!book) {
+  if (!book || !recipeList) {
     return <RecipeBookNotFoundBanner />;
   }
 
@@ -105,11 +104,13 @@ export function ViewRecipeBookPageBody({
       <PageHeader
         title={book.name}
         subTitle={book.shortDescription}
+        titleComponent={<SharedRecipeBookIndicator bookId={book.id} />}
         sideComponent={
           <BookMenuButton
             bookId={book.id}
             mayEdit={book.mayEdit}
-            mayDelete={book.mayDelete}
+            mayShare={book.mayShare}
+            mayLeave={book.ownerId !== currentUser}
           />
         }
       />
@@ -118,6 +119,7 @@ export function ViewRecipeBookPageBody({
         pending={getRecipesPending}
         recipes={recipeList ?? undefined}
         nextLoading={nextRecipeEnabled && nextRecipePending}
+        mayEdit={book.mayEdit ?? false}
         next={
           nextRecipeEnabled &&
           nextRecipeSuccess &&

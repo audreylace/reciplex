@@ -8,7 +8,9 @@ public class DefaultChallengeHandler : AuthenticationHandler<AuthenticationSchem
 {
     public const string Schema = "ChallengeIs401Schema";
 
+#pragma warning disable CA1041 // Provide ObsoleteAttribute message
     [Obsolete]
+#pragma warning restore CA1041 // Provide ObsoleteAttribute message
     public DefaultChallengeHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,

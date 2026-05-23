@@ -7,6 +7,8 @@ export interface IHttpActionArgs {
    * set, then the default state for `fetch` is used.
    */
   noCache?: boolean;
+  /** headers for the request */
+  headers?: Record<string, string>;
 }
 
 /**
@@ -55,7 +57,8 @@ export class HttpClient {
     params?: [string, string][],
     args?: IHttpActionArgs,
   ): Promise<Response> {
-    return this.request("POST", path, params, args, undefined, body);
+    const headers = args?.headers ?? {};
+    return this.request("POST", path, params, args, headers, body);
   }
 
   /**
@@ -74,9 +77,8 @@ export class HttpClient {
     params?: [string, string][],
     args?: IHttpActionArgs,
   ): Promise<Response> {
-    const headers = {
-      "If-Match": `"${versionTag}"`,
-    };
+    const headers = args?.headers ?? {};
+    headers["If-Match"] = `"${versionTag}"`;
     return this.request("PUT", path, params, args, headers, body);
   }
 
@@ -90,13 +92,14 @@ export class HttpClient {
    */
   public async httpDelete(
     path: string,
-    versionTag: string,
+    versionTag?: string,
     params?: [string, string][],
     args?: IHttpActionArgs,
   ): Promise<Response> {
-    const headers = {
-      "If-Match": `"${versionTag}"`,
-    };
+    const headers = args?.headers ?? {};
+    if (versionTag) {
+      headers["If-Match"] = `"${versionTag}"`;
+    }
     return this.request("DELETE", path, params, args, headers);
   }
 
@@ -115,6 +118,24 @@ export class HttpClient {
 
     const queryString = searchParams.toString();
     return queryString ? `?${queryString}` : "";
+  }
+
+  /**
+   * runs a patch request
+   * @param path the path
+   * @param body the body
+   * @param params query parameters
+   * @param args arguments to control the client behavior
+   * @returns http response
+   */
+  public async httpPatch<TBody>(
+    path: string,
+    body: TBody,
+    params?: [string, string][],
+    args?: IHttpActionArgs,
+  ): Promise<Response> {
+    const headers = args?.headers ?? {};
+    return this.request("PATCH", path, params, args, headers, body);
   }
 
   /**
