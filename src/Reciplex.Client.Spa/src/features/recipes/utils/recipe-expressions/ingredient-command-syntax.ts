@@ -76,14 +76,14 @@ export const ingredientCommandParser: ICommandParser<
     let expressionTokenPosition = 0;
 
     let userSuppliedIdProperty: IRExpIngredientCommand["userSuppliedId"];
-    let nextToken = args[expressionTokenPosition];
+    const nextToken = args[expressionTokenPosition];
     if (isTextLiteralToken(nextToken)) {
       userSuppliedIdProperty = nextToken.payload.text;
       expressionTokenPosition++;
     }
 
     let quantityProperty: IRExpIngredientCommand["quantity"] = undefined;
-    nextToken = args[expressionTokenPosition];
+
     const parseQuantityResult = parseQuantityWithUnit(
       args,
       expressionTokenPosition,

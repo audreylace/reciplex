@@ -2,17 +2,16 @@ import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import type { ComponentChildren } from "preact";
 
 export function SyntaxExample({
   children,
   description,
   output,
-}: ISyntaxExampleProps) {
+}: React.PropsWithChildren<ISyntaxExampleProps>) {
   return (
     <Paper elevation={3} sx={{ mb: 3, p: 2 }}>
       <Box sx={{ mb: 1 }}>
-        <Stack direction={"row"} gap={1}>
+        <Stack sx={{ gap: 1 }} direction="row">
           <Typography variant="body1" component="code">
             {children}
           </Typography>
@@ -26,7 +25,6 @@ export function SyntaxExample({
 }
 
 export interface ISyntaxExampleProps {
-  children?: ComponentChildren;
-  description: ComponentChildren;
-  output: ComponentChildren;
+  description: React.ReactNode;
+  output: React.ReactNode;
 }

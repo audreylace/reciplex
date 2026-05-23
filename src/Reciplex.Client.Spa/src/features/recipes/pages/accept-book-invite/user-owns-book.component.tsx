@@ -2,7 +2,7 @@ import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import { useNavigate } from "react-router";
 import { makeViewRecipeBookPath } from "../../route-utils";
-import { useEffect } from "preact/hooks";
+import { useEffect } from "react";
 
 /** shows banner and redirects user to book page. Use when the user owns the book. */
 export function UserOwnsBook({ bookId }: IUserOwnsBookProps) {

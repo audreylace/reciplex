@@ -1,5 +1,4 @@
 import Typography from "@mui/material/Typography";
-import type { ComponentChildren } from "preact";
 
 /** title for a content section */
 export function ContentTitle({ children }: IContentTitleProps) {
@@ -13,5 +12,5 @@ export function ContentTitle({ children }: IContentTitleProps) {
 /** props for `<ContentTitle />` */
 export interface IContentTitleProps {
   /** component children */
-  children?: ComponentChildren;
+  children?: React.ReactNode;
 }

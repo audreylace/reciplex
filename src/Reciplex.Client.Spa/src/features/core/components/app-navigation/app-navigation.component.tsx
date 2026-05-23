@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router";
 import styles from "./app-navigation.module.css";
-import type { PropsWithChildren } from "preact/compat";
+import type { PropsWithChildren } from "react";
 import { useSignInNavigate } from "../../../auth/hooks/useSignInNavigate.hook";
 import Slide from "@mui/material/Slide";
 import AppBar from "@mui/material/AppBar";

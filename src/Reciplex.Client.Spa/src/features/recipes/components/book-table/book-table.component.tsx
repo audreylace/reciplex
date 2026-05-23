@@ -1,4 +1,4 @@
-import { forwardRef, type Ref } from "preact/compat";
+import { forwardRef, type Ref } from "react";
 import { useRecipeClientStateContext } from "../../hooks/useRecipeClientStateContext.hook";
 import Paper from "@mui/material/Paper";
 import LinearProgress from "@mui/material/LinearProgress";

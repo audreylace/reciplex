@@ -75,7 +75,7 @@ export function recipeSyntaxMarkDownTreeVisiter(
       // If the parent has an children array then continue
       // since we need to replace the current node with new one.
       const directParent = parents[parents.length - 1];
-      let childrenArray = null;
+      let childrenArray;
       if (
         directParent &&
         (directParent as unknown as { children: AstNode[] | undefined | null })

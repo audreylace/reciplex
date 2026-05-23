@@ -288,7 +288,7 @@ export class RecipeIngredientConceptCollection
         title: groupArr[0].name,
         unit: unitText,
         amount: quantity,
-        key: `${index++}\n${groupArr[0].conceptKey}`,
+        key: `${index}\n${groupArr[0].conceptKey}`,
       };
     });
   }

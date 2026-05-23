@@ -11,25 +11,25 @@ import Typography from "@mui/material/Typography";
 const componentMap = {
   recipeIngredientExpression: RecipeIngredientRender,
   recipeToolExpression: RecipeToolRender,
-  h1: ({ children }: { children?: preact.ComponentChildren | undefined }) => (
+  h1: ({ children }: { children?: React.ReactNode | undefined }) => (
     <Typography variant="h1">{children}</Typography>
   ),
-  h2: ({ children }: { children?: preact.ComponentChildren | undefined }) => (
+  h2: ({ children }: { children?: React.ReactNode | undefined }) => (
     <Typography variant="h2">{children}</Typography>
   ),
-  h3: ({ children }: { children?: preact.ComponentChildren | undefined }) => (
+  h3: ({ children }: { children?: React.ReactNode | undefined }) => (
     <Typography variant="h3">{children}</Typography>
   ),
-  h4: ({ children }: { children?: preact.ComponentChildren | undefined }) => (
+  h4: ({ children }: { children?: React.ReactNode | undefined }) => (
     <Typography variant="h4">{children}</Typography>
   ),
-  h5: ({ children }: { children?: preact.ComponentChildren | undefined }) => (
+  h5: ({ children }: { children?: React.ReactNode | undefined }) => (
     <Typography variant="h5">{children}</Typography>
   ),
-  h6: ({ children }: { children?: preact.ComponentChildren | undefined }) => (
+  h6: ({ children }: { children?: React.ReactNode | undefined }) => (
     <Typography variant="h6">{children}</Typography>
   ),
-  p: ({ children }: { children?: preact.ComponentChildren | undefined }) => (
+  p: ({ children }: { children?: React.ReactNode | undefined }) => (
     <Typography variant="body1" gutterBottom>
       {children}
     </Typography>
@@ -42,7 +42,11 @@ export function RecipeDetailsViewer({
   mayEdit,
   goToEditAction,
 }: IRecipeDetailsViewerProps) {
-  const detailsContextModel = usePipeline(detailsMd, componentMap);
+  const detailsContextModel = usePipeline(
+    detailsMd,
+    //@ts-expect-error ts not able to handle the dynamic component types
+    componentMap,
+  );
 
   return (
     <>

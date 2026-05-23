@@ -3,7 +3,7 @@ import { useRecipeBookListQuery } from "../../hooks/useRecipeBookListQuery.hook"
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
 import { BookTable } from "../../components/book-table/book-table.component";
 import { useRecipeClientStateContext } from "../../hooks/useRecipeClientStateContext.hook";
-import { useEffect, useRef } from "preact/hooks";
+import { useEffect, useRef } from "react";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
 
 /**

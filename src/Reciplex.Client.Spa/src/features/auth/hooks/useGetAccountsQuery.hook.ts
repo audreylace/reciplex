@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthClients } from "./useAuthClients.hook";
-import { useCallback } from "preact/hooks";
+import { useCallback } from "react";
 import { accountListAuthQueryKey } from "../utils/auth-query-key-factory";
 
 export function useGetAccountsQuery(

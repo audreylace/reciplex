@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect } from "react";
 import { useActiveUser, useActiveUserKey } from "./useActiveUser.hook";
 import {
   useGetAccountsQuery,
@@ -12,8 +12,18 @@ export function useActiveUserGuard(allowNullUser?: boolean) {
   const resetUser = useActiveUser((s) => s.reset);
   const accountListQuery = useGetAccountsQuery();
   const goToSelectAccount = useSelectAccountNavigate()[1];
-  const [renderChildren, setRenderChildren] = useState(false);
   const accountListQueryReset = useResetAccountsQuery();
+
+  let renderChildren = allowNullUser;
+  if (!renderChildren && accountListQuery.isSuccess && userKey) {
+    const matchedAccount = accountListQuery.data.find(
+      (acc) => acc.userKey === userKey,
+    );
+
+    if (matchedAccount) {
+      renderChildren = true;
+    }
+  }
 
   // run as soon as we have data for minimal delay
   useEffect(() => {
@@ -24,7 +34,6 @@ export function useActiveUserGuard(allowNullUser?: boolean) {
         );
 
         if (matchedAccount) {
-          setRenderChildren(true);
           return;
         }
       }
@@ -34,17 +43,15 @@ export function useActiveUserGuard(allowNullUser?: boolean) {
           userKey: accountListQuery.data[0].userKey,
           displayName: accountListQuery.data[0].displayName,
         });
-        setRenderChildren(true);
+
         return;
       }
       resetUser();
 
       if (allowNullUser) {
-        setRenderChildren(true);
         return;
       }
 
-      setRenderChildren(false);
       goToSelectAccount({ replace: true });
     }
   }, [

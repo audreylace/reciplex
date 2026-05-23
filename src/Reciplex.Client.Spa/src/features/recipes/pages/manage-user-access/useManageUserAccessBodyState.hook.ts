@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useState } from "react";
 import type {
   IRecipeBookUserPermissionsJsonRequest,
   IRecipeBookUserPermissionsJsonResponse,
@@ -26,9 +26,20 @@ export function useManageUserAccessBodyState(
     null,
   );
 
-  useEffect(() => {
-    setState((prev) => hydrateAccessBodyState(prev, accessListData));
-  }, [accessListData]);
+  if (!state && accessListData) {
+    setState(
+      accessListData.map((responseJsonEntry) => {
+        return {
+          prev: responseJsonEntry,
+          new: {
+            reviewed: responseJsonEntry.reviewed,
+            mayEditBook: responseJsonEntry.mayEditBook,
+            mayViewBook: responseJsonEntry.mayViewBook,
+          },
+        };
+      }),
+    );
+  }
 
   return {
     reset: () => setState(null),
@@ -66,26 +77,6 @@ export interface IUseManageUserAccessBodyStateReturn {
     string,
     IRecipeBookUserPermissionsJsonRequest | undefined | null,
   ][];
-}
-
-function hydrateAccessBodyState(
-  prev: IManageUserAccessBodyStateEntry[] | null,
-  accessListData: IRecipeBookUserPermissionsJsonResponse[] | undefined | null,
-) {
-  if (prev || !accessListData) {
-    return prev;
-  }
-
-  return accessListData.map((responseJsonEntry) => {
-    return {
-      prev: responseJsonEntry,
-      new: {
-        reviewed: responseJsonEntry.reviewed,
-        mayEditBook: responseJsonEntry.mayEditBook,
-        mayViewBook: responseJsonEntry.mayViewBook,
-      },
-    };
-  });
 }
 
 function updateStateEntry(

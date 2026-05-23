@@ -1,5 +1,4 @@
 import IconButton from "@mui/material/IconButton";
-import type { ComponentChildren } from "preact";
 import { useSearchParams } from "react-router";
 
 export function NavigationButton({
@@ -38,6 +37,6 @@ export interface INavigationButtonProps {
   at?: string;
   source: "next" | "previous";
   disabled?: boolean;
-  children?: ComponentChildren;
+  children?: React.ReactNode;
   loading?: boolean;
 }

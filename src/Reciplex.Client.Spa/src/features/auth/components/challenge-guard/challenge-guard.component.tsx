@@ -4,10 +4,9 @@ import { LoadingIndicator } from "../../../core/components/loading-indicator/loa
 import Button from "@mui/material/Button";
 import { useChallenge } from "../../hooks/useChallenge.hook";
 import { useNeedChallengeQuery } from "../../hooks/useNeedChallengeQuery.hook";
-import type { ComponentChildren } from "preact";
 
 /** guards a route refusing to render the component if a challenge action is required */
-export function ChallengeGuard({ children }: { children: ComponentChildren }) {
+export function ChallengeGuard({ children }: { children?: React.ReactNode }) {
   const challengeQuery = useNeedChallengeQuery();
   const startChallenge = useChallenge();
 

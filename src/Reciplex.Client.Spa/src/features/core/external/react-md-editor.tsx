@@ -268,7 +268,7 @@ export function insertTextAtPosition(
   }
 
   // Webkit + Edge
-  let isSuccess = false;
+  let isSuccess;
   if (text !== "") {
     isSuccess =
       document.execCommand && document.execCommand("insertText", false, text);

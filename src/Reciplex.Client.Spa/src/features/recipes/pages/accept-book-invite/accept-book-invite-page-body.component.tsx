@@ -56,7 +56,7 @@ export function AcceptBookInvitePageBody({
     return <RecipeBookNotFoundBanner />;
   }
 
-  let title = "";
+  let title;
   switch (shareAccessData.status) {
     case RequestAccessToRecipeBookStatus.Approved:
       title = "Leave Recipe Book";

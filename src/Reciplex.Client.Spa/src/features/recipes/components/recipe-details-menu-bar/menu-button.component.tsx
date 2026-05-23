@@ -1,6 +1,5 @@
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
-import type { ComponentChild } from "preact";
 
 /**
  * Menu button component inside the markdown recipe details editor menu bar
@@ -20,7 +19,7 @@ export function MenuButton<TCommandType>({
   /**
    * icon shown to the end user
    */
-  icon: ComponentChild;
+  icon: React.ReactNode;
   /**
    * Passing in true disables this button and styles it as disabled
    */

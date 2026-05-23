@@ -1,6 +1,5 @@
 import type { Root } from "mdast";
-import { useState, useEffect } from "preact/hooks";
-import { Fragment, jsx, jsxs, jsxDEV } from "preact/jsx-runtime";
+import { useMemo } from "react";
 import rehypeReact from "rehype-react";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import remarkParse from "remark-parse";
@@ -12,10 +11,12 @@ import {
   RecipeAstElementAttributes,
   RecipeAstElements,
 } from "../../utils/recipe-expressions/md-to-expressions-v2";
-import type { IRecipeDetailsContextModel } from "./recipe-details-context.component";
 import { RecipeIngredientConceptCollection } from "./ingredient-concept";
 import { RecipeToolConceptCollection } from "./tool-concept";
 import type { IHandleRecipeAstNode } from "./concept-collection";
+
+import { jsxDEV } from "react/jsx-dev-runtime";
+import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 
 const customSchema = {
   ...defaultSchema,
@@ -39,13 +40,9 @@ export function usePipeline(
   mdText: string | null | undefined,
   components: IPipelineComponents,
 ) {
-  const [detailsContextModel, setDetailsContextModel] =
-    useState<IRecipeDetailsContextModel | null>(null);
-
-  useEffect(() => {
+  return useMemo(() => {
     if (!mdText) {
-      setDetailsContextModel(null);
-      return;
+      return null;
     }
     const ingredientCollection = new RecipeIngredientConceptCollection();
     const toolCollection = new RecipeToolConceptCollection();
@@ -75,13 +72,11 @@ export function usePipeline(
 
     const component = processor.processSync(mdText).result;
 
-    setDetailsContextModel({
+    return {
       markdownText: mdText,
       component: component,
       ingredientCollection: ingredientCollection,
       toolCollection: toolCollection,
-    });
+    };
   }, [components, mdText]);
-
-  return detailsContextModel;
 }

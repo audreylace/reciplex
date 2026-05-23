@@ -1,5 +1,4 @@
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import type { ComponentChildren } from "preact";
 
 const outerTheme = createTheme({
   palette: {
@@ -76,6 +75,6 @@ const outerTheme = createTheme({
   },
 });
 
-export function AppTheme({ children }: { children: ComponentChildren }) {
+export function AppTheme({ children }: { children?: React.ReactNode }) {
   return <ThemeProvider theme={outerTheme}>{children}</ThemeProvider>;
 }

@@ -1,4 +1,4 @@
-import { useEffect } from "preact/hooks";
+import { useEffect } from "react";
 import { useSelectAccountNavigate } from "../../hooks/useSelectAccountNavigate.hook";
 
 /** Component that when rendered goes to the account select page */

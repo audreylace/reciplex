@@ -6,8 +6,8 @@ import type { IRecipeListEntryJsonResponse } from "../../services/recipe-types";
 import { RecipeTableHeader } from "./recipe-table-header.component";
 import { TablePageControls } from "../table-page-controls/table-page-controls.component";
 import { RecipeTableBody } from "./recipe-table-body.component";
-import type { Ref } from "preact";
-import { forwardRef } from "preact/compat";
+import type { Ref } from "react";
+import { forwardRef } from "react";
 import { useRecipeClientStateContext } from "../../hooks/useRecipeClientStateContext.hook";
 
 export const RecipeTable = forwardRef(RecipeTableInner);

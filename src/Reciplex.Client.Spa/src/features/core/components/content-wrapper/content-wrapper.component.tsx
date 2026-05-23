@@ -1,5 +1,5 @@
 import Paper from "@mui/material/Paper";
-import type { PropsWithChildren } from "preact/compat";
+import type { PropsWithChildren } from "react";
 
 /** wrapper for a content section */
 export function ContentWrapper({

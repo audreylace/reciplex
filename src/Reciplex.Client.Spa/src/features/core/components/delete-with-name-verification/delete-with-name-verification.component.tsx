@@ -34,11 +34,11 @@ export function DeleteWithNameVerification({
   const formDisabled = showDeleteError || pending || showConcurrencyError;
   return (
     <>
-      <Stack gap={3}>
+      <Stack sx={{ gap: 3 }}>
         {showConcurrencyError && <ConcurrencyConflictAlert onReset={onReset} />}
         {showDeleteError && <DeleteFailedAlert onReset={onReset} />}
         <Paper sx={{ p: 2 }}>
-          <Stack gap={1}>
+          <Stack sx={{ gap: 1 }}>
             <Typography variant="h5" gutterBottom>
               What will be deleted
             </Typography>

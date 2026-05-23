@@ -1,4 +1,4 @@
-import { useCallback } from "preact/hooks";
+import { useCallback } from "react";
 import { useLocation, useNavigate } from "react-router";
 
 export function useRefreshPage(): [string, () => void] {

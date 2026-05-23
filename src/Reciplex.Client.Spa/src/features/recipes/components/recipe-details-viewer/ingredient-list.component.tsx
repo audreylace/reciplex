@@ -1,4 +1,4 @@
-import { useContext, useMemo } from "preact/hooks";
+import { useContext, useMemo } from "react";
 import { RecipeDetailsContext } from "./recipe-details-context.component";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
@@ -14,13 +14,14 @@ import TableBody from "@mui/material/TableBody";
 export function IngredientList() {
   const detailsContext = useContext(RecipeDetailsContext);
 
+  const ingredientCollection = detailsContext?.ingredientCollection;
   const list = useMemo(() => {
-    if (!detailsContext?.ingredientCollection) {
+    if (!ingredientCollection) {
       return null;
     }
 
-    return detailsContext.ingredientCollection.getIngredientList();
-  }, [detailsContext?.ingredientCollection]);
+    return ingredientCollection.getIngredientList();
+  }, [ingredientCollection]);
 
   if (!list || list.length < 1) {
     return null;

@@ -19,14 +19,14 @@ export function ContinueDialog({
           <Typography variant="h5" gutterBottom>
             {title}
           </Typography>
-          <Stack gap={1}>
+          <Stack sx={{ gap: 1 }}>
             <Typography variant="body1">
               Approved users will still have access to this recipe book.
             </Typography>
           </Stack>
         </CardContent>
         <CardActions>
-          <Stack direction="row" gap={1}>
+          <Stack direction="row" sx={{ gap: 1 }}>
             <Button onClick={onCancel}>Cancel</Button>
             <Button color="error" onClick={onContinue}>
               Continue

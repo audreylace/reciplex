@@ -15,7 +15,7 @@ export function StackedLabelValue({
       }
       gutterBottom={gutterBottom}
     >
-      <Stack direction={"column"} gap={0}>
+      <Stack direction="column" sx={{ gap: 0 }}>
         <Typography variant="subtitle2">{label}</Typography>
         <span>{value}</span>
       </Stack>

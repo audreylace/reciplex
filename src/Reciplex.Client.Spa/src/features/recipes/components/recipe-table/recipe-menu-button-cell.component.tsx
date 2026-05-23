@@ -1,7 +1,7 @@
 import TableCell from "@mui/material/TableCell";
 import IconButton from "@mui/material/IconButton";
 import MoreVert from "@mui/icons-material/MoreVert";
-import { useId, useRef, useState } from "preact/hooks";
+import { useId, useState } from "react";
 import { RecipeMenu } from "../recipe-menu/recipe-menu.component";
 
 export function RecipeMenuButtonCell({
@@ -15,26 +15,26 @@ export function RecipeMenuButtonCell({
   bookId: string;
   mayEdit: boolean;
 }) {
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const [open, setOpen] = useState(false);
-  const handleClick = () => {
-    setOpen(true);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
   };
   const handleClose = () => {
-    setOpen(false);
+    setAnchorEl(null);
   };
   const menuId = useId();
   const buttonId = useId();
 
   return (
-    <TableCell onClick={handleClick} role="button">
+    <TableCell role="button">
       <IconButton
-        ref={buttonRef}
         aria-label={`more for ${recipeName}`}
         id={buttonId}
         aria-controls={open ? menuId : undefined}
         aria-expanded={open ? "true" : undefined}
         aria-haspopup="true"
+        onClick={handleClick}
       >
         <MoreVert />
       </IconButton>
@@ -43,7 +43,7 @@ export function RecipeMenuButtonCell({
         recipeId={recipeId}
         mayEdit={mayEdit}
         open={open}
-        getAnchorElement={() => buttonRef.current}
+        getAnchorElement={() => anchorEl}
         menuId={menuId}
         onClose={handleClose}
         buttonId={buttonId}

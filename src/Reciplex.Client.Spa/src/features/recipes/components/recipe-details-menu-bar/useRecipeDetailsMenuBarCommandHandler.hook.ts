@@ -15,8 +15,8 @@ import {
   orderedListCommand,
   link as mdHyperlink,
 } from "@uiw/react-md-editor/commands";
-import type { RefObject } from "preact";
-import { useCallback } from "preact/hooks";
+import type { RefObject } from "react";
+import { useCallback } from "react";
 
 /** support commands */
 export type MenuBarCommands =

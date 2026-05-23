@@ -1,7 +1,6 @@
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import type { ComponentChild } from "preact";
 
 /** reusable header for all Reciplex pages */
 export function PageHeader({
@@ -28,9 +27,9 @@ export function PageHeader({
         <Stack direction={"row"} sx={{ width: "100%", mb: 1 }}>
           <Stack
             direction={"row"}
-            alignItems={"center"}
-            gap={2}
             sx={{
+              gap: 2,
+              alignItems: "center",
               flex: "1 1 auto",
             }}
           >
@@ -54,7 +53,7 @@ export interface IPageHeaderProps {
   /** page sub title */
   subTitle?: string;
   /** component to render on the right */
-  sideComponent?: ComponentChild;
+  sideComponent?: React.ReactNode;
   /** component to render after the title string */
-  titleComponent?: ComponentChild;
+  titleComponent?: React.ReactNode;
 }

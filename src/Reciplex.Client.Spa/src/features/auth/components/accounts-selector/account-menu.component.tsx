@@ -1,4 +1,4 @@
-import { useId, useState, useRef } from "preact/hooks";
+import { useId, useState, useRef } from "react";
 import { useAccountSettingsNavigate } from "../../hooks/useAccountSettingsNavigate.hook";
 import CardContent from "@mui/material/CardContent";
 import Menu from "@mui/material/Menu";
@@ -15,15 +15,10 @@ export function AccountMenu({ userKey }: { userKey: string }) {
   const [accountPath, accountNavigate] = useAccountSettingsNavigate(userKey);
   const [deletePath, deleteAccountNavigate] =
     useAccountDeletesNavigate(userKey);
-  const handleClick = (e: Event) => {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setOpen(true);
-  };
-  const handleClose = (e: Event) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setOpen(false);
   };
 
   return (
@@ -43,7 +38,9 @@ export function AccountMenu({ userKey }: { userKey: string }) {
         id={buttonId}
         anchorEl={() => buttonRef.current}
         open={open}
-        onClose={handleClose}
+        onClose={() => {
+          setOpen(false);
+        }}
         slotProps={{
           list: {
             "aria-labelledby": buttonId,
