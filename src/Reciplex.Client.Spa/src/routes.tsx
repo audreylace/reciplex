@@ -11,7 +11,11 @@ export const router = createBrowserRouter([
     children: [
       {
         path: "",
-        lazy: RecipeBooksLazy,
+        lazy: async () => {
+          const Component =
+            await import("./features/recipes/pages/recipe-book-list/recipe-book-list-page");
+          return { Component: Component.RecipeBookListPage };
+        },
       },
     ],
   },
@@ -74,7 +78,7 @@ export const router = createBrowserRouter([
         },
       },
       {
-        path: "delete",
+        path: "settings/delete",
         lazy: async () => {
           const Component =
             await import("./features/recipes/pages/delete-recipe-book/delete-recipe-book-page.component");
@@ -82,11 +86,27 @@ export const router = createBrowserRouter([
         },
       },
       {
-        path: "edit",
+        path: "settings/details",
         lazy: async () => {
           const Component =
             await import("./features/recipes/pages/edit-recipe-book/edit-recipe-book-page.component");
           return { Component: Component.EditRecipeBookPage };
+        },
+      },
+      {
+        path: "settings/invitation",
+        lazy: async () => {
+          const Component =
+            await import("./features/recipes/pages/share-recipe-book/share-recipe-book-page");
+          return { Component: Component.ShareRecipeBookPage };
+        },
+      },
+      {
+        path: "settings/manage-access",
+        lazy: async () => {
+          const Component =
+            await import("./features/recipes/pages/manage-user-access/manage-user-access-page.component");
+          return { Component: Component.ManageUserAccessPage };
         },
       },
       {
@@ -156,6 +176,14 @@ export const router = createBrowserRouter([
     },
     children: [
       {
+        path: "books/:bookId/invitation/:shareKey",
+        lazy: invitePageComponent,
+      },
+      {
+        path: "books/:bookId/invitation",
+        lazy: invitePageComponent,
+      },
+      {
         path: "/",
         lazy: async () => {
           const Component = await import("./pages/home/home-page.component");
@@ -166,8 +194,8 @@ export const router = createBrowserRouter([
   },
 ]);
 
-async function RecipeBooksLazy() {
+async function invitePageComponent() {
   const Component =
-    await import("./features/recipes/pages/recipe-book-list/recipe-book-list-page");
-  return { Component: Component.RecipeBookListPage };
+    await import("./features/recipes/pages/accept-book-invite/accept-book-invite-page.component");
+  return { Component: Component.AcceptBookInvitePage };
 }

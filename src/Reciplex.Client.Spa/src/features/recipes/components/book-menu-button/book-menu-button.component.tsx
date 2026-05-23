@@ -5,8 +5,9 @@ import { BookMenu } from "../book-menu/book-menu.component";
 
 export function BookMenuButton({
   bookId,
-  mayDelete,
   mayEdit,
+  mayShare,
+  mayLeave,
 }: IRecipeBookMenuButtonProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -36,10 +37,11 @@ export function BookMenuButton({
         onClose={handleClose}
         getAnchorElement={() => anchorEl}
         mayEdit={mayEdit}
-        mayDelete={mayDelete}
         bookId={bookId}
         menuId={menuId}
         buttonId={buttonId}
+        mayShare={mayShare}
+        mayLeave={mayLeave}
       />
     </div>
   );
@@ -50,6 +52,8 @@ export interface IRecipeBookMenuButtonProps {
   bookId: string;
   /** if the user has edit privileges */
   mayEdit?: boolean;
-  /** if the user has delete privileges */
-  mayDelete?: boolean;
+  /** if the user can share the book with others */
+  mayShare?: boolean;
+  /** if the user can leave the book */
+  mayLeave?: boolean;
 }

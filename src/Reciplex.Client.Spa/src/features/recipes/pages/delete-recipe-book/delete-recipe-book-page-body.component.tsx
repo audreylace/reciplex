@@ -12,6 +12,7 @@ import { makeBookListPath } from "../../route-utils";
 import { BookMutationNotAuthorizedBanner } from "../../components/book-mutation-not-authorized-banner/book-mutation-not-authorized-banner.component";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
 import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
+import { BookSettingsMenuButton } from "../../components/book-settings-menu/book-settings-menu-button.component";
 
 /** body of the delete recipe book page */
 export function DeleteRecipeBookPageBody({
@@ -67,6 +68,14 @@ export function DeleteRecipeBookPageBody({
       <PageHeader
         title="Confirm Permanent Recipe Book Deletion"
         subTitle="This book and all of its recipes will be permanently deleted. Verify that this is the correct recipe book before continuing. Once confirmed, this action can not be undone."
+        sideComponent={
+          <BookSettingsMenuButton
+            bookId={bookKey}
+            mayEdit={bookQuery.data?.mayEdit ?? false}
+            mayDelete={bookQuery.data?.mayDelete ?? false}
+            mayManageShareAccess={bookQuery.data?.mayManageAccess ?? false}
+          />
+        }
       />
       <DeleteWithNameVerification
         entityType="Recipe Book"

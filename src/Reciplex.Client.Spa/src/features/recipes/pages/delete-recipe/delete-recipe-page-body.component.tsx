@@ -13,6 +13,7 @@ import Button from "@mui/material/Button";
 import { DeleteWithNameVerification } from "../../../core/components/delete-with-name-verification/delete-with-name-verification.component";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
 import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
+import { SharedRecipeBookIndicator } from "../../components/shared-recipe-book-indicator/shared-recipe-book-indicator.component";
 
 export function DeleteRecipePageBody({ recipeId }: IDeleteRecipePageBodyProps) {
   const {
@@ -90,6 +91,9 @@ export function DeleteRecipePageBody({ recipeId }: IDeleteRecipePageBodyProps) {
       <PageHeader
         title="Confirm Permanent Recipe Deletion"
         subTitle="All deletions are final and can not be undone. Verify that this is the correct recipe before continuing."
+        titleComponent={
+          <SharedRecipeBookIndicator bookId={recipeQuery.data?.bookId} />
+        }
       />
       <DeleteWithNameVerification
         entityType="Recipe"

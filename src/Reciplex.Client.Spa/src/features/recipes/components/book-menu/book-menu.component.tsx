@@ -1,24 +1,31 @@
 import { useNavigate } from "react-router";
-import { makeCreateRecipePath } from "../../route-utils";
+import {
+  makeBookSettingsPath,
+  makeCreateRecipePath,
+  makeSharePath,
+} from "../../route-utils";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Divider from "@mui/material/Divider";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import AddIcon from "@mui/icons-material/Add";
 import SettingsIcon from "@mui/icons-material/Settings";
-import Delete from "@mui/icons-material/Delete";
+import { ShareButton } from "./share-button.component";
+import ClearIcon from "@mui/icons-material/Clear";
 
 export function BookMenu({
   mayEdit,
-  mayDelete,
+  mayShare,
   menuId,
   onClose,
   getAnchorElement,
   open,
   buttonId,
   bookId,
+  mayLeave,
 }: IRecipeBookMenuProps) {
   const navigate = useNavigate();
+
   return (
     <Menu
       id={menuId}
@@ -42,27 +49,29 @@ export function BookMenu({
       </MenuItem>
       <Divider />
       <MenuItem
-        onClick={() => {
-          navigate(`/books/${bookId}/edit`);
-        }}
         disabled={!mayEdit}
+        onClick={() => {
+          navigate(makeBookSettingsPath(bookId));
+        }}
       >
         <ListItemIcon>
           <SettingsIcon fontSize="small" />
         </ListItemIcon>
         Settings
       </MenuItem>
-      <MenuItem
-        onClick={() => {
-          navigate(`/books/${bookId}/delete`);
-        }}
-        disabled={!mayDelete}
-      >
-        <ListItemIcon>
-          <Delete fontSize="small" />
-        </ListItemIcon>
-        Delete
-      </MenuItem>
+      {mayShare && <ShareButton bookId={bookId} />}
+      {mayLeave && (
+        <MenuItem
+          onClick={() => {
+            navigate(makeSharePath(bookId, ""));
+          }}
+        >
+          <ListItemIcon>
+            <ClearIcon fontSize="small" />
+          </ListItemIcon>
+          Leave
+        </MenuItem>
+      )}
     </Menu>
   );
 }
@@ -71,10 +80,15 @@ export function BookMenu({
 export interface IRecipeBookMenuProps {
   /** the id of the book */
   bookId: string;
-  /** if the user has delete privileges */
-  mayDelete?: boolean;
   /** if the user has edit privileges */
   mayEdit?: boolean;
+  /** if the user can share the book with others */
+  mayShare?: boolean;
+  /**
+   * if the use can invoke the leave action on a book.
+   * User must not own the book for this to be available.
+   */
+  mayLeave?: boolean;
   /** the id of the menu */
   menuId?: string;
   /** true opens menu */

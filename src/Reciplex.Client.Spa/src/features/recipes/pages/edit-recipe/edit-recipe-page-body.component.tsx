@@ -9,6 +9,7 @@ import { LoadingIndicator } from "../../../core/components/loading-indicator/loa
 import Alert from "@mui/material/Alert";
 import { EditRecipeForm } from "../../components/edit-recipe-form/edit-recipe-form.component";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
+import { SharedRecipeBookIndicator } from "../../components/shared-recipe-book-indicator/shared-recipe-book-indicator.component";
 
 export function EditRecipePageBody({ recipeId }: { recipeId: string }) {
   const recipeQueryKey = useGetRecipeByIdQueryKey(recipeId);
@@ -36,7 +37,12 @@ export function EditRecipePageBody({ recipeId }: { recipeId: string }) {
     }
     return (
       <>
-        <PageHeader title="Editing Recipe" />
+        <PageHeader
+          title="Editing Recipe"
+          titleComponent={
+            <SharedRecipeBookIndicator bookId={recipeQuery.data?.bookId} />
+          }
+        />
         <EditRecipeForm
           concurrencyConflict={concurrencyConflict}
           onReset={() => {

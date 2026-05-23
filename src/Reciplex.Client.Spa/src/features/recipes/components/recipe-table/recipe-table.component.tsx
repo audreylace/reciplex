@@ -2,7 +2,7 @@ import LinearProgress from "@mui/material/LinearProgress";
 import Paper from "@mui/material/Paper";
 import Table from "@mui/material/Table";
 import TableContainer from "@mui/material/TableContainer";
-import type { IRecipeModel } from "../../services/recipe-types";
+import type { IRecipeListEntryJsonResponse } from "../../services/recipe-types";
 import { RecipeTableHeader } from "./recipe-table-header.component";
 import { TablePageControls } from "../table-page-controls/table-page-controls.component";
 import { RecipeTableBody } from "./recipe-table-body.component";
@@ -19,14 +19,8 @@ function RecipeTableInner(
     recipes,
     nextLoading,
     previousLoading,
-  }: {
-    pending?: boolean;
-    next?: string;
-    previous?: string;
-    recipes: IRecipeModel[] | undefined;
-    nextLoading?: boolean;
-    previousLoading?: boolean;
-  },
+    mayEdit,
+  }: IRecipeTableProps,
   ref?: Ref<HTMLDivElement>,
 ) {
   const pageSize = useRecipeClientStateContext((s) => s.recipeListPageSize);
@@ -38,7 +32,7 @@ function RecipeTableInner(
       <TableContainer>
         <Table>
           <RecipeTableHeader pending={pending} />
-          <RecipeTableBody recipes={recipes} />
+          <RecipeTableBody recipes={recipes} mayEdit={mayEdit} />
         </Table>
       </TableContainer>
       <TablePageControls
@@ -52,4 +46,22 @@ function RecipeTableInner(
       {pending && <LinearProgress aria-label="Loading…" />}
     </Paper>
   );
+}
+
+/** props for `<RecipeTable />` */
+export interface IRecipeTableProps {
+  /** if a load is in progress */
+  pending?: boolean;
+  /** key for the next page */
+  next?: string;
+  /** key for the previous page */
+  previous?: string;
+  /** list of recipes to show on this page */
+  recipes: IRecipeListEntryJsonResponse[] | undefined;
+  /** if the next page of data is loading */
+  nextLoading?: boolean;
+  /** if the previous page of data is loading */
+  previousLoading?: boolean;
+  /** if the user can edit recipes in this book */
+  mayEdit: boolean;
 }
