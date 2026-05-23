@@ -11,9 +11,6 @@ export function RecipeMenuButton({
 }: IRecipeMenuButtonProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
   const handleClose = () => {
     setAnchorEl(null);
   };
@@ -28,7 +25,7 @@ export function RecipeMenuButton({
         aria-controls={open ? menuId : undefined}
         aria-expanded={open ? "true" : undefined}
         aria-haspopup="true"
-        onClick={handleClick}
+        onClick={(e) => setAnchorEl(e.currentTarget)}
       >
         <MoreVertIcon />
       </IconButton>

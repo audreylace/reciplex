@@ -24,7 +24,7 @@ export function BookTableRow({ book }: { book: IRecipeBookModel }) {
       }}
     >
       <TableCell onClick={onClick} role="button">
-        <Stack direction={"row"} gap={1} alignItems={"center"}>
+        <Stack direction={"row"} spacing={1} sx={{ alignItems: "center" }}>
           {book.name}{" "}
           {book.ownerId !== userKey && (
             <SharedRecipeBookIndicatorNoLoad bookId={book.id} />

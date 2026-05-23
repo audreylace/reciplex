@@ -28,7 +28,7 @@ export function FullScreenEditor({
   }, [disabled, onExit, value]);
 
   return (
-    <Stack direction="column" height={"100%"}>
+    <Stack direction="column" sx={{ height: "100%" }}>
       <RecipeDetailsMenuBar
         commandHandler={menuCommandHandler}
         isFullscreen={true}

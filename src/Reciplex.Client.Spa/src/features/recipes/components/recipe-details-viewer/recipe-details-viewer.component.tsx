@@ -42,7 +42,11 @@ export function RecipeDetailsViewer({
   mayEdit,
   goToEditAction,
 }: IRecipeDetailsViewerProps) {
-  const detailsContextModel = usePipeline(detailsMd, componentMap);
+  const detailsContextModel = usePipeline(
+    detailsMd,
+    // @ts-expect-error issue with dynamic component type
+    componentMap,
+  );
 
   return (
     <>

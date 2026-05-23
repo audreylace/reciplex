@@ -6,7 +6,11 @@ export function LoadingIndicator({ show }: { show?: boolean }) {
     return null;
   }
   return (
-    <Stack spacing={2} direction="column" alignItems="center" width={"100%"}>
+    <Stack
+      spacing={2}
+      direction="column"
+      sx={{ width: "100%", alignItems: "center" }}
+    >
       <CircularProgress size="3rem" />
     </Stack>
   );

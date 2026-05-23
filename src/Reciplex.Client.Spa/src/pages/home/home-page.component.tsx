@@ -10,7 +10,6 @@ import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
-import Grid from "@mui/material/Grid";
 
 // Remark: This component is auto-generated with some minor hand edits.
 //         Do not generalize it outside of the home page.
@@ -43,8 +42,7 @@ export function HomePage() {
         <Stack
           direction="row"
           spacing={2}
-          justifyContent="center"
-          sx={{ mt: 5 }}
+          sx={{ mt: 5, justifyContent: "center" }}
         >
           <Button
             variant="contained"
@@ -65,25 +63,23 @@ export function HomePage() {
 
       <Divider sx={{ mb: 10, opacity: 0.6 }} />
 
-      <Grid container spacing={4}>
-        <FeatureCard
-          icon={<AutoAwesome sx={{ fontSize: 35 }} />}
-          title="Smart Lists"
-          description="Our intelligent system automatically combines ingredients across your recipes, creating a perfectly organized shopping list for you."
-        />
+      <FeatureCard
+        icon={<AutoAwesome sx={{ fontSize: 35 }} />}
+        title="Smart Lists"
+        description="Our intelligent system automatically combines ingredients across your recipes, creating a perfectly organized shopping list for you."
+      />
 
-        <FeatureCard
-          icon={<Restaurant sx={{ fontSize: 35 }} />}
-          title="Kitchen Ready"
-          description="Never forget a tool again. Reciplex keeps track of everything from timers to stock pots, so you are always prepared for the next step."
-        />
+      <FeatureCard
+        icon={<Restaurant sx={{ fontSize: 35 }} />}
+        title="Kitchen Ready"
+        description="Never forget a tool again. Reciplex keeps track of everything from timers to stock pots, so you are always prepared for the next step."
+      />
 
-        <FeatureCard
-          icon={<LibraryBooks sx={{ fontSize: 35 }} />}
-          title="Personalized Books"
-          description="Group your recipes into beautiful, custom collections—from 'Quick Weeknight Dinners' to your secret family holiday traditions."
-        />
-      </Grid>
+      <FeatureCard
+        icon={<LibraryBooks sx={{ fontSize: 35 }} />}
+        title="Personalized Books"
+        description="Group your recipes into beautiful, custom collections—from 'Quick Weeknight Dinners' to your secret family holiday traditions."
+      />
     </Container>
   );
 }

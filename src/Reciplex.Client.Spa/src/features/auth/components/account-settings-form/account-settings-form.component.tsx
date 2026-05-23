@@ -45,7 +45,7 @@ export function AccountSettingsForm({
       {showConcurrencyError && <ConcurrencyConflictAlert onReset={onReset} />}
       {showSaveError && <SaveFailedAlert onReset={onReset} />}
       <Paper sx={{ p: 2, mt: 2 }}>
-        <Stack direction={"column"} gap={2}>
+        <Stack direction={"column"} spacing={2}>
           <Typography variant="h5" gutterBottom>
             Current account settings
           </Typography>
@@ -60,7 +60,7 @@ export function AccountSettingsForm({
               Update account settings
             </Typography>
           </legend>
-          <Stack spacing={2} marginTop={3}>
+          <Stack spacing={2} sx={{ mt: 3 }}>
             <TextField
               label="New Display Name"
               helperText={displayNameHelpText(errors)}

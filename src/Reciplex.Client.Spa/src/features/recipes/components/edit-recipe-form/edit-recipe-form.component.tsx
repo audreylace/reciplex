@@ -72,7 +72,7 @@ export function EditRecipeForm({
             </Typography>
           </CardContent>
           <CardActions>
-            <Stack direction="row" gap={1}>
+            <Stack direction="row" spacing={1}>
               <Button
                 onClick={() => blocker.state === "blocked" && blocker.reset()}
               >
@@ -130,13 +130,13 @@ export function EditRecipeForm({
           navigate(makeViewRecipePath(newRecipe.bookId, newRecipe.id));
         })}
       >
-        <Stack gap={2}>
+        <Stack spacing={2}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h5">Metadata</Typography>
             <Typography variant="subtitle1">
               High level information used for searching and quick overview
             </Typography>
-            <Stack gap={2} sx={{ mt: 2 }}>
+            <Stack spacing={2} sx={{ mt: 2 }}>
               <NameInput
                 register={register}
                 disabled={formDisabled}
@@ -155,7 +155,7 @@ export function EditRecipeForm({
             <Typography variant="subtitle1">
               Recipe instructions and other information
             </Typography>
-            <Stack gap={2} sx={{ mt: 2 }}>
+            <Stack spacing={2} sx={{ mt: 2 }}>
               <DetailsInput control={control} disabled={formDisabled} />
             </Stack>
           </Paper>

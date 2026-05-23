@@ -105,7 +105,7 @@ export function NameAndShortDescriptionForm({
             onBlur={onBlur}
             disabled={fieldsDisabled}
           />
-          <Stack gap={1} direction={"row"}>
+          <Stack spacing={1} direction={"row"}>
             <Button
               variant="contained"
               type="submit"

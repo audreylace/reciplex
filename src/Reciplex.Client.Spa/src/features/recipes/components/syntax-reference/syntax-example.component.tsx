@@ -12,7 +12,7 @@ export function SyntaxExample({
   return (
     <Paper elevation={3} sx={{ mb: 3, p: 2 }}>
       <Box sx={{ mb: 1 }}>
-        <Stack direction={"row"} gap={1}>
+        <Stack direction={"row"} spacing={1}>
           <Typography variant="body1" component="code">
             {children}
           </Typography>

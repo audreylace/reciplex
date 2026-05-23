@@ -28,9 +28,7 @@ export function BookSettingsMenuButton({
 }: IBookSettingsMenuButtonProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
+
   const handleClose = () => {
     setAnchorEl(null);
   };
@@ -46,7 +44,7 @@ export function BookSettingsMenuButton({
         aria-controls={open ? menuId : undefined}
         aria-expanded={open ? "true" : undefined}
         aria-haspopup="true"
-        onClick={handleClick}
+        onClick={(e) => setAnchorEl(e.currentTarget)}
       >
         <SettingsIcon />
       </IconButton>

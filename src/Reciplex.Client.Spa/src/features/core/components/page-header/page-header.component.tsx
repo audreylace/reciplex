@@ -28,10 +28,10 @@ export function PageHeader({
         <Stack direction={"row"} sx={{ width: "100%", mb: 1 }}>
           <Stack
             direction={"row"}
-            alignItems={"center"}
-            gap={2}
+            spacing={2}
             sx={{
               flex: "1 1 auto",
+              alignItems: "center",
             }}
           >
             <Typography variant="h2">{title}</Typography>

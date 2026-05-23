@@ -35,7 +35,11 @@ export const FeatureCard = ({
           {title}
         </Typography>
       </Box>
-      <Typography variant="body2" color="text.secondary" lineHeight={1.6}>
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{ lineHeight: 1.6 }}
+      >
         {description}
       </Typography>
     </CardContent>

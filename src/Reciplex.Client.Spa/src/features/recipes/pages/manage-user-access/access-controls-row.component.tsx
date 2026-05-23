@@ -16,7 +16,7 @@ export function AccessControlsRow({
   return (
     <TableRow>
       <TableCell>
-        <Stack spacing={1} direction="row" alignItems="center">
+        <Stack spacing={1} direction="row" sx={{ alignItems: "center" }}>
           <span>{displayName}</span>
           <Chip label="new" color="primary" size="small" />
         </Stack>

@@ -27,7 +27,7 @@ export function InvitePageBodyTemplate({
       <ContentWrapper topGutter>
         <ContentTitle>{title}</ContentTitle>
         <Box sx={{ mt: 2, my: 3 }}>
-          <Stack gap={1}>
+          <Stack spacing={1}>
             <StackedLabelValue label="Name" value={name} />
             {shortDescription && (
               <StackedLabelValue

@@ -44,10 +44,10 @@ export function ShareSettingsForm({
       {shareKey && (
         <>
           <Stack
-            gap={2}
             direction={"row"}
             sx={{
               alignItems: "center",
+              gap: 2,
             }}
           >
             <TextField
