@@ -62,4 +62,10 @@ public class UserDbObject
     /// When the user was created
     /// </summary>
     public required long Created { get; init; }
+
+    /// <summary>
+    /// Recipes shared with this user
+    /// </summary>
+    public ICollection<AdditionalBookUserAccessDbObject> RecipeBookAccessEntities { get; set; } =
+    [];
 }

@@ -3,7 +3,7 @@ using Reciplex.Server.Database.DbObjects;
 
 namespace Reciplex.Server.Database.UsersDomain;
 
-public class UpdateUserArgsValidator : AbstractValidator<UpdateUserArgs>
+sealed class UpdateUserArgsValidator : AbstractValidator<UpdateUserArgs>
 {
     public UpdateUserArgsValidator()
     {

@@ -3,8 +3,14 @@ using Reciplex.Server.Database.DbObjects;
 
 namespace Reciplex.Server.Database.RecipesDomain;
 
-public class CreateRecipeArgsValidator : AbstractValidator<CreateRecipeArgs>
+/// <summary>
+/// Validates <see cref="CreateRecipeArgs"/>
+/// </summary>
+sealed class CreateRecipeArgsValidator : AbstractValidator<CreateRecipeArgs>
 {
+    /// <summary>
+    /// Validator
+    /// </summary>
     public CreateRecipeArgsValidator()
     {
         RuleFor(r => r.Name).MaximumLength(RecipeDbObject.NameMaxLength).NotEmpty();

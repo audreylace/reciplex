@@ -3,7 +3,7 @@ using Reciplex.Server.Database.DbObjects;
 
 namespace Reciplex.Server.Database.UsersDomain;
 
-public class CreateUserArgsValidator : AbstractValidator<CreateUserArgs>
+sealed class CreateUserArgsValidator : AbstractValidator<CreateUserArgs>
 {
     public CreateUserArgsValidator()
     {

@@ -1,22 +1,27 @@
 namespace Reciplex.Server.Database.RecipesDomain;
 
 /// <summary>
-/// Args for creating a recipe
+/// Information about a recipe inside a list result
 /// </summary>
-public class CreateRecipeArgs
+public class RecipeListEntryDao
 {
+    /// <summary>
+    /// Recipe primary key.
+    /// </summary>
+    public required string Id { get; init; }
+
     /// <summary>
     /// Name of the recipe
     /// </summary>
     public required string Name { get; init; }
 
     /// <summary>
-    /// recipe short description
+    /// Recipe short description
     /// </summary>
     public required string ShortDescription { get; init; }
 
     /// <summary>
-    /// Recipe details
+    /// The book this recipe is contained in
     /// </summary>
-    public required string Details { get; init; }
+    public required string BookId { get; init; }
 }

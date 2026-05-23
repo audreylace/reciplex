@@ -57,4 +57,25 @@ public class AdditionalBookUserAccessDbObject
     /// User can edit book information
     /// </summary>
     public bool MayEditBook { get; set; }
+
+    /// <summary>
+    /// If the owner has reviewed this entry yet. If false, all other permissions must be ignored.
+    /// </summary>
+    public bool Reviewed { get; set; }
+
+    /// <summary>
+    /// When the entry was last modified
+    /// </summary>
+    public required long LastModified { get; set; }
+
+    /// <summary>
+    /// When the entry was created
+    /// </summary>
+    public required long Created { get; init; }
+
+    /// <summary>
+    /// The concurrency tag
+    /// </summary>
+    [ConcurrencyCheck]
+    public required string ConcurrencyTag { get; set; } = "";
 }

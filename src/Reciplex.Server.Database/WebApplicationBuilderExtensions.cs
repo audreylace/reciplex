@@ -19,14 +19,9 @@ public static partial class WebApplicationBuilderExtensions
         this WebApplicationBuilder builder
     )
     {
-        builder.Services.AddScoped<IUsersRepository, UsersRepository>();
-        builder.Services.AddScoped<IRecipesRepository, RecipesRepository>();
-        builder.Services.AddScoped<IRecipeBooksRepository, RecipeBooksRepository>();
-
-        builder.Services.AddScoped<RecipeBookDbObjectQuery>();
-        builder.Services.AddScoped<RecipeDbObjectQuery>();
-        builder.Services.AddScoped<RecipeDbObjectListQuery>();
-
+        builder.Services.AddScoped<IUsersService, UsersService>();
+        builder.Services.AddScoped<IRecipesService, RecipesService>();
+        builder.Services.AddScoped<IRecipeBooksService, RecipeBooksService>();
         builder.Services.AddRandomNumberGeneratorConcurrencyTagProvider();
 
         return builder;

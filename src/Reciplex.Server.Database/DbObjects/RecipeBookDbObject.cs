@@ -9,6 +9,7 @@ namespace Reciplex.Server.Database.DbObjects;
 /// Recipe book database object
 /// </summary>
 [Index(nameof(OwnerFk))]
+[Index(nameof(Deleted))]
 public class RecipeBookDbObject
 {
     public const int NameMaxLength = 128;
@@ -65,12 +66,17 @@ public class RecipeBookDbObject
     /// <summary>
     /// Navigation property to recipes in this book
     /// </summary>
-    public ICollection<RecipeDbObject> Recipes { get; set; } = [];
+    public ICollection<RecipeDbObject> Recipes { get; init; } = [];
 
     /// <summary>
     /// Users with additional access
     /// </summary>
-    public ICollection<AdditionalBookUserAccessDbObject> AdditionalUsers { get; set; } = [];
+    public ICollection<AdditionalBookUserAccessDbObject> AdditionalUsers { get; init; } = [];
+
+    /// <summary>
+    /// The recipe book share key. If an empty string, then sharing is disabled.
+    /// </summary>
+    public string ShareKey { get; set; } = "";
 
     /// <summary>
     /// Populated if the recipe book is deleted. The value is the time of deletion.

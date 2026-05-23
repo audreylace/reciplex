@@ -1,9 +1,11 @@
+using Reciplex.Server.Database.Results;
+
 namespace Reciplex.Server.Database.UsersDomain;
 
 /// <summary>
 /// Service for storing, retrieving, and manipulating user records
 /// </summary>
-public interface IUsersRepository
+public interface IUsersService
 {
     /// <summary>
     /// Looks up a user by <paramref name="userKey"/>
@@ -11,7 +13,10 @@ public interface IUsersRepository
     /// <param name="userKey">the user identifier</param>
     /// <param name="cancellationToken">async cancellation token</param>
     /// <returns>information about the user or null if the user does not exist</returns>
-    Task<UserDao?> GetUserAsync(string userKey, CancellationToken cancellationToken);
+    Task<DatabaseResultVariant<SuccessResult<UserDao>, UserNotFoundResult>> GetUserAsync(
+        string userKey,
+        CancellationToken cancellationToken
+    );
 
     /// <summary>
     /// Returns the list of users mapped by the authority, subject pair
@@ -24,7 +29,7 @@ public interface IUsersRepository
     /// A given subject and authority grants access to a set of users. This API is used
     /// to determine the exact set.
     /// </remarks>
-    IAsyncEnumerable<UserDao> GetUsersBySubjectAsync(
+    Task<List<UserDao>> GetUsersBySubjectAsync(
         string authority,
         string subject,
         CancellationToken ct = default
@@ -43,7 +48,9 @@ public interface IUsersRepository
     /// A given subject and authority grants access to a set of users. This API is used
     /// to determine if the pair would allow access as the specified user.
     /// </remarks>
-    Task<AuthorizationCheckResult> CheckAuthorizationAsync(
+    Task<
+        DatabaseResultVariant<SuccessResult<UserDao>, UserNotFoundResult, ForbiddenResult>
+    > CheckAuthorizationAsync(
         string authority,
         string subject,
         string userKey,
@@ -57,11 +64,9 @@ public interface IUsersRepository
     /// <param name="concurrencyToken">the concurrency token</param>
     /// <param name="ct">cancellation token for the async operation</param>
     /// <returns>task that resolves on operation completion with information on the outcome</returns>
-    Task<DeleteUserResult> DeleteUserAsync(
-        string userKey,
-        string concurrencyToken,
-        CancellationToken ct
-    );
+    Task<
+        DatabaseResultVariant<EmptySuccessResult, ConflictResult, UserNotFoundResult>
+    > DeleteUserAsync(string userKey, string concurrencyToken, CancellationToken ct);
 
     /// <summary>
     /// Updates a user
@@ -71,7 +76,14 @@ public interface IUsersRepository
     /// <param name="args">arguments for the update operation</param>
     /// <param name="ct">cancellation token for the async operation</param>
     /// <returns>task that resolves on operation completion with information on the outcome</returns>
-    Task<UpdateUserResult> UpdateUserAsync(
+    Task<
+        DatabaseResultVariant<
+            SuccessResult<UserDao>,
+            ValidationFailureResult,
+            UserNotFoundResult,
+            ConflictResult
+        >
+    > UpdateUserAsync(
         string userKey,
         string concurrencyToken,
         UpdateUserArgs args,
@@ -84,5 +96,8 @@ public interface IUsersRepository
     /// <param name="args">args for the operation</param>
     /// <param name="ct">cancellation token for the async operation</param>
     /// <returns>task that resolves on operation completion with information on the outcome</returns>
-    Task<CreateUserResult> CreateUserAsync(CreateUserArgs args, CancellationToken ct);
+    Task<DatabaseResultVariant<SuccessResult<UserDao>, ValidationFailureResult>> CreateUserAsync(
+        CreateUserArgs args,
+        CancellationToken ct
+    );
 }
