@@ -28,7 +28,7 @@ export function RecipeDetailsMenuBar({
 }) {
   return (
     <>
-      <ButtonGroup>
+      <ButtonGroup sx={{ flexWrap: "wrap" }}>
         <MenuButton
           command="bold"
           icon={<FormatBoldIcon />}
