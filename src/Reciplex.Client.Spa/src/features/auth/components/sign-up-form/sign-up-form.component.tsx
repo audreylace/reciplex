@@ -41,7 +41,7 @@ export function SignUpForm() {
           Create an account and get cooking with Reciplex!
         </Typography>
         <form onSubmit={onSubmit}>
-          <Stack spacing={2} marginTop={3}>
+          <Stack sx={{ spacing: 2, marginTop: 3 }}>
             {createAccountMutation.isSuccess && (
               <Fade in={true} timeout={500}>
                 <Alert

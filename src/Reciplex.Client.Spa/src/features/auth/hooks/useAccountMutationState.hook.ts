@@ -1,4 +1,4 @@
-import { useMemo } from "preact/hooks";
+import { useMemo } from "react";
 import { useGetAccountsQuery } from "./useGetAccountsQuery.hook";
 import { useMutationFormState } from "../../core/hooks/useMutationFormState.hook";
 import { accountListAuthQueryKey } from "../utils/auth-query-key-factory";

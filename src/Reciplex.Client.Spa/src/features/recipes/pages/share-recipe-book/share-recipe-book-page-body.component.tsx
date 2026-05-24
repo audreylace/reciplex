@@ -3,7 +3,7 @@ import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
 import { BookMutationNotAuthorizedBanner } from "../../components/book-mutation-not-authorized-banner/book-mutation-not-authorized-banner.component";
 import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "react";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
 import { useUpdateRecipeBookShareKeyMutation } from "../../hooks/useUpdateRecipeBookShareMutation.hook";
 import LinearProgress from "@mui/material/LinearProgress";

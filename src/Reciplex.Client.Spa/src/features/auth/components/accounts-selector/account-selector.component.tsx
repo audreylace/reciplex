@@ -6,7 +6,7 @@ import Stack from "@mui/material/Stack";
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
 import { AddAccountButton } from "./add-account-button.component";
 import { AccountCard } from "./account-card.component";
-import { useEffect } from "preact/hooks";
+import { useEffect } from "react";
 import { useSignUpNavigate } from "../../hooks/useSignUpNavigate.hook";
 import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
 

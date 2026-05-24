@@ -3,9 +3,11 @@ import AccordionDetails from "@mui/material/AccordionDetails";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import type { ComponentChildren } from "preact";
 
-export function SyntaxSection({ children, title }: ISyntaxSectionProps) {
+export function SyntaxSection({
+  children,
+  title,
+}: React.PropsWithChildren<ISyntaxSectionProps>) {
   return (
     <Accordion>
       <AccordionSummary>
@@ -19,6 +21,5 @@ export function SyntaxSection({ children, title }: ISyntaxSectionProps) {
 }
 
 export interface ISyntaxSectionProps {
-  children?: ComponentChildren;
   title: string;
 }

@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from "preact/hooks";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import {
   useQueryClient,
   type QueryKey,
@@ -20,22 +20,19 @@ export function useMutationFormState<TData>({
   // component key - incremented each time we reset the form
   // to recycle the component
   const [resetCount, setResetCount] = useState(1);
-  const cbRef = useRef<() => void | undefined>();
-  const queryKeyRef = useRef<QueryKey | undefined>();
+  const cbRef = useRef<() => void | undefined>(undefined);
+  const queryKeyRef = useRef<QueryKey | undefined>(undefined);
+
+  if (!concurrencyToken && query.isSuccess && query.data) {
+    const token = concurrencyTokenProvider(query.data);
+    // lock concurrency token to detect concurrent modifications
+    setConcurrencyToken(token);
+  }
 
   // store deps in ref to avoid regenerating resetState callback
   useLayoutEffect(() => {
     cbRef.current = onReset;
     queryKeyRef.current = queryKey;
-
-    // lock concurrency token to detect concurrent modifications
-    setConcurrencyToken((token) => {
-      if (token || !query.isSuccess || !query.data) {
-        return token;
-      }
-
-      return concurrencyTokenProvider(query.data);
-    });
   }, [
     onReset,
     queryKey,

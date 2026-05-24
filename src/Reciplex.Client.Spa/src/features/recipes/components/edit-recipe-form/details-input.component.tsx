@@ -33,6 +33,7 @@ export function DetailsInput({ disabled, control }: IDetailsInput) {
       onChange={onChange}
       onBlur={onBlur}
       disabled={disabled}
+      syntheticChange={(s) => onChange(s)}
     />
   );
 }

@@ -5,8 +5,10 @@ import MenuItem from "@mui/material/MenuItem";
  * Component for selecting the number of results in a list
  */
 export function PageSizeSelect({ value, onChange }: IPageSizeSelectProps) {
-  const textFieldOnChange = (event: Event) => {
-    let parsedSize = parseInt((event.target as HTMLInputElement)?.value ?? "");
+  const textFieldOnChange = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement, Element>,
+  ) => {
+    let parsedSize = parseInt(event.target.value ?? "");
     if (isNaN(parsedSize)) {
       parsedSize = 10;
     }

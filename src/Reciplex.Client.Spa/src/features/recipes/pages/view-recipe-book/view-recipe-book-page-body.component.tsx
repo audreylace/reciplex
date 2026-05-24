@@ -5,7 +5,7 @@ import { RecipeTable } from "../../components/recipe-table/recipe-table.componen
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
 import { useGetRecipesInBookQuery } from "../../hooks/useGetRecipesInBookQuery.hook";
 import { useRecipeClientStateContext } from "../../hooks/useRecipeClientStateContext.hook";
-import { useEffect, useRef } from "preact/hooks";
+import { useEffect, useRef } from "react";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
 import { BookMenuButton } from "../../components/book-menu-button/book-menu-button.component";
 import { useActiveUserKey } from "../../../auth/hooks/useActiveUser.hook";
@@ -95,7 +95,11 @@ export function ViewRecipeBookPageBody({
     return <LoadingIndicator />;
   }
 
-  if (!book || !recipeList) {
+  if (
+    !book ||
+    // show loading table once the book loads in
+    (!getRecipesPending && !recipeList)
+  ) {
     return <RecipeBookNotFoundBanner />;
   }
 

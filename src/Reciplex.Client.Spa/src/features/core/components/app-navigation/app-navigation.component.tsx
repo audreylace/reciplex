@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router";
 import styles from "./app-navigation.module.css";
-import type { PropsWithChildren } from "preact/compat";
+import type { PropsWithChildren } from "react";
 import { useSignInNavigate } from "../../../auth/hooks/useSignInNavigate.hook";
 import Slide from "@mui/material/Slide";
 import AppBar from "@mui/material/AppBar";
@@ -19,6 +19,7 @@ export function AppNavigation({
   fixed,
   invisible,
   removeLinks,
+  removeGrow,
 }: IAppNavigationProps) {
   const navigate = useNavigate();
 
@@ -33,25 +34,27 @@ export function AppNavigation({
       <Slide appear={false} direction="down" in={!trigger}>
         <AppBar position={fixed ? "fixed" : "static"}>
           <Toolbar>
-            <Typography variant="h6" component="div" sx={{ mr: 3 }}>
-              <Button
-                onClick={() => navigate("/")}
-                sx={{
-                  color: "white",
-                  display: "block",
-                  textDecoration: "none",
-                }}
-              >
-                <Typography variant="subtitle1">Reciplex</Typography>
-              </Button>
-            </Typography>
+            <Box className={styles.mainText}>
+              <Typography variant="h6" component="div" sx={{ mr: 3 }}>
+                <Button
+                  onClick={() => navigate("/")}
+                  sx={{
+                    color: "white",
+                    display: "block",
+                    textDecoration: "none",
+                  }}
+                >
+                  <Typography variant="subtitle1">Reciplex</Typography>
+                </Button>
+              </Typography>
+            </Box>
             {!removeLinks && (
               <NavLink to={makeBookListPath()} className={styles.navLink}>
                 <Typography variant="subtitle1">Books</Typography>
               </NavLink>
             )}
             {children}
-            <Box sx={{ flex: "1 0 auto" }}></Box>
+            {!removeGrow && <Box sx={{ flex: "1 0 auto" }}></Box>}
             <IconButton
               size="large"
               aria-label="account of current user"
@@ -73,4 +76,5 @@ export interface IAppNavigationProps extends PropsWithChildren {
   fixed?: boolean;
   invisible?: boolean;
   removeLinks?: boolean;
+  removeGrow?: boolean;
 }

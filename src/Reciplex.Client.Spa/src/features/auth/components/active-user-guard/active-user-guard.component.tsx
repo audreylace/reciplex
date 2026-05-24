@@ -1,4 +1,3 @@
-import type { ComponentChildren } from "preact";
 import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
 import { useActiveUserGuard } from "../../hooks/useActiveUserGuard.hook";
@@ -12,7 +11,7 @@ export function ActiveUserGuard({
   allowNullUser,
 }: {
   allowNullUser?: boolean;
-  children: ComponentChildren;
+  children: React.ReactNode;
 }) {
   const { renderChildren, status, retry } = useActiveUserGuard(allowNullUser);
 

@@ -1,5 +1,4 @@
 import Box from "@mui/material/Box";
-import type { ComponentChildren } from "preact";
 
 export function MaybeRenderInvisible({
   children,
@@ -13,5 +12,5 @@ export function MaybeRenderInvisible({
 
 export interface IMaybeRenderInvisibleProps {
   invisible?: boolean;
-  children: ComponentChildren;
+  children?: React.ReactNode;
 }

@@ -1,5 +1,4 @@
 import Typography from "@mui/material/Typography";
-import type { ComponentChildren } from "preact";
 
 export function SyntaxOverviewText({ children }: ISyntaxOverviewTextProps) {
   return (
@@ -10,5 +9,5 @@ export function SyntaxOverviewText({ children }: ISyntaxOverviewTextProps) {
 }
 
 export interface ISyntaxOverviewTextProps {
-  children?: ComponentChildren;
+  children?: React.ReactNode;
 }

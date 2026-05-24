@@ -1,4 +1,4 @@
-import { useCallback } from "preact/hooks";
+import { useCallback } from "react";
 import { useNavigate } from "react-router";
 
 /** path to the sign up page */

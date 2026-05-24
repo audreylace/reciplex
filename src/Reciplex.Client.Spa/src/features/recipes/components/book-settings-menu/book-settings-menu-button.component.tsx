@@ -1,4 +1,4 @@
-import { useId, useState } from "preact/hooks";
+import { useId, useState } from "react";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
@@ -28,7 +28,7 @@ export function BookSettingsMenuButton({
 }: IBookSettingsMenuButtonProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
     setAnchorEl(event.currentTarget);
   };
   const handleClose = () => {
@@ -39,17 +39,18 @@ export function BookSettingsMenuButton({
   const navigate = useNavigate();
 
   return (
-    <div>
-      <IconButton
-        aria-label="more"
-        id={buttonId}
-        aria-controls={open ? menuId : undefined}
-        aria-expanded={open ? "true" : undefined}
-        aria-haspopup="true"
-        onClick={handleClick}
-      >
-        <SettingsIcon />
-      </IconButton>
+    <>
+      <div onClick={handleClick}>
+        <IconButton
+          aria-label="more"
+          id={buttonId}
+          aria-controls={open ? menuId : undefined}
+          aria-expanded={open ? "true" : undefined}
+          aria-haspopup="true"
+        >
+          <SettingsIcon />
+        </IconButton>
+      </div>
       <Menu
         id={menuId}
         anchorEl={() => anchorEl}
@@ -119,7 +120,7 @@ export function BookSettingsMenuButton({
           Manage Access
         </MenuItem>
       </Menu>
-    </div>
+    </>
   );
 }
 

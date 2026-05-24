@@ -1,7 +1,7 @@
 import TableCell from "@mui/material/TableCell";
 import IconButton from "@mui/material/IconButton";
 import MoreVert from "@mui/icons-material/MoreVert";
-import { useId, useRef, useState } from "preact/hooks";
+import { useId, useState } from "react";
 import { BookMenu } from "../book-menu/book-menu.component";
 
 /** table cell with a button for opening a book specific menu */
@@ -12,33 +12,34 @@ export function BookMenuButtonCell({
   mayShare,
   mayLeave,
 }: IBookMenuButtonCellProps) {
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const [open, setOpen] = useState(false);
-  const handleClick = () => {
-    setOpen(true);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+  const handleClick = (event: React.MouseEvent<HTMLTableCellElement>) => {
+    setAnchorEl(event.currentTarget);
   };
   const handleClose = () => {
-    setOpen(false);
+    setAnchorEl(null);
   };
   const menuId = useId();
   const buttonId = useId();
 
   return (
-    <TableCell onClick={handleClick} role="button">
-      <IconButton
-        ref={buttonRef}
-        aria-label={`more for ${bookName}`}
-        id={buttonId}
-        aria-controls={open ? menuId : undefined}
-        aria-expanded={open ? "true" : undefined}
-        aria-haspopup="true"
-      >
-        <MoreVert />
-      </IconButton>
+    <>
+      <TableCell role="button" onClick={handleClick}>
+        <IconButton
+          aria-label={`more for ${bookName}`}
+          id={buttonId}
+          aria-controls={open ? menuId : undefined}
+          aria-expanded={open ? "true" : undefined}
+          aria-haspopup="true"
+        >
+          <MoreVert />
+        </IconButton>
+      </TableCell>
       <BookMenu
         bookId={bookId}
         mayEdit={mayEdit}
-        getAnchorElement={() => buttonRef.current}
+        getAnchorElement={() => anchorEl}
         buttonId={buttonId}
         menuId={menuId}
         onClose={handleClose}
@@ -46,7 +47,7 @@ export function BookMenuButtonCell({
         mayShare={mayShare}
         mayLeave={mayLeave}
       />
-    </TableCell>
+    </>
   );
 }
 

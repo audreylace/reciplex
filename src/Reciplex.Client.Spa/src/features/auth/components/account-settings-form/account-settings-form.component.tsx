@@ -5,7 +5,7 @@ import TextField from "@mui/material/TextField";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import { SaveFailedAlert } from "./save-failed-alert.component";
-import { useEffect } from "preact/hooks";
+import { useEffect } from "react";
 import { ConcurrencyConflictAlert } from "../../../core/components/concurrency-conflict-alert/concurrency-conflict-alert.component";
 import Paper from "@mui/material/Paper";
 import { StackedLabelValue } from "../../../core/components/stacked-label-value/stacked-label-value.component";
@@ -45,7 +45,7 @@ export function AccountSettingsForm({
       {showConcurrencyError && <ConcurrencyConflictAlert onReset={onReset} />}
       {showSaveError && <SaveFailedAlert onReset={onReset} />}
       <Paper sx={{ p: 2, mt: 2 }}>
-        <Stack direction={"column"} gap={2}>
+        <Stack sx={{ gap: 2, direction: "column" }}>
           <Typography variant="h5" gutterBottom>
             Current account settings
           </Typography>
@@ -60,7 +60,7 @@ export function AccountSettingsForm({
               Update account settings
             </Typography>
           </legend>
-          <Stack spacing={2} marginTop={3}>
+          <Stack spacing={2} sx={{ mt: 3 }}>
             <TextField
               label="New Display Name"
               helperText={displayNameHelpText(errors)}

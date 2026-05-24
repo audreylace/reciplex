@@ -7,10 +7,10 @@ import {
 export function BookLayoutNavigationBar(props: IBookLayoutNavigationBarProps) {
   return (
     <>
-      <AppNavigation fixed removeLinks>
+      <AppNavigation fixed removeLinks removeGrow>
         <BookLayoutCrumbs {...props} />
       </AppNavigation>
-      <AppNavigation invisible removeLinks>
+      <AppNavigation invisible removeLinks removeGrow>
         <BookLayoutCrumbs {...props} />
       </AppNavigation>
     </>

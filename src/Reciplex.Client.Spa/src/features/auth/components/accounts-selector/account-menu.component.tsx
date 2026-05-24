@@ -1,4 +1,4 @@
-import { useId, useState, useRef } from "preact/hooks";
+import { useId, useState, useRef } from "react";
 import { useAccountSettingsNavigate } from "../../hooks/useAccountSettingsNavigate.hook";
 import CardContent from "@mui/material/CardContent";
 import Menu from "@mui/material/Menu";
@@ -15,35 +15,34 @@ export function AccountMenu({ userKey }: { userKey: string }) {
   const [accountPath, accountNavigate] = useAccountSettingsNavigate(userKey);
   const [deletePath, deleteAccountNavigate] =
     useAccountDeletesNavigate(userKey);
-  const handleClick = (e: Event) => {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setOpen(true);
   };
-  const handleClose = (e: Event) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setOpen(false);
-  };
 
   return (
-    <CardActionArea
-      aria-controls={open ? buttonId : undefined}
-      aria-haspopup="true"
-      aria-expanded={open ? "true" : undefined}
-      onClick={handleClick}
-      sx={{
-        height: "100%",
-      }}
-    >
-      <CardContent>
-        <SettingsIcon ref={buttonRef} />
-      </CardContent>
+    <>
+      <CardActionArea
+        aria-controls={open ? buttonId : undefined}
+        aria-haspopup="true"
+        aria-expanded={open ? "true" : undefined}
+        onClick={handleClick}
+        sx={{
+          height: "100%",
+        }}
+      >
+        <CardContent>
+          <SettingsIcon ref={buttonRef} />
+        </CardContent>
+      </CardActionArea>
       <Menu
         id={buttonId}
         anchorEl={() => buttonRef.current}
         open={open}
-        onClose={handleClose}
+        onClose={() => {
+          setOpen(false);
+        }}
         slotProps={{
           list: {
             "aria-labelledby": buttonId,
@@ -57,6 +56,6 @@ export function AccountMenu({ userKey }: { userKey: string }) {
           Delete
         </MenuItem>
       </Menu>
-    </CardActionArea>
+    </>
   );
 }

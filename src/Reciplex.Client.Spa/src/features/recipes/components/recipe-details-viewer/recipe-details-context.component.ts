@@ -1,4 +1,4 @@
-import { createContext } from "preact";
+import { createContext } from "react";
 import type { RecipeIngredientConceptCollection } from "./ingredient-concept";
 import type { RecipeToolConceptCollection } from "./tool-concept";
 
@@ -13,7 +13,7 @@ export interface IRecipeDetailsContextModel {
   /**
    * the compiled react component for rendering the markdown
    */
-  component: React.ReactElement;
+  component: React.ReactNode;
   /**
    * ingredients in the markdown collection
    */

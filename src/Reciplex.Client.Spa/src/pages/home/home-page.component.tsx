@@ -41,10 +41,9 @@ export function HomePage() {
           recipes.
         </Typography>
         <Stack
-          direction="row"
           spacing={2}
-          justifyContent="center"
-          sx={{ mt: 5 }}
+          direction={"row"}
+          sx={{ mt: 5, justifyContent: "center" }}
         >
           <Button
             variant="contained"

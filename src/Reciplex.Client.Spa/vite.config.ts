@@ -1,9 +1,20 @@
 import { defineConfig } from "vite";
-import preact from "@preact/preset-vite";
+import react from "@vitejs/plugin-react";
+import basicSsl from "@vitejs/plugin-basic-ssl";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [preact()],
+  plugins: [
+    react(),
+    basicSsl({
+      /** name of certification */
+      name: "test",
+      /** custom trust domains */
+      domains: ["example.com"],
+      /** optional, days before certificate expires */
+      ttlDays: 30,
+    }),
+  ],
   build: {},
   server: {
     proxy: {

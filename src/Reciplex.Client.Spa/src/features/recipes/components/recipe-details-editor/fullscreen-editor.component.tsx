@@ -3,50 +3,39 @@ import { useMarkdownEditor } from "../../../core/hooks/useMarkdownEditor.hook";
 import { useRecipeDetailsMenuBarCommandHandler } from "../recipe-details-menu-bar/useRecipeDetailsMenuBarCommandHandler.hook";
 import Stack from "@mui/material/Stack";
 import cssStyles from "./recipe-details-editor.module.css";
-import { useEffect, useRef, useState } from "preact/hooks";
 import InputBase from "@mui/material/InputBase";
 
 export function FullScreenEditor({
   onExit,
-  value: propValue,
-  disabled,
+  value,
+  onChange,
 }: {
-  onExit: (s: string) => void;
+  onExit: () => void;
   value: string;
-  disabled?: boolean;
+  onChange: (s: string) => void;
 }) {
   const { textAreaRef, onKeyDown, orchestratorRef } = useMarkdownEditor();
   const menuCommandHandler =
     useRecipeDetailsMenuBarCommandHandler(orchestratorRef);
-  const [value, setValue] = useState(propValue);
-  const elRef = useRef<HTMLTextAreaElement>();
-
-  useEffect(() => {
-    if (disabled) {
-      onExit(value);
-    }
-  }, [disabled, onExit, value]);
 
   return (
-    <Stack direction="column" height={"100%"}>
+    <Stack direction="column" sx={{ height: "100%" }}>
       <RecipeDetailsMenuBar
         commandHandler={menuCommandHandler}
         isFullscreen={true}
-        onSizeToggle={() => onExit(value)}
+        onSizeToggle={() => onExit()}
       />
       <InputBase
-        inputRef={(element) => {
-          textAreaRef(element);
-          elRef.current = element;
-        }}
+        inputRef={textAreaRef}
         sx={{
           flex: "1 1 auto",
           p: "5px",
         }}
-        onChange={() => setValue(elRef.current?.value ?? "")}
         value={value}
         onKeyDown={onKeyDown}
-        // @ts-expect-error bad typing does not pickup `textarea` as an element. Instead thinks it is a string
+        onChange={(e) => {
+          onChange(e.target.value);
+        }}
         inputComponent="textarea"
         slotProps={{
           input: {

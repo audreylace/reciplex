@@ -1,4 +1,3 @@
-import type { ComponentChildren } from "preact";
 import { ChallengeGuard } from "../challenge-guard/challenge-guard.component";
 import { ActiveUserGuard } from "../active-user-guard/active-user-guard.component";
 
@@ -7,7 +6,7 @@ export function AuthenticatedRouteGuard({
   children,
   allowNullUser,
 }: {
-  children: ComponentChildren;
+  children: React.ReactNode;
   allowNullUser?: boolean;
 }) {
   return (

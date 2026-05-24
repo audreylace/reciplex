@@ -78,6 +78,14 @@ export const router = createBrowserRouter([
         },
       },
       {
+        path: "settings",
+        lazy: async () => {
+          const Component =
+            await import("./features/recipes/pages/book-setting-landing/book-setting-landing-page.component");
+          return { Component: Component.BookSettingLandingPage };
+        },
+      },
+      {
         path: "settings/delete",
         lazy: async () => {
           const Component =

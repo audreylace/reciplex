@@ -4,7 +4,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import LinearProgress from "@mui/material/LinearProgress";
 import { useController, useForm } from "react-hook-form";
-import { useEffect } from "preact/hooks";
+import { useEffect } from "react";
 import { ConcurrencyConflictAlert } from "../../../core/components/concurrency-conflict-alert/concurrency-conflict-alert.component";
 import Paper from "@mui/material/Paper";
 import { OperationFailedAlert } from "../../../core/components/operation-failed-alert/operation-failed-alert.component";
@@ -105,7 +105,7 @@ export function NameAndShortDescriptionForm({
             onBlur={onBlur}
             disabled={fieldsDisabled}
           />
-          <Stack gap={1} direction={"row"}>
+          <Stack direction="row" sx={{ gap: 1 }}>
             <Button
               variant="contained"
               type="submit"

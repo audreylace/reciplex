@@ -1,4 +1,4 @@
-import { useContext } from "preact/hooks";
+import { useContext } from "react";
 import type { IRecipeDetailsViewerProps } from "./recipe-details-viewer.component";
 import Typography from "@mui/material/Typography";
 import { RecipeDetailsContext } from "./recipe-details-context.component";

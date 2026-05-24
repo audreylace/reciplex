@@ -2,7 +2,6 @@ import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
-import type { ComponentChild } from "preact";
 
 // Remark: This component is auto-generated with some minor hand edits.
 //         Do not generalize it outside of the home page.
@@ -35,7 +34,11 @@ export const FeatureCard = ({
           {title}
         </Typography>
       </Box>
-      <Typography variant="body2" color="text.secondary" lineHeight={1.6}>
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{ lineHeight: 1.6 }}
+      >
         {description}
       </Typography>
     </CardContent>
@@ -43,7 +46,7 @@ export const FeatureCard = ({
 );
 
 export interface IFeatureCardProps {
-  icon: ComponentChild;
-  title: ComponentChild;
-  description: ComponentChild;
+  icon: React.ReactNode;
+  title: React.ReactNode;
+  description: React.ReactNode;
 }
