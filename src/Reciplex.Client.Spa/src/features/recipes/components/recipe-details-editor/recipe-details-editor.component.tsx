@@ -3,9 +3,10 @@ import { useMarkdownEditor } from "../../../core/hooks/useMarkdownEditor.hook";
 import { useRecipeDetailsMenuBarCommandHandler } from "../recipe-details-menu-bar/useRecipeDetailsMenuBarCommandHandler.hook";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Dialog from "@mui/material/Dialog";
 import { FullScreenEditor } from "./fullscreen-editor.component";
+import { useSearchParams } from "react-router";
 
 export interface RecipeDetailsEditorProps {
   value: string;
@@ -27,9 +28,16 @@ export function RecipeDetailsEditor({
   const { textAreaRef, onKeyDown, orchestratorRef } = useMarkdownEditor();
   const menuCommandHandler =
     useRecipeDetailsMenuBarCommandHandler(orchestratorRef);
-  const [fullScreen, setFullScreen] = useState(false);
   const [key, setKey] = useState(0);
   const elRef = useRef<HTMLTextAreaElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const fullScreen = searchParams.get("fullScreen") === "yes";
+
+  useEffect(() => {
+    if (disabled && fullScreen) {
+      setSearchParams({ fullScreen: "no" });
+    }
+  }, [disabled, fullScreen, setSearchParams]);
 
   return (
     <Stack direction="column">
@@ -39,7 +47,7 @@ export function RecipeDetailsEditor({
         isFullscreen={false}
         onSizeToggle={() => {
           setKey((k) => k + 1);
-          setFullScreen(true);
+          setSearchParams({ fullScreen: "yes" });
         }}
       />
       <TextField
@@ -67,12 +75,11 @@ export function RecipeDetailsEditor({
       {fullScreen && (
         <Dialog open fullScreen key={key}>
           <FullScreenEditor
-            disabled={disabled}
             value={value}
-            onExit={(value) => {
-              setFullScreen(false);
+            onChange={(s) => syntheticChange(s)}
+            onExit={() => {
               setKey((k) => k + 1);
-              syntheticChange(value);
+              setSearchParams({ fullScreen: "no" });
             }}
           />
         </Dialog>

@@ -9,7 +9,7 @@ import Typography from "@mui/material/Typography";
 import LinearProgress from "@mui/material/LinearProgress";
 import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
-import { useBlocker, useNavigate } from "react-router";
+import { useBlocker, useLocation, useNavigate } from "react-router";
 import { makeViewRecipePath } from "../../route-utils";
 import type { IFormModel } from "./form-model";
 import { DetailsInput } from "./details-input.component";
@@ -50,6 +50,7 @@ export function EditRecipeForm({
   const formDisabled = !recipeMutation.isIdle || concurrencyConflict;
   const blocker = useBlocker(isDirty && !recipeMutation.isSuccess);
   const showConflictBanner = concurrencyConflict && recipeMutation.isIdle;
+  const location = useLocation();
 
   useEffect(() => {
     if (recipeMutation.isSuccess) {
@@ -57,7 +58,13 @@ export function EditRecipeForm({
         blocker.proceed();
       }
     }
-  }, [blocker, recipeMutation.isSuccess]);
+    if (
+      blocker.state === "blocked" &&
+      location.pathname === blocker.location.pathname
+    ) {
+      blocker.proceed();
+    }
+  }, [blocker, location.pathname, recipeMutation.isSuccess]);
 
   return (
     <>
