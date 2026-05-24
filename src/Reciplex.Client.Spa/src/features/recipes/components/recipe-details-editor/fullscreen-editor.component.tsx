@@ -41,11 +41,13 @@ export function FullScreenEditor({
         }}
         value={value}
         onKeyDown={onKeyDown}
+        onChange={(e) => {
+          setValue(e.target.value);
+        }}
         inputComponent="textarea"
         slotProps={{
           input: {
             className: cssStyles.fullscreenTextBox,
-            onChange: (e) => setValue(e.target.value),
           },
         }}
       />
