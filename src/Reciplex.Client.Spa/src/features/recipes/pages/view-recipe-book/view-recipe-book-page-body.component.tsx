@@ -95,7 +95,11 @@ export function ViewRecipeBookPageBody({
     return <LoadingIndicator />;
   }
 
-  if (!book || !recipeList) {
+  if (
+    !book ||
+    // show loading table once the book loads in
+    (!getRecipesPending && !recipeList)
+  ) {
     return <RecipeBookNotFoundBanner />;
   }
 
