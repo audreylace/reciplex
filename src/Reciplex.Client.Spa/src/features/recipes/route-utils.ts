@@ -72,7 +72,7 @@ export function makeViewRecipePath(bookId: string, recipeId: string): string {
  * @returns the path
  */
 export function makeBookSettingsPath(bookId: string): string {
-  return makeBookDetailsSettingsPath(bookId);
+  return `/books/${encodeURIComponent(bookId)}/settings`;
 }
 
 /**
