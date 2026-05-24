@@ -14,7 +14,7 @@ export function BookMenuButtonCell({
 }: IBookMenuButtonCellProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleClick = (event: React.MouseEvent<HTMLTableCellElement>) => {
     setAnchorEl(event.currentTarget);
   };
   const handleClose = () => {
@@ -24,17 +24,18 @@ export function BookMenuButtonCell({
   const buttonId = useId();
 
   return (
-    <TableCell role="button">
-      <IconButton
-        aria-label={`more for ${bookName}`}
-        id={buttonId}
-        aria-controls={open ? menuId : undefined}
-        aria-expanded={open ? "true" : undefined}
-        aria-haspopup="true"
-        onClick={handleClick}
-      >
-        <MoreVert />
-      </IconButton>
+    <>
+      <TableCell role="button" onClick={handleClick}>
+        <IconButton
+          aria-label={`more for ${bookName}`}
+          id={buttonId}
+          aria-controls={open ? menuId : undefined}
+          aria-expanded={open ? "true" : undefined}
+          aria-haspopup="true"
+        >
+          <MoreVert />
+        </IconButton>
+      </TableCell>
       <BookMenu
         bookId={bookId}
         mayEdit={mayEdit}
@@ -46,7 +47,7 @@ export function BookMenuButtonCell({
         mayShare={mayShare}
         mayLeave={mayLeave}
       />
-    </TableCell>
+    </>
   );
 }
 

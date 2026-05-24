@@ -22,18 +22,20 @@ export function AccountMenu({ userKey }: { userKey: string }) {
   };
 
   return (
-    <CardActionArea
-      aria-controls={open ? buttonId : undefined}
-      aria-haspopup="true"
-      aria-expanded={open ? "true" : undefined}
-      onClick={handleClick}
-      sx={{
-        height: "100%",
-      }}
-    >
-      <CardContent>
-        <SettingsIcon ref={buttonRef} />
-      </CardContent>
+    <>
+      <CardActionArea
+        aria-controls={open ? buttonId : undefined}
+        aria-haspopup="true"
+        aria-expanded={open ? "true" : undefined}
+        onClick={handleClick}
+        sx={{
+          height: "100%",
+        }}
+      >
+        <CardContent>
+          <SettingsIcon ref={buttonRef} />
+        </CardContent>
+      </CardActionArea>
       <Menu
         id={buttonId}
         anchorEl={() => buttonRef.current}
@@ -54,6 +56,6 @@ export function AccountMenu({ userKey }: { userKey: string }) {
           Delete
         </MenuItem>
       </Menu>
-    </CardActionArea>
+    </>
   );
 }

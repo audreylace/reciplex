@@ -11,7 +11,7 @@ export function BookMenuButton({
 }: IRecipeBookMenuButtonProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
     setAnchorEl(event.currentTarget);
   };
   const handleClose = () => {
@@ -21,17 +21,18 @@ export function BookMenuButton({
   const buttonId = useId();
 
   return (
-    <div>
-      <IconButton
-        aria-label="more"
-        id={buttonId}
-        aria-controls={open ? menuId : undefined}
-        aria-expanded={open ? "true" : undefined}
-        aria-haspopup="true"
-        onClick={handleClick}
-      >
-        <MoreVertIcon />
-      </IconButton>
+    <>
+      <div onClick={handleClick}>
+        <IconButton
+          aria-label="more"
+          id={buttonId}
+          aria-controls={open ? menuId : undefined}
+          aria-expanded={open ? "true" : undefined}
+          aria-haspopup="true"
+        >
+          <MoreVertIcon />
+        </IconButton>
+      </div>
       <BookMenu
         open={open}
         onClose={handleClose}
@@ -43,7 +44,7 @@ export function BookMenuButton({
         mayShare={mayShare}
         mayLeave={mayLeave}
       />
-    </div>
+    </>
   );
 }
 
