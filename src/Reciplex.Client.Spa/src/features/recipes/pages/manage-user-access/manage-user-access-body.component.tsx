@@ -29,6 +29,8 @@ import { useNavigate } from "react-router";
 import { makeViewRecipeBookPath } from "../../route-utils";
 import { OperationFailedAlert } from "../../../core/components/operation-failed-alert/operation-failed-alert.component";
 import { useRefreshPage } from "../../../core/hooks/useRefreshPage.hook";
+import Alert from "@mui/material/Alert";
+import Typography from "@mui/material/Typography";
 
 /** page body for managing who has access to a recipe book */
 export function ManageUserAccessBody({ bookId }: IManageUserAccessBodyProps) {
@@ -106,30 +108,45 @@ export function ManageUserAccessBody({ bookId }: IManageUserAccessBodyProps) {
         </ContentTitle>
         {mutationPending && <LinearProgress />}
         {mutationError && <OperationFailedAlert onRetry={refresh} />}
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Display Name</TableCell>
-                <TableCell align="right">Permissions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {state.map((u) => (
-                <AccessControlsRow
-                  disabled={!mutationIdle}
-                  key={u.prev.userKey}
-                  displayName={u.prev.userDisplayName}
-                  value={mapAccessButtonSelection(u)}
-                  onChange={(newValue: AccessControlsButtonsValues) =>
-                    updateUserStateEntry(u.prev.userKey, newValue)
-                  }
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <Button variant="contained" disabled={!mutationIdle} onClick={submit}>
+        {state.length == 0 && (
+          <Alert severity="info" variant="outlined" color="info" sx={{ my: 4 }}>
+            <Typography variant="body1" color="textPrimary">
+              No one else has access
+            </Typography>
+          </Alert>
+        )}
+        {state.length > 0 && (
+          <>
+            <TableContainer sx={{ mb: 2 }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Display Name</TableCell>
+                    <TableCell align="right">Permissions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {state.map((u) => (
+                    <AccessControlsRow
+                      disabled={!mutationIdle}
+                      key={u.prev.userKey}
+                      displayName={u.prev.userDisplayName}
+                      value={mapAccessButtonSelection(u)}
+                      onChange={(newValue: AccessControlsButtonsValues) =>
+                        updateUserStateEntry(u.prev.userKey, newValue)
+                      }
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </>
+        )}
+        <Button
+          variant="contained"
+          disabled={!mutationIdle || state.length < 1}
+          onClick={submit}
+        >
           Save
         </Button>
       </ContentWrapper>
