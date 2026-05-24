@@ -36,7 +36,7 @@ import Typography from "@mui/material/Typography";
 export function ManageUserAccessBody({ bookId }: IManageUserAccessBodyProps) {
   const navigate = useNavigate();
   const refresh = useRefreshPage()[1];
-  const { data, isError, isPending } = useGetRecipeBookById(bookId);
+  const { data, isError, isPending, isSuccess } = useGetRecipeBookById(bookId);
   const {
     isPending: accessListLoadPending,
     isError: accessListLoadError,
@@ -63,6 +63,10 @@ export function ManageUserAccessBody({ bookId }: IManageUserAccessBodyProps) {
     await mutateAsync({ bookId: bookId, data });
     navigate(makeViewRecipeBookPath(bookId));
   };
+
+  if (isSuccess && !data) {
+    return <RecipeBookNotFoundBanner />;
+  }
 
   if (data && !data.mayManageAccess) {
     return (
