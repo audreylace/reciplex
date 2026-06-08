@@ -12,6 +12,7 @@ namespace Reciplex.Server.Host.AccessControl;
 /// </summary>
 public static class AccessControlWebApplicationExtensions
 {
+#if DEBUG
     /// <summary>
     /// Adds debug mocking throwing if <c>app.Environment.IsDevelopment()</c> returns false
     /// </summary>
@@ -21,12 +22,7 @@ public static class AccessControlWebApplicationExtensions
     /// <param name="claim">The claim where <paramref name="userId"/> will be stored inside <paramref name="identity"/></param>
     /// <returns><paramref name="app"/></returns>
     /// <exception cref="InvalidOperationException">Thrown when <c>WebApplication.Environment.IsDevelopment()</c> returns false</exception>
-    public static WebApplication UseUserDebugMocking(
-        this WebApplication app,
-        string? identity = null,
-        string? claim = null,
-        string? userId = null
-    )
+    public static WebApplication UseUserDebugMocking(this WebApplication app, string? userId = null)
     {
         if (!app.Environment.IsDevelopment()) // can only run in production
         {
@@ -39,14 +35,16 @@ public static class AccessControlWebApplicationExtensions
             requestHttpContext =>
             {
                 var options = requestHttpContext.RequestServices.GetService<
-                    IOptions<AuthenticationFlowOptions>
+                    IOptions<DebugIdentityMockingOptions>
                 >();
 
-                if (options?.Value.EnableAuthMocking == true)
+                if (options?.Value.Enable == true)
                 {
-                    ClaimsIdentity claimsIdentity = new(identity ?? "Debug");
+                    ClaimsIdentity claimsIdentity = new("Debug");
                     claimsIdentity.AddClaim(new(JwtRegisteredClaimNames.Iss, "DEBUG"));
-                    claimsIdentity.AddClaim(new(JwtRegisteredClaimNames.Sub, userId ?? "1"));
+                    claimsIdentity.AddClaim(
+                        new(JwtRegisteredClaimNames.Sub, options.Value.UserId ?? "1")
+                    );
                     requestHttpContext.User = new(claimsIdentity);
                 }
                 return nextPipelineHandler(requestHttpContext);
@@ -56,31 +54,57 @@ public static class AccessControlWebApplicationExtensions
         return app;
     }
 
-    public static WebApplicationBuilder AddAuthenticationFlowOptions(
+    /// <summary>
+    /// Debug only identity mocking
+    /// </summary>
+    public class DebugIdentityMockingOptions
+    {
+        /// <summary>
+        /// Section path
+        /// </summary>
+        public const string SectionPath = "Reciplex:Debug:IdentityMocking";
+
+        /// <summary>
+        /// In debug builds setting this to true binds
+        /// fake credentials to each request
+        /// </summary>
+        public bool Enable { get; set; }
+
+        public string? UserId { get; set; }
+    }
+
+    public static WebApplicationBuilder AddAuthenticationDebugOptions(
         this WebApplicationBuilder applicationBuilder
     )
     {
-        applicationBuilder.Services.Configure<AuthenticationFlowOptions>(
-            applicationBuilder.Configuration.GetSection(AuthenticationFlowOptions.SectionPath)
+        applicationBuilder.Services.Configure<DebugIdentityMockingOptions>(
+            applicationBuilder.Configuration.GetSection(DebugIdentityMockingOptions.SectionPath)
         );
         return applicationBuilder;
     }
+#endif
 
     public static WebApplicationBuilder AddOpenIdConnect(
         this WebApplicationBuilder applicationBuilder
     )
     {
         // add OIDC settings
-        OpenIdConnectOptions? config = applicationBuilder
+        OpenIdConnectOptions? connectOptions = applicationBuilder
             .Configuration.GetSection(OpenIdConnectOptions.SectionPath)
             .Get<OpenIdConnectOptions>();
 
-        if (config?.Enabled != true)
+        if (connectOptions?.Enabled != true)
         {
             return applicationBuilder;
         }
 
-        if (applicationBuilder.Environment.IsProduction() && config.DisableHttps)
+        OpenIdConnectSecretsOptions? secretsOptions =
+            applicationBuilder
+                .Configuration.GetSection(OpenIdConnectSecretsOptions.SectionPath)
+                .Get<OpenIdConnectSecretsOptions>()
+            ?? throw new InvalidOperationException("Secrets for OpenIdConnect must be provided");
+
+        if (applicationBuilder.Environment.IsProduction() && connectOptions.InsecureDisableHttps)
         {
             throw new InvalidOperationException(
                 "HTTPs connection to OIDC authority can not be disabled in production"
@@ -89,7 +113,6 @@ public static class AccessControlWebApplicationExtensions
 
         // add OIDC
         applicationBuilder
-            .AddAuthenticationFlowOptions()
             .Services.AddAuthentication(options =>
             {
                 // stores auth data in cookie
@@ -119,9 +142,9 @@ public static class AccessControlWebApplicationExtensions
             })
             .AddOpenIdConnect(options =>
             {
-                options.Authority = config.Authority;
-                options.ClientId = config.ClientId;
-                options.ClientSecret = config.ClientSecret;
+                options.Authority = connectOptions.Authority;
+                options.ClientId = secretsOptions.ClientId;
+                options.ClientSecret = secretsOptions.ClientSecret;
 
                 options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 options.ResponseType = OpenIdConnectResponseType.Code;
@@ -130,7 +153,7 @@ public static class AccessControlWebApplicationExtensions
                 options.MapInboundClaims = true;
                 options.SignedOutCallbackPath = "/api/v1/oidc/sign-out";
                 options.CallbackPath = "/api/v1/oidc/sign-in";
-                options.RequireHttpsMetadata = !config.DisableHttps;
+                options.RequireHttpsMetadata = !connectOptions.InsecureDisableHttps;
                 options.TokenValidationParameters.NameClaimType = JwtRegisteredClaimNames.Name;
                 options.Events.OnTokenValidated = (
                     context =>
