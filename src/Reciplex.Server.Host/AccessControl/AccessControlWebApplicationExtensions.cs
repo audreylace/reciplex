@@ -104,12 +104,14 @@ public static class AccessControlWebApplicationExtensions
                 .Get<OpenIdConnectSecretsOptions>()
             ?? throw new InvalidOperationException("Secrets for OpenIdConnect must be provided");
 
+#if DEBUG
         if (applicationBuilder.Environment.IsProduction() && connectOptions.InsecureDisableHttps)
         {
             throw new InvalidOperationException(
                 "HTTPs connection to OIDC authority can not be disabled in production"
             );
         }
+#endif
 
         // add OIDC
         applicationBuilder
@@ -153,7 +155,11 @@ public static class AccessControlWebApplicationExtensions
                 options.MapInboundClaims = true;
                 options.SignedOutCallbackPath = "/api/v1/oidc/sign-out";
                 options.CallbackPath = "/api/v1/oidc/sign-in";
+
+#if DEBUG
                 options.RequireHttpsMetadata = !connectOptions.InsecureDisableHttps;
+#endif
+
                 options.TokenValidationParameters.NameClaimType = JwtRegisteredClaimNames.Name;
                 options.Events.OnTokenValidated = (
                     context =>
