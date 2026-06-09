@@ -160,8 +160,9 @@ public static class AccessControlWebApplicationExtensions
                 options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 options.ResponseType = OpenIdConnectResponseType.Code;
 
+                options.ClaimActions.Remove("iss"); // keep iss
                 options.GetClaimsFromUserInfoEndpoint = true;
-                options.MapInboundClaims = true;
+                options.MapInboundClaims = false; // don't mutate our claims
                 options.SignedOutCallbackPath = "/api/v1/oidc/sign-out";
                 options.CallbackPath = "/api/v1/oidc/sign-in";
 
