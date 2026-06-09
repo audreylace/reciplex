@@ -15,7 +15,7 @@ public class OpenIdConnectOptions
     /// <summary>
     /// Set to true to enable OIDC authentication
     /// </summary>
-    public bool Enabled { get; set; }
+    public bool Enable { get; set; }
 
     /// <summary>
     /// The OIDC authority

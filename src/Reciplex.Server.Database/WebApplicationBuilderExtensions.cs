@@ -32,10 +32,29 @@ public static partial class WebApplicationBuilderExtensions
     /// </summary>
     /// <param name="builder"></param>
     /// <returns></returns>
-    public static WebApplicationBuilder AddApplicationDbContext(this WebApplicationBuilder builder)
+    public static WebApplicationBuilder AddSqlite3ApplicationDbContext(
+        this WebApplicationBuilder builder
+    )
     {
+        SqliteApplicationDbContextOptions configOptions = new();
+        builder
+            .Configuration.GetSection(SqliteApplicationDbContextOptions.SectionPath)
+            .Bind(configOptions);
+
+        if (!configOptions.Enable)
+        {
+            return builder;
+        }
+
+        if (string.IsNullOrWhiteSpace(configOptions.DatabaseConnection))
+        {
+            throw new InvalidOperationException(
+                "DatabaseConnection string must be supplied when Sqlite3 is enabled"
+            );
+        }
+
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlite(builder.Configuration.GetConnectionString("ApplicationDbContext"))
+            options.UseSqlite(configOptions.DatabaseConnection)
         );
 
         builder.AddApplicationDbSupportServices();

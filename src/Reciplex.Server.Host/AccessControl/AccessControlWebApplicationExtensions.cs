@@ -1,7 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
@@ -93,9 +95,16 @@ public static class AccessControlWebApplicationExtensions
             .Configuration.GetSection(OpenIdConnectOptions.SectionPath)
             .Get<OpenIdConnectOptions>();
 
-        if (connectOptions?.Enabled != true)
+        if (connectOptions?.Enable != true)
         {
             return applicationBuilder;
+        }
+
+        if (string.IsNullOrWhiteSpace(connectOptions.Authority))
+        {
+            throw new InvalidOperationException(
+                "Open ID Connect authentication is enabled by a URI to the authority is missing."
+            );
         }
 
         OpenIdConnectSecretsOptions? secretsOptions =

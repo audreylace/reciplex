@@ -42,6 +42,7 @@ builder.AddShortIds();
 
 builder.Services.ConfigureOptions<ConfigureGlobalJsonHandling>();
 
+builder.ConfigureDataProtection();
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication();
 
@@ -60,7 +61,7 @@ if (builder.Environment.IsDevelopment())
 else
 {
 #endif
-    builder.AddApplicationDbContext();
+    builder.AddSqlite3ApplicationDbContext();
 
 #if DEBUG
 }
