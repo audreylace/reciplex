@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using NodaTime;
 using Recipe.Database;
 using Reciplex.Server.Host;
@@ -5,12 +6,34 @@ using Reciplex.Server.Host.AccessControl;
 
 var builder = WebApplication.CreateBuilder(args);
 
+bool eatArg = false;
+bool seenConfig = false;
+
 // Add custom config paths from command line
 for (int i = 0; i < args.Length; i++)
 {
+    if (eatArg)
+    {
+        eatArg = false;
+        continue;
+    }
+
+    if (args[i] == "-R")
+    {
+        if (seenConfig)
+        {
+            Console.WriteLine("-R must come before -C, -c, or -E arguments");
+            Environment.Exit(-1);
+        }
+
+        builder.Configuration.Sources.Clear();
+        continue;
+    }
+
     // Optional config, little c
     if (args[i] == "-c" && i + 1 < args.Length)
     {
+        seenConfig = true;
         string additionalConfigPath = args[i + 1];
 
         builder.Configuration.AddJsonFile(
@@ -18,23 +41,36 @@ for (int i = 0; i < args.Length; i++)
             optional: true,
             reloadOnChange: true
         );
+        eatArg = true;
+        continue;
     }
 
     // Mandatory config, big C
     if (args[i] == "-C" && i + 1 < args.Length)
     {
         string additionalConfigPath = args[i + 1];
-
+        seenConfig = true;
         builder.Configuration.AddJsonFile(
             additionalConfigPath,
             optional: false,
             reloadOnChange: true
         );
+        eatArg = true;
+        continue;
     }
-}
 
-// add env variables
-builder.Configuration.AddEnvironmentVariables(prefix: "RCX_");
+    // -E enables environment variables sourced configuration
+    if (args[i] == "-E")
+    {
+        seenConfig = true;
+        // add env variables
+        builder.Configuration.AddEnvironmentVariables(prefix: "RCX_");
+        continue;
+    }
+
+    Console.WriteLine($"Unknown argument: {args[i]}");
+    Environment.Exit(-1);
+}
 
 // Add services to the container.
 
@@ -88,7 +124,23 @@ else
 {
 #endif
 
-    app.UseHttpsRedirection();
+    RoutingOptions routingOptions = new();
+    app.Configuration.Bind(RoutingOptions.SectionPath, routingOptions);
+
+    if (routingOptions.TrustProxy)
+    {
+        app.UseForwardedHeaders(
+            new ForwardedHeadersOptions
+            {
+                ForwardedHeaders =
+                    ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+            }
+        );
+    }
+    else
+    {
+        app.UseHttpsRedirection();
+    }
 
 #if DEBUG
 }

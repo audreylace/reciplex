@@ -17,4 +17,9 @@ public class RoutingOptions
     /// </summary>
     [Required(AllowEmptyStrings = false)]
     public string Domain { get; set; } = "";
+
+    /// <summary>
+    /// Set to true to trust proxy headers
+    /// </summary>
+    public bool TrustProxy { get; set; }
 }

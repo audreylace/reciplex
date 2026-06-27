@@ -22,20 +22,24 @@ public static class DataProtectionWebApplicationBuilderExtensions
 
         IDataProtectionBuilder dpBuilder = builder.Services.AddDataProtection();
 
-        if (!string.IsNullOrWhiteSpace(configOptions?.KeyDirectory))
+        if (!string.IsNullOrWhiteSpace(configOptions?.KeyStorageDirectory))
         {
             dpBuilder = dpBuilder.PersistKeysToFileSystem(
-                new DirectoryInfo(configOptions.KeyDirectory)
+                new DirectoryInfo(configOptions.KeyStorageDirectory)
             );
         }
 
-        if (!string.IsNullOrWhiteSpace(configOptions?.EncryptionCertificate))
+        if (
+            !string.IsNullOrWhiteSpace(configOptions?.EncryptionCertificate)
+            && !string.IsNullOrWhiteSpace(configOptions?.EncryptionPrivateKey)
+        )
         {
-            X509Certificate2 x509Cert = X509CertificateLoader.LoadCertificateFromFile(
-                configOptions.EncryptionCertificate
+            X509Certificate2 x509Cert = X509Certificate2.CreateFromPemFile(
+                configOptions.EncryptionCertificate,
+                configOptions.EncryptionPrivateKey
             );
 
-            dpBuilder = dpBuilder.ProtectKeysWithCertificate(x509Cert);
+            dpBuilder.ProtectKeysWithCertificate(x509Cert);
         }
         else if (!(configOptions?.InsecureDisableEncryption ?? false))
         {
