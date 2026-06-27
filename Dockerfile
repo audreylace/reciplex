@@ -11,6 +11,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS server
 
 WORKDIR /build
 COPY Directory.Packages.props reciplex.sln ./
+COPY src/*/*.csproj ./
 RUN for file in $(ls *.csproj); do mkdir -p src/${file%.*}/ && mv $file src/${file%.*}/; done
 RUN dotnet restore reciplex.sln /p:Configuration=Release             
 
