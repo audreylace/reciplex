@@ -166,6 +166,14 @@ public static class AccessControlWebApplicationExtensions
                     };
                 }
 
+                if (!string.IsNullOrWhiteSpace(connectOptions.BackChannelHostOverride))
+                {
+                    options.BackchannelHttpHandler = new OidcOverrideBackchannelRoutingHandler(
+                        connectOptions,
+                        options.BackchannelHttpHandler ?? new HttpClientHandler()
+                    );
+                }
+
                 options.Events.OnTokenValidated = (
                     context =>
                     {

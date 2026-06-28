@@ -32,4 +32,9 @@ public class OpenIdConnectOptions
     /// Accepts any HTTPs certificate bypassing certificate chain validation
     /// </summary>
     public bool InsecureAcceptAnyServerCertificate { get; set; }
+
+    /// <summary>
+    /// Maps requests for <see cref="Authority"/> to this server
+    /// </summary>
+    public string BackChannelHostOverride { get; set; } = "";
 }
