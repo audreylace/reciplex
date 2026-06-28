@@ -13,7 +13,7 @@ namespace Reciplex.Server.Host.Controllers;
 /// <param name="options">app wide options controlling the authentication flow</param>
 [ApiController]
 [Route("challenge")]
-public class ChallengeController(IOptions<AuthenticationFlowOptions> options) : ControllerBase
+public class ChallengeController(IOptions<RoutingOptions> options) : ControllerBase
 {
     /// <summary>
     /// The challenge endpoint that begins an authentication flow
@@ -28,9 +28,9 @@ public class ChallengeController(IOptions<AuthenticationFlowOptions> options) : 
     [HttpGet]
     public ChallengeHttpResult Navigate()
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(options.Value.PostSignInPath, nameof(options));
+        UriBuilder uriBuilder = new(options.Value.Domain) { Path = "/accounts/-/select" };
         return TypedResults.Challenge(
-            new() { RedirectUri = options.Value.PostSignInPath },
+            new() { RedirectUri = uriBuilder.Uri.OriginalString },
             [OpenIdConnectDefaults.AuthenticationScheme]
         );
     }

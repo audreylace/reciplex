@@ -1,29 +1,88 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using NodaTime;
-using Recipe.Database;
-using Reciplex.Server.Abstractions.StringIdProvider;
+using Reciplex.Server.Abstractions;
+using Reciplex.Server.Database;
 using Reciplex.Server.Host;
 using Reciplex.Server.Host.AccessControl;
-using Sqids;
 
 var builder = WebApplication.CreateBuilder(args);
 
+bool eatArg = false;
+bool seenConfig = false;
+
+if (!args.Any(arg => arg == "--noArgs"))
+{
+    // Add custom config paths from command line
+    for (int i = 0; i < args.Length; i++)
+    {
+        if (eatArg)
+        {
+            eatArg = false;
+            continue;
+        }
+
+        if (args[i] == "-R")
+        {
+            if (seenConfig)
+            {
+                Console.WriteLine("-R must come before -C, -c, or -E arguments");
+                Environment.Exit(-1);
+            }
+
+            builder.Configuration.Sources.Clear();
+            continue;
+        }
+
+        // Optional config, little c
+        if (args[i] == "-c" && i + 1 < args.Length)
+        {
+            seenConfig = true;
+            string additionalConfigPath = args[i + 1];
+
+            builder.Configuration.AddJsonFile(
+                additionalConfigPath,
+                optional: true,
+                reloadOnChange: true
+            );
+            eatArg = true;
+            continue;
+        }
+
+        // Mandatory config, big C
+        if (args[i] == "-C" && i + 1 < args.Length)
+        {
+            string additionalConfigPath = args[i + 1];
+            seenConfig = true;
+            builder.Configuration.AddJsonFile(
+                additionalConfigPath,
+                optional: false,
+                reloadOnChange: true
+            );
+            eatArg = true;
+            continue;
+        }
+
+        // -E enables environment variables sourced configuration
+        if (args[i] == "-E")
+        {
+            seenConfig = true;
+            // add env variables
+            builder.Configuration.AddEnvironmentVariables(prefix: "RCX_");
+            continue;
+        }
+
+        Console.WriteLine($"Unknown argument: {args[i]}");
+        Environment.Exit(-1);
+    }
+}
+
 // Add services to the container.
 
-// base abstraction for marshaling ids to and from long values
-builder.Services.AddSingleton<IStringIdProvider, SquidsStringIdProvider>();
-builder.Services.AddSingleton(
-    new SqidsEncoder<long>(
-        new()
-        {
-            // todo - these should be app settings
-            Alphabet = "yPX4xMlq8kwfOde1J6gEKrj2AsCi7GUNpoHzWcV39FbTaBm5unYv0RStDQZLIh",
-            MinLength = 8,
-        }
-    )
-);
+builder.AddShortIds();
 
 builder.Services.ConfigureOptions<ConfigureGlobalJsonHandling>();
 
+builder.ConfigureDataProtection();
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication();
 
@@ -31,22 +90,40 @@ builder.Services.AddControllers();
 
 builder.Services.AddSingleton<IClock>(SystemClock.Instance);
 
+#if DEBUG
 if (builder.Environment.IsDevelopment())
 {
     builder.AddApplicationDbContextForDebug();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
+    builder.AddAuthenticationDebugOptions();
 }
 else
 {
-    builder.AddApplicationDbContext();
+#endif
+    builder.AddSqlite3ApplicationDbContext();
+
+#if DEBUG
 }
+#endif
+
+builder.Services.Configure<RoutingOptions>(
+    builder.Configuration.GetSection(RoutingOptions.SectionPath)
+);
 
 builder.AddOpenIdConnect();
 
 var app = builder.Build();
 
+var toRunBeforeStart = app.Services.GetServices<IRunBeforeAppStartup>();
+foreach (IRunBeforeAppStartup service in toRunBeforeStart)
+{
+    await service.RunBeforeStartupAsync(CancellationToken.None);
+}
+
 app.UseAuthentication();
+
+#if DEBUG
 if (builder.Environment.IsDevelopment())
 {
     app.UseUserDebugMocking();
@@ -55,8 +132,35 @@ if (builder.Environment.IsDevelopment())
 }
 else
 {
-    app.UseHttpsRedirection();
+#endif
+
+    RoutingOptions routingOptions = new();
+    app.Configuration.Bind(RoutingOptions.SectionPath, routingOptions);
+
+    if (routingOptions.InsecureTrustProxy)
+    {
+        var fwdOptions = new ForwardedHeadersOptions
+        {
+            ForwardedHeaders =
+                ForwardedHeaders.XForwardedFor
+                | ForwardedHeaders.XForwardedProto
+                | ForwardedHeaders.XForwardedHost,
+        };
+
+        fwdOptions.KnownIPNetworks.Clear();
+        fwdOptions.KnownProxies.Clear();
+
+        app.UseForwardedHeaders(fwdOptions);
+    }
+    else
+    {
+        app.UseHttpsRedirection();
+    }
+
+#if DEBUG
 }
+#endif
+
 app.UseAuthorization();
 app.MapGroup("/api/v1").MapControllers();
 app.MapStaticAssets();

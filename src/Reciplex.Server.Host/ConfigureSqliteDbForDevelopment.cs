@@ -9,10 +9,10 @@ namespace Reciplex.Server.Host;
 
 #if DEBUG
 
-public class SqliteDbDev
+public class SqliteDbDebugSeeding
 {
-    public const string SectionPath = "Reciplex:SqliteDebug";
-    public bool Enabled { get; set; }
+    public const string SectionPath = "Reciplex:Debug:SqliteSeeding";
+    public bool Enable { get; set; }
 }
 
 sealed class ConfigureSqliteDbForDevelopment(IServiceProvider rootServices) : IHostedService
@@ -29,8 +29,8 @@ sealed class ConfigureSqliteDbForDevelopment(IServiceProvider rootServices) : IH
         var applicationDbContext = services.GetRequiredService<ApplicationDbContext>();
         if (await applicationDbContext.Database.EnsureCreatedAsync(cancellationToken))
         {
-            var options = services.GetRequiredService<IOptions<SqliteDbDev>>();
-            if (options.Value.Enabled)
+            var options = services.GetRequiredService<IOptions<SqliteDbDebugSeeding>>();
+            if (options.Value.Enable)
             {
                 var userService = services.GetRequiredService<IUsersService>();
                 var userResult = await userService.CreateUserAsync(

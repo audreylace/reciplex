@@ -10,12 +10,12 @@ public class OpenIdConnectOptions
     /// <summary>
     /// Section path
     /// </summary>
-    public const string SectionPath = "Reciplex:OpenIdConnect";
+    public const string SectionPath = "Reciplex:Oidc";
 
     /// <summary>
     /// Set to true to enable OIDC authentication
     /// </summary>
-    public bool Enabled { get; set; }
+    public bool Enable { get; set; }
 
     /// <summary>
     /// The OIDC authority
@@ -24,24 +24,17 @@ public class OpenIdConnectOptions
     public string Authority { get; set; } = "";
 
     /// <summary>
-    /// ID identifying this server to the <see cref="Authority"/>
-    /// </summary>
-    [Required]
-    public string ClientId { get; set; } = "";
-
-    /// <summary>
-    /// Shared secret between the client and the <see cref="Authority"/>
-    /// </summary>
-    /// <remarks>
-    /// TODO: Storing this in the settings json is terrible security practice.
-    /// Do this in a more secure way.
-    /// </remarks>
-    [Required]
-    public string ClientSecret { get; set; } = "";
-
-    /// <summary>
     /// Disables HTTPs for communication with the OIDC server.
-    /// Don't enable in production.
     /// </summary>
-    public bool DisableHttps { get; set; }
+    public bool InsecureDisableHttps { get; set; }
+
+    /// <summary>
+    /// Accepts any HTTPs certificate bypassing certificate chain validation
+    /// </summary>
+    public bool InsecureAcceptAnyServerCertificate { get; set; }
+
+    /// <summary>
+    /// Maps requests for <see cref="Authority"/> to this server
+    /// </summary>
+    public string BackChannelHostOverride { get; set; } = "";
 }

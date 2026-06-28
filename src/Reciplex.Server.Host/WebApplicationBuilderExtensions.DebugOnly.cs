@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Recipe.Database;
 using Reciplex.Server.Database;
 
 namespace Reciplex.Server.Host;
@@ -28,8 +27,8 @@ public static class WebApplicationBuilderExtensions
         string dbString = $"Data Source=bin/{Guid.NewGuid()}.db";
         builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite(dbString));
         builder.Services.AddHostedService<ConfigureSqliteDbForDevelopment>();
-        builder.Services.Configure<SqliteDbDev>(
-            builder.Configuration.GetSection(SqliteDbDev.SectionPath)
+        builder.Services.Configure<SqliteDbDebugSeeding>(
+            builder.Configuration.GetSection(SqliteDbDebugSeeding.SectionPath)
         );
         builder.AddApplicationDbSupportServices();
 
