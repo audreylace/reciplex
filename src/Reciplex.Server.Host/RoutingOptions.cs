@@ -21,5 +21,5 @@ public class RoutingOptions
     /// <summary>
     /// Set to true to trust proxy headers
     /// </summary>
-    public bool TrustProxy { get; set; }
+    public bool InsecureTrustProxy { get; set; }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.HttpOverrides;
 using NodaTime;
+using Reciplex.Server.Abstractions;
 using Reciplex.Server.Database;
 using Reciplex.Server.Host;
 using Reciplex.Server.Host.AccessControl;
@@ -114,8 +115,11 @@ builder.AddOpenIdConnect();
 
 var app = builder.Build();
 
-// run migration as needed on startup
-await new Sqlite3Startup(app).MigrateAsync(CancellationToken.None);
+var toRunBeforeStart = app.Services.GetServices<IRunBeforeAppStartup>();
+foreach (IRunBeforeAppStartup service in toRunBeforeStart)
+{
+    await service.RunBeforeStartupAsync(CancellationToken.None);
+}
 
 app.UseAuthentication();
 
@@ -133,7 +137,7 @@ else
     RoutingOptions routingOptions = new();
     app.Configuration.Bind(RoutingOptions.SectionPath, routingOptions);
 
-    if (routingOptions.TrustProxy)
+    if (routingOptions.InsecureTrustProxy)
     {
         var fwdOptions = new ForwardedHeadersOptions
         {

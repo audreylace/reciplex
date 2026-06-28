@@ -4,8 +4,16 @@ using Sqids;
 
 namespace Reciplex.Server.Host;
 
+/// <summary>
+/// Extensions for <see cref="WebApplicationBuilder"/> configuring <see cref="SqidsOptions"/>
+/// </summary>
 public static class AppShortIdWebApplicationBuilderExtensions
 {
+    /// <summary>
+    /// Adds short id mapping to the container
+    /// </summary>
+    /// <param name="builder">app builder</param>
+    /// <returns><paramref name="builder"/> with short id services added</returns>
     public static WebApplicationBuilder AddShortIds(this WebApplicationBuilder builder)
     {
         builder.Services.Configure<AppShortIdOptions>(

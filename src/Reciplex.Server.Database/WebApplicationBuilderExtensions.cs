@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Reciplex.Server.Abstractions;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Database.RecipeBooksDomain;
 using Reciplex.Server.Database.RecipesDomain;
@@ -14,6 +15,11 @@ namespace Reciplex.Server.Database;
 /// </summary>
 public static partial class WebApplicationBuilderExtensions
 {
+    /// <summary>
+    /// Add services providing application domain logic over the database
+    /// </summary>
+    /// <param name="builder">the app builder</param>
+    /// <returns><paramref name="builder"/> with services registered</returns>
     public static WebApplicationBuilder AddApplicationDbSupportServices(
         this WebApplicationBuilder builder
     )
@@ -29,8 +35,8 @@ public static partial class WebApplicationBuilderExtensions
     /// <summary>
     /// Adds application DB context to the application
     /// </summary>
-    /// <param name="builder"></param>
-    /// <returns></returns>
+    /// <param name="builder">the app builder</param>
+    /// <returns><paramref name="builder"/> with sqlite3 configured per the loaded configuration</returns>
     public static WebApplicationBuilder AddSqlite3ApplicationDbContext(
         this WebApplicationBuilder builder
     )
@@ -51,6 +57,11 @@ public static partial class WebApplicationBuilderExtensions
                 "DatabaseConnection string must be supplied when Sqlite3 is enabled"
             );
         }
+
+        builder.Services.AddSingleton<IRunBeforeAppStartup, Sqlite3BeforeAppStartup>();
+        builder.Services.Configure<SqliteApplicationDbContextOptions>(
+            builder.Configuration.GetSection(SqliteApplicationDbContextOptions.SectionPath)
+        );
 
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlite(

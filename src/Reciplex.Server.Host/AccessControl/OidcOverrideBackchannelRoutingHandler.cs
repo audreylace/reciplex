@@ -1,10 +1,16 @@
 namespace Reciplex.Server.Host.AccessControl;
 
-public class OidcOverrideBackchannelRoutingHandler(
+/// <summary>
+/// Mutates outbound requests to OIDC server targeting a different server
+/// </summary>
+/// <param name="openIdConnectConfiguration">oidc server configuration</param>
+/// <param name="innerHandler">the inner http handler to wrap</param>
+public class OidcOverrideBackChannelRoutingHandler(
     OpenIdConnectOptions openIdConnectConfiguration,
     HttpMessageHandler innerHandler
 ) : DelegatingHandler(innerHandler)
 {
+    /// <inheritdoc />
     protected override Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken

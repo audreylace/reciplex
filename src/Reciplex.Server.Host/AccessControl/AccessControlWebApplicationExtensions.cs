@@ -168,7 +168,7 @@ public static class AccessControlWebApplicationExtensions
 
                 if (!string.IsNullOrWhiteSpace(connectOptions.BackChannelHostOverride))
                 {
-                    options.BackchannelHttpHandler = new OidcOverrideBackchannelRoutingHandler(
+                    options.BackchannelHttpHandler = new OidcOverrideBackChannelRoutingHandler(
                         connectOptions,
                         options.BackchannelHttpHandler ?? new HttpClientHandler()
                     );
