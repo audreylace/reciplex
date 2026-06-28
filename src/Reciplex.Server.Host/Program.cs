@@ -129,13 +129,18 @@ else
 
     if (routingOptions.TrustProxy)
     {
-        app.UseForwardedHeaders(
-            new ForwardedHeadersOptions
-            {
-                ForwardedHeaders =
-                    ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
-            }
-        );
+        var fwdOptions = new ForwardedHeadersOptions
+        {
+            ForwardedHeaders =
+                ForwardedHeaders.XForwardedFor
+                | ForwardedHeaders.XForwardedProto
+                | ForwardedHeaders.XForwardedHost,
+        };
+
+        fwdOptions.KnownIPNetworks.Clear();
+        fwdOptions.KnownProxies.Clear();
+
+        app.UseForwardedHeaders(fwdOptions);
     }
     else
     {
