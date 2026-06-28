@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Recipe.Database;
+namespace Reciplex.Server.Database;
 
 /// <summary>
 /// Options for database connection

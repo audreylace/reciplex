@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.HttpOverrides;
 using NodaTime;
-using Recipe.Database;
+using Reciplex.Server.Database;
 using Reciplex.Server.Host;
 using Reciplex.Server.Host.AccessControl;
 
@@ -115,7 +115,7 @@ builder.AddOpenIdConnect();
 var app = builder.Build();
 
 // run migration as needed on startup
-await new Sqlite3Migrator(app).MigrateAsync(CancellationToken.None);
+await new Sqlite3Startup(app).MigrateAsync(CancellationToken.None);
 
 app.UseAuthentication();
 

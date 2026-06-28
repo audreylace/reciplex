@@ -3,11 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Reciplex.Server.Database;
 
-namespace Recipe.Database;
+namespace Reciplex.Server.Database;
 
-public class Sqlite3Migrator(WebApplication app)
+public class Sqlite3Startup(WebApplication app)
 {
     public async Task MigrateAsync(CancellationToken ct)
     {
@@ -19,16 +18,28 @@ public class Sqlite3Migrator(WebApplication app)
             app.Configuration.GetSection(SqliteApplicationDbContextOptions.SectionPath)
                 .Bind(configOptions);
 
-            if (configOptions.EnableMigrations && configOptions.Enable)
+            if (!configOptions.Enable)
             {
-                var context = services.GetRequiredService<ApplicationDbContext>();
+                return;
+            }
+
+            var context = services.GetRequiredService<ApplicationDbContext>();
+
+            using var connection = context.Database.GetDbConnection();
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "PRAGMA journal_mode=WAL;";
+            command.ExecuteScalar();
+
+            if (configOptions.EnableMigrations)
+            {
                 // Applies any pending migrations and creates the database if it doesn't exist
                 await context.Database.MigrateAsync(ct);
             }
         }
         catch (Exception ex)
         {
-            var logger = services.GetRequiredService<ILogger<Sqlite3Migrator>>();
+            var logger = services.GetRequiredService<ILogger<Sqlite3Startup>>();
             logger.LogMigrationError(ex);
             throw;
         }

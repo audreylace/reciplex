@@ -2,14 +2,12 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
-using Reciplex.Server.Database;
 using Reciplex.Server.Database.RecipeBooksDomain;
 using Reciplex.Server.Database.RecipesDomain;
 using Reciplex.Server.Database.UsersDomain;
 
-namespace Recipe.Database;
+namespace Reciplex.Server.Database;
 
 /// <summary>
 /// Configures application DB access for the program

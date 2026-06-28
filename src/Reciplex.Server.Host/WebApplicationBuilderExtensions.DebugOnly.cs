@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Recipe.Database;
 using Reciplex.Server.Database;
 
 namespace Reciplex.Server.Host;
