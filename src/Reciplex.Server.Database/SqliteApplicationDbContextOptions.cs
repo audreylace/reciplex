@@ -22,4 +22,9 @@ public class SqliteApplicationDbContextOptions
     /// If the sqlite3 database driver is enabled
     /// </summary>
     public bool Enable { get; set; }
+
+    /// <summary>
+    /// Set to true to enable migrations
+    /// </summary>
+    public bool EnableMigrations { get; set; }
 }

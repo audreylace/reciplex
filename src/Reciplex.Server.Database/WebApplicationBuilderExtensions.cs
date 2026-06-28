@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Database;
 using Reciplex.Server.Database.RecipeBooksDomain;
@@ -54,7 +55,13 @@ public static partial class WebApplicationBuilderExtensions
         }
 
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlite(configOptions.DatabaseConnection)
+            options.UseSqlite(
+                configOptions.DatabaseConnection,
+                b =>
+                {
+                    b.MigrationsAssembly(typeof(WebApplicationBuilderExtensions).Assembly.FullName);
+                }
+            )
         );
 
         builder.AddApplicationDbSupportServices();

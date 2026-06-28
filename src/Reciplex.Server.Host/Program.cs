@@ -9,67 +9,70 @@ var builder = WebApplication.CreateBuilder(args);
 bool eatArg = false;
 bool seenConfig = false;
 
-// Add custom config paths from command line
-for (int i = 0; i < args.Length; i++)
+if (!args.Any(arg => arg == "--noArgs"))
 {
-    if (eatArg)
+    // Add custom config paths from command line
+    for (int i = 0; i < args.Length; i++)
     {
-        eatArg = false;
-        continue;
-    }
-
-    if (args[i] == "-R")
-    {
-        if (seenConfig)
+        if (eatArg)
         {
-            Console.WriteLine("-R must come before -C, -c, or -E arguments");
-            Environment.Exit(-1);
+            eatArg = false;
+            continue;
         }
 
-        builder.Configuration.Sources.Clear();
-        continue;
+        if (args[i] == "-R")
+        {
+            if (seenConfig)
+            {
+                Console.WriteLine("-R must come before -C, -c, or -E arguments");
+                Environment.Exit(-1);
+            }
+
+            builder.Configuration.Sources.Clear();
+            continue;
+        }
+
+        // Optional config, little c
+        if (args[i] == "-c" && i + 1 < args.Length)
+        {
+            seenConfig = true;
+            string additionalConfigPath = args[i + 1];
+
+            builder.Configuration.AddJsonFile(
+                additionalConfigPath,
+                optional: true,
+                reloadOnChange: true
+            );
+            eatArg = true;
+            continue;
+        }
+
+        // Mandatory config, big C
+        if (args[i] == "-C" && i + 1 < args.Length)
+        {
+            string additionalConfigPath = args[i + 1];
+            seenConfig = true;
+            builder.Configuration.AddJsonFile(
+                additionalConfigPath,
+                optional: false,
+                reloadOnChange: true
+            );
+            eatArg = true;
+            continue;
+        }
+
+        // -E enables environment variables sourced configuration
+        if (args[i] == "-E")
+        {
+            seenConfig = true;
+            // add env variables
+            builder.Configuration.AddEnvironmentVariables(prefix: "RCX_");
+            continue;
+        }
+
+        Console.WriteLine($"Unknown argument: {args[i]}");
+        Environment.Exit(-1);
     }
-
-    // Optional config, little c
-    if (args[i] == "-c" && i + 1 < args.Length)
-    {
-        seenConfig = true;
-        string additionalConfigPath = args[i + 1];
-
-        builder.Configuration.AddJsonFile(
-            additionalConfigPath,
-            optional: true,
-            reloadOnChange: true
-        );
-        eatArg = true;
-        continue;
-    }
-
-    // Mandatory config, big C
-    if (args[i] == "-C" && i + 1 < args.Length)
-    {
-        string additionalConfigPath = args[i + 1];
-        seenConfig = true;
-        builder.Configuration.AddJsonFile(
-            additionalConfigPath,
-            optional: false,
-            reloadOnChange: true
-        );
-        eatArg = true;
-        continue;
-    }
-
-    // -E enables environment variables sourced configuration
-    if (args[i] == "-E")
-    {
-        seenConfig = true;
-        // add env variables
-        builder.Configuration.AddEnvironmentVariables(prefix: "RCX_");
-        continue;
-    }
-
-    Console.WriteLine($"Unknown argument: {args[i]}");
-    Environment.Exit(-1);
 }
 
 // Add services to the container.
@@ -110,6 +113,9 @@ builder.Services.Configure<RoutingOptions>(
 builder.AddOpenIdConnect();
 
 var app = builder.Build();
+
+// run migration as needed on startup
+await new Sqlite3Migrator(app).MigrateAsync(CancellationToken.None);
 
 app.UseAuthentication();
 
