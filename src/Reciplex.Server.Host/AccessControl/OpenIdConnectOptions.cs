@@ -23,12 +23,13 @@ public class OpenIdConnectOptions
     [Required]
     public string Authority { get; set; } = "";
 
-#if DEBUG
-
     /// <summary>
     /// Disables HTTPs for communication with the OIDC server.
-    /// Don't enable in production.
     /// </summary>
     public bool InsecureDisableHttps { get; set; }
-#endif
+
+    /// <summary>
+    /// Accepts any HTTPs certificate bypassing certificate chain validation
+    /// </summary>
+    public bool InsecureAcceptAnyServerCertificate { get; set; }
 }
