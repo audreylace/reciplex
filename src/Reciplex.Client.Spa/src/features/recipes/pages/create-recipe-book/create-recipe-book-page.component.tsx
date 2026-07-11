@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import { makeViewRecipeBookPath } from "../../route-utils";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
 import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
+import { BrowserTitle } from "../../../core/components/browser-title/browser-title.component";
 
 /**
  * Create recipe book page component
@@ -19,6 +20,7 @@ export function CreateRecipeBookPage() {
 
   return (
     <>
+      <BrowserTitle title="Adding Book" />
       <PageHeader title="Creating New Recipe Book" />
       <NameAndShortDescriptionForm
         legendText="Describe the new recipe book"

@@ -5,6 +5,7 @@ import { BookTable } from "../../components/book-table/book-table.component";
 import { useRecipeClientStateContext } from "../../hooks/useRecipeClientStateContext.hook";
 import { useEffect, useRef } from "react";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
+import { BrowserTitle } from "../../../core/components/browser-title/browser-title.component";
 
 /**
  * Entry point for recipe book list page component
@@ -72,6 +73,7 @@ export function RecipeBookListPage() {
 
   return (
     <>
+      <BrowserTitle title="Books" />
       <PageHeader title="Recipe Books" />
       <BookTable
         ref={tablePaperRef}
