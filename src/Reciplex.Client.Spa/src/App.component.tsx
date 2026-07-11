@@ -18,6 +18,7 @@ import { AppTheme } from "./features/core/components/app-theme/app-theme.compone
 import { makeClient } from "./features/core/utils/react-query-config";
 import CssBaseline from "@mui/material/CssBaseline";
 import "./index.css";
+import { PropagateBrowserTitle } from "./features/core/components/browser-title/propagate-browser-title.component";
 
 const queryClient = makeClient();
 const serverStore = new RecipeHttpBookStore("/api");
@@ -41,6 +42,7 @@ export function App() {
           </RecipeStore.Provider>
         </AuthClients.Provider>
       </AppTheme>
+      <PropagateBrowserTitle />
     </>
   );
 }
