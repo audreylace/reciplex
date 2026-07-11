@@ -1,3 +1,4 @@
+import { BrowserTitle } from "../../../core/components/browser-title/browser-title.component";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
 import { AccountSelector } from "../../components/accounts-selector/account-selector.component";
 import { AuthenticatedRouteGuard } from "../../components/authenticated-route-guard/authenticated-route-guard.component";
@@ -6,6 +7,7 @@ import { AuthenticatedRouteGuard } from "../../components/authenticated-route-gu
 export function SelectAccountPage() {
   return (
     <AuthenticatedRouteGuard allowNullUser>
+      <BrowserTitle title="Select Account" />
       <PageHeader title="Whose Cooking?" />
       <AccountSelector redirectToSignUpIfNeeded />
     </AuthenticatedRouteGuard>
