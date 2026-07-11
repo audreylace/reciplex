@@ -132,6 +132,7 @@ export function ManageUserAccessBody({ bookId }: IManageUserAccessBodyProps) {
                 <TableBody>
                   {state.map((u) => (
                     <AccessControlsRow
+                      reviewed={u.prev.reviewed}
                       disabled={!mutationIdle}
                       key={u.prev.userKey}
                       displayName={u.prev.userDisplayName}
