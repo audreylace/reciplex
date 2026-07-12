@@ -200,6 +200,23 @@ export const router = createBrowserRouter([
       },
     ],
   },
+  {
+    path: "*",
+    lazy: async () => {
+      const Component = await import("./layouts/default/default-layout");
+      return { Component: Component.DefaultLayout };
+    },
+    children: [
+      {
+        path: "*",
+        lazy: async () => {
+          const Component =
+            await import("./pages/not-found/not-found.component");
+          return { Component: Component.NotFound };
+        },
+      },
+    ],
+  },
 ]);
 
 async function invitePageComponent() {
