@@ -1,4 +1,8 @@
-import { HttpClient, HttpError } from "../../core/utils/http-client";
+import {
+  HttpClient,
+  HttpError,
+  type IHttpClientArgs,
+} from "../../core/utils/http-client";
 
 /**
  * Client for the backend http server's endpoints.
@@ -10,9 +14,10 @@ export class UsersHttpClient {
   /**
    * Class constructor
    * @param prefix API prefix that should not end in a slash
+   * @param args args for the http client
    */
-  constructor(prefix: string) {
-    this._client = new HttpClient(prefix + "/v1/users");
+  constructor(prefix: string, args?: IHttpClientArgs) {
+    this._client = new HttpClient(prefix + "/v1/users", args);
   }
 
   /**

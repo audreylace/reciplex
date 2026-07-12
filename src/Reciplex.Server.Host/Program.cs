@@ -86,9 +86,16 @@ builder.ConfigureDataProtection();
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication();
 
-builder.Services.AddControllers();
+builder.Services.AddControllersWithViews();
 
 builder.Services.AddSingleton<IClock>(SystemClock.Instance);
+
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-XSRF-TOKEN";
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+});
 
 #if DEBUG
 if (builder.Environment.IsDevelopment())
@@ -131,36 +138,30 @@ if (builder.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+#endif
+
+RoutingOptions routingOptions = new();
+app.Configuration.Bind(RoutingOptions.SectionPath, routingOptions);
+
+if (routingOptions.InsecureTrustProxy)
+{
+    var fwdOptions = new ForwardedHeadersOptions
+    {
+        ForwardedHeaders =
+            ForwardedHeaders.XForwardedFor
+            | ForwardedHeaders.XForwardedProto
+            | ForwardedHeaders.XForwardedHost,
+    };
+
+    fwdOptions.KnownIPNetworks.Clear();
+    fwdOptions.KnownProxies.Clear();
+
+    app.UseForwardedHeaders(fwdOptions);
+}
 else
 {
-#endif
-
-    RoutingOptions routingOptions = new();
-    app.Configuration.Bind(RoutingOptions.SectionPath, routingOptions);
-
-    if (routingOptions.InsecureTrustProxy)
-    {
-        var fwdOptions = new ForwardedHeadersOptions
-        {
-            ForwardedHeaders =
-                ForwardedHeaders.XForwardedFor
-                | ForwardedHeaders.XForwardedProto
-                | ForwardedHeaders.XForwardedHost,
-        };
-
-        fwdOptions.KnownIPNetworks.Clear();
-        fwdOptions.KnownProxies.Clear();
-
-        app.UseForwardedHeaders(fwdOptions);
-    }
-    else
-    {
-        app.UseHttpsRedirection();
-    }
-
-#if DEBUG
+    app.UseHttpsRedirection();
 }
-#endif
 
 app.UseAuthorization();
 app.MapGroup("/api/v1").MapControllers();

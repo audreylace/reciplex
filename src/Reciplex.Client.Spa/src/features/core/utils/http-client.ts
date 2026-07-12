@@ -11,6 +11,12 @@ export interface IHttpActionArgs {
   headers?: Record<string, string>;
 }
 
+/** optional args for `IHttpClient` */
+export interface IHttpClientArgs {
+  /** optional pipeline to intercept and modify actions taken by the client */
+  pipeline?: HttpClientMiddlewarePipeline;
+}
+
 /**
  * Client for interacting with a HTTP server.
  */
@@ -18,15 +24,20 @@ export class HttpClient {
   /**
    * Constructs a new instance of `HttpClient`
    * @param prefix the base path of all requests
+   * @param args optional args to customize the client
    */
-  constructor(prefix: string) {
+  constructor(prefix: string, args?: IHttpClientArgs) {
     this._basePath = prefix;
+    this._pipeline = args?.pipeline ?? new HttpClientMiddlewarePipeline();
   }
 
   /**
    * the base path of all requests
    */
   private _basePath: string;
+
+  /** the http pipeline for this client */
+  private _pipeline: HttpClientMiddlewarePipeline;
 
   /**
    * Gets data from the remote
@@ -53,7 +64,7 @@ export class HttpClient {
    */
   public async httpPost<TBody>(
     path: string,
-    body: TBody,
+    body?: TBody,
     params?: [string, string][],
     args?: IHttpActionArgs,
   ): Promise<Response> {
@@ -161,13 +172,16 @@ export class HttpClient {
     if (body) {
       headers["Content-Type"] = "application/json";
     }
-    const response = await fetch(computedPath, {
+
+    const pipelineResult = await this._pipeline.onBeforeFetch(computedPath, {
       method,
       credentials: "include",
       headers,
       cache: args?.noCache ? "reload" : "default",
       body: body ? JSON.stringify(body) : undefined,
     });
+
+    const response = await fetch(pipelineResult.path, pipelineResult.args);
 
     return this.throwIfNotSuccessOtherwiseReturn(response);
   }
@@ -215,3 +229,50 @@ export class HttpError extends Error {
     return this._response.status;
   }
 }
+
+/**
+ * Pipeline for http client
+ */
+export class HttpClientMiddlewarePipeline {
+  /** handlers run before a fetch */
+  private _beforeFetchHandlers: BeforeFetchHandlerType[] = [];
+
+  /**
+   * Invoke before a fetch. Middleware handlers will optionally replace `path` and `args`.
+   * @param path the fetch path
+   * @param args fetch args
+   * @returns final fetch path and args to use
+   */
+  public async onBeforeFetch(
+    path: string,
+    args: RequestInit,
+  ): Promise<{ path: string; args: RequestInit }> {
+    if (this._beforeFetchHandlers.length <= 0) {
+      return { path, args };
+    }
+
+    let state = { path, args };
+    for (let handler of this._beforeFetchHandlers) {
+      state = await handler(state.path, state.args);
+    }
+
+    return state;
+  }
+
+  /**
+   * adds a handler to the before fetch pipeline
+   * @param handler the handler to add
+   */
+  public addBeforeFetchHandler(handler: BeforeFetchHandlerType) {
+    this._beforeFetchHandlers.push(handler);
+  }
+}
+
+/**
+ * handler ran before a fetch operation is invoked.
+ * Returns the path and args the fetch operation should use.
+ */
+export type BeforeFetchHandlerType = (
+  path: string,
+  args: RequestInit,
+) => Promise<{ path: string; args: RequestInit }>;

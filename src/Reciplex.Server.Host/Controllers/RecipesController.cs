@@ -77,6 +77,7 @@ public class RecipesController(IRecipesService recipeService) : ControllerBase
     /// <param name="cancellationToken">token that cancels when the user closes the connection</param>
     /// <returns>Task resolving to the response to send back</returns>
     [HttpDelete("{recipeKey}")]
+    [ValidateAntiForgeryToken]
     public async Task<
         Results<Ok, ForbidHttpResult, NoContent, NotFound, PreconditionFailedHttpResult>
     > DeleteRecipeById(
@@ -135,6 +136,7 @@ public class RecipesController(IRecipesService recipeService) : ControllerBase
     /// <param name="cancellationToken">token that cancels when the user closes the connection</param>
     /// <returns>Task resolving to the response to send back</returns>
     [HttpPut("{recipeKey}")]
+    [ValidateAntiForgeryToken]
     public async Task<
         Results<
             NoContent,
@@ -210,6 +212,7 @@ public class RecipesController(IRecipesService recipeService) : ControllerBase
     /// <param name="cancellationToken">token that cancels when the user closes the connection</param>
     /// <returns>Task resolving to the response to send back</returns>
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<
         Results<NotFound, ValidationProblem, Created<RecipeJsonResponse>, ForbidHttpResult>
     > CreateRecipe(

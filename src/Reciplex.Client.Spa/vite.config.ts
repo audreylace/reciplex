@@ -10,7 +10,7 @@ export default defineConfig({
       /** name of certification */
       name: "test",
       /** custom trust domains */
-      domains: ["example.com"],
+      domains: ["localhost"],
       /** optional, days before certificate expires */
       ttlDays: 30,
     }),
@@ -23,6 +23,9 @@ export default defineConfig({
         target: "http://localhost:1993", // The address of your backend server
         changeOrigin: true, // Needed for virtual hosted sites
         secure: false,
+        headers: {
+          "X-Forwarded-Proto": "https",
+        },
       },
     },
   },

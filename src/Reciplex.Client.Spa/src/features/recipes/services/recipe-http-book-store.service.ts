@@ -1,4 +1,8 @@
-import { HttpClient, HttpError } from "../../core/utils/http-client";
+import {
+  HttpClient,
+  HttpError,
+  type IHttpClientArgs,
+} from "../../core/utils/http-client";
 import {
   type ICreateRecipeArgs,
   type ICreateRecipeBookArgs,
@@ -22,10 +26,11 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
   /**
    * Class constructor
    * @param prefix API prefix that should not end in a slash
+   * @param args args for the http client
    */
-  constructor(prefix: string) {
-    this._bookClient = new HttpClient(prefix + "/v1/recipe-books");
-    this._recipeClient = new HttpClient(prefix + "/v1/recipes");
+  constructor(prefix: string, args?: IHttpClientArgs) {
+    this._bookClient = new HttpClient(prefix + "/v1/recipe-books", args);
+    this._recipeClient = new HttpClient(prefix + "/v1/recipes", args);
   }
 
   private _bookClient: HttpClient;

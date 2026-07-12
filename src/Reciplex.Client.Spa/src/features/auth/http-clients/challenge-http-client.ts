@@ -1,4 +1,4 @@
-import { HttpClient } from "../../core/utils/http-client";
+import { HttpClient, type IHttpClientArgs } from "../../core/utils/http-client";
 
 /**
  * client for interacting with the challenge controller
@@ -17,10 +17,11 @@ export class ChallengeHttpClient {
   /**
    * Class constructor
    * @param prefix API prefix that should not end in a slash
+   * @param args args for the http client
    */
-  constructor(prefix: string) {
+  constructor(prefix: string, args?: IHttpClientArgs) {
     this._path = prefix + "/v1/challenge";
-    this._client = new HttpClient(this._path);
+    this._client = new HttpClient(this._path, args);
   }
 
   /**

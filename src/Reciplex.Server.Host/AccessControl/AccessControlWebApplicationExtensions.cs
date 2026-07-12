@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Options;
@@ -164,11 +165,11 @@ public static class AccessControlWebApplicationExtensions
                 options.CallbackPath = "/api/v1/oidc/sign-in";
                 options.RequireHttpsMetadata = !connectOptions.InsecureDisableHttps;
                 options.TokenValidationParameters.NameClaimType = JwtRegisteredClaimNames.Name;
-                options.SaveTokens = false;
 
                 // OIDC is just to identify and authenticate user, after that,
                 // this application takes control of the session lifetime.
                 options.UseTokenLifetime = false;
+                options.SaveTokens = false;
 
                 if (connectOptions.InsecureAcceptAnyServerCertificate)
                 {
@@ -199,6 +200,11 @@ public static class AccessControlWebApplicationExtensions
                 options.Events.OnTokenValidated = (
                     context =>
                     {
+                        // regen tokens on authenticated context change
+                        IAntiforgery antiforgery =
+                            context.HttpContext.RequestServices.GetRequiredService<IAntiforgery>();
+                        antiforgery.GetAndStoreTokens(context.HttpContext);
+
                         // you can --
                         // - add custom claims via this hook
                         // - merge old identity with new incoming one to allow account linking
