@@ -139,6 +139,14 @@ public static class AccessControlWebApplicationExtensions
                     context.Response.StatusCode = StatusCodes.Status403Forbidden;
                     return Task.CompletedTask;
                 };
+
+                o.Cookie.HttpOnly = true;
+                o.Cookie.IsEssential = true;
+                o.Cookie.SameSite = SameSiteMode.Strict; // guard against some types of CSRF attacks
+                o.Cookie.SecurePolicy = CookieSecurePolicy.Always; // cookie over https only
+
+                o.SlidingExpiration = true;
+                o.ExpireTimeSpan = TimeSpan.FromDays(14);
             })
             .AddOpenIdConnect(options =>
             {
@@ -156,6 +164,11 @@ public static class AccessControlWebApplicationExtensions
                 options.CallbackPath = "/api/v1/oidc/sign-in";
                 options.RequireHttpsMetadata = !connectOptions.InsecureDisableHttps;
                 options.TokenValidationParameters.NameClaimType = JwtRegisteredClaimNames.Name;
+                options.SaveTokens = false;
+
+                // OIDC is just to identify and authenticate user, after that,
+                // this application takes control of the session lifetime.
+                options.UseTokenLifetime = false;
 
                 if (connectOptions.InsecureAcceptAnyServerCertificate)
                 {
@@ -173,6 +186,15 @@ public static class AccessControlWebApplicationExtensions
                         options.BackchannelHttpHandler ?? new HttpClientHandler()
                     );
                 }
+
+                options.Events.OnTicketReceived = context =>
+                {
+                    context.Properties ??= new();
+                    context.Properties.IsPersistent = true;
+                    context.Properties.ExpiresUtc = DateTimeOffset.UtcNow.AddDays(14);
+
+                    return Task.CompletedTask;
+                };
 
                 options.Events.OnTokenValidated = (
                     context =>
