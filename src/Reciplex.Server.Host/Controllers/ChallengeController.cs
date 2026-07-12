@@ -50,4 +50,18 @@ public class ChallengeController(IOptions<RoutingOptions> options) : ControllerB
 
         return TypedResults.Ok(new ChallengeJsonResponse() { ChallengeRequired = false });
     }
+
+    /// <summary>
+    /// Kill's the client side session cookie
+    /// </summary>
+    /// <returns>sign out result/returns>
+    [HttpPost("sign-out")]
+    public SignOutHttpResult PostSignOut()
+    {
+        UriBuilder uriBuilder = new(options.Value.Domain) { Path = "/" };
+        return TypedResults.SignOut(
+            new() { RedirectUri = uriBuilder.Uri.OriginalString },
+            [OpenIdConnectDefaults.AuthenticationScheme]
+        );
+    }
 }
