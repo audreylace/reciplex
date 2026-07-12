@@ -35,6 +35,10 @@ public class ChallengeController(IOptions<RoutingOptions> options) : ControllerB
         );
     }
 
+    /// <summary>
+    /// Gets the current user's authentication status
+    /// </summary>
+    /// <returns>the http result</returns>
     [HttpGet("inspect")]
     public Ok<ChallengeJsonResponse> GetStatus()
     {
