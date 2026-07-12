@@ -157,6 +157,8 @@ else
         app.UseHttpsRedirection();
     }
 
+    app.UseRedirectOnError();
+
 #if DEBUG
 }
 #endif

@@ -204,6 +204,14 @@ export const router = createBrowserRouter([
           return { Component: Component.HomePage };
         },
       },
+      {
+        path: "/app-error",
+        lazy: async () => {
+          const Component =
+            await import("./pages/app-error/app-error-page.component");
+          return { Component: Component.AppErrorPage };
+        },
+      },
     ],
   },
   {
