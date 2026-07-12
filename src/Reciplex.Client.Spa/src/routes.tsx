@@ -1,7 +1,9 @@
 import { createBrowserRouter } from "react-router";
+import { ErrorBoundary } from "./pages/error-boundary/error-boundary.component";
 
 export const router = createBrowserRouter([
   {
+    ErrorBoundary: ErrorBoundary,
     path: "/books",
     lazy: async () => {
       const Component =
@@ -20,6 +22,7 @@ export const router = createBrowserRouter([
     ],
   },
   {
+    ErrorBoundary: ErrorBoundary,
     path: "/books/-/create",
     lazy: async () => {
       const Component =
@@ -38,6 +41,7 @@ export const router = createBrowserRouter([
     ],
   },
   {
+    ErrorBoundary: ErrorBoundary,
     path: "/books/:bookId",
     lazy: async () => {
       const Component =
@@ -128,6 +132,7 @@ export const router = createBrowserRouter([
     ],
   },
   {
+    ErrorBoundary: ErrorBoundary,
     path: "/accounts",
     lazy: async () => {
       const Component = await import("./layouts/default/default-layout");
@@ -177,6 +182,7 @@ export const router = createBrowserRouter([
     ],
   },
   {
+    ErrorBoundary: ErrorBoundary,
     path: "/",
     lazy: async () => {
       const Component = await import("./layouts/default/default-layout");
@@ -201,6 +207,7 @@ export const router = createBrowserRouter([
     ],
   },
   {
+    ErrorBoundary: ErrorBoundary,
     path: "*",
     lazy: async () => {
       const Component = await import("./layouts/default/default-layout");
