@@ -25,6 +25,8 @@ import {
   type IHttpClientArgs,
 } from "./features/core/utils/http-client";
 import { XsrfMiddleware } from "./features/auth/utils/xsrf-middleware";
+import { SignOutClient } from "./features/auth/hooks/useSignOutClient.hook";
+import { SignOutHttpClient } from "./features/auth/http-clients/sign-out-http-client";
 
 const queryClient = makeClient();
 const xsrfClient = new XsrfHttpClient("/api");
@@ -42,19 +44,22 @@ const authStoreContext: IAuthClients = {
   challengeClient: challengeClient,
   usersClient: userClient,
 };
+const signOutClient = new SignOutHttpClient("/api", httpArgs);
 
 export function App() {
   return (
     <>
       <AppTheme>
         <CssBaseline />
-        <AuthClients.Provider value={authStoreContext}>
-          <RecipeStore.Provider value={serverStore}>
-            <QueryClientProvider client={queryClient}>
-              <RouterProvider router={router} />
-            </QueryClientProvider>
-          </RecipeStore.Provider>
-        </AuthClients.Provider>
+        <SignOutClient.Provider value={signOutClient}>
+          <AuthClients.Provider value={authStoreContext}>
+            <RecipeStore.Provider value={serverStore}>
+              <QueryClientProvider client={queryClient}>
+                <RouterProvider router={router} />
+              </QueryClientProvider>
+            </RecipeStore.Provider>
+          </AuthClients.Provider>
+        </SignOutClient.Provider>
       </AppTheme>
       <PropagateBrowserTitle />
     </>
