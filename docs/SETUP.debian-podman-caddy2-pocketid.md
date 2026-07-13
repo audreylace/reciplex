@@ -67,6 +67,28 @@ podman rm hello-world basic_httpd
 podman ps -a
 ```
 
+### Common Problems
+
+Debian minimal cloud images fails to have the needed packages for a podman ssh session to function properly.
+
+**Symptom:**
+
+```
+WARN[0000] The cgroupv2 manager is set to systemd but there is no systemd user session available
+WARN[0000] For using systemd, you may need to log in using a user session
+WARN[0000] Alternatively, you can enable lingering with: `loginctl enable-linger 1000` (possibly as root)
+WARN[0000] Falling back to --cgroup-manager=cgroupfs
+```
+
+**Resolution:**
+Install needed packages for the ssh session to properly start a systemd session and then reboot the server.
+
+```
+sudo apt update && sudo apt install -y libpam-systemd dbus-user-session
+sudo loginctl enable-linger $(id -u)
+sudo reboot
+```
+
 ## Infrastructure setup
 
 In production, Reciplex and its support services run inside a unprivileged user account to limit system level
@@ -171,7 +193,7 @@ rm -rf ~/.secret-staging
     },
     "Routing": {
       "Domain": "https://reciplex-application-domain.example.com",
-      "TrustProxy": true
+      "InsecureTrustProxy": true
     },
     "ShortIds": {
       "MinLength": 16,
@@ -227,15 +249,15 @@ podman build -t reciplex-server:${COMMIT_HASH} .
 
 # Export compilation artifacts to global storage archive
 podman save -o /tmp/reciplex-${COMMIT_HASH}.tar localhost/reciplex-server:${COMMIT_HASH}
-sudo mv /tmp/reciplex-${COMMIT_HASH}.tar /var/lib/shared-containers/
-sudo chown root:root /var/lib/shared-containers/reciplex-${COMMIT_HASH}.tar
+sudo mv /tmp/reciplex-${COMMIT_HASH}.tar /var/lib/shared-container-tarballs
+sudo chown root:root /var/lib/shared-container-tarballs/reciplex-${COMMIT_HASH}.tar
 ```
 
 In the `reciplex` user pull the image over:
 
 ```bash
 # Load production artifact into runtime instance space
-podman load -i /var/lib/shared-containers/reciplex-${COMMIT_HASH}.tar
+podman load -i /var/lib/shared-container-tarballs/reciplex-${COMMIT_HASH}.tar
 podman tag localhost/reciplex-server:${COMMIT_HASH} localhost/reciplex-server:latest
 ```
 
@@ -350,7 +372,7 @@ MemoryMax=512M
 MemorySwapMax=512M
 
 [Install]
-WantedBy=default.targets
+WantedBy=default.target
 ```
 
 **Reciplex Volume (`reciplex.volume`)**
@@ -411,4 +433,13 @@ table ip nat {
         oifname "lo" tcp dport 443 redirect to :8443
     }
 }
+```
+
+Enable the service at boot:
+
+```
+# Enable at boot
+sudo systemctl enable nftables.service
+# Apply now
+sudo systemctl start nftables.service
 ```
