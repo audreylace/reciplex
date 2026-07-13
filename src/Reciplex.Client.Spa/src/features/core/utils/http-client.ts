@@ -1,3 +1,6 @@
+import { HttpClientMiddlewarePipeline } from "./http-client-middleware-pipeline";
+import { HttpError } from "./http-error";
+
 /**
  * Additional arguments for the request
  */
@@ -194,85 +197,3 @@ export class HttpClient {
     return response;
   }
 }
-
-/**
- * Base exception for http errors
- */
-export class HttpError extends Error {
-  /**
-   * default constructor
-   * @param response the response sourcing the error
-   */
-  constructor(response: Response) {
-    super(
-      `remote returned non success response : ${response.status} - ${response.statusText}`,
-    );
-    this._response = response;
-  }
-
-  /**
-   * response originating the error
-   */
-  private _response: Response;
-
-  /**
-   * the response sourcing this error
-   */
-  public get response(): Response {
-    return this._response;
-  }
-
-  /**
-   * status code of the error
-   */
-  public get status(): number {
-    return this._response.status;
-  }
-}
-
-/**
- * Pipeline for http client
- */
-export class HttpClientMiddlewarePipeline {
-  /** handlers run before a fetch */
-  private _beforeFetchHandlers: BeforeFetchHandlerType[] = [];
-
-  /**
-   * Invoke before a fetch. Middleware handlers will optionally replace `path` and `args`.
-   * @param path the fetch path
-   * @param args fetch args
-   * @returns final fetch path and args to use
-   */
-  public async onBeforeFetch(
-    path: string,
-    args: RequestInit,
-  ): Promise<{ path: string; args: RequestInit }> {
-    if (this._beforeFetchHandlers.length <= 0) {
-      return { path, args };
-    }
-
-    let state = { path, args };
-    for (let handler of this._beforeFetchHandlers) {
-      state = await handler(state.path, state.args);
-    }
-
-    return state;
-  }
-
-  /**
-   * adds a handler to the before fetch pipeline
-   * @param handler the handler to add
-   */
-  public addBeforeFetchHandler(handler: BeforeFetchHandlerType) {
-    this._beforeFetchHandlers.push(handler);
-  }
-}
-
-/**
- * handler ran before a fetch operation is invoked.
- * Returns the path and args the fetch operation should use.
- */
-export type BeforeFetchHandlerType = (
-  path: string,
-  args: RequestInit,
-) => Promise<{ path: string; args: RequestInit }>;

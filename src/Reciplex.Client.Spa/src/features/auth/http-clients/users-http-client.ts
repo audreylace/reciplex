@@ -1,8 +1,5 @@
-import {
-  HttpClient,
-  HttpError,
-  type IHttpClientArgs,
-} from "../../core/utils/http-client";
+import { HttpClient, type IHttpClientArgs } from "../../core/utils/http-client";
+import { HttpError } from "../../core/utils/http-error";
 
 /**
  * Client for the backend http server's endpoints.
