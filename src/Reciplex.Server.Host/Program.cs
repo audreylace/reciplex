@@ -76,7 +76,10 @@ if (!args.Any(arg => arg == "--noArgs"))
     }
 }
 
-// Add services to the container.
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.AddServerHeader = false;
+});
 
 builder.AddShortIds();
 
@@ -128,6 +131,30 @@ foreach (IRunBeforeAppStartup service in toRunBeforeStart)
     await service.RunBeforeStartupAsync(CancellationToken.None);
 }
 
+app.Use(
+    async (context, next) =>
+    {
+        context.Response.Headers.Append("X-Frame-Options", "DENY");
+        context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+        context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+        context.Response.Headers.Append(
+            "Permissions-Policy",
+            "geolocation=(), camera=(), microphone=()"
+        );
+
+        context.Response.Headers.Append(
+            "Content-Security-Policy",
+            "default-src 'self'; "
+                + "script-src 'self'; "
+                + "style-src 'self'; "
+                + "img-src 'self' data:; "
+                + "frame-ancestors 'none';"
+        );
+
+        await next();
+    }
+);
+
 app.UseRedirectOnError();
 app.UseAuthentication();
 
@@ -139,6 +166,8 @@ if (builder.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 #endif
+
+app.UseHsts();
 
 RoutingOptions routingOptions = new();
 app.Configuration.Bind(RoutingOptions.SectionPath, routingOptions);
