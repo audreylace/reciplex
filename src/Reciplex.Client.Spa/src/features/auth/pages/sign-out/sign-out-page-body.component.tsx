@@ -4,12 +4,14 @@ import { ContentWrapper } from "../../../core/components/content-wrapper/content
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
 import { useSignOutMutation } from "../../hooks/useSignOutMutation.hook";
 import { OperationFailedAlert } from "../../../core/components/operation-failed-alert/operation-failed-alert.component";
+import { BrowserTitle } from "../../../core/components/browser-title/browser-title.component";
 
 /** body for the `SignOutPage` component */
 export function SignOutPageBody() {
   const mutation = useSignOutMutation();
   return (
     <>
+      <BrowserTitle title="Sign Out" />
       <PageHeader title="Signing Out" />
       {mutation.isError && (
         <OperationFailedAlert onRetry={() => mutation.reset()} />
