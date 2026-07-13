@@ -121,6 +121,7 @@ foreach (IRunBeforeAppStartup service in toRunBeforeStart)
     await service.RunBeforeStartupAsync(CancellationToken.None);
 }
 
+app.UseRedirectOnError();
 app.UseAuthentication();
 
 #if DEBUG
@@ -156,8 +157,6 @@ else
     {
         app.UseHttpsRedirection();
     }
-
-    app.UseRedirectOnError();
 
 #if DEBUG
 }
