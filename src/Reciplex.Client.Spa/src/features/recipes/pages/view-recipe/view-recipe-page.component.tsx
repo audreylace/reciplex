@@ -8,6 +8,7 @@ import { PageHeader } from "../../../core/components/page-header/page-header.com
 import { RecipeMenuButton } from "../../components/recipe-menu-button/recipe-menu-button.component";
 import { RecipeDetailsViewer } from "../../components/recipe-details-viewer/recipe-details-viewer.component";
 import { SharedRecipeBookIndicator } from "../../components/shared-recipe-book-indicator/shared-recipe-book-indicator.component";
+import { BrowserTitle } from "../../../core/components/browser-title/browser-title.component";
 
 /**
  * page for viewing a recipe
@@ -33,6 +34,7 @@ export function ViewRecipePage() {
 
   return (
     <>
+      <BrowserTitle title={data.name ? data.name : "View Review"} />
       <PageHeader
         title={data.name}
         subTitle={data.shortDescription}

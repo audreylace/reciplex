@@ -10,6 +10,7 @@ import { PageHeader } from "../../../core/components/page-header/page-header.com
 import { BookMenuButton } from "../../components/book-menu-button/book-menu-button.component";
 import { useActiveUserKey } from "../../../auth/hooks/useActiveUser.hook";
 import { SharedRecipeBookIndicator } from "../../components/shared-recipe-book-indicator/shared-recipe-book-indicator.component";
+import { BrowserTitle } from "../../../core/components/browser-title/browser-title.component";
 
 export function ViewRecipeBookPageBody({
   bookId,
@@ -105,6 +106,7 @@ export function ViewRecipeBookPageBody({
 
   return (
     <>
+      <BrowserTitle title={book.name ? book.name : "View Book"} />
       <PageHeader
         title={book.name}
         subTitle={book.shortDescription}

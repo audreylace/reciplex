@@ -1,3 +1,4 @@
+import { BrowserTitle } from "../../../core/components/browser-title/browser-title.component";
 import { AuthenticatedRouteGuard } from "../../components/authenticated-route-guard/authenticated-route-guard.component";
 import { RedirectOnRender } from "../../components/redirect-on-render/redirect-on-render.component";
 
@@ -5,6 +6,7 @@ import { RedirectOnRender } from "../../components/redirect-on-render/redirect-o
 export function SignInPage() {
   return (
     <AuthenticatedRouteGuard allowNullUser>
+      <BrowserTitle title="Sign in" />
       <RedirectOnRender />
     </AuthenticatedRouteGuard>
   );

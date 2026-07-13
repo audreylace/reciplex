@@ -23,6 +23,7 @@ import {
   makeShareSettingsPath,
   makeViewRecipeBookPath,
 } from "../../route-utils";
+import { BrowserTitle } from "../../../core/components/browser-title/browser-title.component";
 
 export function BookSettingLandingPage() {
   const { bookId } = useParams<{
@@ -45,6 +46,7 @@ export function BookSettingLandingPage() {
 
   return (
     <>
+      <BrowserTitle title="Book Settings" />
       <PageHeader
         title="Manage Book"
         subTitle={`Book - ${data.name}`}
