@@ -12,13 +12,14 @@ export function AccessControlsRow({
   onChange,
   displayName,
   disabled,
+  reviewed,
 }: IAccessControlsRowProps) {
   return (
     <TableRow>
       <TableCell>
         <Stack spacing={1} direction="row" sx={{ alignItems: "center" }}>
           <span>{displayName}</span>
-          <Chip label="new" color="primary" size="small" />
+          {!reviewed && <Chip label="new" color="primary" size="small" />}
         </Stack>
       </TableCell>
       <TableCell align="right">
@@ -55,6 +56,8 @@ export interface IAccessControlsRowProps {
   onChange: (selectedValue: AccessControlsButtonsValues) => void;
   /** if the control is disabled */
   disabled?: boolean;
+  /** if the user has been reviewed */
+  reviewed?: boolean;
 }
 
 /** possible button states */
