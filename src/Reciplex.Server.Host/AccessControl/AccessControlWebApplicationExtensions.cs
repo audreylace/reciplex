@@ -200,11 +200,6 @@ public static class AccessControlWebApplicationExtensions
                 options.Events.OnTokenValidated = (
                     context =>
                     {
-                        // regen tokens on authenticated context change
-                        IAntiforgery antiforgery =
-                            context.HttpContext.RequestServices.GetRequiredService<IAntiforgery>();
-                        antiforgery.GetAndStoreTokens(context.HttpContext);
-
                         // you can --
                         // - add custom claims via this hook
                         // - merge old identity with new incoming one to allow account linking
