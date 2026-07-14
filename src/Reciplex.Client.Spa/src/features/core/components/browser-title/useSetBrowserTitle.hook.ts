@@ -62,7 +62,7 @@ export function useSetBrowserTitle(title: string) {
     return () => {
       clearTitle({ concurrentToken: token });
     };
-  }, []);
+  }, [clearTitle, setTitle, title]);
 }
 
 /** Internal hook for propagating the current title to the browser window */
