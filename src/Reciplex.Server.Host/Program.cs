@@ -142,15 +142,6 @@ app.Use(
             "geolocation=(), camera=(), microphone=()"
         );
 
-        context.Response.Headers.Append(
-            "Content-Security-Policy",
-            "default-src 'self'; "
-                + "script-src 'self'; "
-                + "style-src 'self'; "
-                + "img-src 'self' data:; "
-                + "frame-ancestors 'none';"
-        );
-
         await next();
     }
 );
