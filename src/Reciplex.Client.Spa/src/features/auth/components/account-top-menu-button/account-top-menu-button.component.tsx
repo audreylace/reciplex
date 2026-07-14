@@ -8,9 +8,10 @@ import { useNavigate } from "react-router";
 import LogoutIcon from "@mui/icons-material/Logout";
 
 /**
- * Menu in the top right corner on the select account page. Holds less common actions like logging out.
+ * Menu in the top right corner on the select account page and sign up page.
+ * Holds less common actions like logging out.
  */
-export function SelectAccountTopMenuButton() {
+export function AccountTopMenuButton() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
