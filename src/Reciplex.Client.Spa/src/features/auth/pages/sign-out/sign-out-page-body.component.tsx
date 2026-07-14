@@ -24,7 +24,7 @@ export function SignOutPageBody() {
           loading={mutation.isPending}
           disabled={!mutation.isIdle}
           onClick={async () => {
-            await mutation.mutateAsync({}).then(() => {});
+            await mutation.mutateAsync();
             window.location.href = "/";
           }}
         >
