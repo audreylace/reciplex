@@ -17,6 +17,12 @@ export default defineConfig({
   ],
   build: {},
   server: {
+    headers: {
+      "Content-Security-Policy":
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none';",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+    },
     proxy: {
       // Proxy requests starting with '/api' to your backend server
       "/api": {
