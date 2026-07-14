@@ -8,5 +8,5 @@ public class XsrfResponse
     /// <summary>
     /// The xsrf token the client will use for csrf protection
     /// </summary>
-    public string XsrfToken { get; set; }
+    public string XsrfToken { get; set; } = "";
 }
