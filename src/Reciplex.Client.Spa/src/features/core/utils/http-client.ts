@@ -1,3 +1,6 @@
+import { HttpClientMiddlewarePipeline } from "./http-client-middleware-pipeline";
+import { HttpError } from "./http-error";
+
 /**
  * Additional arguments for the request
  */
@@ -11,6 +14,12 @@ export interface IHttpActionArgs {
   headers?: Record<string, string>;
 }
 
+/** optional args for `IHttpClient` */
+export interface IHttpClientArgs {
+  /** optional pipeline to intercept and modify actions taken by the client */
+  pipeline?: HttpClientMiddlewarePipeline;
+}
+
 /**
  * Client for interacting with a HTTP server.
  */
@@ -18,15 +27,20 @@ export class HttpClient {
   /**
    * Constructs a new instance of `HttpClient`
    * @param prefix the base path of all requests
+   * @param args optional args to customize the client
    */
-  constructor(prefix: string) {
+  constructor(prefix: string, args?: IHttpClientArgs) {
     this._basePath = prefix;
+    this._pipeline = args?.pipeline ?? new HttpClientMiddlewarePipeline();
   }
 
   /**
    * the base path of all requests
    */
   private _basePath: string;
+
+  /** the http pipeline for this client */
+  private _pipeline: HttpClientMiddlewarePipeline;
 
   /**
    * Gets data from the remote
@@ -53,7 +67,7 @@ export class HttpClient {
    */
   public async httpPost<TBody>(
     path: string,
-    body: TBody,
+    body?: TBody,
     params?: [string, string][],
     args?: IHttpActionArgs,
   ): Promise<Response> {
@@ -161,13 +175,16 @@ export class HttpClient {
     if (body) {
       headers["Content-Type"] = "application/json";
     }
-    const response = await fetch(computedPath, {
+
+    const pipelineResult = await this._pipeline.onBeforeFetch(computedPath, {
       method,
       credentials: "include",
       headers,
       cache: args?.noCache ? "reload" : "default",
       body: body ? JSON.stringify(body) : undefined,
     });
+
+    const response = await fetch(pipelineResult.path, pipelineResult.args);
 
     return this.throwIfNotSuccessOtherwiseReturn(response);
   }
@@ -178,40 +195,5 @@ export class HttpClient {
     }
 
     return response;
-  }
-}
-
-/**
- * Base exception for http errors
- */
-export class HttpError extends Error {
-  /**
-   * default constructor
-   * @param response the response sourcing the error
-   */
-  constructor(response: Response) {
-    super(
-      `remote returned non success response : ${response.status} - ${response.statusText}`,
-    );
-    this._response = response;
-  }
-
-  /**
-   * response originating the error
-   */
-  private _response: Response;
-
-  /**
-   * the response sourcing this error
-   */
-  public get response(): Response {
-    return this._response;
-  }
-
-  /**
-   * status code of the error
-   */
-  public get status(): number {
-    return this._response.status;
   }
 }

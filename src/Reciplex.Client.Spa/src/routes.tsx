@@ -179,6 +179,14 @@ export const router = createBrowserRouter([
           return { Component: Component.AccountSettingsPage };
         },
       },
+      {
+        path: "-/sign-out",
+        lazy: async () => {
+          const Component =
+            await import("./features/auth/pages/sign-out/sign-out-page.component");
+          return { Component: Component.SignOutPage };
+        },
+      },
     ],
   },
   {

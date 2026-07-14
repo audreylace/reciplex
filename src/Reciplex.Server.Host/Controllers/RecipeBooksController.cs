@@ -86,6 +86,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
     /// <param name="cancellationToken">token that cancels when the connection is closed</param>
     /// <returns>Task that resolves to the http response</returns>
     [HttpPut("{bookKey}")]
+    [ValidateAntiForgeryToken]
     public async Task<
         Results<
             ValidationProblem,
@@ -151,6 +152,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
     /// <param name="cancellationToken">token that cancels when the connection is closed</param>
     /// <returns>Task that resolves to the http response</returns>
     [HttpDelete("{bookKey}")]
+    [ValidateAntiForgeryToken]
     public async Task<
         Results<Ok, PreconditionFailedHttpResult, ForbidHttpResult, NotFound, ValidationProblem>
     > DeleteRecipeBookById(
@@ -205,6 +207,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
     /// <param name="cancellationToken">token that cancels when the connection is closed</param>
     /// <returns>Task that resolves to the http response</returns>
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<
         Results<ForbidHttpResult, Created<RecipeBookJsonResponse>, ValidationProblem>
     > CreateBook(
@@ -347,6 +350,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
     /// <param name="cancellationToken">cancels the request</param>
     /// <returns>http result</returns>
     [HttpPost("{bookKey}/shared-access/-/share-key")]
+    [ValidateAntiForgeryToken]
     public async Task<
         Results<
             ValidationProblem,
@@ -509,6 +513,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
     /// <param name="cancellationToken">cancels the request</param>
     /// <returns>http result</returns>
     [HttpPatch("{bookKey}/shared-access")]
+    [ValidateAntiForgeryToken]
     public async Task<
         Results<NotFound, ForbidHttpResult, NoContent, Conflict, ValidationProblem>
     > PatchSharedAccess(
@@ -594,6 +599,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
     /// <param name="cancellationToken">cancels the request</param>
     /// <returns>http result</returns>
     [HttpPost("{bookKey}/shared-access/{userKey}")]
+    [ValidateAntiForgeryToken]
     public async Task<
         Results<
             NotFound,
@@ -659,6 +665,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
     /// <param name="cancellationToken">cancels the request</param>
     /// <returns>http result</returns>
     [HttpDelete("{bookKey}/shared-access/{userKey}")]
+    [ValidateAntiForgeryToken]
     public async Task<
         Results<NotFound, ForbidHttpResult, Ok, ValidationProblem, Conflict>
     > DeleteSelfServiceSharedAccess(

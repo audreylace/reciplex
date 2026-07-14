@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -10,10 +11,12 @@ namespace Reciplex.Server.Host.Controllers;
 /// <summary>
 /// Begins an authentication flow by issuing a challenge
 /// </summary>
-/// <param name="options">app wide options controlling the authentication flow</param>
+/// <param name="options">app wide options controlling the authentication flow</param>'
+/// <param name="antiforgery">anti forgery service invoked to reset the token at the start of the OIDC flow</param>
 [ApiController]
 [Route("challenge")]
-public class ChallengeController(IOptions<RoutingOptions> options) : ControllerBase
+public class ChallengeController(IOptions<RoutingOptions> options, IAntiforgery antiforgery)
+    : ControllerBase
 {
     /// <summary>
     /// The challenge endpoint that begins an authentication flow
@@ -28,6 +31,7 @@ public class ChallengeController(IOptions<RoutingOptions> options) : ControllerB
     [HttpGet]
     public ChallengeHttpResult Navigate()
     {
+        antiforgery.GetAndStoreTokens(HttpContext); // change tokens
         UriBuilder uriBuilder = new(options.Value.Domain) { Path = "/accounts/-/select" };
         return TypedResults.Challenge(
             new() { RedirectUri = uriBuilder.Uri.OriginalString },
@@ -35,6 +39,10 @@ public class ChallengeController(IOptions<RoutingOptions> options) : ControllerB
         );
     }
 
+    /// <summary>
+    /// Gets the current user's authentication status
+    /// </summary>
+    /// <returns>the http result</returns>
     [HttpGet("inspect")]
     public Ok<ChallengeJsonResponse> GetStatus()
     {

@@ -76,7 +76,10 @@ if (!args.Any(arg => arg == "--noArgs"))
     }
 }
 
-// Add services to the container.
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.AddServerHeader = false;
+});
 
 builder.AddShortIds();
 
@@ -86,9 +89,16 @@ builder.ConfigureDataProtection();
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication();
 
-builder.Services.AddControllers();
+builder.Services.AddControllersWithViews();
 
 builder.Services.AddSingleton<IClock>(SystemClock.Instance);
+
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-XSRF-TOKEN";
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+});
 
 #if DEBUG
 if (builder.Environment.IsDevelopment())
@@ -121,6 +131,21 @@ foreach (IRunBeforeAppStartup service in toRunBeforeStart)
     await service.RunBeforeStartupAsync(CancellationToken.None);
 }
 
+app.Use(
+    async (context, next) =>
+    {
+        context.Response.Headers.Append("X-Frame-Options", "DENY");
+        context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+        context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+        context.Response.Headers.Append(
+            "Permissions-Policy",
+            "geolocation=(), camera=(), microphone=()"
+        );
+
+        await next();
+    }
+);
+
 app.UseRedirectOnError();
 app.UseAuthentication();
 
@@ -131,36 +156,32 @@ if (builder.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+#endif
+
+app.UseHsts();
+
+RoutingOptions routingOptions = new();
+app.Configuration.Bind(RoutingOptions.SectionPath, routingOptions);
+
+if (routingOptions.InsecureTrustProxy)
+{
+    var fwdOptions = new ForwardedHeadersOptions
+    {
+        ForwardedHeaders =
+            ForwardedHeaders.XForwardedFor
+            | ForwardedHeaders.XForwardedProto
+            | ForwardedHeaders.XForwardedHost,
+    };
+
+    fwdOptions.KnownIPNetworks.Clear();
+    fwdOptions.KnownProxies.Clear();
+
+    app.UseForwardedHeaders(fwdOptions);
+}
 else
 {
-#endif
-
-    RoutingOptions routingOptions = new();
-    app.Configuration.Bind(RoutingOptions.SectionPath, routingOptions);
-
-    if (routingOptions.InsecureTrustProxy)
-    {
-        var fwdOptions = new ForwardedHeadersOptions
-        {
-            ForwardedHeaders =
-                ForwardedHeaders.XForwardedFor
-                | ForwardedHeaders.XForwardedProto
-                | ForwardedHeaders.XForwardedHost,
-        };
-
-        fwdOptions.KnownIPNetworks.Clear();
-        fwdOptions.KnownProxies.Clear();
-
-        app.UseForwardedHeaders(fwdOptions);
-    }
-    else
-    {
-        app.UseHttpsRedirection();
-    }
-
-#if DEBUG
+    app.UseHttpsRedirection();
 }
-#endif
 
 app.UseAuthorization();
 app.MapGroup("/api/v1").MapControllers();

@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Options;
@@ -139,6 +140,14 @@ public static class AccessControlWebApplicationExtensions
                     context.Response.StatusCode = StatusCodes.Status403Forbidden;
                     return Task.CompletedTask;
                 };
+
+                o.Cookie.HttpOnly = true;
+                o.Cookie.IsEssential = true;
+                o.Cookie.SameSite = SameSiteMode.Strict; // guard against some types of CSRF attacks
+                o.Cookie.SecurePolicy = CookieSecurePolicy.Always; // cookie over https only
+
+                o.SlidingExpiration = true;
+                o.ExpireTimeSpan = TimeSpan.FromDays(14);
             })
             .AddOpenIdConnect(options =>
             {
@@ -157,6 +166,11 @@ public static class AccessControlWebApplicationExtensions
                 options.RequireHttpsMetadata = !connectOptions.InsecureDisableHttps;
                 options.TokenValidationParameters.NameClaimType = JwtRegisteredClaimNames.Name;
 
+                // OIDC is just to identify and authenticate user, after that,
+                // this application takes control of the session lifetime.
+                options.UseTokenLifetime = false;
+                options.SaveTokens = false;
+
                 if (connectOptions.InsecureAcceptAnyServerCertificate)
                 {
                     options.BackchannelHttpHandler = new HttpClientHandler
@@ -173,6 +187,15 @@ public static class AccessControlWebApplicationExtensions
                         options.BackchannelHttpHandler ?? new HttpClientHandler()
                     );
                 }
+
+                options.Events.OnTicketReceived = context =>
+                {
+                    context.Properties ??= new();
+                    context.Properties.IsPersistent = true;
+                    context.Properties.ExpiresUtc = DateTimeOffset.UtcNow.AddDays(14);
+
+                    return Task.CompletedTask;
+                };
 
                 options.Events.OnTokenValidated = (
                     context =>

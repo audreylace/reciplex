@@ -49,6 +49,7 @@ public class UsersController(IUsersService userServiceRepository) : ControllerBa
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<
         Results<Created<UserJsonResponse>, NotFound, InternalServerError, ValidationProblem>
     > HttpPostUser([FromBody] UserJsonRequest userJsonBody, CancellationToken ct)
@@ -79,6 +80,7 @@ public class UsersController(IUsersService userServiceRepository) : ControllerBa
     }
 
     [HttpPut("{userKey}")]
+    [ValidateAntiForgeryToken]
     public async Task<
         Results<
             Ok<UserJsonResponse>,
@@ -153,6 +155,7 @@ public class UsersController(IUsersService userServiceRepository) : ControllerBa
     }
 
     [HttpDelete("{userKey}")]
+    [ValidateAntiForgeryToken]
     public async Task<
         Results<Ok, NotFound, ForbidHttpResult, PreconditionFailedHttpResult, InternalServerError>
     > HttpDeleteUser(
