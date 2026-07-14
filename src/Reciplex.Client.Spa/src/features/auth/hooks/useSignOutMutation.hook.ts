@@ -12,7 +12,7 @@ export function useSignOutMutation() {
   const resetUser = useActiveUser((s) => s.reset);
 
   return useMutation({
-    mutationFn: ({}: {}) => signOutClient.signOutAsync(),
+    mutationFn: () => signOutClient.signOutAsync(),
     onSuccess: () => {
       resetUser(); // clear json in local storage
     },

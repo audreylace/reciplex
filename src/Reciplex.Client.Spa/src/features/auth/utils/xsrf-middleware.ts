@@ -1,4 +1,4 @@
-import type { BeforeFetchHandlerType } from "../../core/utils/http-client";
+import type { BeforeFetchHandlerType } from "../../core/utils/http-client-middleware-pipeline";
 import type { XsrfHttpClient } from "../http-clients/xsrf-http-client";
 
 /** middleware for populating xsrf tokens on requests */
@@ -19,7 +19,7 @@ export class XsrfMiddleware {
   /** requests waiting on xsrf token retrieval */
   private _pendingPromises: {
     resolve: (value: string) => void;
-    reject: (value: any) => void;
+    reject: (value: unknown) => void;
   }[] = [];
 
   /** token for the in progress xsrf retrieval */

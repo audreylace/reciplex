@@ -20,7 +20,7 @@ export class HttpClientMiddlewarePipeline {
     }
 
     let state = { path, args };
-    for (let handler of this._beforeFetchHandlers) {
+    for (const handler of this._beforeFetchHandlers) {
       state = await handler(state.path, state.args);
     }
 

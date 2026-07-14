@@ -20,13 +20,11 @@ import CssBaseline from "@mui/material/CssBaseline";
 import "./index.css";
 import { PropagateBrowserTitle } from "./features/core/components/browser-title/propagate-browser-title.component";
 import { XsrfHttpClient } from "./features/auth/http-clients/xsrf-http-client";
-import {
-  HttpClientMiddlewarePipeline,
-  type IHttpClientArgs,
-} from "./features/core/utils/http-client";
+import { type IHttpClientArgs } from "./features/core/utils/http-client";
 import { XsrfMiddleware } from "./features/auth/utils/xsrf-middleware";
 import { SignOutClient } from "./features/auth/hooks/useSignOutClient.hook";
 import { SignOutHttpClient } from "./features/auth/http-clients/sign-out-http-client";
+import { HttpClientMiddlewarePipeline } from "./features/core/utils/http-client-middleware-pipeline";
 
 const queryClient = makeClient();
 const xsrfClient = new XsrfHttpClient("/api");
