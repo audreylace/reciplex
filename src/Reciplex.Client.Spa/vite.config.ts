@@ -21,10 +21,11 @@ export default defineConfig({
       // Proxy requests starting with '/api' to your backend server
       "/api": {
         target: "http://localhost:1993", // The address of your backend server
-        changeOrigin: true, // Needed for virtual hosted sites
+        changeOrigin: false,
         secure: false,
         headers: {
           "X-Forwarded-Proto": "https",
+          "X-Forwarded-Host": "localhost:5173",
         },
       },
     },
