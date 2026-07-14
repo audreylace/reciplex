@@ -2,7 +2,7 @@ import { BrowserTitle } from "../../../core/components/browser-title/browser-tit
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
 import { AccountSelector } from "../../components/accounts-selector/account-selector.component";
 import { AuthenticatedRouteGuard } from "../../components/authenticated-route-guard/authenticated-route-guard.component";
-import { SelectAccountTopMenuButton } from "./select-account-top-menu-button.component";
+import { SelectAccountTopMenuButton } from "../../components/select-account-top-menu-button/select-account-top-menu-button.component";
 
 /** page for selecting an account */
 export function SelectAccountPage() {
