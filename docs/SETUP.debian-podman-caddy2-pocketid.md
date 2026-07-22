@@ -285,6 +285,7 @@ PublishPort=8080:8080
 PublishPort=8443:8443
 Volume=%h/.config/caddy:/etc/caddy:ro
 Volume=caddy-volume:/data:U
+AutoUpdate=registry
 
 [Service]
 Restart=always
@@ -316,6 +317,7 @@ Volume=pocketid-volume:/app/data:U
 UserNS=auto:size=2000
 User=1000:1000
 Secret=pocketidKey,target=/etc/opt/pocketid/encryption_key,mode=0440,uid=0,gid=1000
+AutoUpdate=registry
 
 HealthCmd=/app/pocket-id healthcheck
 HealthInterval=1m30s
@@ -356,6 +358,7 @@ Network=reciplex.network
 Volume=reciplex-volume:/var/opt/reciplex:U
 UserNS=auto:size=2000
 User=1654:1654
+AutoUpdate=local
 
 Volume=%h/.config/reciplex/appsettings.json:/etc/opt/reciplex/appsettings.json:ro
 Secret=reciplexOidcSecretsSettingsJson,target=/etc/opt/reciplex/oidc-secrets.settings.json,mode=0440,uid=0,gid=1654
