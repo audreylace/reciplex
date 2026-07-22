@@ -200,7 +200,7 @@ rm -rf ~/.secret-staging
       "Alphabet": "<< short id alphabet >>"
     },
     "DataProtection": {
-      "KeyDirectory": "/var/opt/reciplex/data-protection",
+      "KeyStorageDirectory": "/var/opt/reciplex/data-protection",
       "EncryptionCertificate": "/etc/opt/reciplex/data-protection/cert.pem",
       "EncryptionPrivateKey": "/etc/opt/reciplex/data-protection/key.pem"
     },
