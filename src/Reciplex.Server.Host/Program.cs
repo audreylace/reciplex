@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using NodaTime;
+using OpenTelemetry.Metrics;
 using Reciplex.Server.Abstractions;
 using Reciplex.Server.Abstractions.StringIdProvider;
 using Reciplex.Server.Database;
@@ -52,6 +53,8 @@ public class Program
         );
 
         builder.AddOpenIdConnect();
+
+        ConfigureMetrics(builder);
 
         var app = builder.Build();
         await RunStartupServices(app);
@@ -264,7 +267,7 @@ public class Program
     /// </summary>
     /// <param name="application">the web application</param>
     /// <returns><paramref name="application"/></returns>
-    private static WebApplication UseRedirectOnError(WebApplication application)
+    private static void UseRedirectOnError(WebApplication application)
     {
         application.UseExceptionHandler(exceptionHandlerApp =>
         {
@@ -274,7 +277,44 @@ public class Program
                 await Task.CompletedTask;
             });
         });
-        return application;
+    }
+
+    /// <summary>
+    /// Configures metric exportation to the victoria metrics instance
+    /// </summary>
+    /// <param name="builder">the web application builder for the application from which metrics will be exported</param>
+    /// <exception cref="InvalidOperationException">thrown if metric exporting is enabled but no path is specified</exception>
+    private static void ConfigureMetrics(WebApplicationBuilder builder)
+    {
+        AppMetricsOptions appMetricsOptions = new();
+        builder.Configuration.GetSection(AppMetricsOptions.SectionPath).Bind(appMetricsOptions);
+
+        if (!appMetricsOptions.Enable)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(appMetricsOptions.ExportUri))
+        {
+            throw new InvalidOperationException(
+                "must specify the path to the victoria metric server"
+            );
+        }
+
+        builder
+            .Services.AddOpenTelemetry()
+            .WithMetrics(metrics =>
+            {
+                metrics
+                    .AddAspNetCoreInstrumentation()
+                    .AddRuntimeInstrumentation()
+                    .AddOtlpExporter(options =>
+                    {
+                        // Pointing to VictoriaMetrics OTLP ingest endpoint
+                        options.Endpoint = new Uri(appMetricsOptions.ExportUri);
+                        options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+                    });
+            });
     }
 
     /// <summary>
