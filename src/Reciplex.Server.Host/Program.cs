@@ -4,6 +4,7 @@ using Reciplex.Server.Abstractions;
 using Reciplex.Server.Database;
 using Reciplex.Server.Host;
 using Reciplex.Server.Host.AccessControl;
+using Reciplex.Server.Host.Options;
 using Reciplex.Server.Host.Utility;
 
 var builder = WebApplication.CreateBuilder(args);

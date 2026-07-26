@@ -1,5 +1,6 @@
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.DataProtection;
+using Reciplex.Server.Host.Options;
 
 namespace Reciplex.Server.Host.AccessControl;
 

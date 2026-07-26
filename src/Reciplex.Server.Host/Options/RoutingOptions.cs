@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Reciplex.Server.Host;
+namespace Reciplex.Server.Host.Options;
 
 /// <summary>
 /// Settings for routing

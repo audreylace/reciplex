@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Reciplex.Server.Host.AccessControl;
 using Reciplex.Server.Host.Models;
+using Reciplex.Server.Host.Options;
 
 namespace Reciplex.Server.Host.Controllers;
 

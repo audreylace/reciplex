@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using Reciplex.Server.Abstractions.StringIdProvider;
+using Reciplex.Server.Host.Options;
 using Sqids;
 
 namespace Reciplex.Server.Host;

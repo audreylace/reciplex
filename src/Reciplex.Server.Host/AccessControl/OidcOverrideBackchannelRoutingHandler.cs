@@ -1,3 +1,5 @@
+using Reciplex.Server.Host.Options;
+
 namespace Reciplex.Server.Host.AccessControl;
 
 /// <summary>
