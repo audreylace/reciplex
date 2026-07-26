@@ -1,9 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Reciplex.Server.Host.Options;
 
@@ -14,78 +11,11 @@ namespace Reciplex.Server.Host.AccessControl;
 /// </summary>
 public static class AccessControlWebApplicationExtensions
 {
-#if DEBUG
     /// <summary>
-    /// Adds debug mocking throwing if <c>app.Environment.IsDevelopment()</c> returns false
+    /// Adds and Configures OIDC for the application
     /// </summary>
-    /// <param name="app">application to modify</param>
-    /// <param name="identity">The mocked identity</param>
-    /// <param name="userId">The mocked user id</param>
-    /// <param name="claim">The claim where <paramref name="userId"/> will be stored inside <paramref name="identity"/></param>
-    /// <returns><paramref name="app"/></returns>
-    /// <exception cref="InvalidOperationException">Thrown when <c>WebApplication.Environment.IsDevelopment()</c> returns false</exception>
-    public static WebApplication UseUserDebugMocking(this WebApplication app, string? userId = null)
-    {
-        if (!app.Environment.IsDevelopment()) // can only run in production
-        {
-            throw new InvalidOperationException(
-                $"{nameof(UseUserDebugMocking)} can only be called when the environment is development"
-            );
-        }
-
-        app.Use(nextPipelineHandler =>
-            requestHttpContext =>
-            {
-                var options = requestHttpContext.RequestServices.GetService<
-                    IOptions<DebugIdentityMockingOptions>
-                >();
-
-                if (options?.Value.Enable == true)
-                {
-                    ClaimsIdentity claimsIdentity = new("Debug");
-                    claimsIdentity.AddClaim(new(JwtRegisteredClaimNames.Iss, "DEBUG"));
-                    claimsIdentity.AddClaim(
-                        new(JwtRegisteredClaimNames.Sub, options.Value.UserId ?? "1")
-                    );
-                    requestHttpContext.User = new(claimsIdentity);
-                }
-                return nextPipelineHandler(requestHttpContext);
-            }
-        );
-
-        return app;
-    }
-
-    /// <summary>
-    /// Debug only identity mocking
-    /// </summary>
-    public class DebugIdentityMockingOptions
-    {
-        /// <summary>
-        /// Section path
-        /// </summary>
-        public const string SectionPath = "Reciplex:Debug:IdentityMocking";
-
-        /// <summary>
-        /// In debug builds setting this to true binds
-        /// fake credentials to each request
-        /// </summary>
-        public bool Enable { get; set; }
-
-        public string? UserId { get; set; }
-    }
-
-    public static WebApplicationBuilder AddAuthenticationDebugOptions(
-        this WebApplicationBuilder applicationBuilder
-    )
-    {
-        applicationBuilder.Services.Configure<DebugIdentityMockingOptions>(
-            applicationBuilder.Configuration.GetSection(DebugIdentityMockingOptions.SectionPath)
-        );
-        return applicationBuilder;
-    }
-#endif
-
+    /// <param name="applicationBuilder">the app to configure</param>
+    /// <returns><paramref name="applicationBuilder"/> with OIDC services added and configured</returns>
     public static WebApplicationBuilder AddOpenIdConnect(
         this WebApplicationBuilder applicationBuilder
     )
