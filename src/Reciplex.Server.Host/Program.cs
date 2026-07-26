@@ -37,6 +37,8 @@ public class Program
         builder.Services.AddAuthorization();
         builder.Services.AddAuthentication();
 
+        builder.Services.AddHealthChecks().AddDbContextCheck<ApplicationDbContext>();
+
         builder.Services.AddControllersWithViews();
 
         builder.Services.AddSingleton<IClock>(SystemClock.Instance);
@@ -53,6 +55,9 @@ public class Program
 
         var app = builder.Build();
         await RunStartupServices(app);
+
+        app.MapHealthChecks("/api/healthz"); // map early in the pipeline
+
         UseContentSecurityHeaders(app);
 
         UseRedirectOnError(app);
