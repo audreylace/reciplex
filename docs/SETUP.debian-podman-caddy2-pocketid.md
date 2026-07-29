@@ -223,11 +223,13 @@ rm -rf ~/.secret-staging
 }
 
 your-pocketid-server.example.com{
-    reverse_proxy pocketid:1411
+    reverse_proxy 127.0.0.1:1411
+    header Alt-Svc "h3=\":443\"; ma=2592000"
 }
 
 reciplex-application-domain.example.com {
-    reverse_proxy reciplex:5000
+    reverse_proxy 127.0.0.1:5000
+    header Alt-Svc "h3=\":443\"; ma=2592000"
 }
 ```
 
@@ -279,7 +281,7 @@ NetworkName=reciplex
 [Container]
 ContainerName=caddy
 Image=docker.io/library/caddy:alpine
-Network=reciplex.network
+Network=host
 UserNS=auto:size=2000
 PublishPort=8080:8080
 PublishPort=8443:8443
@@ -318,6 +320,8 @@ UserNS=auto:size=2000
 User=1000:1000
 Secret=pocketidKey,target=/etc/opt/pocketid/encryption_key,mode=0440,uid=0,gid=1000
 AutoUpdate=registry
+
+PublishPort=127.0.0.1:1411:1411
 
 HealthCmd=/app/pocket-id healthcheck
 HealthInterval=1m30s
@@ -366,6 +370,8 @@ Secret=reciplexDpKey,target=/etc/opt/reciplex/data-protection/key.pem,mode=0440,
 Secret=reciplexDpCert,target=/etc/opt/reciplex/data-protection/cert.pem,mode=0440,uid=0,gid=1654
 
 Exec=-R -C /etc/opt/reciplex/appsettings.json -C /etc/opt/reciplex/oidc-secrets.settings.json
+
+PublishPort=127.0.0.1:5000:5000
 
 [Service]
 Restart=always
@@ -427,6 +433,8 @@ table ip nat {
         type nat hook prerouting priority dstnat; policy accept;
         tcp dport 80 redirect to :8080
         tcp dport 443 redirect to :8443
+        # Redirect HTTP/3 / QUIC (UDP 443 -> 8443)
+        udp dport 443 redirect to :8443
     }
 
     # Forward local host traffic (localhost) hitting ports 80/443 to Caddy
