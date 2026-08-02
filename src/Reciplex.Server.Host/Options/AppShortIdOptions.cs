@@ -1,4 +1,4 @@
-namespace Reciplex.Server.Host;
+namespace Reciplex.Server.Host.Options;
 
 /// <summary>
 /// Application override Sqids options

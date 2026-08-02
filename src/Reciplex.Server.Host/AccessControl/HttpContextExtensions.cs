@@ -4,8 +4,17 @@ using Reciplex.Server.Database.UsersDomain;
 
 namespace Reciplex.Server.Host.AccessControl;
 
+/// <summary>
+/// Static extension methods on <see cref="HttpContext"/> for working with
+/// authentication and authorization.
+/// </summary>
 static class HttpContextExtensions
 {
+    /// <summary>
+    /// Gets the user's OIDC credentials or null if there are none
+    /// </summary>
+    /// <param name="context">the current request context</param>
+    /// <returns>the user's authority and subject or null if the request does not have them</returns>
     public static (string Authority, string Subject)? OpenIdConnectCredentials(
         this HttpContext context
     )
@@ -40,6 +49,12 @@ static class HttpContextExtensions
         return (authority, subject);
     }
 
+    /// <summary>
+    /// Gets credentials via <see cref="OpenIdConnectCredentials"/> throwing if they are not present
+    /// </summary>
+    /// <param name="context">the current request context</param>
+    /// <returns>the user's credentials</returns>
+    /// <exception cref="InvalidOperationException">thrown if the credentials are missing from the request</exception>
     public static (string Authority, string Subject) RequireOpenIdConnectCredentials(
         this HttpContext context
     )
@@ -50,6 +65,13 @@ static class HttpContextExtensions
         return credentials;
     }
 
+    /// <summary>
+    /// Checks if the request credentials grants access to <paramref name="userKey"/>
+    /// </summary>
+    /// <param name="context">the current request context</param>
+    /// <param name="userKey">the requested key</param>
+    /// <param name="ct">cancellation token</param>
+    /// <returns>result of the check</returns>
     public static async Task<bool> RequestHasAccessToUserKey(
         this HttpContext context,
         string userKey,

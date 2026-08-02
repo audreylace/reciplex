@@ -1,0 +1,34 @@
+version: "3.8"
+
+services:
+  # 1. VictoriaMetrics (TSDB Storage & Ingestion)
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:latest
+    container_name: victoriametrics
+    ports:
+      - "8428:8428"
+    volumes:
+      - vmdata:/storage-data
+    command:
+      - "--storageDataPath=/storage-data"
+      - "--httpListenAddr=:8428"
+    restart: always
+
+  # 2. Grafana (Visualization UI)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=victoriametrics-metrics-datasource
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - victoriametrics
+    restart: always
+
+volumes:
+  vmdata:
+  grafana-data:

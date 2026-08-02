@@ -1,11 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Reciplex.Server.Host.AccessControl;
+namespace Reciplex.Server.Host.Options;
 
 /// <summary>
 /// Open ID Connect settings for the application
 /// </summary>
-public class OpenIdConnectOptions
+public class ReciplexOpenIdConnectOptions
 {
     /// <summary>
     /// Section path

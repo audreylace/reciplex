@@ -1,4 +1,4 @@
-namespace Reciplex.Server.Host.AccessControl;
+namespace Reciplex.Server.Host.Options;
 
 /// <summary>
 /// Configures data protection for cookies and other sensitive data sent to the client.

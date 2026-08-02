@@ -15,7 +15,7 @@ export function ShareRecipeBookPage() {
   return (
     <>
       <BrowserTitle title="Share Book" />
-      <ShareRecipeBookPageBody bookId={bookId} />;
+      <ShareRecipeBookPageBody bookId={bookId} />
     </>
   );
 }

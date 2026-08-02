@@ -1,11 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Reciplex.Server.Host.AccessControl;
+namespace Reciplex.Server.Host.Options;
 
 /// <summary>
 /// Secrets for communicating with the OIDC server. This should be stored in a secrets vault and passed to the application.
 /// </summary>
-public class OpenIdConnectSecretsOptions
+public class ReciplexOpenIdConnectSecretsOptions
 {
     /// <summary>
     /// Section path

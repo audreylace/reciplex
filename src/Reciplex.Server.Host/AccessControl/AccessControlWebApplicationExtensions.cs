@@ -1,10 +1,11 @@
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Reciplex.Server.Host.Metrics;
+using Reciplex.Server.Host.Options;
 
 namespace Reciplex.Server.Host.AccessControl;
 
@@ -13,86 +14,24 @@ namespace Reciplex.Server.Host.AccessControl;
 /// </summary>
 public static class AccessControlWebApplicationExtensions
 {
-#if DEBUG
     /// <summary>
-    /// Adds debug mocking throwing if <c>app.Environment.IsDevelopment()</c> returns false
+    /// The named back channel client for OIDC
     /// </summary>
-    /// <param name="app">application to modify</param>
-    /// <param name="identity">The mocked identity</param>
-    /// <param name="userId">The mocked user id</param>
-    /// <param name="claim">The claim where <paramref name="userId"/> will be stored inside <paramref name="identity"/></param>
-    /// <returns><paramref name="app"/></returns>
-    /// <exception cref="InvalidOperationException">Thrown when <c>WebApplication.Environment.IsDevelopment()</c> returns false</exception>
-    public static WebApplication UseUserDebugMocking(this WebApplication app, string? userId = null)
-    {
-        if (!app.Environment.IsDevelopment()) // can only run in production
-        {
-            throw new InvalidOperationException(
-                $"{nameof(UseUserDebugMocking)} can only be called when the environment is development"
-            );
-        }
-
-        app.Use(nextPipelineHandler =>
-            requestHttpContext =>
-            {
-                var options = requestHttpContext.RequestServices.GetService<
-                    IOptions<DebugIdentityMockingOptions>
-                >();
-
-                if (options?.Value.Enable == true)
-                {
-                    ClaimsIdentity claimsIdentity = new("Debug");
-                    claimsIdentity.AddClaim(new(JwtRegisteredClaimNames.Iss, "DEBUG"));
-                    claimsIdentity.AddClaim(
-                        new(JwtRegisteredClaimNames.Sub, options.Value.UserId ?? "1")
-                    );
-                    requestHttpContext.User = new(claimsIdentity);
-                }
-                return nextPipelineHandler(requestHttpContext);
-            }
-        );
-
-        return app;
-    }
+    private const string OpenIdConnectClient = "OidcHttpBackchannel";
 
     /// <summary>
-    /// Debug only identity mocking
+    /// Adds and Configures OIDC for the application
     /// </summary>
-    public class DebugIdentityMockingOptions
-    {
-        /// <summary>
-        /// Section path
-        /// </summary>
-        public const string SectionPath = "Reciplex:Debug:IdentityMocking";
-
-        /// <summary>
-        /// In debug builds setting this to true binds
-        /// fake credentials to each request
-        /// </summary>
-        public bool Enable { get; set; }
-
-        public string? UserId { get; set; }
-    }
-
-    public static WebApplicationBuilder AddAuthenticationDebugOptions(
-        this WebApplicationBuilder applicationBuilder
-    )
-    {
-        applicationBuilder.Services.Configure<DebugIdentityMockingOptions>(
-            applicationBuilder.Configuration.GetSection(DebugIdentityMockingOptions.SectionPath)
-        );
-        return applicationBuilder;
-    }
-#endif
-
+    /// <param name="applicationBuilder">the app to configure</param>
+    /// <returns><paramref name="applicationBuilder"/> with OIDC services added and configured</returns>
     public static WebApplicationBuilder AddOpenIdConnect(
         this WebApplicationBuilder applicationBuilder
     )
     {
         // add OIDC settings
-        OpenIdConnectOptions? connectOptions = applicationBuilder
-            .Configuration.GetSection(OpenIdConnectOptions.SectionPath)
-            .Get<OpenIdConnectOptions>();
+        ReciplexOpenIdConnectOptions? connectOptions = applicationBuilder
+            .Configuration.GetSection(ReciplexOpenIdConnectOptions.SectionPath)
+            .Get<ReciplexOpenIdConnectOptions>();
 
         if (connectOptions?.Enable != true)
         {
@@ -106,11 +45,47 @@ public static class AccessControlWebApplicationExtensions
             );
         }
 
-        OpenIdConnectSecretsOptions? secretsOptions =
+        ReciplexOpenIdConnectSecretsOptions? secretsOptions =
             applicationBuilder
-                .Configuration.GetSection(OpenIdConnectSecretsOptions.SectionPath)
-                .Get<OpenIdConnectSecretsOptions>()
+                .Configuration.GetSection(ReciplexOpenIdConnectSecretsOptions.SectionPath)
+                .Get<ReciplexOpenIdConnectSecretsOptions>()
             ?? throw new InvalidOperationException("Secrets for OpenIdConnect must be provided");
+
+        applicationBuilder.Services.Configure<ReciplexOpenIdConnectOptions>(
+            applicationBuilder.Configuration.GetSection(ReciplexOpenIdConnectOptions.SectionPath)
+        );
+        applicationBuilder.Services.Configure<ReciplexOpenIdConnectSecretsOptions>(
+            applicationBuilder.Configuration.GetSection(
+                ReciplexOpenIdConnectSecretsOptions.SectionPath
+            )
+        );
+
+        applicationBuilder
+            .Services.AddHttpClient(OpenIdConnectClient)
+            .ConfigurePrimaryHttpMessageHandler(() =>
+            {
+                var handler = new HttpClientHandler();
+
+                if (connectOptions.InsecureAcceptAnyServerCertificate)
+                {
+                    handler.ServerCertificateCustomValidationCallback =
+                        HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+                }
+
+                // If you use a DelegatingHandler for route overriding, wrap it here:
+                if (!string.IsNullOrWhiteSpace(connectOptions.BackChannelHostOverride))
+                {
+                    return new OidcOverrideBackChannelRoutingHandler(connectOptions, handler);
+                }
+
+                return handler;
+            })
+            .ConfigureAdditionalHttpMessageHandlers(
+                (handlers, serviceProvider) =>
+                {
+                    handlers.Add(new HttpMetricsClientEnricherHandler("OpenIdConnect"));
+                }
+            );
 
         // add OIDC
         applicationBuilder
@@ -149,65 +124,74 @@ public static class AccessControlWebApplicationExtensions
                 o.SlidingExpiration = true;
                 o.ExpireTimeSpan = TimeSpan.FromDays(14);
             })
-            .AddOpenIdConnect(options =>
-            {
-                options.Authority = connectOptions.Authority;
-                options.ClientId = secretsOptions.ClientId;
-                options.ClientSecret = secretsOptions.ClientSecret;
+            .AddOpenIdConnect();
 
-                options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.ResponseType = OpenIdConnectResponseType.Code;
-
-                options.ClaimActions.Remove("iss"); // keep iss
-                options.GetClaimsFromUserInfoEndpoint = true;
-                options.MapInboundClaims = false; // don't mutate our claims
-                options.SignedOutCallbackPath = "/api/v1/oidc/sign-out";
-                options.CallbackPath = "/api/v1/oidc/sign-in";
-                options.RequireHttpsMetadata = !connectOptions.InsecureDisableHttps;
-                options.TokenValidationParameters.NameClaimType = JwtRegisteredClaimNames.Name;
-
-                // OIDC is just to identify and authenticate user, after that,
-                // this application takes control of the session lifetime.
-                options.UseTokenLifetime = false;
-                options.SaveTokens = false;
-
-                if (connectOptions.InsecureAcceptAnyServerCertificate)
-                {
-                    options.BackchannelHttpHandler = new HttpClientHandler
-                    {
-                        ServerCertificateCustomValidationCallback =
-                            HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
-                    };
-                }
-
-                if (!string.IsNullOrWhiteSpace(connectOptions.BackChannelHostOverride))
-                {
-                    options.BackchannelHttpHandler = new OidcOverrideBackChannelRoutingHandler(
-                        connectOptions,
-                        options.BackchannelHttpHandler ?? new HttpClientHandler()
-                    );
-                }
-
-                options.Events.OnTicketReceived = context =>
-                {
-                    context.Properties ??= new();
-                    context.Properties.IsPersistent = true;
-                    context.Properties.ExpiresUtc = DateTimeOffset.UtcNow.AddDays(14);
-
-                    return Task.CompletedTask;
-                };
-
-                options.Events.OnTokenValidated = (
-                    context =>
-                    {
-                        // you can --
-                        // - add custom claims via this hook
-                        // - merge old identity with new incoming one to allow account linking
-                        return Task.CompletedTask;
-                    }
-                );
-            });
+        ConfigureOpenIdConnectOptions(applicationBuilder, connectOptions, secretsOptions);
 
         return applicationBuilder;
+    }
+
+    /// <summary>
+    /// Configures <see cref="OpenIdConnectOptions" />
+    /// </summary>
+    /// <param name="applicationBuilder">the app builder</param>
+    /// <param name="connectOptions">the oidc connect options</param>
+    /// <param name="secretsOptions">the oidc secrets</param>
+    private static void ConfigureOpenIdConnectOptions(
+        WebApplicationBuilder applicationBuilder,
+        ReciplexOpenIdConnectOptions connectOptions,
+        ReciplexOpenIdConnectSecretsOptions secretsOptions
+    )
+    {
+        applicationBuilder
+            .Services.AddOptions<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme)
+            .Configure<
+                IHttpClientFactory,
+                IOptions<ReciplexOpenIdConnectOptions>,
+                IOptions<ReciplexOpenIdConnectSecretsOptions>
+            >(
+                (options, httpFactory, rOptions, rSecrets) =>
+                {
+                    options.Authority = connectOptions.Authority;
+                    options.ClientId = secretsOptions.ClientId;
+                    options.ClientSecret = secretsOptions.ClientSecret;
+
+                    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                    options.ResponseType = OpenIdConnectResponseType.Code;
+
+                    options.ClaimActions.Remove("iss"); // keep iss
+                    options.GetClaimsFromUserInfoEndpoint = true;
+                    options.MapInboundClaims = false; // don't mutate our claims
+                    options.SignedOutCallbackPath = "/api/v1/oidc/sign-out";
+                    options.CallbackPath = "/api/v1/oidc/sign-in";
+                    options.RequireHttpsMetadata = !connectOptions.InsecureDisableHttps;
+                    options.TokenValidationParameters.NameClaimType = JwtRegisteredClaimNames.Name;
+
+                    // OIDC is just to identify and authenticate user, after that,
+                    // this application takes control of the session lifetime.
+                    options.UseTokenLifetime = false;
+                    options.SaveTokens = false;
+
+                    options.Backchannel = httpFactory.CreateClient(OpenIdConnectClient);
+                    options.Events.OnTicketReceived = context =>
+                    {
+                        context.Properties ??= new();
+                        context.Properties.IsPersistent = true;
+                        context.Properties.ExpiresUtc = DateTimeOffset.UtcNow.AddDays(14);
+
+                        return Task.CompletedTask;
+                    };
+
+                    options.Events.OnTokenValidated = (
+                        context =>
+                        {
+                            // you can --
+                            // - add custom claims via this hook
+                            // - merge old identity with new incoming one to allow account linking
+                            return Task.CompletedTask;
+                        }
+                    );
+                }
+            );
     }
 }
