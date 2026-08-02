@@ -19,4 +19,9 @@ public class AppMetricsOptions
     /// The path to the victoria metric server
     /// </summary>
     public string ExportUri { get; set; } = "";
+
+    /// <summary>
+    /// The name of the service.
+    /// </summary>
+    public string ServiceName { get; set; } = "Reciplex";
 }

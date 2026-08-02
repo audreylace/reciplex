@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using NodaTime;
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using Reciplex.Server.Abstractions;
 using Reciplex.Server.Abstractions.StringIdProvider;
 using Reciplex.Server.Database;
@@ -303,6 +304,13 @@ public class Program
 
         builder
             .Services.AddOpenTelemetry()
+            .ConfigureResource(resource =>
+            {
+                if (!string.IsNullOrWhiteSpace(appMetricsOptions.ServiceName))
+                {
+                    resource.AddService(appMetricsOptions.ServiceName);
+                }
+            })
             .WithMetrics(metrics =>
             {
                 metrics
