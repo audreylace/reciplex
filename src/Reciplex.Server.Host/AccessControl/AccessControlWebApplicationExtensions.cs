@@ -14,6 +14,11 @@ namespace Reciplex.Server.Host.AccessControl;
 public static class AccessControlWebApplicationExtensions
 {
     /// <summary>
+    /// The named back channel client for OIDC
+    /// </summary>
+    private const string OpenIdConnectClient = "OidcHttpBackchannel";
+
+    /// <summary>
     /// Adds and Configures OIDC for the application
     /// </summary>
     /// <param name="applicationBuilder">the app to configure</param>
@@ -55,7 +60,7 @@ public static class AccessControlWebApplicationExtensions
         );
 
         applicationBuilder
-            .Services.AddHttpClient("OidcBackchannel")
+            .Services.AddHttpClient(OpenIdConnectClient)
             .ConfigurePrimaryHttpMessageHandler(() =>
             {
                 var handler = new HttpClientHandler();
@@ -73,7 +78,13 @@ public static class AccessControlWebApplicationExtensions
                 }
 
                 return handler;
-            });
+            })
+            .ConfigureAdditionalHttpMessageHandlers(
+                (handlers, serviceProvider) =>
+                {
+                    handlers.Add(new HttpMetricsClientEnricherHandler("OpenIdConnect"));
+                }
+            );
 
         // add OIDC
         applicationBuilder
@@ -114,6 +125,23 @@ public static class AccessControlWebApplicationExtensions
             })
             .AddOpenIdConnect();
 
+        ConfigureOpenIdConnectOptions(applicationBuilder, connectOptions, secretsOptions);
+
+        return applicationBuilder;
+    }
+
+    /// <summary>
+    /// Configures <see cref="OpenIdConnectOptions" />
+    /// </summary>
+    /// <param name="applicationBuilder">the app builder</param>
+    /// <param name="connectOptions">the oidc connect options</param>
+    /// <param name="secretsOptions">the oidc secrets</param>
+    private static void ConfigureOpenIdConnectOptions(
+        WebApplicationBuilder applicationBuilder,
+        ReciplexOpenIdConnectOptions connectOptions,
+        ReciplexOpenIdConnectSecretsOptions secretsOptions
+    )
+    {
         applicationBuilder
             .Services.AddOptions<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme)
             .Configure<
@@ -143,7 +171,7 @@ public static class AccessControlWebApplicationExtensions
                     options.UseTokenLifetime = false;
                     options.SaveTokens = false;
 
-                    options.Backchannel = httpFactory.CreateClient("OidcBackchannel");
+                    options.Backchannel = httpFactory.CreateClient(OpenIdConnectClient);
                     options.Events.OnTicketReceived = context =>
                     {
                         context.Properties ??= new();
@@ -164,7 +192,5 @@ public static class AccessControlWebApplicationExtensions
                     );
                 }
             );
-
-        return applicationBuilder;
     }
 }
