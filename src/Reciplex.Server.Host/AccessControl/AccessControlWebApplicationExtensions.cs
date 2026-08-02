@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Reciplex.Server.Host.Metrics;
 using Reciplex.Server.Host.Options;
 
 namespace Reciplex.Server.Host.AccessControl;
