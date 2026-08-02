@@ -8,7 +8,7 @@ namespace Reciplex.Server.Host.AccessControl;
 /// <param name="openIdConnectConfiguration">oidc server configuration</param>
 /// <param name="innerHandler">the inner http handler to wrap</param>
 public class OidcOverrideBackChannelRoutingHandler(
-    OpenIdConnectOptions openIdConnectConfiguration,
+    ReciplexOpenIdConnectOptions openIdConnectConfiguration,
     HttpMessageHandler innerHandler
 ) : DelegatingHandler(innerHandler)
 {

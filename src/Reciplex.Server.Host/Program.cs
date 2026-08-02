@@ -309,6 +309,7 @@ public class Program
                     .AddAspNetCoreInstrumentation()
                     .AddRuntimeInstrumentation()
                     .AddProcessInstrumentation()
+                    .AddHttpClientInstrumentation()
                     .AddOtlpExporter(options =>
                     {
                         // Pointing to VictoriaMetrics OTLP ingest endpoint
