@@ -172,12 +172,12 @@ function parseToolQuantityIfApplicable(
   args: CommandParserRExpTokens[],
   offset: number,
 ): [number, IQuantityWithoutUnit] | undefined | false {
-  const atomName = atom.payload.text;
+  const atomName = atom.payload.text.toLowerCase();
 
   if (
-    atomName !== "tQ" &&
-    atomName !== "toolQuantity" &&
-    atomName !== "tQuantity"
+    atomName !== "tq" &&
+    atomName !== "toolquantity" &&
+    atomName !== "tquantity"
   ) {
     return;
   }
