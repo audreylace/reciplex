@@ -68,4 +68,9 @@ public class UserDbObject
     /// </summary>
     public ICollection<AdditionalBookUserAccessDbObject> RecipeBookAccessEntities { get; set; } =
     [];
+
+    /// <summary>
+    /// Books the user owns
+    /// </summary>
+    public ICollection<RecipeBookDbObject> BooksTheUserOwns { get; set; } = [];
 }

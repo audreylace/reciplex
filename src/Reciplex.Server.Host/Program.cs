@@ -318,6 +318,7 @@ public class Program
                     .AddRuntimeInstrumentation()
                     .AddProcessInstrumentation()
                     .AddHttpClientInstrumentation()
+                    .AddMeter("Reciplex.*")
                     .AddOtlpExporter(options =>
                     {
                         // Pointing to VictoriaMetrics OTLP ingest endpoint

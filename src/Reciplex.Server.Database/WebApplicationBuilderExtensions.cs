@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Reciplex.Server.Abstractions;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
+using Reciplex.Server.Database.DeletionWorker;
 using Reciplex.Server.Database.RecipeBooksDomain;
 using Reciplex.Server.Database.RecipesDomain;
 using Reciplex.Server.Database.UsersDomain;
@@ -28,6 +29,8 @@ public static partial class WebApplicationBuilderExtensions
         builder.Services.AddScoped<IRecipesService, RecipesService>();
         builder.Services.AddScoped<IRecipeBooksService, RecipeBooksService>();
         builder.Services.AddRandomNumberGeneratorConcurrencyTagProvider();
+        builder.Services.AddHostedService<DeletionWorkerService>();
+        builder.Services.AddSingleton<DeletionWorkerServiceMetrics>();
 
         return builder;
     }
