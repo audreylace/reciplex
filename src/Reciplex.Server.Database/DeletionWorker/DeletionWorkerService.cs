@@ -27,23 +27,82 @@ internal class DeletionWorkerService(
             backoff = Math.Min(10, backoff + 1);
             metrics.SetRunningStatus(true);
             bool anyWorkDone = false;
+
             anyWorkDone |= await RunUntilCompletionWithDelay(
-                CleanupDeletedRecipesAsync,
+                CollectAndDelete(
+                    (db, ct) =>
+                        db
+                            .Recipes.Where(r =>
+                                r.Deleted != null
+                                || r.RecipeBook!.Deleted != null
+                                || r.RecipeBook!.Owner!.Deleted != null
+                            )
+                            .Select(r => r.Id)
+                            .Take(100)
+                            .ToListAsync(ct),
+                    (db, ids, ct) =>
+                        db.Recipes.Where(r => ids.Contains(r.Id)).ExecuteDeleteAsync(ct)
+                ),
                 DeletionWorkerServiceMetrics.RecipesVariant,
                 stoppingToken
             );
+
             anyWorkDone |= await RunUntilCompletionWithDelay(
-                CleanupRecipesBookAdditionalUsersAsync,
+                CollectAndDelete(
+                    (db, ct) =>
+                        db
+                            .RecipeBookAccessEntries.Where(rAccessEntry =>
+                                (
+                                    rAccessEntry.User!.Deleted != null
+                                    || rAccessEntry.RecipeBook!.Deleted != null
+                                    || rAccessEntry.RecipeBook!.Owner!.Deleted != null
+                                )
+                            )
+                            .Select(r => r.Id)
+                            .Take(100)
+                            .ToListAsync(ct),
+                    (db, ids, ct) =>
+                        db
+                            .RecipeBookAccessEntries.Where(r => ids.Contains(r.Id))
+                            .ExecuteDeleteAsync(ct)
+                ),
                 DeletionWorkerServiceMetrics.RecipeBookAccessEntries,
                 stoppingToken
             );
+
             anyWorkDone |= await RunUntilCompletionWithDelay(
-                CleanupDeletedRecipesBooksAsync,
+                CollectAndDelete(
+                    (db, ct) =>
+                        db
+                            .RecipeBooks.Where(r =>
+                                (r.Deleted != null || r.Owner!.Deleted != null)
+                                && !r.Recipes.Any()
+                                && !r.AdditionalUsers.Any()
+                            )
+                            .Select(r => r.Id)
+                            .Take(100)
+                            .ToListAsync(ct),
+                    (db, ids, ct) =>
+                        db.RecipeBooks.Where(r => ids.Contains(r.Id)).ExecuteDeleteAsync(ct)
+                ),
                 DeletionWorkerServiceMetrics.RecipeBooksVariant,
                 stoppingToken
             );
+
             anyWorkDone |= await RunUntilCompletionWithDelay(
-                CleanupDeletedUsersAsync,
+                CollectAndDelete(
+                    (db, ct) =>
+                        db
+                            .Users.Where(user =>
+                                user.Deleted != null
+                                && !user.RecipeBookAccessEntities.Any()
+                                && !user.BooksTheUserOwns.Any()
+                            )
+                            .Select(r => r.Id)
+                            .Take(100)
+                            .ToListAsync(ct),
+                    (db, ids, ct) => db.Users.Where(r => ids.Contains(r.Id)).ExecuteDeleteAsync(ct)
+                ),
                 DeletionWorkerServiceMetrics.UsersVariant,
                 stoppingToken
             );
@@ -70,164 +129,50 @@ internal class DeletionWorkerService(
         }
     }
 
-    private async Task<bool> CleanupDeletedRecipesAsync(
-        ApplicationDbContext db,
-        string databaseObjectName,
-        CancellationToken ct
+    /// <summary>
+    /// Collects ids to delete and then deletes them
+    /// </summary>
+    /// <param name="collect">the query to get the ids list</param>
+    /// <param name="delete">the query to execute the delete on the id list</param>
+    /// <returns>delegate to hand off to <see cref="RunUntilCompletionWithDelay"/> </returns>
+    private Func<ApplicationDbContext, string, CancellationToken, Task<bool>> CollectAndDelete(
+        Func<ApplicationDbContext, CancellationToken, Task<List<long>>> collect,
+        Func<ApplicationDbContext, List<long>, CancellationToken, Task<int>> delete
     )
     {
-        long startTimestamp = Stopwatch.GetTimestamp();
-        var recipesToDeleteById = await db
-            .Recipes.Where(r =>
-                r.Deleted != null
-                || r.RecipeBook!.Deleted != null
-                || r.RecipeBook!.Owner!.Deleted != null
-            )
-            .Select(r => r.Id)
-            .Take(100)
-            .ToListAsync(ct);
-        metrics.ObserveDeletionCandidateQuery(
-            databaseObjectName,
-            Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
-        );
-
-        if (recipesToDeleteById.Count <= 0)
+        return async (db, databaseObjectName, ct) =>
         {
-            return false; // we did nothing!
-        }
+            long startTimestamp = Stopwatch.GetTimestamp();
+            var ids = await collect(db, ct);
+            metrics.ObserveDeletionCandidateQuery(
+                databaseObjectName,
+                Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
+            );
 
-        startTimestamp = Stopwatch.GetTimestamp();
-        long rows = await db
-            .Recipes.Where(r => recipesToDeleteById.Contains(r.Id))
-            .ExecuteDeleteAsync(ct);
-        metrics.ObserveDeletionCandidateQuery(
-            databaseObjectName,
-            Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
-        );
+            if (ids.Count <= 0)
+            {
+                return false; // we did nothing!
+            }
 
-        metrics.IncRowsDeleted(rows, databaseObjectName);
-        return rows > 0;
+            startTimestamp = Stopwatch.GetTimestamp();
+            long count = await delete(db, ids, ct);
+            metrics.ObserveDeletionQuery(
+                databaseObjectName,
+                Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
+            );
+
+            metrics.IncRowsDeleted(count, databaseObjectName);
+            return count > 0;
+        };
     }
 
-    private async Task<bool> CleanupRecipesBookAdditionalUsersAsync(
-        ApplicationDbContext db,
-        string databaseObjectName,
-        CancellationToken ct
-    )
-    {
-        long startTimestamp = Stopwatch.GetTimestamp();
-        var accessEntryById = await db
-            .RecipeBookAccessEntries.Where(rAccessEntry =>
-                (
-                    rAccessEntry.User!.Deleted != null
-                    || rAccessEntry.RecipeBook!.Deleted != null
-                    || rAccessEntry.RecipeBook!.Owner!.Deleted != null
-                )
-            )
-            .Select(r => r.Id)
-            .Take(100)
-            .ToListAsync(ct);
-        metrics.ObserveDeletionCandidateQuery(
-            databaseObjectName,
-            Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
-        );
-
-        if (accessEntryById.Count <= 0)
-        {
-            return false; // we did nothing!
-        }
-
-        startTimestamp = Stopwatch.GetTimestamp();
-        long rows = await db
-            .RecipeBookAccessEntries.Where(r => accessEntryById.Contains(r.Id))
-            .ExecuteDeleteAsync(ct);
-        metrics.ObserveDeletionQuery(
-            databaseObjectName,
-            Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
-        );
-        metrics.IncRowsDeleted(rows, databaseObjectName);
-
-        return rows > 0;
-    }
-
-    private async Task<bool> CleanupDeletedRecipesBooksAsync(
-        ApplicationDbContext db,
-        string databaseObjectName,
-        CancellationToken ct
-    )
-    {
-        long startTimestamp = Stopwatch.GetTimestamp();
-        var recipeBooksToDeleteById = await db
-            .RecipeBooks.Where(r =>
-                (r.Deleted != null || r.Owner!.Deleted != null)
-                && !r.Recipes.Any()
-                && !r.AdditionalUsers.Any()
-            )
-            .Select(r => r.Id)
-            .Take(100)
-            .ToListAsync(ct);
-        metrics.ObserveDeletionCandidateQuery(
-            databaseObjectName,
-            Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
-        );
-
-        if (recipeBooksToDeleteById.Count <= 0)
-        {
-            return false; // we did nothing!
-        }
-
-        startTimestamp = Stopwatch.GetTimestamp();
-        long rows = await db
-            .RecipeBooks.Where(r => recipeBooksToDeleteById.Contains(r.Id))
-            .ExecuteDeleteAsync(ct);
-        metrics.ObserveDeletionQuery(
-            databaseObjectName,
-            Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
-        );
-        metrics.IncRowsDeleted(rows, databaseObjectName);
-
-        return rows > 0;
-    }
-
-    private async Task<bool> CleanupDeletedUsersAsync(
-        ApplicationDbContext db,
-        string databaseObjectName,
-        CancellationToken ct
-    )
-    {
-        long startTimestamp = Stopwatch.GetTimestamp();
-        var usersToDeleteById = await db
-            .Users.Where(user =>
-                user.Deleted != null
-                && !user.RecipeBookAccessEntities.Any()
-                && !user.BooksTheUserOwns.Any()
-            )
-            .Select(r => r.Id)
-            .Take(100)
-            .ToListAsync(ct);
-        metrics.ObserveDeletionCandidateQuery(
-            databaseObjectName,
-            Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
-        );
-
-        if (usersToDeleteById.Count <= 0)
-        {
-            return false; // we did nothing!
-        }
-
-        startTimestamp = Stopwatch.GetTimestamp();
-        long count = await db
-            .Users.Where(r => usersToDeleteById.Contains(r.Id))
-            .ExecuteDeleteAsync(ct);
-        metrics.ObserveDeletionQuery(
-            databaseObjectName,
-            Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
-        );
-
-        metrics.IncRowsDeleted(count, databaseObjectName);
-        return count > 0;
-    }
-
+    /// <summary>
+    /// Runs a database operation over and over with delay until <paramref name="action"/> returns false
+    /// </summary>
+    /// <param name="action">the database action to run</param>
+    /// <param name="databaseObjectName">name of the operation for metrics</param>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>true if anything any real work was completed</returns>
     private async Task<bool> RunUntilCompletionWithDelay(
         Func<ApplicationDbContext, string, CancellationToken, Task<bool>> action,
         string databaseObjectName,
