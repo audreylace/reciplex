@@ -39,6 +39,11 @@ internal class DeletionWorkerServiceMetrics
     private readonly TimeProvider _timeProvider;
 
     /// <summary>
+    /// How long an entire cleanup cycle took
+    /// </summary>
+    private readonly Histogram<double> _fullLoopTimeHistogram;
+
+    /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="meterFactory">ASP.net metric factory method</param>
@@ -87,6 +92,28 @@ internal class DeletionWorkerServiceMetrics
                 HistogramBucketBoundaries = [1, 10, 100, 1000, 2000, 4000, 8000, 16000],
             }
         );
+
+        _fullLoopTimeHistogram = meter.CreateHistogram<double>(
+            "reciplex.deletion_worker.cleanup_cycle_duration",
+            unit: "ms",
+            description: "How long a full cleanup cycle took.",
+            advice: new InstrumentAdvice<double>
+            {
+                HistogramBucketBoundaries =
+                [
+                    10,
+                    100,
+                    1000,
+                    2000,
+                    4000,
+                    8000,
+                    16000,
+                    32000,
+                    64000,
+                    128000,
+                ],
+            }
+        );
     }
 
     /// <summary>
@@ -112,10 +139,13 @@ internal class DeletionWorkerServiceMetrics
     /// <summary>
     /// Add an observation of the main loop sleep time
     /// </summary>
-    /// <param name="minutes">the number of minutes</param>
-    public void ObserveSleepTime(double minutes)
+    /// <param name="minutesTillNextRun">the number of minutes</param>
+    public void ObserveMainLoop(double minutesTillNextRun, double msForRunTime)
     {
-        _nextRunTime.Record(_timeProvider.GetUtcNow().AddMinutes(minutes).ToUnixTimeSeconds());
+        _nextRunTime.Record(
+            _timeProvider.GetUtcNow().AddMinutes(minutesTillNextRun).ToUnixTimeSeconds()
+        );
+        _fullLoopTimeHistogram.Record(msForRunTime);
     }
 
     private void ObserveQueryTime(double seconds, string variant, string query)

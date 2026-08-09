@@ -24,6 +24,7 @@ internal class DeletionWorkerService(
         int backoff = 0;
         while (!stoppingToken.IsCancellationRequested)
         {
+            long startTimestamp = Stopwatch.GetTimestamp();
             backoff = Math.Min(10, backoff + 1);
             metrics.SetRunningStatus(true);
             bool anyWorkDone = false;
@@ -124,7 +125,10 @@ internal class DeletionWorkerService(
             }
 
             metrics.SetRunningStatus(false);
-            metrics.ObserveSleepTime(minutes);
+            metrics.ObserveMainLoop(
+                minutes,
+                Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
+            );
             await Task.Delay(TimeSpan.FromMinutes(minutes), stoppingToken);
         }
     }
