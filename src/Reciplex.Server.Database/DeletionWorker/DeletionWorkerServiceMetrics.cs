@@ -99,19 +99,7 @@ internal class DeletionWorkerServiceMetrics
             description: "How long a full cleanup cycle took.",
             advice: new InstrumentAdvice<double>
             {
-                HistogramBucketBoundaries =
-                [
-                    10,
-                    100,
-                    1000,
-                    2000,
-                    4000,
-                    8000,
-                    16000,
-                    32000,
-                    64000,
-                    128000,
-                ],
+                HistogramBucketBoundaries = [4000, 8000, 16000, 32000, 64000, 128000, 256000],
             }
         );
     }
