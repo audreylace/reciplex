@@ -1,4 +1,5 @@
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -56,6 +57,7 @@ public class Program
         builder.AddOpenIdConnect();
 
         ConfigureMetrics(builder);
+        ConfigureRateLimiting(builder);
 
         var app = builder.Build();
         await RunStartupServices(app);
@@ -70,6 +72,7 @@ public class Program
         app.UseHsts();
         UseProxySupport(app);
         app.UseAuthorization();
+        app.UseRateLimiter();
         app.MapGroup("/api/v1").MapControllers();
         app.MapStaticAssets();
         app.MapFallbackToFile("index.html");
@@ -326,6 +329,96 @@ public class Program
                         options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
                     });
             });
+    }
+
+    private static void ConfigureRateLimiting(WebApplicationBuilder builder)
+    {
+        AppRateLimitingOptions appRateLimiting = new();
+        builder.Configuration.GetSection(AppRateLimitingOptions.SectionPath).Bind(appRateLimiting);
+
+        builder.Services.AddRateLimiter(options =>
+        {
+            var authenticatedLimiter = PartitionedRateLimiter.Create<HttpContext, string>(
+                httpContext =>
+                {
+                    var credentials = httpContext.OpenIdConnectCredentials();
+                    if (credentials != null && appRateLimiting.Enable)
+                    {
+                        return RateLimitPartition.GetSlidingWindowLimiter(
+                            partitionKey: $"user_{credentials.Value.Authority}_{credentials.Value.Subject}",
+                            factory: _ => new SlidingWindowRateLimiterOptions
+                            {
+                                PermitLimit = appRateLimiting.AuthUserMaxRequests,
+                                Window = TimeSpan.FromSeconds(
+                                    appRateLimiting.AuthUserWindowSeconds
+                                ),
+                                SegmentsPerWindow = appRateLimiting.AuthUserWindowSegments,
+                                QueueLimit = 0,
+                            }
+                        );
+                    }
+
+                    return RateLimitPartition.GetNoLimiter("authenticated_bypass");
+                }
+            );
+            var globalAnonLimiter = PartitionedRateLimiter.Create<HttpContext, string>(
+                httpContext =>
+                {
+                    var credentials = httpContext.OpenIdConnectCredentials();
+                    if (credentials == null && appRateLimiting.Enable)
+                    {
+                        return RateLimitPartition.GetTokenBucketLimiter(
+                            partitionKey: "global_anon",
+                            factory: _ => new TokenBucketRateLimiterOptions
+                            {
+                                TokenLimit = appRateLimiting.GlobalBucketMaxTokens,
+                                TokensPerPeriod = appRateLimiting.GlobalBucketReplenishRate,
+                                ReplenishmentPeriod = TimeSpan.FromSeconds(
+                                    appRateLimiting.GlobalBucketReplenishPeriodSeconds
+                                ),
+                                AutoReplenishment = true,
+                                QueueLimit = 0,
+                            }
+                        );
+                    }
+
+                    return RateLimitPartition.GetNoLimiter("anon_bypass");
+                }
+            );
+
+            var perIpAnonLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+            {
+                var credentials = httpContext.OpenIdConnectCredentials();
+                if (credentials == null && appRateLimiting.Enable)
+                {
+                    string ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                    return RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: $"anon_ip_{ip}",
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = appRateLimiting.PerIpMaxRequests,
+                            Window = TimeSpan.FromSeconds(appRateLimiting.PerIpWindowSeconds),
+                            QueueLimit = 0,
+                        }
+                    );
+                }
+
+                return RateLimitPartition.GetNoLimiter("anon_bypass");
+            });
+
+            // Chain all three limiters together into GlobalLimiter
+            options.GlobalLimiter = PartitionedRateLimiter.CreateChained(
+                authenticatedLimiter,
+                globalAnonLimiter,
+                perIpAnonLimiter
+            );
+
+            options.OnRejected = async (context, token) =>
+            {
+                context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                await context.HttpContext.Response.WriteAsync("Too many requests.", token);
+            };
+        });
     }
 
     /// <summary>
