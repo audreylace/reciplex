@@ -8,6 +8,26 @@ namespace Reciplex.Server.Database.DeletionWorker;
 internal class DeletionWorkerServiceMetrics
 {
     /// <summary>
+    /// Label for recipes operations
+    /// </summary>
+    public const string RecipesVariant = "recipes";
+
+    /// <summary>
+    /// Label for user operations
+    /// </summary>
+    public const string UsersVariant = "users";
+
+    /// <summary>
+    /// Label for recipe book operations
+    /// </summary>
+    public const string RecipeBooksVariant = "recipe_books";
+
+    /// <summary>
+    /// Label for recipe book access entries operations
+    /// </summary>
+    public const string RecipeBookAccessEntries = "recipe_book_access_entries";
+
+    /// <summary>
     /// Number of rows deleted broken out by their type
     /// </summary>
     private readonly Counter<long> _rowsDeletedCounter;
@@ -103,26 +123,6 @@ internal class DeletionWorkerServiceMetrics
             }
         );
     }
-
-    /// <summary>
-    /// Label for recipes operations
-    /// </summary>
-    public const string RecipesVariant = "recipes";
-
-    /// <summary>
-    /// Label for user operations
-    /// </summary>
-    public const string UsersVariant = "users";
-
-    /// <summary>
-    /// Label for recipe book operations
-    /// </summary>
-    public const string RecipeBooksVariant = "recipe_books";
-
-    /// <summary>
-    /// Label for recipe book access entries operations
-    /// </summary>
-    public const string RecipeBookAccessEntries = "recipe_book_access_entries";
 
     /// <summary>
     /// Add an observation of the main loop sleep time
