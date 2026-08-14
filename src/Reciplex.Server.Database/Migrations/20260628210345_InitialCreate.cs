@@ -8,6 +8,16 @@ namespace Reciplex.Server.Database.Migrations
     public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
+        [System.Diagnostics.CodeAnalysis.SuppressMessage(
+            "Style",
+            "IDE0300:Simplify collection initialization",
+            Justification = "Generated code"
+        )]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage(
+            "Performance",
+            "CA1861:Avoid constant arrays as arguments",
+            Justification = "Generated code"
+        )]
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
