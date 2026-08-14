@@ -14,16 +14,11 @@ public class HttpMetricsClientEnricherHandler(string clientName) : DelegatingHan
         CancellationToken cancellationToken
     )
     {
-        // Add custom metric tag to the http.client.request.duration metric
         HttpMetricsEnrichmentContext.AddCallback(
             request,
             context =>
             {
-                if (context.Request.RequestUri != null)
-                {
-                    // Capture the URL path
-                    context.AddCustomTag("reciplex_http.client_name", clientName);
-                }
+                context.AddCustomTag("reciplex_http.client_name", clientName);
             }
         );
 
