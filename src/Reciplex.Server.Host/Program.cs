@@ -331,6 +331,10 @@ public class Program
             });
     }
 
+    /// <summary>
+    /// Adds rate limiting to the application if enabled
+    /// </summary>
+    /// <param name="builder">the app builder</param>
     private static void ConfigureRateLimiting(WebApplicationBuilder builder)
     {
         AppRateLimitingOptions appRateLimiting = new();
