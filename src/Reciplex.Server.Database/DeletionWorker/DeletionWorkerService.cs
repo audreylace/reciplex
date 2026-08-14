@@ -12,7 +12,7 @@ namespace Reciplex.Server.Database.DeletionWorker;
 /// <param name="sp">Service provider for opening scopes.</param>
 /// <param name="metrics">metrics for DeletionWorkerService</param>
 /// <param name="logger">Logger for writing exceptions and diagnostics</param>
-internal class DeletionWorkerService(
+internal sealed class DeletionWorkerService(
     IServiceProvider sp,
     DeletionWorkerServiceMetrics metrics,
     ILogger<DeletionWorkerService> logger

@@ -5,7 +5,7 @@ namespace Reciplex.Server.Database.DeletionWorker;
 /// <summary>
 /// Metrics for <see cref="DeletionWorkerService"/>
 /// </summary>
-internal class DeletionWorkerServiceMetrics
+internal sealed class DeletionWorkerServiceMetrics
 {
     /// <summary>
     /// Label for recipes operations
