@@ -68,14 +68,14 @@ export interface IRExpToolCommand extends IRExpCommand<"tool"> {
  */
 export const toolCommandParser: ICommandParser<"tool", IRExpToolCommand> = {
   selector: (atom) => {
-    const atomValue = atom.payload.text;
+    const atomValue = atom.payload.text.toLowerCase();
     switch (atomValue) {
       case "t":
       case "tool":
         return true;
-      case "tQ":
-      case "tQuantity":
-      case "toolQuantity":
+      case "tq":
+      case "tquantity":
+      case "toolquantity":
         return true;
       default:
         return false;
@@ -172,12 +172,12 @@ function parseToolQuantityIfApplicable(
   args: CommandParserRExpTokens[],
   offset: number,
 ): [number, IQuantityWithoutUnit] | undefined | false {
-  const atomName = atom.payload.text;
+  const atomName = atom.payload.text.toLowerCase();
 
   if (
-    atomName !== "tQ" &&
-    atomName !== "toolQuantity" &&
-    atomName !== "tQuantity"
+    atomName !== "tq" &&
+    atomName !== "toolquantity" &&
+    atomName !== "tquantity"
   ) {
     return;
   }

@@ -58,7 +58,7 @@ export const ingredientCommandParser: ICommandParser<
   IRExpIngredientCommand
 > = {
   selector: (atom) => {
-    const atomValue = atom.payload.text;
+    const atomValue = atom.payload.text.toLowerCase();
     switch (atomValue) {
       case "i":
       case "ingredient":

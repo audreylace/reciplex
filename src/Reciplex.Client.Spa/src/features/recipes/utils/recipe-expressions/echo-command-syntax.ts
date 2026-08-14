@@ -16,7 +16,7 @@ export interface IRExpEchoCommand extends IRExpCommand<"echo"> {
  */
 export const echoCommandParser: ICommandParser<"echo", IRExpEchoCommand> = {
   selector: (atom) => {
-    const atomValue = atom.payload.text;
+    const atomValue = atom.payload.text.toLowerCase();
     switch (atomValue) {
       case "e":
       case "echo":
