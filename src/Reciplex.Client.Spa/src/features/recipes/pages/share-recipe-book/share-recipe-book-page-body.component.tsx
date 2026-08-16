@@ -9,11 +9,11 @@ import { useUpdateRecipeBookShareKeyMutation } from "../../hooks/useUpdateRecipe
 import LinearProgress from "@mui/material/LinearProgress";
 import { ContinueDialog } from "./continue-dialog.component";
 import { ShareSettingsForm } from "./share-settings-form.component";
-import { BookSettingsMenuButton } from "../../components/book-settings-menu/book-settings-menu-button.component";
 import { OperationFailedAlert } from "../../../core/components/operation-failed-alert/operation-failed-alert.component";
 import { useRefreshPage } from "../../../core/hooks/useRefreshPage.hook";
 import { ConcurrencyConflictAlert } from "../../../core/components/concurrency-conflict-alert/concurrency-conflict-alert.component";
 import { HttpError } from "../../../core/utils/http-error";
+import { BookSettingsMenuButtonViaModel } from "../../components/book-settings-menu/book-settings-menu-button-via-model.component";
 
 /** body for the share recipe book page */
 export function ShareRecipeBookPageBody({
@@ -85,14 +85,7 @@ export function ShareRecipeBookPageBody({
       <PageHeader
         title="Invitation Settings"
         subTitle={`Book - ${data.name}`}
-        sideComponent={
-          <BookSettingsMenuButton
-            bookId={bookId}
-            mayEdit={data.mayEdit ?? false}
-            mayDelete={data.mayDelete ?? false}
-            mayManageShareAccess={data.mayManageAccess}
-          />
-        }
+        sideComponent={<BookSettingsMenuButtonViaModel book={data} />}
       />
 
       {shareMutation.isPending && <LinearProgress />}

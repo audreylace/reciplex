@@ -5,7 +5,6 @@ import { LoadingFailedAlert } from "../../../core/components/loading-failed-aler
 import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
 import { BookMutationNotAuthorizedBanner } from "../../components/book-mutation-not-authorized-banner/book-mutation-not-authorized-banner.component";
-import { BookSettingsMenuButton } from "../../components/book-settings-menu/book-settings-menu-button.component";
 import { RecipeBookNotFoundBanner } from "../../components/recipe-book-not-found-banner/recipe-book-not-found-banner.component";
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
 import { useGetUsersWithBookAccess } from "../../hooks/useGetUsersWithBookAccess.hook";
@@ -31,6 +30,7 @@ import { OperationFailedAlert } from "../../../core/components/operation-failed-
 import { useRefreshPage } from "../../../core/hooks/useRefreshPage.hook";
 import Alert from "@mui/material/Alert";
 import Typography from "@mui/material/Typography";
+import { BookSettingsMenuButtonViaModel } from "../../components/book-settings-menu/book-settings-menu-button-via-model.component";
 
 /** page body for managing who has access to a recipe book */
 export function ManageUserAccessBody({ bookId }: IManageUserAccessBodyProps) {
@@ -97,14 +97,7 @@ export function ManageUserAccessBody({ bookId }: IManageUserAccessBodyProps) {
       <PageHeader
         title="Manage User Access"
         subTitle={`Book - ${data.name}`}
-        sideComponent={
-          <BookSettingsMenuButton
-            bookId={bookId}
-            mayEdit={data.mayEdit ?? false}
-            mayDelete={data.mayDelete ?? false}
-            mayManageShareAccess
-          />
-        }
+        sideComponent={<BookSettingsMenuButtonViaModel book={data} />}
       />
       <ContentWrapper>
         <ContentTitle>

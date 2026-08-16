@@ -11,6 +11,7 @@ export function BookMenuButtonCell({
   bookName,
   mayShare,
   mayLeave,
+  shareKey,
 }: IBookMenuButtonCellProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -46,6 +47,8 @@ export function BookMenuButtonCell({
         open={open}
         mayShare={mayShare}
         mayLeave={mayLeave}
+        bookName={bookName}
+        shareKey={shareKey}
       />
     </>
   );
@@ -61,6 +64,8 @@ export interface IBookMenuButtonCellProps {
   mayEdit: boolean;
   /** if the user can share the book */
   mayShare: boolean;
+  /** key for sharing */
+  shareKey?: string | null;
   /**
    * if the use can invoke the leave action on a book.
    * User must not own the book for this to be available.

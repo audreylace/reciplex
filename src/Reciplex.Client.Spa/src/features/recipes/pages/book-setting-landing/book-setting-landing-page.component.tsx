@@ -1,7 +1,6 @@
 import { useNavigate, useParams } from "react-router";
 import { RecipeBookNotFoundBanner } from "../../components/recipe-book-not-found-banner/recipe-book-not-found-banner.component";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
-import { BookSettingsMenuButton } from "../../components/book-settings-menu/book-settings-menu-button.component";
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
 import { LoadingFailedAlert } from "../../../core/components/loading-failed-alert/loading-failed-alert.component";
 import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
@@ -24,6 +23,7 @@ import {
   makeViewRecipeBookPath,
 } from "../../route-utils";
 import { BrowserTitle } from "../../../core/components/browser-title/browser-title.component";
+import { BookSettingsMenuButtonViaModel } from "../../components/book-settings-menu/book-settings-menu-button-via-model.component";
 
 export function BookSettingLandingPage() {
   const { bookId } = useParams<{
@@ -50,14 +50,7 @@ export function BookSettingLandingPage() {
       <PageHeader
         title="Manage Book"
         subTitle={`Book - ${data.name}`}
-        sideComponent={
-          <BookSettingsMenuButton
-            bookId={bookId}
-            mayEdit={data.mayEdit ?? false}
-            mayDelete={data.mayDelete ?? false}
-            mayManageShareAccess
-          />
-        }
+        sideComponent={<BookSettingsMenuButtonViaModel book={data} />}
       />
       <ContentWrapper>
         <ContentTitle>Manage settings for this recipe book</ContentTitle>

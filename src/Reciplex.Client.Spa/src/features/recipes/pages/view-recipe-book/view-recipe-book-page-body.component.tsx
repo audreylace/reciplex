@@ -117,6 +117,8 @@ export function ViewRecipeBookPageBody({
             mayEdit={book.mayEdit}
             mayShare={book.mayShare}
             mayLeave={book.ownerId !== currentUser}
+            shareKey={book.shareKey}
+            bookName={book.name}
           />
         }
       />
