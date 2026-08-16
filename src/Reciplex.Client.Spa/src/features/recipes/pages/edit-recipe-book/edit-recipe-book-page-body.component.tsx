@@ -12,8 +12,8 @@ import { NameAndShortDescriptionForm } from "../../components/name-and-short-des
 import { BookMutationNotAuthorizedBanner } from "../../components/book-mutation-not-authorized-banner/book-mutation-not-authorized-banner.component";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
 import { LoadingIndicator } from "../../../core/components/loading-indicator/loading-indicator.component";
-import { BookSettingsMenuButton } from "../../components/book-settings-menu/book-settings-menu-button.component";
 import { SharedRecipeBookIndicator } from "../../components/shared-recipe-book-indicator/shared-recipe-book-indicator.component";
+import { BookSettingsMenuButtonViaModel } from "../../components/book-settings-menu/book-settings-menu-button-via-model.component";
 
 export function EditRecipeBookPageBody({ bookId }: { bookId: string }) {
   const navigate = useNavigate();
@@ -60,16 +60,7 @@ export function EditRecipeBookPageBody({ bookId }: { bookId: string }) {
         title="Editing Recipe Book Details"
         subTitle={`Book - ${bookQuery.data?.name}`}
         titleComponent={<SharedRecipeBookIndicator bookId={bookId} />}
-        sideComponent={
-          bookQuery.data && (
-            <BookSettingsMenuButton
-              bookId={bookId}
-              mayEdit={bookQuery.data.mayEdit ?? false}
-              mayDelete={bookQuery.data.mayDelete ?? false}
-              mayManageShareAccess={bookQuery.data.mayManageAccess ?? false}
-            />
-          )
-        }
+        sideComponent={<BookSettingsMenuButtonViaModel book={bookQuery.data} />}
       />
       <NameAndShortDescriptionForm
         key={resetCount}
