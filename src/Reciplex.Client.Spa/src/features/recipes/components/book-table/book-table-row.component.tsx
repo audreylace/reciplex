@@ -41,6 +41,7 @@ export function BookTableRow({ book }: { book: IRecipeBookModel }) {
         mayEdit={book.mayEdit ?? false}
         mayShare={book.mayShare ?? false}
         mayLeave={book.ownerId !== userKey}
+        shareKey={book.shareKey}
       />
     </TableRow>
   );

@@ -2,25 +2,24 @@ import { useNavigate } from "react-router";
 import MenuItem from "@mui/material/MenuItem";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ShareIcon from "@mui/icons-material/Share";
-import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
 import { makeSharePath, makeShareSettingsPath } from "../../route-utils";
 
 /** button in the recipe book menu either triggering a share or taking user to share settings page */
-export function ShareButton({ bookId }: IShareButtonProps) {
-  const bookQuery = useGetRecipeBookById(bookId);
+export function ShareButton({
+  bookId,
+  mayShare,
+  shareKey,
+  bookName,
+}: IShareButtonProps) {
   const navigate = useNavigate();
   const shareMethod = async () => {
     if (navigator.share) {
-      if (
-        bookQuery.data &&
-        bookQuery.data.mayShare &&
-        bookQuery.data.shareKey
-      ) {
+      if (mayShare && shareKey) {
         try {
           await navigator.share({
             title: "Join my book",
-            text: `Join my recipe book: ${bookQuery.data.name}`,
-            url: makeSharePath(bookId, bookQuery.data.shareKey),
+            text: `Join my recipe book: ${bookName}`,
+            url: makeSharePath(bookId, shareKey),
           });
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (_) {
@@ -31,7 +30,7 @@ export function ShareButton({ bookId }: IShareButtonProps) {
       navigate(makeShareSettingsPath(bookId));
     }
   };
-  if (bookQuery.data && bookQuery.data.mayShare) {
+  if (mayShare) {
     return (
       <MenuItem onClick={shareMethod}>
         <ListItemIcon>
@@ -45,6 +44,8 @@ export function ShareButton({ bookId }: IShareButtonProps) {
 
 /** props for `<ShareButton />` */
 export interface IShareButtonProps {
-  /** the book id */
   bookId: string;
+  bookName: string;
+  shareKey?: string | null;
+  mayShare?: boolean;
 }

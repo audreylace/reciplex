@@ -8,6 +8,8 @@ export function BookMenuButton({
   mayEdit,
   mayShare,
   mayLeave,
+  bookName,
+  shareKey,
 }: IRecipeBookMenuButtonProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -43,6 +45,8 @@ export function BookMenuButton({
         buttonId={buttonId}
         mayShare={mayShare}
         mayLeave={mayLeave}
+        bookName={bookName}
+        shareKey={shareKey}
       />
     </>
   );
@@ -57,4 +61,8 @@ export interface IRecipeBookMenuButtonProps {
   mayShare?: boolean;
   /** if the user can leave the book */
   mayLeave?: boolean;
+  /** name of the book */
+  bookName: string;
+  /** key for sharing */
+  shareKey?: string | null;
 }

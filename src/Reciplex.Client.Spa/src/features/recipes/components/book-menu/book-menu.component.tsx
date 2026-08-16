@@ -23,6 +23,8 @@ export function BookMenu({
   buttonId,
   bookId,
   mayLeave,
+  bookName,
+  shareKey,
 }: IRecipeBookMenuProps) {
   const navigate = useNavigate();
 
@@ -59,7 +61,14 @@ export function BookMenu({
         </ListItemIcon>
         Settings
       </MenuItem>
-      {mayShare && <ShareButton bookId={bookId} />}
+      {mayShare && (
+        <ShareButton
+          bookId={bookId}
+          mayShare={mayShare}
+          bookName={bookName}
+          shareKey={shareKey}
+        />
+      )}
       {mayLeave && (
         <MenuItem
           onClick={() => {
@@ -80,10 +89,14 @@ export function BookMenu({
 export interface IRecipeBookMenuProps {
   /** the id of the book */
   bookId: string;
+  /** name of the book */
+  bookName: string;
   /** if the user has edit privileges */
   mayEdit?: boolean;
   /** if the user can share the book with others */
   mayShare?: boolean;
+  /** key for sharing */
+  shareKey?: string | null;
   /**
    * if the use can invoke the leave action on a book.
    * User must not own the book for this to be available.
