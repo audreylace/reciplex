@@ -14,6 +14,7 @@ import { useRefreshPage } from "../../../core/hooks/useRefreshPage.hook";
 import { ConcurrencyConflictAlert } from "../../../core/components/concurrency-conflict-alert/concurrency-conflict-alert.component";
 import { HttpError } from "../../../core/utils/http-error";
 import { BookSettingsMenuButtonViaModel } from "../../components/book-settings-menu/book-settings-menu-button-via-model.component";
+import { bookPageSubtitle } from "../../utils/book-page-subtitle/book-page-subtitle";
 
 /** body for the share recipe book page */
 export function ShareRecipeBookPageBody({
@@ -84,7 +85,7 @@ export function ShareRecipeBookPageBody({
     <>
       <PageHeader
         title="Invitation Settings"
-        subTitle={`Book - ${data.name}`}
+        subTitle={bookPageSubtitle(data.name)}
         sideComponent={<BookSettingsMenuButtonViaModel book={data} />}
       />
 
