@@ -31,6 +31,7 @@ import { useRefreshPage } from "../../../core/hooks/useRefreshPage.hook";
 import Alert from "@mui/material/Alert";
 import Typography from "@mui/material/Typography";
 import { BookSettingsMenuButtonViaModel } from "../../components/book-settings-menu/book-settings-menu-button-via-model.component";
+import { bookPageSubtitle } from "../../utils/book-page-subtitle/book-page-subtitle";
 
 /** page body for managing who has access to a recipe book */
 export function ManageUserAccessBody({ bookId }: IManageUserAccessBodyProps) {
@@ -96,7 +97,7 @@ export function ManageUserAccessBody({ bookId }: IManageUserAccessBodyProps) {
     <>
       <PageHeader
         title="Manage User Access"
-        subTitle={`Book - ${data.name}`}
+        subTitle={bookPageSubtitle(data.name)}
         sideComponent={<BookSettingsMenuButtonViaModel book={data} />}
       />
       <ContentWrapper>

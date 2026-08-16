@@ -24,6 +24,7 @@ import {
 } from "../../route-utils";
 import { BrowserTitle } from "../../../core/components/browser-title/browser-title.component";
 import { BookSettingsMenuButtonViaModel } from "../../components/book-settings-menu/book-settings-menu-button-via-model.component";
+import { bookPageSubtitle } from "../../utils/book-page-subtitle/book-page-subtitle";
 
 export function BookSettingLandingPage() {
   const { bookId } = useParams<{
@@ -49,7 +50,7 @@ export function BookSettingLandingPage() {
       <BrowserTitle title="Book Settings" />
       <PageHeader
         title="Manage Book"
-        subTitle={`Book - ${data.name}`}
+        subTitle={bookPageSubtitle(data.name)}
         sideComponent={<BookSettingsMenuButtonViaModel book={data} />}
       />
       <ContentWrapper>
