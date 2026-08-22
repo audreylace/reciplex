@@ -57,6 +57,11 @@ public class RecipeDbObject
     public required string ConcurrencyTag { get; set; } = "";
 
     /// <summary>
+    /// The version tag for searching
+    /// </summary>
+    public required string SearchVersionTag { get; set; } = "";
+
+    /// <summary>
     /// The book holding this recipe
     /// </summary>
     [DisallowNull]

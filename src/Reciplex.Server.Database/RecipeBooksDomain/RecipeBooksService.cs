@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Options;
 using NodaTime;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Abstractions.StringIdProvider;
@@ -17,7 +18,8 @@ internal sealed class RecipeBooksService(
     IClock clock,
     IConcurrencyTagProvider concurrencyTagProvider,
     ApplicationDbContext dbContext,
-    IStringIdProvider stringIdProvider
+    IStringIdProvider stringIdProvider,
+    IOptions<SearchExtractionOptions> searchExtractionOptions
 ) : IRecipeBooksService
 {
     /// <inheritdoc />
@@ -53,8 +55,11 @@ internal sealed class RecipeBooksService(
             Created = now,
             ConcurrencyTag = concurrencyTagProvider.NextTag(),
             OwnerFk = userId,
+            SearchVersionTag = concurrencyTagProvider.NextTag(),
         };
         dbContext.Add(bookDbObject);
+        PostChangeQueueEntry(now, bookDbObject, RecordChangeActionKind.Created);
+
         await dbContext.SaveChangesAsync(ct);
         return new SuccessResult<RecipeBookDao>(
             ToRecipeBookDao(bookDbObject, BookPermissionFlags.OwnerPermissions())
@@ -121,6 +126,8 @@ internal sealed class RecipeBooksService(
         long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
         MarkBookDirty(book, now);
         book.Deleted = now;
+        book.SearchVersionTag = concurrencyTagProvider.NextTag();
+        PostChangeQueueEntry(now, book, RecordChangeActionKind.Deleted);
         try
         {
             await dbContext.SaveChangesAsync(ct);
@@ -328,6 +335,8 @@ internal sealed class RecipeBooksService(
         MarkBookDirty(book);
         book.Name = updateArgs.Name;
         book.ShortDescription = updateArgs.ShortDescription;
+        book.SearchVersionTag = concurrencyTagProvider.NextTag();
+        PostChangeQueueEntry(book.LastModified, book, RecordChangeActionKind.Changed);
         try
         {
             await dbContext.SaveChangesAsync(ct);
@@ -966,5 +975,32 @@ internal sealed class RecipeBooksService(
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Posts a change queue entry
+    /// </summary>
+    /// <param name="now">the current now timestamp</param>
+    /// <param name="recipeDbObject">book db object</param>
+    /// <param name="recordChangeActionKind">the change action kind</param>
+    private void PostChangeQueueEntry(
+        long now,
+        RecipeBookDbObject bookDbObject,
+        RecordChangeActionKind recordChangeActionKind
+    )
+    {
+        if (searchExtractionOptions.Value.Enable)
+        {
+            RecordDbObjectChangeEntry changeEntry = new()
+            {
+                RecordKind = RecordChangeSourceKind.Book,
+                ChangeKind = recordChangeActionKind,
+                Created = now,
+                ObservedSearchVersionTag = bookDbObject.SearchVersionTag,
+                TargetRecipeBook = bookDbObject,
+            };
+            bookDbObject.ChangeQueueEntries.Add(changeEntry);
+            dbContext.Add(changeEntry);
+        }
     }
 }

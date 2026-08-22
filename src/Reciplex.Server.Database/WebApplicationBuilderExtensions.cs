@@ -65,6 +65,9 @@ public static partial class WebApplicationBuilderExtensions
         builder.Services.Configure<SqliteApplicationDbContextOptions>(
             builder.Configuration.GetSection(SqliteApplicationDbContextOptions.SectionPath)
         );
+        builder.Services.Configure<SearchExtractionOptions>(
+            builder.Configuration.GetSection(SearchExtractionOptions.SectionPath)
+        );
 
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlite(

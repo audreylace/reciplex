@@ -93,4 +93,10 @@ public class RecipeExternalSearchIndexStateDbObject
     /// </summary>
     [MaxLength(256)]
     public string? SearchExtractionHandle { get; set; }
+
+    /// <summary>
+    /// The search database handle. Use to locate the record in the search database.
+    /// </summary>
+    [MaxLength(256)]
+    public string? SearchDatabaseHandle { get; set; }
 }

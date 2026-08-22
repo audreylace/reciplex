@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using NodaTime;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Abstractions.StringIdProvider;
@@ -16,11 +17,13 @@ namespace Reciplex.Server.Database.RecipesDomain;
 /// <param name="clock">time provider</param>
 /// <param name="concurrencyTagProvider">concurrency token provider</param>
 /// <param name="stringIdProvider">string id marshaller</param>
+/// <param name="searchExtractionOptions">options for search extraction</param>
 internal sealed class RecipesService(
     ApplicationDbContext dbContext,
     IClock clock,
     IConcurrencyTagProvider concurrencyTagProvider,
-    IStringIdProvider stringIdProvider
+    IStringIdProvider stringIdProvider,
+    IOptions<SearchExtractionOptions> searchExtractionOptions
 ) : IRecipesService
 {
     /// <inheritdoc />
@@ -77,8 +80,12 @@ internal sealed class RecipesService(
             Created = now,
             LastModified = now,
             ConcurrencyTag = concurrencyTagProvider.NextTag(),
+            SearchVersionTag = concurrencyTagProvider.NextTag(),
         };
+
         dbContext.Add(recipeDbObject);
+        PostChangeQueueEntry(now, recipeDbObject, RecordChangeActionKind.Created);
+
         await dbContext.SaveChangesAsync(ct);
         return new SuccessResult<RecipeDao>(DbObjectToRecipeDao(recipeDbObject, true));
     }
@@ -144,6 +151,8 @@ internal sealed class RecipesService(
         recipe.LastModified = now;
         recipe.Deleted = now;
         recipe.ConcurrencyTag = concurrencyTagProvider.NextTag();
+        recipe.SearchVersionTag = concurrencyTagProvider.NextTag();
+        PostChangeQueueEntry(now, recipe, RecordChangeActionKind.Deleted);
         try
         {
             await dbContext.SaveChangesAsync(ct);
@@ -367,11 +376,14 @@ internal sealed class RecipesService(
             return new ConflictResult();
         }
 
+        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
         recipe.Name = args.Name;
         recipe.ShortDescription = args.ShortDescription;
         recipe.Details = args.Details;
-        recipe.LastModified = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        recipe.LastModified = now;
         recipe.ConcurrencyTag = concurrencyTagProvider.NextTag();
+        recipe.SearchVersionTag = concurrencyTagProvider.NextTag();
+        PostChangeQueueEntry(now, recipe, RecordChangeActionKind.Changed);
         try
         {
             await dbContext.SaveChangesAsync(ct);
@@ -397,4 +409,31 @@ internal sealed class RecipesService(
             Details = recipeDbObject.Details,
             MayEdit = mayEdit,
         };
+
+    /// <summary>
+    /// Posts a change queue entry
+    /// </summary>
+    /// <param name="now">the current now timestamp</param>
+    /// <param name="recipeDbObject">recipe db object</param>
+    /// <param name="recordChangeActionKind">the change action kind</param>
+    private void PostChangeQueueEntry(
+        long now,
+        RecipeDbObject recipeDbObject,
+        RecordChangeActionKind recordChangeActionKind
+    )
+    {
+        if (searchExtractionOptions.Value.Enable)
+        {
+            RecordDbObjectChangeEntry recordDbObjectChangeEntry = new()
+            {
+                RecordKind = RecordChangeSourceKind.Recipe,
+                ChangeKind = recordChangeActionKind,
+                Created = now,
+                ObservedSearchVersionTag = recipeDbObject.SearchVersionTag,
+                TargetRecipe = recipeDbObject,
+            };
+            recipeDbObject.ChangeQueueEntries.Add(recordDbObjectChangeEntry);
+            dbContext.Add(recordDbObjectChangeEntry);
+        }
+    }
 }

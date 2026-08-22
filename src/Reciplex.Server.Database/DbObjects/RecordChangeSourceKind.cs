@@ -1,10 +1,10 @@
 namespace Reciplex.Server.Database.DbObjects;
 
 /// <summary>
-/// record queue change kind
+/// record queue change source kind
 /// </summary>
 [Flags]
-public enum RecordChangeKind
+public enum RecordChangeSourceKind
 {
     /// <summary>
     /// change kind is a book

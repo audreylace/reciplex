@@ -26,7 +26,12 @@ public class RecordDbObjectChangeEntry
     /// <summary>
     /// The record kind
     /// </summary>
-    public RecordChangeKind RecordChangeKind { get; set; }
+    public RecordChangeSourceKind RecordKind { get; init; }
+
+    /// <summary>
+    /// The source event kind
+    /// </summary>
+    public required RecordChangeActionKind ChangeKind { get; init; }
 
     /// <summary>
     /// The recipe this entry targets
@@ -51,4 +56,9 @@ public class RecordDbObjectChangeEntry
     /// The FK of the targeted recipe book
     /// </summary>
     public long? TargetRecipeBookFk { get; set; }
+
+    /// <summary>
+    /// The observed concurrency tag of the record at queue creation.
+    /// </summary>
+    public required string ObservedSearchVersionTag { get; init; }
 }
