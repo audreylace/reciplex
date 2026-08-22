@@ -6,7 +6,12 @@ namespace Reciplex.Server.Database;
 /// <summary>
 /// EF Core database context for the Recipe Application
 /// </summary>
-public class ApplicationDbContext : DbContext
+/// <remarks>
+/// Constructor for ASP.NET
+/// </remarks>
+/// <param name="options">Application settings</param>
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+    : DbContext(options)
 {
     /// <summary>
     /// User DB objects
@@ -29,9 +34,17 @@ public class ApplicationDbContext : DbContext
     public DbSet<AdditionalBookUserAccessDbObject> RecipeBookAccessEntries { get; set; }
 
     /// <summary>
-    /// Constructor for ASP.NET
+    /// Set recipe book search index tracking records
     /// </summary>
-    /// <param name="options">Application settings</param>
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-        : base(options) { }
+    public DbSet<RecipeBookExternalSearchIndexStateDbObject> RecipeBookExternalSearchIndices { get; set; }
+
+    /// <summary>
+    /// Set of recipe search index tracking records
+    /// </summary>
+    public DbSet<RecipeExternalSearchIndexStateDbObject> RecipeExternalSearchIndices { get; set; }
+
+    /// <summary>
+    /// Set of record change entries
+    /// </summary>
+    public DbSet<RecordDbObjectChangeEntry> RecordChangeQueue { get; set; }
 }

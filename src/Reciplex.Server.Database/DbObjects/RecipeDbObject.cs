@@ -74,4 +74,14 @@ public class RecipeDbObject
     /// Populated if the recipe is deleted. The value is the time of deletion.
     /// </summary>
     public long? Deleted { get; set; }
+
+    /// <summary>
+    /// The external record tracking search export status. May be null if a search export has never occurred.
+    /// </summary>
+    public RecipeExternalSearchIndexStateDbObject? ExternalSearchIndexEntry { get; set; }
+
+    /// <summary>
+    /// Change queue entries for this recipe
+    /// </summary>
+    public ICollection<RecordDbObjectChangeEntry> ChangeQueueEntries { get; init; } = [];
 }

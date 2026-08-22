@@ -69,6 +69,12 @@ public class RecipeBookDbObject
     public ICollection<RecipeDbObject> Recipes { get; init; } = [];
 
     /// <summary>
+    /// Set of recipe search state entries
+    /// </summary>
+    public ICollection<RecipeExternalSearchIndexStateDbObject> RecipeSearchIndexEntries { get; init; } =
+    [];
+
+    /// <summary>
     /// Users with additional access
     /// </summary>
     public ICollection<AdditionalBookUserAccessDbObject> AdditionalUsers { get; init; } = [];
@@ -82,4 +88,14 @@ public class RecipeBookDbObject
     /// Populated if the recipe book is deleted. The value is the time of deletion.
     /// </summary>
     public long? Deleted { get; set; }
+
+    /// <summary>
+    /// The external record tracking search export status. May be null if a search export has never occurred.
+    /// </summary>
+    public RecipeBookExternalSearchIndexStateDbObject? ExternalSearchIndexEntry { get; set; }
+
+    /// <summary>
+    /// Change queue entries for this book
+    /// </summary>
+    public ICollection<RecordDbObjectChangeEntry> ChangeQueueEntries { get; init; } = [];
 }
