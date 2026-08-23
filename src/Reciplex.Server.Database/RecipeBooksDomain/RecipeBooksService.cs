@@ -4,12 +4,12 @@ using System.Security.Cryptography;
 using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.Extensions.Options;
 using NodaTime;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Abstractions.StringIdProvider;
 using Reciplex.Server.Database.DbObjects;
 using Reciplex.Server.Database.Results;
+using Reciplex.Server.Database.SearchExtractionWorker;
 using Reciplex.Server.Database.UsersDomain;
 
 namespace Reciplex.Server.Database.RecipeBooksDomain;
@@ -19,7 +19,7 @@ internal sealed class RecipeBooksService(
     IConcurrencyTagProvider concurrencyTagProvider,
     ApplicationDbContext dbContext,
     IStringIdProvider stringIdProvider,
-    IOptions<SearchExtractionOptions> searchExtractionOptions
+    IDurableRecordsToExtractForSearchQueue searchQueue
 ) : IRecipeBooksService
 {
     /// <inheritdoc />
@@ -58,9 +58,11 @@ internal sealed class RecipeBooksService(
             SearchVersionTag = concurrencyTagProvider.NextTag(),
         };
         dbContext.Add(bookDbObject);
-        PostChangeQueueEntry(now, bookDbObject, RecordChangeActionKind.Created);
 
         await dbContext.SaveChangesAsync(ct);
+
+        await PostChangeQueueEntryAsync(bookDbObject, RecordChangeActionKind.Created, ct);
+
         return new SuccessResult<RecipeBookDao>(
             ToRecipeBookDao(bookDbObject, BookPermissionFlags.OwnerPermissions())
         );
@@ -127,7 +129,7 @@ internal sealed class RecipeBooksService(
         MarkBookDirty(book, now);
         book.Deleted = now;
         book.SearchVersionTag = concurrencyTagProvider.NextTag();
-        PostChangeQueueEntry(now, book, RecordChangeActionKind.Deleted);
+
         try
         {
             await dbContext.SaveChangesAsync(ct);
@@ -136,6 +138,8 @@ internal sealed class RecipeBooksService(
         {
             return new ConflictResult();
         }
+
+        await PostChangeQueueEntryAsync(book, RecordChangeActionKind.Deleted, ct);
 
         return new EmptySuccessResult();
     }
@@ -336,7 +340,6 @@ internal sealed class RecipeBooksService(
         book.Name = updateArgs.Name;
         book.ShortDescription = updateArgs.ShortDescription;
         book.SearchVersionTag = concurrencyTagProvider.NextTag();
-        PostChangeQueueEntry(book.LastModified, book, RecordChangeActionKind.Changed);
         try
         {
             await dbContext.SaveChangesAsync(ct);
@@ -345,6 +348,8 @@ internal sealed class RecipeBooksService(
         {
             return new ConflictResult();
         }
+
+        await PostChangeQueueEntryAsync(book, RecordChangeActionKind.Changed, ct);
 
         return new SuccessResult<RecipeBookDao>(ToRecipeBookDao(book, queryResult.PermissionFlags));
     }
@@ -980,27 +985,27 @@ internal sealed class RecipeBooksService(
     /// <summary>
     /// Posts a change queue entry
     /// </summary>
-    /// <param name="now">the current now timestamp</param>
     /// <param name="recipeDbObject">book db object</param>
     /// <param name="recordChangeActionKind">the change action kind</param>
-    private void PostChangeQueueEntry(
-        long now,
+    /// <param name="ct">cancels the async operation</param>
+    private async Task PostChangeQueueEntryAsync(
         RecipeBookDbObject bookDbObject,
-        RecordChangeActionKind recordChangeActionKind
+        RecordChangeActionKind recordChangeActionKind,
+        CancellationToken ct
     )
     {
-        if (searchExtractionOptions.Value.Enable)
+        try
         {
-            RecordDbObjectChangeEntry changeEntry = new()
-            {
-                RecordKind = RecordChangeSourceKind.Book,
-                ChangeKind = recordChangeActionKind,
-                Created = now,
-                ObservedSearchVersionTag = bookDbObject.SearchVersionTag,
-                TargetRecipeBook = bookDbObject,
-            };
-            bookDbObject.ChangeQueueEntries.Add(changeEntry);
-            dbContext.Add(changeEntry);
+            await searchQueue.PostBookChangeQueueEntryAsync(
+                bookDbObject.Id,
+                bookDbObject.SearchVersionTag,
+                recordChangeActionKind,
+                ct
+            );
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // todo - log?
         }
     }
 }

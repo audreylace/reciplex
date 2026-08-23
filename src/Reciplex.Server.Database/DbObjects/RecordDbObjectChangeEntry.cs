@@ -24,6 +24,11 @@ public class RecordDbObjectChangeEntry
     public required long Created { get; init; }
 
     /// <summary>
+    /// The last time this entry was pulled into memory
+    /// </summary>
+    public required long Pulled { get; init; }
+
+    /// <summary>
     /// The record kind
     /// </summary>
     public RecordChangeSourceKind RecordKind { get; init; }
