@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import basicSsl from "@vitejs/plugin-basic-ssl";
+import { VitePWA } from "vite-plugin-pwa";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -13,6 +14,24 @@ export default defineConfig({
       domains: ["localhost"],
       /** optional, days before certificate expires */
       ttlDays: 30,
+    }),
+    VitePWA({
+      registerType: "autoUpdate",
+      workbox: {
+        // Precache build artifacts only
+        globPatterns: ["**/*.{js,css,html,svg,woff2}"],
+
+        // Exclude /api/ routes from being intercepted by the SPA fallback index.html
+        navigateFallbackDenylist: [/^\/api/],
+
+        runtimeCaching: [
+          {
+            // Explicitly force network-only for API requests (never check or save to cache)
+            urlPattern: /^\/api\/.*$/i,
+            handler: "NetworkOnly",
+          },
+        ],
+      },
     }),
   ],
   build: {},
