@@ -9,7 +9,7 @@ namespace Reciplex.Server.Database.DbObjects;
 /// </summary>
 [Index(nameof(TargetRecipeBookFk))]
 [Index(nameof(TargetRecipeFk))]
-[Index(nameof(Created), nameof(RecordChangeKind))]
+[Index(nameof(Created))]
 public class RecordDbObjectChangeEntry
 {
     /// <summary>
@@ -37,7 +37,7 @@ public class RecordDbObjectChangeEntry
     /// The recipe this entry targets
     /// </summary>
     [ForeignKey(nameof(TargetRecipeFk))]
-    [DeleteBehavior(DeleteBehavior.NoAction)]
+    [DeleteBehavior(DeleteBehavior.Restrict)]
     public RecipeDbObject? TargetRecipe { get; set; }
 
     /// <summary>
@@ -49,7 +49,7 @@ public class RecordDbObjectChangeEntry
     /// The recipe book this targets
     /// </summary>
     [ForeignKey(nameof(TargetRecipeBookFk))]
-    [DeleteBehavior(DeleteBehavior.NoAction)]
+    [DeleteBehavior(DeleteBehavior.Restrict)]
     public RecipeBookDbObject? TargetRecipeBook { get; set; }
 
     /// <summary>

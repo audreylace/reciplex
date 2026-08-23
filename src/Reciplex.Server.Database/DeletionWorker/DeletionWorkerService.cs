@@ -34,9 +34,13 @@ internal sealed class DeletionWorkerService(
                     (db, ct) =>
                         db
                             .Recipes.Where(r =>
-                                r.Deleted != null
-                                || r.RecipeBook!.Deleted != null
-                                || r.RecipeBook!.Owner!.Deleted != null
+                                (
+                                    r.Deleted != null
+                                    || r.RecipeBook!.Deleted != null
+                                    || r.RecipeBook!.Owner!.Deleted != null
+                                )
+                                && !r.ChangeQueueEntries.Any()
+                                && r.ExternalSearchIndexEntry == null
                             )
                             .Select(r => r.Id)
                             .Take(100)
@@ -79,6 +83,8 @@ internal sealed class DeletionWorkerService(
                                 (r.Deleted != null || r.Owner!.Deleted != null)
                                 && !r.Recipes.Any()
                                 && !r.AdditionalUsers.Any()
+                                && !r.ChangeQueueEntries.Any()
+                                && r.ExternalSearchIndexEntry == null
                             )
                             .Select(r => r.Id)
                             .Take(100)
