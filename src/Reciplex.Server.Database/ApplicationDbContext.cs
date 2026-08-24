@@ -29,6 +29,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<AdditionalBookUserAccessDbObject> RecipeBookAccessEntries { get; set; }
 
     /// <summary>
+    /// Recipe search extraction entries
+    /// </summary>
+    public DbSet<RecipeSearchExtractionStatusDbObject> RecipeSearchExtractionStatusEntries { get; set; }
+
+    /// <summary>
     /// Constructor for ASP.NET
     /// </summary>
     /// <param name="options">Application settings</param>
