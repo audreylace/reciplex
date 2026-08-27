@@ -11,4 +11,20 @@ public class TaskStatusResponse
 
     [JsonPropertyName("type")]
     public MeilisearchTaskKind Kind { get; init; }
+
+    public void EnsureSuccess()
+    {
+        if (Status == MeilisearchTaskStatus.Succeeded)
+        {
+            return;
+        }
+        throw new MeilisearchApiException("task does not represent success");
+    }
+
+    public bool IsTerminal()
+    {
+        return Status == MeilisearchTaskStatus.Succeeded
+            || Status == MeilisearchTaskStatus.Canceled
+            || Status == MeilisearchTaskStatus.Failed;
+    }
 }

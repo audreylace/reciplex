@@ -14,6 +14,11 @@ public interface IMeilisearchClient
     /// <param name="ct">async cancellation token</param>
     /// <returns>info about the index if found or null otherwise</returns>
     public Task<GetIndexResponse?> GetIndexAsync(string uid, CancellationToken ct);
+    public Task<CreateIndexResponse> CreateIndexAsync(
+        string uuid,
+        string primaryKey,
+        CancellationToken ct
+    );
 
     /// <summary>
     /// Adds or replaces documents in an index
@@ -22,13 +27,20 @@ public interface IMeilisearchClient
     /// <param name="indexUid">the index to operate on</param>
     /// <param name="documents">documents to create or replace</param>
     /// <param name="ct">async cancellation token</param>
-    /// <returns>the result or null if the index does not exist</returns>
-    public Task<UpsertDocumentsResponse?> UpsertDocumentsAsync<T>(
+    /// <returns>the result throwing on failure or if the index does not exist</returns>
+    public Task<UpsertDocumentsResponse> UpsertDocumentsAsync<T>(
         string indexUid,
         IEnumerable<T> documents,
         CancellationToken ct
     )
         where T : class;
 
-    public Task<TaskStatusResponse> GetTaskStatus(long taskId, CancellationToken ct);
+    public Task<TaskStatusResponse> GetTaskStatusAsync(long taskId, CancellationToken ct);
+
+    public Task<TaskStatusResponse> WaitForTaskCompletionAsync(long taskId, CancellationToken ct);
 }
+
+public class MeilisearchApiException(string message) : Exception(message) { }
+
+public class SearchIndexDoesNotExistException(string indexName)
+    : MeilisearchApiException($"index with name {indexName} does not exist") { }

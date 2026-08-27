@@ -61,4 +61,14 @@ public class RecipeSearchExtractionStatusDbObject
     /// The time the batch id was posted
     /// </summary>
     public long? TaskPostTime { get; set; }
+
+    /// <summary>
+    /// The number of attempts to extract this record
+    /// </summary>
+    public int ErrorCount { get; set; }
+
+    /// <summary>
+    /// The version observed at time of error
+    /// </summary>
+    public long? ErrorSearchVersion { get; set; }
 }

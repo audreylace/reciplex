@@ -7,6 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NodaTime;
+using Reciplex.Server.Database.DbObjects;
+using Reciplex.Server.Database.RecipesDomain;
 using Reciplex.Server.Meilisearch;
 using Reciplex.Server.Meilisearch.Responses;
 
@@ -28,7 +30,43 @@ internal sealed class SearchExporterService(
         throw new NotImplementedException();
     }
 
-    private async Task ExtractChangedRecords(CancellationToken ct)
+    /// <summary>
+    /// Creates an index with name <paramref name="indexName"/> and <paramref name="primaryKey"/>
+    /// if it does not already exist.
+    /// </summary>
+    /// <param name="searchClient">the http client for the remote search server</param>
+    /// <param name="indexName">the name of the index</param>
+    /// <param name="primaryKey">the primary key of the index</param>
+    /// <param name="ct">the async cancellation token</param>
+    private static async Task UpsertIndexAsync(
+        IMeilisearchClient searchClient,
+        string indexName,
+        string primaryKey,
+        CancellationToken ct
+    )
+    {
+        GetIndexResponse? index = await searchClient.GetIndexAsync(indexName, ct);
+        if (index is null)
+        {
+            CreateIndexResponse createResponse = await searchClient.CreateIndexAsync(
+                indexName,
+                primaryKey,
+                ct
+            );
+            TaskStatusResponse result = await searchClient.WaitForTaskCompletionAsync(
+                createResponse.TaskUid,
+                ct
+            );
+            result.EnsureSuccess();
+        }
+    }
+
+    /// <summary>
+    /// Opens a scope and exports changes to Meilisearch
+    /// </summary>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns></returns>
+    private async Task ExportChangedRecordsAsync(CancellationToken ct)
     {
         await using AsyncServiceScope scope = sp.CreateAsyncScope();
         await using ApplicationDbContext db =
@@ -36,25 +74,25 @@ internal sealed class SearchExporterService(
         IMeilisearchClient searchClient =
             scope.ServiceProvider.GetRequiredService<IMeilisearchClient>();
 
-        // todo - should we handle orphaned entries - No, probably not. The search
-        //        engine will just overwrite the data again.
-        var entries = await db
+        List<RecipeDatabaseExtractionRow> entries = await db
             .RecipeSearchExtractionStatusEntries.AsNoTracking()
             .Where(e =>
                 (e.SearchVersion == null || e.Recipe!.SearchVersion != e.SearchVersion)
                 && e.Recipe!.Deleted == null
                 && e.RecipeBook!.Deleted == null
                 && e.RecipeBook!.Owner!.Deleted == null
+                && (e.ErrorCount < 3 || e.ErrorSearchVersion != e.Recipe.SearchVersion)
             )
-            .Select(e => new
-            {
+            .Select(e => new RecipeDatabaseExtractionRow(
+                e.RecipeFk,
                 e.Id,
                 e.RecipeBookFk,
-                e.RecipeFk,
                 e.Recipe!.Name,
-                e.Recipe!.ShortDescription,
-                e.Recipe!.SearchVersion,
-            })
+                e.Recipe.ShortDescription,
+                e.Recipe.SearchVersion,
+                e.ErrorCount,
+                e.ErrorSearchVersion
+            ))
             .Take(20)
             .ToListAsync(ct);
 
@@ -63,34 +101,71 @@ internal sealed class SearchExporterService(
             return;
         }
 
-        GetIndexResponse? index = await searchClient.GetIndexAsync(RecipesSearchIndex, ct);
-        if (index is null)
+        try
         {
-            // todo - ? it should have been made ??? should we throw IDK!
+            await ExportRecordBatchAsync(db, searchClient, entries, ct);
             return;
         }
+        catch (Exception)
+        {
+            // todo - log
+        }
 
-        // todo - deal with exceptions
-        var result = await searchClient.UpsertDocumentsAsync(
+        foreach (RecipeDatabaseExtractionRow entry in entries)
+        {
+            try
+            {
+                await ExportRecordBatchAsync(db, searchClient, [entry], ct);
+            }
+            catch (Exception)
+            {
+                // todo - log
+                try
+                {
+                    await db
+                        .RecipeSearchExtractionStatusEntries.Where(e => e.Id == entry.SearchEntryId)
+                        .ExecuteUpdateAsync(
+                            setter =>
+                                setter
+                                    .SetProperty(
+                                        e => e.ErrorCount,
+                                        e =>
+                                            e.ErrorSearchVersion == entry.SearchVersion
+                                                ? e.ErrorCount + 1
+                                                : 1
+                                    )
+                                    .SetProperty(e => e.ErrorSearchVersion, entry.SearchVersion),
+                            ct
+                        );
+                }
+                catch (Exception)
+                {
+                    // todo - log
+                }
+            }
+        }
+    }
+
+    private async Task ExportRecordBatchAsync(
+        ApplicationDbContext db,
+        IMeilisearchClient searchClient,
+        List<RecipeDatabaseExtractionRow> entries,
+        CancellationToken ct
+    )
+    {
+        UpsertDocumentsResponse result = await searchClient.UpsertDocumentsAsync(
             RecipesSearchIndex,
             entries.Select(e => new RecipeSearchIndexEntry()
             {
-                Id = MakeRecipeStringKey(e.RecipeFk),
-                Name = e.Name,
-                ShortDescription = e.ShortDescription,
+                Id = MakeRecipeStringKey(e.RecipeId),
+                Name = e.RecipeName,
+                ShortDescription = e.RecipeDescription,
                 BookId = MakeRecipeBookStringKey(e.RecipeBookFk),
             }),
             ct
         );
 
-        if (result is null)
-        {
-            // todo - ? it should have been made ??? should we throw IDK!
-            return;
-        }
-
-        // todo - database errors? How we deal with that?
-        List<long> searchIndexEntries = [.. entries.Select(e => e.Id)];
+        List<long> searchIndexEntries = [.. entries.Select(e => e.SearchEntryId)];
         long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
         await db
             .RecipeSearchExtractionStatusEntries.Where(e => searchIndexEntries.Contains(e.Id))
@@ -102,58 +177,152 @@ internal sealed class SearchExporterService(
                 ct
             );
 
-        while (!ct.IsCancellationRequested)
+        TaskStatusResponse taskStatus = await searchClient.WaitForTaskCompletionAsync(
+            result.TaskUid,
+            ct
+        );
+
+        if (taskStatus.Status == MeilisearchTaskStatus.Succeeded)
         {
-            TaskStatusResponse taskStatus = await searchClient.GetTaskStatus(result.TaskUid, ct);
-            if (taskStatus.Status == MeilisearchTaskStatus.Succeeded)
+            foreach (var entry in entries)
             {
-                foreach (var entry in entries)
-                {
-                    // todo - database errors? How we deal with that?
-                    await db
-                        .RecipeSearchExtractionStatusEntries.Where(e =>
-                            e.TaskUid == result.TaskUid && e.Id == entry.Id
-                        )
-                        .ExecuteUpdateAsync(
-                            setter =>
-                                setter
-                                    .SetProperty(e => e.TaskUid, (long?)null)
-                                    .SetProperty(e => e.TaskPostTime, (long?)null)
-                                    .SetProperty(e => e.SearchVersion, entry.SearchVersion),
-                            ct
-                        );
-                }
-                break;
-            }
-            if (
-                taskStatus.Status == MeilisearchTaskStatus.Failed
-                || taskStatus.Status == MeilisearchTaskStatus.Canceled
-            )
-            {
-                // todo - database errors? How we deal with that?
                 await db
-                    .RecipeSearchExtractionStatusEntries.Where(e => e.TaskUid == result.TaskUid)
+                    .RecipeSearchExtractionStatusEntries.Where(e =>
+                        e.TaskUid == result.TaskUid && e.Id == entry.SearchEntryId
+                    )
                     .ExecuteUpdateAsync(
                         setter =>
                             setter
                                 .SetProperty(e => e.TaskUid, (long?)null)
-                                .SetProperty(e => e.TaskPostTime, (long?)null),
+                                .SetProperty(e => e.TaskPostTime, (long?)null)
+                                .SetProperty(e => e.SearchVersion, entry.SearchVersion)
+                                .SetProperty(e => e.ErrorCount, 0)
+                                .SetProperty(e => e.ErrorSearchVersion, (long?)null),
                         ct
                     );
-                break; // todo - ? can we inspect the response to figure out which document is bad?
             }
-
-            await Task.Delay(TimeSpan.FromMilliseconds(100), ct); // circuit breaker or something?
+        }
+        else if (
+            taskStatus.Status == MeilisearchTaskStatus.Failed
+            || taskStatus.Status == MeilisearchTaskStatus.Canceled
+        )
+        {
+            await db
+                .RecipeSearchExtractionStatusEntries.Where(e => e.TaskUid == result.TaskUid)
+                .ExecuteUpdateAsync(
+                    setter =>
+                        setter
+                            .SetProperty(e => e.TaskUid, (long?)null)
+                            .SetProperty(e => e.TaskPostTime, (long?)null),
+                    ct
+                );
+            taskStatus.EnsureSuccess();
+        }
+        else
+        {
+            throw new NotImplementedException(
+                $"task with id {taskStatus.Uid} has an unexpected status : {taskStatus.Status}"
+            );
         }
     }
 
-    private static string MakeRecipeStringKey(long id)
+    /// <summary>
+    /// Creates empty search entries for new records but does not extract them.
+    /// </summary>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>number of new entries created</returns>
+    /// <remarks>
+    /// We use the <see cref="RecipeSearchExtractionStatusDbObject" />
+    /// object to know if there could have been an extraction.
+    /// If no entry exists for a record, then we know it
+    /// was never extracted. If a record happens to exist,
+    /// then we know we need to check first before deleting.
+    /// </remarks>
+    private async Task<long> PopulateEmptySearchEntries(CancellationToken ct)
     {
-        return $"recipe{id.ToString("D19", CultureInfo.InvariantCulture)}";
+        await using AsyncServiceScope scope = sp.CreateAsyncScope();
+        await using ApplicationDbContext db =
+            scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        IMeilisearchClient searchClient =
+            scope.ServiceProvider.GetRequiredService<IMeilisearchClient>();
+
+        var entries = await db
+            .Recipes.AsNoTracking()
+            .DeleteFieldNull()
+            .Where(r =>
+                r.RecipeSearchExtraction == null
+                && r.RecipeBook!.Deleted == null
+                && r.RecipeBook!.Owner!.Deleted == null
+            )
+            .Select(r => new
+            {
+                r.Id,
+                r.RecipeBookFk,
+                r.Name,
+                r.ShortDescription,
+                r.SearchVersion,
+            })
+            .Take(20)
+            .ToListAsync(ct);
+
+        if (entries.Count < 1)
+        {
+            return 0;
+        }
+
+        foreach (var entry in entries)
+        {
+            RecipeSearchExtractionStatusDbObject recipeSearchIndexEntry = new()
+            {
+                SearchVersion = null,
+                RecipeFk = entry.Id,
+                RecipeBookFk = entry.RecipeBookFk,
+            };
+            db.Add(recipeSearchIndexEntry);
+        }
+
+        await db.SaveChangesAsync(ct);
+        return entries.Count;
     }
 
+    /// <summary>
+    /// Creates a recipe key for search
+    /// </summary>
+    /// <param name="id">the id to convert</param>
+    /// <returns>the recipe key as a string</returns>
+    private static string MakeRecipeStringKey(long id)
+    {
+        return $"recipe{PaddedLong(id)}";
+    }
+
+    /// <summary>
+    /// Creates a recipe book key for search
+    /// </summary>
+    /// <param name="id">the id to convert</param>
+    /// <returns>the recipe book key as a string</returns>
     private static string MakeRecipeBookStringKey(long id)
     {
-        return $"recipeBook{id.ToString("D19", CultureInfo.InvariantCulture)}";
+        return $"recipeBook{PaddedLong(id)}";
+    }
+
+    /// <summary>
+    /// Creates a string padded to 19 places
+    /// </summary>
+    /// <param name="id">the long to pad</param>
+    /// <returns>the padded long as a string</returns>
+    private static string PaddedLong(long id)
+    {
+        return id.ToString("D19", CultureInfo.InvariantCulture);
     }
 }
+
+record class RecipeDatabaseExtractionRow(
+    long RecipeId,
+    long SearchEntryId,
+    long RecipeBookFk,
+    string RecipeName,
+    string RecipeDescription,
+    long SearchVersion,
+    long ErrorCount,
+    long? ErrorVersion
+);
