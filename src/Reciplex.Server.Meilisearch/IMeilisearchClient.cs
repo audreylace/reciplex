@@ -35,6 +35,19 @@ public interface IMeilisearchClient
     )
         where T : class;
 
+    /// <summary>
+    /// Post a batch operation to delete a set of documents
+    /// </summary>
+    /// <param name="indexUid">the index to operate on</param>
+    /// <param name="documentIds">documents to create or replace</param>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>the result throwing on failure or if the index does not exist</returns>
+    public Task<DeleteDocumentsResponse> DeleteDocumentsAsync(
+        string indexUid,
+        IEnumerable<string> documentIds,
+        CancellationToken ct
+    );
+
     public Task<TaskStatusResponse> GetTaskStatusAsync(long taskId, CancellationToken ct);
 
     public Task<TaskStatusResponse> WaitForTaskCompletionAsync(long taskId, CancellationToken ct);

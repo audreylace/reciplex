@@ -1,6 +1,6 @@
 namespace Reciplex.Server.Meilisearch.Responses;
 
-public class UpsertDocumentsResponse
+public class DeleteDocumentsResponse
 {
     public required long TaskUid { get; init; }
     public required MeilisearchTaskStatus Status { get; init; }

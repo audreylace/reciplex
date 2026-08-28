@@ -71,4 +71,14 @@ public class RecipeSearchExtractionStatusDbObject
     /// The version observed at time of error
     /// </summary>
     public long? ErrorSearchVersion { get; set; }
+
+    /// <summary>
+    /// The next time to try deleting
+    /// </summary>
+    public long? NextDeletionTryTime { get; set; }
+
+    /// <summary>
+    /// The deletion try counter for back off
+    /// </summary>
+    public long? DeletionTryCounter { get; set; }
 }

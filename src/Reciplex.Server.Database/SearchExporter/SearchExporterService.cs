@@ -1,7 +1,4 @@
-using System.Diagnostics;
 using System.Globalization;
-using System.Text.Json.Serialization;
-using Meilisearch;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -9,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using NodaTime;
 using Reciplex.Server.Database.DbObjects;
 using Reciplex.Server.Database.RecipesDomain;
+using Reciplex.Server.Database.Strategies;
 using Reciplex.Server.Meilisearch;
 using Reciplex.Server.Meilisearch.Responses;
 
@@ -17,6 +15,7 @@ namespace Reciplex.Server.Database.SearchExporter;
 internal sealed class SearchExporterService(
     IServiceProvider sp,
     ILogger<SearchExporterService> logger,
+    RepeatedDatabaseActionStrategy repeatedDatabaseActionStrategy,
     IClock clock
 ) : BackgroundService
 {
@@ -27,6 +26,48 @@ internal sealed class SearchExporterService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        bool anyWorkDone = false;
+        anyWorkDone |= await repeatedDatabaseActionStrategy.RunUntilCompletionWithDelay(
+            DeletionDatabaseActionStrategy.CollectAndDelete(
+                (db, ct) =>
+                    db
+                        .RecipeSearchExtractionStatusEntries.Where(e =>
+                            (
+                                e.Recipe!.Deleted != null
+                                || e.RecipeBook!.Deleted != null
+                                || e.RecipeBook!.Owner!.Deleted != null
+                            )
+                            && e.SearchVersion == null
+                            && e.TaskUid == null
+                        )
+                        .Select(e => e.Id)
+                        .Take(100)
+                        .ToListAsync(ct),
+                (db, ids, ct) =>
+                    db
+                        .RecipeSearchExtractionStatusEntries.Where(e =>
+                            ids.Contains(e.Id) && e.SearchVersion == null && e.TaskUid == null
+                        )
+                        .ExecuteDeleteAsync(ct),
+                (
+                    collectTime,
+                    deleteTime,
+                    rowCount
+                ) => { /* todo */
+                }
+            ),
+            (
+                success,
+                time
+            ) => { /* todo */
+            },
+            (
+                ex
+            ) => { /* todo */
+            },
+            stoppingToken
+        );
+
         throw new NotImplementedException();
     }
 
@@ -285,6 +326,163 @@ internal sealed class SearchExporterService(
         return entries.Count;
     }
 
+    private async Task DeleteRecordBatchAsync(
+        ApplicationDbContext db,
+        IMeilisearchClient searchClient,
+        List<RecipeDatabaseDeletionRow> entries,
+        CancellationToken ct
+    )
+    {
+        DeleteDocumentsResponse result = await searchClient.DeleteDocumentsAsync(
+            RecipesSearchIndex,
+            entries.Select(e => MakeRecipeStringKey(e.RecipeId)),
+            ct
+        );
+
+        List<long> searchIndexEntries = [.. entries.Select(e => e.SearchEntryId)];
+        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        await db
+            .RecipeSearchExtractionStatusEntries.Where(e => searchIndexEntries.Contains(e.Id))
+            .ExecuteUpdateAsync(
+                setter =>
+                    setter
+                        .SetProperty(e => e.TaskUid, result.TaskUid)
+                        .SetProperty(e => e.TaskPostTime, now),
+                ct
+            );
+
+        TaskStatusResponse taskStatus = await searchClient.WaitForTaskCompletionAsync(
+            result.TaskUid,
+            ct
+        );
+
+        if (taskStatus.Status == MeilisearchTaskStatus.Succeeded)
+        {
+            foreach (var entry in entries)
+            {
+                await db
+                    .RecipeSearchExtractionStatusEntries.Where(e =>
+                        e.TaskUid == result.TaskUid && e.Id == entry.SearchEntryId
+                    )
+                    .ExecuteDeleteAsync(ct);
+            }
+        }
+        else if (
+            taskStatus.Status == MeilisearchTaskStatus.Failed
+            || taskStatus.Status == MeilisearchTaskStatus.Canceled
+        )
+        {
+            await db
+                .RecipeSearchExtractionStatusEntries.Where(e => e.TaskUid == result.TaskUid)
+                .ExecuteUpdateAsync(
+                    setter =>
+                        setter
+                            .SetProperty(e => e.TaskUid, (long?)null)
+                            .SetProperty(e => e.TaskPostTime, (long?)null),
+                    ct
+                );
+            taskStatus.EnsureSuccess();
+        }
+        else
+        {
+            throw new NotImplementedException(
+                $"task with id {taskStatus.Uid} has an unexpected status : {taskStatus.Status}"
+            );
+        }
+    }
+
+    private async Task DeleteRecordsAsync(CancellationToken ct)
+    {
+        await using AsyncServiceScope scope = sp.CreateAsyncScope();
+        await using ApplicationDbContext db =
+            scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        IMeilisearchClient searchClient =
+            scope.ServiceProvider.GetRequiredService<IMeilisearchClient>();
+        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+
+        var entries = await db
+            .RecipeSearchExtractionStatusEntries.AsNoTracking()
+            .Where(e =>
+                (
+                    e.Recipe!.Deleted != null
+                    || e.RecipeBook!.Deleted != null
+                    || e.RecipeBook!.Owner!.Deleted != null
+                )
+                && (e.SearchVersion != null || e.TaskUid != null)
+                && (e.NextDeletionTryTime == null || e.NextDeletionTryTime < now)
+            )
+            .Select(e => new RecipeDatabaseDeletionRow(
+                e.RecipeFk,
+                e.Id,
+                e.NextDeletionTryTime,
+                e.DeletionTryCounter
+            ))
+            .Take(20)
+            .ToListAsync(ct);
+
+        if (entries.Count < 1)
+        {
+            return;
+        }
+
+        try
+        {
+            await DeleteRecordBatchAsync(db, searchClient, entries, ct);
+            return;
+        }
+        catch (Exception)
+        {
+            // todo - log
+        }
+
+        foreach (var entry in entries)
+        {
+            try
+            {
+                await DeleteRecordBatchAsync(db, searchClient, [entry], ct);
+            }
+            catch (Exception)
+            {
+                // todo - log
+                try
+                {
+                    long currentCount = entry.DeletionTryCounter ?? 0;
+                    long newTryCounter = currentCount + 1;
+                    if (newTryCounter >= 16)
+                    {
+                        await db
+                            .RecipeSearchExtractionStatusEntries.Where(e =>
+                                e.Id == entry.SearchEntryId
+                            )
+                            .ExecuteDeleteAsync(ct);
+                    }
+                    else
+                    {
+                        long nextTryTime = clock
+                            .GetCurrentInstant()
+                            .Plus(Duration.FromMinutes(Math.Min(2048, Math.Pow(2, currentCount))))
+                            .ToUnixTimeSeconds();
+                        await db
+                            .RecipeSearchExtractionStatusEntries.Where(e =>
+                                e.Id == entry.SearchEntryId
+                            )
+                            .ExecuteUpdateAsync(
+                                setter =>
+                                    setter
+                                        .SetProperty(e => e.DeletionTryCounter, e => newTryCounter)
+                                        .SetProperty(e => e.NextDeletionTryTime, nextTryTime),
+                                ct
+                            );
+                    }
+                }
+                catch (Exception)
+                {
+                    // todo - log
+                }
+            }
+        }
+    }
+
     /// <summary>
     /// Creates a recipe key for search
     /// </summary>
@@ -315,14 +513,3 @@ internal sealed class SearchExporterService(
         return id.ToString("D19", CultureInfo.InvariantCulture);
     }
 }
-
-record class RecipeDatabaseExtractionRow(
-    long RecipeId,
-    long SearchEntryId,
-    long RecipeBookFk,
-    string RecipeName,
-    string RecipeDescription,
-    long SearchVersion,
-    long ErrorCount,
-    long? ErrorVersion
-);
