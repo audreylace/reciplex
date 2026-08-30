@@ -89,16 +89,14 @@ internal sealed class SearchExporterService(
         GetIndexResponse? index = await searchClient.GetIndexAsync(indexName, ct);
         if (index is null)
         {
-            CreateIndexResponse createResponse = await searchClient.CreateIndexAsync(
+            MeilisearchTaskResponse createResponse = await searchClient.CreateIndexAsync(
                 indexName,
                 primaryKey,
                 ct
             );
-            TaskStatusResponse result = await searchClient.WaitForTaskCompletionAsync(
-                createResponse.TaskUid,
-                ct
+            TaskStatusResponse.ThrowIfNotSuccess(
+                await searchClient.WaitForTaskCompletionAsync(createResponse.TaskUid, ct)
             );
-            result.EnsureSuccess();
         }
     }
 
@@ -194,7 +192,7 @@ internal sealed class SearchExporterService(
         CancellationToken ct
     )
     {
-        UpsertDocumentsResponse result = await searchClient.UpsertDocumentsAsync(
+        MeilisearchTaskResponse result = await searchClient.UpsertDocumentsAsync(
             RecipesSearchIndex,
             entries.Select(e => new RecipeSearchIndexEntry()
             {
@@ -218,35 +216,12 @@ internal sealed class SearchExporterService(
                 ct
             );
 
-        TaskStatusResponse taskStatus = await searchClient.WaitForTaskCompletionAsync(
+        TaskStatusResponse? taskStatus = await searchClient.WaitForTaskCompletionAsync(
             result.TaskUid,
             ct
         );
 
-        if (taskStatus.Status == MeilisearchTaskStatus.Succeeded)
-        {
-            foreach (var entry in entries)
-            {
-                await db
-                    .RecipeSearchExtractionStatusEntries.Where(e =>
-                        e.TaskUid == result.TaskUid && e.Id == entry.SearchEntryId
-                    )
-                    .ExecuteUpdateAsync(
-                        setter =>
-                            setter
-                                .SetProperty(e => e.TaskUid, (long?)null)
-                                .SetProperty(e => e.TaskPostTime, (long?)null)
-                                .SetProperty(e => e.SearchVersion, entry.SearchVersion)
-                                .SetProperty(e => e.ErrorCount, 0)
-                                .SetProperty(e => e.ErrorSearchVersion, (long?)null),
-                        ct
-                    );
-            }
-        }
-        else if (
-            taskStatus.Status == MeilisearchTaskStatus.Failed
-            || taskStatus.Status == MeilisearchTaskStatus.Canceled
-        )
+        if (taskStatus?.Status != MeilisearchTaskStatus.Succeeded)
         {
             await db
                 .RecipeSearchExtractionStatusEntries.Where(e => e.TaskUid == result.TaskUid)
@@ -257,13 +232,28 @@ internal sealed class SearchExporterService(
                             .SetProperty(e => e.TaskPostTime, (long?)null),
                     ct
                 );
-            taskStatus.EnsureSuccess();
-        }
-        else
-        {
+            TaskStatusResponse.ThrowIfNotSuccess(taskStatus);
             throw new NotImplementedException(
-                $"task with id {taskStatus.Uid} has an unexpected status : {taskStatus.Status}"
+                $"task with id {taskStatus?.Uid} has an unexpected status : {taskStatus?.Status}"
             );
+        }
+
+        foreach (var entry in entries)
+        {
+            await db
+                .RecipeSearchExtractionStatusEntries.Where(e =>
+                    e.TaskUid == result.TaskUid && e.Id == entry.SearchEntryId
+                )
+                .ExecuteUpdateAsync(
+                    setter =>
+                        setter
+                            .SetProperty(e => e.TaskUid, (long?)null)
+                            .SetProperty(e => e.TaskPostTime, (long?)null)
+                            .SetProperty(e => e.SearchVersion, entry.SearchVersion)
+                            .SetProperty(e => e.ErrorCount, 0)
+                            .SetProperty(e => e.ErrorSearchVersion, (long?)null),
+                    ct
+                );
         }
     }
 
@@ -333,7 +323,7 @@ internal sealed class SearchExporterService(
         CancellationToken ct
     )
     {
-        DeleteDocumentsResponse result = await searchClient.DeleteDocumentsAsync(
+        MeilisearchTaskResponse result = await searchClient.DeleteDocumentsAsync(
             RecipesSearchIndex,
             entries.Select(e => MakeRecipeStringKey(e.RecipeId)),
             ct
@@ -351,26 +341,12 @@ internal sealed class SearchExporterService(
                 ct
             );
 
-        TaskStatusResponse taskStatus = await searchClient.WaitForTaskCompletionAsync(
+        TaskStatusResponse? taskStatus = await searchClient.WaitForTaskCompletionAsync(
             result.TaskUid,
             ct
         );
 
-        if (taskStatus.Status == MeilisearchTaskStatus.Succeeded)
-        {
-            foreach (var entry in entries)
-            {
-                await db
-                    .RecipeSearchExtractionStatusEntries.Where(e =>
-                        e.TaskUid == result.TaskUid && e.Id == entry.SearchEntryId
-                    )
-                    .ExecuteDeleteAsync(ct);
-            }
-        }
-        else if (
-            taskStatus.Status == MeilisearchTaskStatus.Failed
-            || taskStatus.Status == MeilisearchTaskStatus.Canceled
-        )
+        if (taskStatus?.Status != MeilisearchTaskStatus.Succeeded)
         {
             await db
                 .RecipeSearchExtractionStatusEntries.Where(e => e.TaskUid == result.TaskUid)
@@ -381,13 +357,20 @@ internal sealed class SearchExporterService(
                             .SetProperty(e => e.TaskPostTime, (long?)null),
                     ct
                 );
-            taskStatus.EnsureSuccess();
-        }
-        else
-        {
+
+            TaskStatusResponse.ThrowIfNotSuccess(taskStatus);
             throw new NotImplementedException(
-                $"task with id {taskStatus.Uid} has an unexpected status : {taskStatus.Status}"
+                $"task with id {taskStatus?.Uid} has an unexpected status : {taskStatus?.Status}"
             );
+        }
+
+        foreach (var entry in entries)
+        {
+            await db
+                .RecipeSearchExtractionStatusEntries.Where(e =>
+                    e.TaskUid == result.TaskUid && e.Id == entry.SearchEntryId
+                )
+                .ExecuteDeleteAsync(ct);
         }
     }
 

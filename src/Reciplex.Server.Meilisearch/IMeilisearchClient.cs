@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Reciplex.Server.Meilisearch.Responses;
 
 namespace Reciplex.Server.Meilisearch;
@@ -14,7 +15,7 @@ public interface IMeilisearchClient
     /// <param name="ct">async cancellation token</param>
     /// <returns>info about the index if found or null otherwise</returns>
     public Task<GetIndexResponse?> GetIndexAsync(string uid, CancellationToken ct);
-    public Task<CreateIndexResponse> CreateIndexAsync(
+    public Task<MeilisearchTaskResponse> CreateIndexAsync(
         string uuid,
         string primaryKey,
         CancellationToken ct
@@ -28,7 +29,7 @@ public interface IMeilisearchClient
     /// <param name="documents">documents to create or replace</param>
     /// <param name="ct">async cancellation token</param>
     /// <returns>the result throwing on failure or if the index does not exist</returns>
-    public Task<UpsertDocumentsResponse> UpsertDocumentsAsync<T>(
+    public Task<MeilisearchTaskResponse> UpsertDocumentsAsync<T>(
         string indexUid,
         IEnumerable<T> documents,
         CancellationToken ct
@@ -42,18 +43,17 @@ public interface IMeilisearchClient
     /// <param name="documentIds">documents to create or replace</param>
     /// <param name="ct">async cancellation token</param>
     /// <returns>the result throwing on failure or if the index does not exist</returns>
-    public Task<DeleteDocumentsResponse> DeleteDocumentsAsync(
+    public Task<MeilisearchTaskResponse> DeleteDocumentsAsync(
         string indexUid,
         IEnumerable<string> documentIds,
         CancellationToken ct
     );
 
-    public Task<TaskStatusResponse> GetTaskStatusAsync(long taskId, CancellationToken ct);
+    public Task<TaskStatusResponse?> GetTaskStatusAsync(long taskId, CancellationToken ct);
 
-    public Task<TaskStatusResponse> WaitForTaskCompletionAsync(long taskId, CancellationToken ct);
+    public Task<TaskStatusResponse?> WaitForTaskCompletionAsync(
+        long taskId,
+        CancellationToken ct,
+        TimeSpan? pollFrequency = null
+    );
 }
-
-public class MeilisearchApiException(string message) : Exception(message) { }
-
-public class SearchIndexDoesNotExistException(string indexName)
-    : MeilisearchApiException($"index with name {indexName} does not exist") { }
