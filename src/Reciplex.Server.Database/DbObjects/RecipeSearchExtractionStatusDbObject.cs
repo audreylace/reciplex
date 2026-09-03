@@ -8,35 +8,13 @@ namespace Reciplex.Server.Database.DbObjects;
 /// <summary>
 /// Search extraction record
 /// </summary>
-[Index(nameof(RecipeFk))]
 [Index(nameof(RecipeFk), nameof(SearchVersion))]
-[Index(nameof(TaskUid))]
-public class RecipeSearchExtractionStatusDbObject
+public class RecipeSearchWorkerStateDbObject
 {
-    /// <summary>
-    /// Primary key
-    /// </summary>
-    [Key]
-    public long Id { get; set; }
-
     /// <summary>
     /// The extracted search version
     /// </summary>
     public required long? SearchVersion { get; set; }
-
-    /// <summary>
-    /// The book owning the recipe
-    /// </summary>
-    [DisallowNull]
-    [ForeignKey(nameof(RecipeBookFk))]
-    [Required]
-    [DeleteBehavior(DeleteBehavior.Restrict)]
-    public RecipeBookDbObject? RecipeBook { get; set; }
-
-    /// <summary>
-    /// Database FK to <see cref="RecipeBookDbObject"/> for property <see cref="RecipeBook"/>
-    /// </summary>
-    public long RecipeBookFk { get; init; }
 
     /// <summary>
     /// The recipe
@@ -45,6 +23,8 @@ public class RecipeSearchExtractionStatusDbObject
     [ForeignKey(nameof(RecipeFk))]
     [Required]
     [DeleteBehavior(DeleteBehavior.Restrict)]
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
     public RecipeDbObject? Recipe { get; set; }
 
     /// <summary>
@@ -53,32 +33,28 @@ public class RecipeSearchExtractionStatusDbObject
     public long RecipeFk { get; init; }
 
     /// <summary>
-    /// The batch id in the external search system
+    /// Sole lock mechanism. Null = free to claim.
     /// </summary>
-    public long? TaskUid { get; set; }
+    public long? LeaseExpireTime { get; set; }
 
     /// <summary>
-    /// The time the batch id was posted
-    /// </summary>
-    public long? TaskPostTime { get; set; }
-
-    /// <summary>
-    /// The number of attempts to extract this record
+    /// The number of attempts against this record
     /// </summary>
     public int ErrorCount { get; set; }
 
     /// <summary>
     /// The version observed at time of error
     /// </summary>
-    public long? ErrorSearchVersion { get; set; }
+    public long? AttemptedExtractSearchVersion { get; set; }
 
     /// <summary>
-    /// The next time to try deleting
+    /// The next time retry
     /// </summary>
-    public long? NextDeletionTryTime { get; set; }
+    public long? NextRetryTime { get; set; }
 
     /// <summary>
-    /// The deletion try counter for back off
+    /// The concurrency tag
     /// </summary>
-    public long? DeletionTryCounter { get; set; }
+    [ConcurrencyCheck]
+    public required string ConcurrencyTag { get; set; } = "";
 }

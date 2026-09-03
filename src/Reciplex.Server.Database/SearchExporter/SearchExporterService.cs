@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NodaTime;
+using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Database.DbObjects;
 using Reciplex.Server.Database.RecipesDomain;
 using Reciplex.Server.Database.Strategies;
@@ -16,7 +17,8 @@ internal sealed class SearchExporterService(
     IServiceProvider sp,
     ILogger<SearchExporterService> logger,
     RepeatedDatabaseActionStrategy repeatedDatabaseActionStrategy,
-    IClock clock
+    IClock clock,
+    IConcurrencyTagProvider concurrencyTagProvider
 ) : BackgroundService
 {
     /// <summary>
@@ -28,6 +30,21 @@ internal sealed class SearchExporterService(
     /// The primary key property name
     /// </summary>
     private const string PrimaryKeyPropertyName = "id";
+
+    /// <summary>
+    /// Max time in the future a lease may be set to expire to before it is ignored
+    /// </summary>
+    private const int HourInSeconds = 60 * 60; // 1 hour
+
+    /// <summary>
+    /// Max time a lease should be held.
+    /// </summary>
+    private const int LeaseTime = 5 * 60; // 5 minutes
+
+    /// <summary>
+    /// Max times to attempt extraction or deletion
+    /// </summary>
+    private const int MaxBatchRetries = 17;
 
     /// <summary>
     /// If the recipe index exists
@@ -122,7 +139,7 @@ internal sealed class SearchExporterService(
                 {
                     logger.Error_IndexCreationTaskFailed(
                         indexName,
-                        createTask?.Uid,
+                        createResponse.TaskUid,
                         createTask?.Status
                     );
                     return false;
@@ -141,7 +158,7 @@ internal sealed class SearchExporterService(
     /// Opens a scope and exports changes to Meilisearch
     /// </summary>
     /// <param name="outerCt">async cancellation token</param>
-    /// <returns>true if any work was done</returns>
+    /// <returns>true if the loop should run again</returns>
     private Task<bool> ExportChangedRecordsAsync(CancellationToken outerCt) =>
         repeatedDatabaseActionStrategy.RunUntilCompletionWithDelay(
             async (db, scope, innerCt) =>
@@ -149,82 +166,91 @@ internal sealed class SearchExporterService(
                 IMeilisearchClient searchClient =
                     scope.ServiceProvider.GetRequiredService<IMeilisearchClient>();
 
-                List<RecipeDatabaseExtractionRow> entries = await db
-                    .RecipeSearchExtractionStatusEntries.AsNoTracking()
-                    .Where(e =>
-                        (e.SearchVersion == null || e.Recipe!.SearchVersion != e.SearchVersion)
-                        && e.Recipe!.Deleted == null
-                        && e.RecipeBook!.Deleted == null
-                        && e.RecipeBook!.Owner!.Deleted == null
-                        && (e.ErrorCount < 3 || e.ErrorSearchVersion != e.Recipe.SearchVersion)
-                    )
-                    .Select(e => new RecipeDatabaseExtractionRow(
-                        e.RecipeFk,
-                        e.Id,
-                        e.RecipeBookFk,
-                        e.Recipe!.Name,
-                        e.Recipe.ShortDescription,
-                        e.Recipe.SearchVersion,
-                        e.ErrorCount,
-                        e.ErrorSearchVersion
-                    ))
-                    .Take(20)
-                    .ToListAsync(innerCt);
-
-                if (entries.Count < 1)
+                long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+                List<(long RecipeFk, string ConcurrencyTag)> candidatesToExtract =
+                    await FindCandidatesToExtractAsync(db, now, innerCt);
+                if (candidatesToExtract.Count < 1)
                 {
                     return false;
                 }
 
-                if (await ExportRecordBatchAsync(db, searchClient, entries, innerCt))
+                string claimTag = concurrencyTagProvider.NextTag();
+                long leaseExpireTime = now + LeaseTime;
+
+                int totalClaimed = await ClaimRowsToExtractAsync(
+                    db,
+                    leaseExpireTime,
+                    candidatesToExtract,
+                    claimTag,
+                    innerCt
+                );
+
+                if (totalClaimed < 1) // Didn't claim any. Loop again and re-try.
                 {
                     return true;
                 }
 
-                bool anyWork = false;
-                foreach (RecipeDatabaseExtractionRow entry in entries)
+                List<RecipeRecordDataExtractedFromDatabase> recordData =
+                    await GetExtractionDataAsync(
+                        db,
+                        [.. candidatesToExtract.Select(e => e.RecipeFk)],
+                        claimTag,
+                        innerCt
+                    );
+
+                try
                 {
-                    if (!await ExportRecordBatchAsync(db, searchClient, [entry], innerCt))
+                    await ExportRecordBatchAsync(db, searchClient, recordData, innerCt);
+                }
+                catch (Exception batchException)
+                    when (batchException is not OperationCanceledException)
+                {
+                    logger.Error_ExportingBatchToSearchIndex(batchException);
+
+                    foreach (RecipeRecordDataExtractedFromDatabase singleRecord in recordData)
                     {
                         try
                         {
-                            await db
-                                .RecipeSearchExtractionStatusEntries.Where(e =>
-                                    e.Id == entry.SearchEntryId
-                                )
-                                .ExecuteUpdateAsync(
-                                    setter =>
-                                        setter
-                                            .SetProperty(
-                                                e => e.ErrorCount,
-                                                e =>
-                                                    e.ErrorSearchVersion == entry.SearchVersion
-                                                        ? e.ErrorCount + 1
-                                                        : 1
-                                            )
-                                            .SetProperty(
-                                                e => e.ErrorSearchVersion,
-                                                entry.SearchVersion
-                                            ),
-                                    innerCt
-                                );
+                            await ExportRecordBatchAsync(db, searchClient, [singleRecord], innerCt);
+                            await MarkRecordAsExtractedNoThrowAsync(
+                                db,
+                                claimTag,
+                                singleRecord.RecipeFk,
+                                singleRecord.SearchVersion,
+                                innerCt
+                            );
                         }
-                        catch (Exception ex) when (ex is not OperationCanceledException)
+                        catch (Exception recipeException)
+                            when (recipeException is not OperationCanceledException)
                         {
-                            logger.Error_IncrementingExtractionAttemptCounter(
-                                entry.SearchEntryId,
-                                entry.RecipeId,
-                                ex
+                            logger.Error_ExportingRecipeToSearchIndex(
+                                singleRecord.RecipeFk,
+                                recipeException
+                            );
+                            await MarkExtractAsFailedNoThrowAsync(
+                                db,
+                                singleRecord.RecipeFk,
+                                singleRecord.SearchVersion,
+                                claimTag,
+                                innerCt
                             );
                         }
                     }
-                    else
-                    {
-                        anyWork = true;
-                    }
+                    return true;
                 }
 
-                return anyWork;
+                foreach (RecipeRecordDataExtractedFromDatabase singleRecord in recordData)
+                {
+                    await MarkRecordAsExtractedNoThrowAsync(
+                        db,
+                        claimTag,
+                        singleRecord.RecipeFk,
+                        singleRecord.SearchVersion,
+                        innerCt
+                    );
+                }
+
+                return true;
             },
             (
                 _,
@@ -235,90 +261,201 @@ internal sealed class SearchExporterService(
             outerCt
         );
 
-    /// <summary>
-    /// Exports a set of records to the search index
-    /// </summary>
-    /// <param name="db">the database connection</param>
-    /// <param name="searchClient">the search client</param>
-    /// <param name="entries">set of entries to export</param>
-    /// <param name="ct">async token cancellation</param>
-    /// <returns>if work was done</returns>
-    private async Task<bool> ExportRecordBatchAsync(
+    private static async Task<int> ClaimRowsToExtractAsync(
+        ApplicationDbContext db,
+        long leaseExpireTime,
+        List<(long RecipeFk, string ConcurrencyTag)> candidateSelection,
+        string claimTag,
+        CancellationToken innerCt
+    )
+    {
+        int claimedCount = 0;
+
+        foreach (var (RecipeFk, ConcurrencyTag) in candidateSelection)
+        {
+            claimedCount += await db
+                .RecipeSearchExtractionStatusEntries.Where(e =>
+                    e.RecipeFk == RecipeFk && e.ConcurrencyTag == ConcurrencyTag
+                )
+                .ExecuteUpdateAsync(
+                    s =>
+                        s.SetProperty(e => e.LeaseExpireTime, leaseExpireTime)
+                            .SetProperty(e => e.ConcurrencyTag, claimTag),
+                    innerCt
+                );
+        }
+
+        return claimedCount;
+    }
+
+    private static ValueTask<
+        List<(long RecipeFk, string ConcurrencyTag)>
+    > FindCandidatesToExtractAsync(ApplicationDbContext db, long now, CancellationToken innerCt) =>
+        db
+            .RecipeSearchExtractionStatusEntries.AsNoTracking()
+            .Where(searchExtractState =>
+                // look for records never extracted or have since changed
+                (
+                    searchExtractState.SearchVersion == null
+                    || searchExtractState.Recipe!.SearchVersion > searchExtractState.SearchVersion
+                )
+                // filter soft deleted records
+                && searchExtractState.Recipe!.Deleted == null
+                && searchExtractState.Recipe!.RecipeBook!.Deleted == null
+                && searchExtractState.Recipe!.RecipeBook!.Owner!.Deleted == null
+                // filter out records that are broken and respect retry backoff
+                && (
+                    (
+                        searchExtractState.ErrorCount < MaxBatchRetries
+                        && (
+                            searchExtractState.NextRetryTime == null
+                            || searchExtractState.NextRetryTime < now
+                        )
+                    )
+                    || searchExtractState.Recipe.SearchVersion
+                        > searchExtractState.AttemptedExtractSearchVersion
+                )
+                // filter our records held by other servers with clock skew detection
+                && (
+                    searchExtractState.LeaseExpireTime == null
+                    || searchExtractState.LeaseExpireTime < now
+                    || searchExtractState.LeaseExpireTime > now + HourInSeconds
+                )
+            )
+            .Select(e => new { e.RecipeFk, e.ConcurrencyTag })
+            .Take(20)
+            .ToAsyncEnumerable()
+            .Select(e => (e.RecipeFk, e.ConcurrencyTag)) // expression tree's don't support tuples
+            .ToListAsync(innerCt);
+
+    private async Task MarkRecordAsExtractedNoThrowAsync(
+        ApplicationDbContext db,
+        string claimTag,
+        long recipeFk,
+        long searchVersion,
+        CancellationToken innerCt
+    )
+    {
+        try
+        {
+            string nextTag = concurrencyTagProvider.NextTag();
+            await db
+                .RecipeSearchExtractionStatusEntries.Where(searchExtractState =>
+                    searchExtractState.RecipeFk == recipeFk
+                    && searchExtractState.ConcurrencyTag == claimTag
+                )
+                .ExecuteUpdateAsync(
+                    s =>
+                        s.SetProperty(e => e.LeaseExpireTime, (long?)null)
+                            .SetProperty(e => e.ConcurrencyTag, nextTag)
+                            .SetProperty(e => e.ErrorCount, 0)
+                            .SetProperty(e => e.NextRetryTime, (long?)null)
+                            .SetProperty(e => e.SearchVersion, searchVersion)
+                            .SetProperty(e => e.AttemptedExtractSearchVersion, (long?)null),
+                    innerCt
+                );
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.Error_UnhandledExceptionWhenMarkingRecordAsExtracted(
+                recipeFk,
+                searchVersion,
+                ex
+            );
+        }
+    }
+
+    private static async Task ExportRecordBatchAsync(
         ApplicationDbContext db,
         IMeilisearchClient searchClient,
-        List<RecipeDatabaseExtractionRow> entries,
+        List<RecipeRecordDataExtractedFromDatabase> entries,
+        CancellationToken ct
+    )
+    {
+        MeilisearchTaskResponse result = await searchClient.UpsertDocumentsAsync(
+            RecipesSearchIndex,
+            entries.Select(e => new RecipeSearchIndexEntry()
+            {
+                Id = MakeRecipeStringKey(e.RecipeFk),
+                Name = e.Name,
+                ShortDescription = e.ShortDescription,
+                BookId = MakeRecipeBookStringKey(e.RecipeBookFk),
+            }),
+            ct
+        );
+
+        TaskStatusResponse? taskStatus = await searchClient.WaitForTaskCompletionAsync(
+            result.TaskUid,
+            ct
+        );
+
+        if (taskStatus?.Status != MeilisearchTaskStatus.Succeeded)
+        {
+            TaskStatusResponse.ThrowIfNotSuccess(taskStatus);
+        }
+    }
+
+    private static async Task<List<RecipeRecordDataExtractedFromDatabase>> GetExtractionDataAsync(
+        ApplicationDbContext db,
+        List<long> ids,
+        string concurrencyTag,
+        CancellationToken ct
+    )
+    {
+        return await db
+            .RecipeSearchExtractionStatusEntries.AsNoTracking()
+            .Where(searchExtractState =>
+                ids.Contains(searchExtractState.RecipeFk)
+                && searchExtractState.ConcurrencyTag == concurrencyTag
+            )
+            .Select(r => new RecipeRecordDataExtractedFromDatabase(
+                r.RecipeFk,
+                r.Recipe!.Name,
+                r.Recipe!.ShortDescription,
+                r.Recipe!.RecipeBookFk,
+                r.Recipe!.SearchVersion
+            ))
+            .ToListAsync(ct);
+    }
+
+    record class RecipeRecordDataExtractedFromDatabase(
+        long RecipeFk,
+        string Name,
+        string ShortDescription,
+        long RecipeBookFk,
+        long SearchVersion
+    );
+
+    private async Task MarkExtractAsFailedNoThrowAsync(
+        ApplicationDbContext db,
+        long recipeFk,
+        long searchVersion,
+        string claimTag,
         CancellationToken ct
     )
     {
         try
         {
-            MeilisearchTaskResponse result = await searchClient.UpsertDocumentsAsync(
-                RecipesSearchIndex,
-                entries.Select(e => new RecipeSearchIndexEntry()
-                {
-                    Id = MakeRecipeStringKey(e.RecipeId),
-                    Name = e.RecipeName,
-                    ShortDescription = e.RecipeDescription,
-                    BookId = MakeRecipeBookStringKey(e.RecipeBookFk),
-                }),
-                ct
-            );
-
-            List<long> searchIndexEntries = [.. entries.Select(e => e.SearchEntryId)];
             long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+            string nextTag = concurrencyTagProvider.NextTag();
             await db
-                .RecipeSearchExtractionStatusEntries.Where(e => searchIndexEntries.Contains(e.Id))
+                .RecipeSearchExtractionStatusEntries.Where(searchExtractState =>
+                    searchExtractState.RecipeFk == recipeFk
+                    && searchExtractState.ConcurrencyTag == claimTag
+                )
                 .ExecuteUpdateAsync(
-                    setter =>
-                        setter
-                            .SetProperty(e => e.TaskUid, result.TaskUid)
-                            .SetProperty(e => e.TaskPostTime, now),
+                    s =>
+                        s.SetProperty(e => e.LeaseExpireTime, (long?)null)
+                            .SetProperty(e => e.ConcurrencyTag, nextTag)
+                            .SetProperty(e => e.NextRetryTime, e => now + (1 << e.ErrorCount))
+                            .SetProperty(e => e.ErrorCount, e => e.ErrorCount + 1)
+                            .SetProperty(e => e.AttemptedExtractSearchVersion, searchVersion),
                     ct
                 );
-
-            TaskStatusResponse? taskStatus = await searchClient.WaitForTaskCompletionAsync(
-                result.TaskUid,
-                ct
-            );
-
-            if (taskStatus?.Status != MeilisearchTaskStatus.Succeeded)
-            {
-                await db
-                    .RecipeSearchExtractionStatusEntries.Where(e => e.TaskUid == result.TaskUid)
-                    .ExecuteUpdateAsync(
-                        setter =>
-                            setter
-                                .SetProperty(e => e.TaskUid, (long?)null)
-                                .SetProperty(e => e.TaskPostTime, (long?)null),
-                        ct
-                    );
-                logger.Error_ExtractionTaskFailed(taskStatus?.Uid, taskStatus?.Status);
-                return false;
-            }
-
-            foreach (var entry in entries)
-            {
-                await db
-                    .RecipeSearchExtractionStatusEntries.Where(e =>
-                        e.TaskUid == result.TaskUid && e.Id == entry.SearchEntryId
-                    )
-                    .ExecuteUpdateAsync(
-                        setter =>
-                            setter
-                                .SetProperty(e => e.TaskUid, (long?)null)
-                                .SetProperty(e => e.TaskPostTime, (long?)null)
-                                .SetProperty(e => e.SearchVersion, entry.SearchVersion)
-                                .SetProperty(e => e.ErrorCount, 0)
-                                .SetProperty(e => e.ErrorSearchVersion, (long?)null),
-                        ct
-                    );
-            }
-            return true;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.Error_ExportToSearchIndex(ex);
-            return false;
+            logger.Error_IncrementingExtractionAttemptCounter(recipeFk, searchVersion, ex);
         }
     }
 
@@ -328,7 +465,7 @@ internal sealed class SearchExporterService(
     /// <param name="outerCt">async cancellation token</param>
     /// <returns>number of new entries created</returns>
     /// <remarks>
-    /// We use the <see cref="RecipeSearchExtractionStatusDbObject" />
+    /// We use the <see cref="RecipeSearchWorkerStateDbObject" />
     /// object to know if there could have been an extraction.
     /// If no entry exists for a record, then we know it
     /// was never extracted. If a record happens to exist,
@@ -368,7 +505,7 @@ internal sealed class SearchExporterService(
 
                 foreach (var entry in entries)
                 {
-                    RecipeSearchExtractionStatusDbObject recipeSearchIndexEntry = new()
+                    RecipeSearchWorkerStateDbObject recipeSearchIndexEntry = new()
                     {
                         SearchVersion = null,
                         RecipeFk = entry.Id,
@@ -460,7 +597,7 @@ internal sealed class SearchExporterService(
                             || e.RecipeBook!.Owner!.Deleted != null
                         )
                         && (e.SearchVersion != null || e.TaskUid != null)
-                        && (e.NextDeletionTryTime == null || e.NextDeletionTryTime < now)
+                        && (e.NextDTryTime == null || e.NextDTryTime < now)
                     )
                     .Select(e => new RecipeDatabaseDeletionRow(
                         e.RecipeFk,

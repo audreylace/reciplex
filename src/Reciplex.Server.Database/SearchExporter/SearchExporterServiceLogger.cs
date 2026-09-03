@@ -12,8 +12,15 @@ static partial class SearchExporterServiceLogger
     );
 
     [LoggerMessage(LogLevel.Error, "Exception exporting a set of records to the search index")]
-    public static partial void Error_ExportToSearchIndex(
+    public static partial void Error_ExportingBatchToSearchIndex(
         this ILogger<SearchExporterService> logger,
+        Exception ex
+    );
+
+    [LoggerMessage(LogLevel.Error, "Exception exporting {RecipeFk} to the search index")]
+    public static partial void Error_ExportingRecipeToSearchIndex(
+        this ILogger<SearchExporterService> logger,
+        long RecipeFk,
         Exception ex
     );
 
@@ -21,16 +28,6 @@ static partial class SearchExporterServiceLogger
     public static partial void Error_DeletingBatchOfRecordsFromSearchIndex(
         this ILogger<SearchExporterService> logger,
         Exception ex
-    );
-
-    [LoggerMessage(
-        LogLevel.Error,
-        "Extraction task with id {TaskUid} failed : status was {TaskStatus}"
-    )]
-    public static partial void Error_ExtractionTaskFailed(
-        this ILogger<SearchExporterService> logger,
-        long? TaskUid,
-        MeilisearchTaskStatus? TaskStatus
     );
 
     [LoggerMessage(
@@ -67,12 +64,12 @@ static partial class SearchExporterServiceLogger
 
     [LoggerMessage(
         LogLevel.Error,
-        "Failed to increment attempt counter for search index entry with primary id {SearchIndexId} and recipe record {RecordId}"
+        "Failed to increment attempt counter for search index entry with primary id {RecipeFk} at search version {SearchVersion}"
     )]
     public static partial void Error_IncrementingExtractionAttemptCounter(
         this ILogger<SearchExporterService> logger,
-        long SearchIndexId,
-        long RecordId,
+        long RecipeFk,
+        long SearchVersion,
         Exception ex
     );
 
@@ -102,6 +99,17 @@ static partial class SearchExporterServiceLogger
     [LoggerMessage(LogLevel.Error, "Exception exporting to search index")]
     public static partial void Error_UnhandledExceptionWhenSearchExporting(
         this ILogger<SearchExporterService> logger,
+        Exception ex
+    );
+
+    [LoggerMessage(
+        LogLevel.Error,
+        "Exception marking record {RecipeFk} as extracted at search version {SearchVersion}"
+    )]
+    public static partial void Error_UnhandledExceptionWhenMarkingRecordAsExtracted(
+        this ILogger<SearchExporterService> logger,
+        long RecipeFk,
+        long SearchVersion,
         Exception ex
     );
 }

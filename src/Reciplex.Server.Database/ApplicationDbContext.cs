@@ -31,7 +31,7 @@ public class ApplicationDbContext : DbContext
     /// <summary>
     /// Recipe search extraction entries
     /// </summary>
-    public DbSet<RecipeSearchExtractionStatusDbObject> RecipeSearchExtractionStatusEntries { get; set; }
+    public DbSet<RecipeSearchWorkerStateDbObject> RecipeSearchExtractionStatusEntries { get; set; }
 
     /// <summary>
     /// Constructor for ASP.NET
