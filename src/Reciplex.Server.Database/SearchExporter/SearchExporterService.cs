@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,7 +19,8 @@ internal sealed class SearchExporterService(
     ILogger<SearchExporterService> logger,
     RepeatedDatabaseActionStrategy repeatedDatabaseActionStrategy,
     IClock clock,
-    IConcurrencyTagProvider concurrencyTagProvider
+    IConcurrencyTagProvider concurrencyTagProvider,
+    SearchExporterMetrics metrics
 ) : BackgroundService
 {
     /// <summary>
@@ -64,7 +66,7 @@ internal sealed class SearchExporterService(
                 anyWork = await DeleteNullSearchPointersAsync(stoppingToken);
                 anyWork |= await DeleteFromSearchIndexAsync(stoppingToken);
                 anyWork |= await PopulateEmptySearchEntriesAsync(stoppingToken);
-                anyWork |= await ExportChangedRecordsAsync(stoppingToken);
+                anyWork |= await ExportChangedRecipesAsync(stoppingToken);
             }
             if (anyWork)
             {
@@ -93,6 +95,7 @@ internal sealed class SearchExporterService(
                 scope.ServiceProvider.GetRequiredService<IMeilisearchClient>(),
                 RecipesSearchIndex,
                 PrimaryKeyPropertyName,
+                SearchExporterMetrics.RecipesKind,
                 ct
             )
         )
@@ -116,14 +119,18 @@ internal sealed class SearchExporterService(
         IMeilisearchClient searchClient,
         string indexName,
         string primaryKey,
+        string metricKind,
         CancellationToken ct
     )
     {
+        long startTimestamp = Stopwatch.GetTimestamp();
+        string outcome = SearchExporterMetrics.ExistsIndexOperationOutcomeKind;
         try
         {
             GetIndexResponse? index = await searchClient.GetIndexAsync(indexName, ct);
             if (index is null)
             {
+                outcome = SearchExporterMetrics.CreatedIndexOperationOutcomeKind;
                 MeilisearchTaskResponse createResponse = await searchClient.CreateIndexAsync(
                     indexName,
                     primaryKey,
@@ -137,6 +144,7 @@ internal sealed class SearchExporterService(
 
                 if (createTask?.Status != MeilisearchTaskStatus.Succeeded)
                 {
+                    outcome = SearchExporterMetrics.ErrorIndexOperationOutcomeKind;
                     logger.Error_IndexCreationTaskFailed(
                         indexName,
                         createResponse.TaskUid,
@@ -149,8 +157,17 @@ internal sealed class SearchExporterService(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            outcome = SearchExporterMetrics.ErrorIndexOperationOutcomeKind;
             logger.Error_IndexCreationFailedWithException(indexName, primaryKey, ex);
             return false;
+        }
+        finally
+        {
+            metrics.RecordSearchIndexUpsert(
+                metricKind,
+                outcome,
+                Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
+            );
         }
     }
 
@@ -159,7 +176,7 @@ internal sealed class SearchExporterService(
     /// </summary>
     /// <param name="outerCt">async cancellation token</param>
     /// <returns>true if the loop should run again</returns>
-    private Task<bool> ExportChangedRecordsAsync(CancellationToken outerCt) =>
+    private Task<bool> ExportChangedRecipesAsync(CancellationToken outerCt) =>
         repeatedDatabaseActionStrategy.RunUntilCompletionWithDelay(
             async (db, scope, innerCt) =>
             {
@@ -168,7 +185,7 @@ internal sealed class SearchExporterService(
 
                 long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
                 List<(long RecipeFk, string ConcurrencyTag)> candidatesToExtract =
-                    await FindCandidatesToExtractAsync(db, now, innerCt);
+                    await FindRecipesToExtractAsync(db, now, innerCt);
                 if (candidatesToExtract.Count < 1)
                 {
                     return false;
@@ -177,7 +194,7 @@ internal sealed class SearchExporterService(
                 string claimTag = concurrencyTagProvider.NextTag();
                 long leaseExpireTime = now + LeaseTime;
 
-                int totalClaimed = await ClaimRowsToExtractAsync(
+                int totalClaimed = await ClaimRecipesAsync(
                     db,
                     leaseExpireTime,
                     candidatesToExtract,
@@ -190,33 +207,34 @@ internal sealed class SearchExporterService(
                     return true;
                 }
 
-                List<RecipeRecordDataExtractedFromDatabase> recordData =
-                    await GetExtractionDataAsync(
-                        db,
-                        [.. candidatesToExtract.Select(e => e.RecipeFk)],
-                        claimTag,
-                        innerCt
-                    );
+                List<RecipeRecordDataExtractedFromDatabase> recordData = await ExtractRecipesAsync(
+                    db,
+                    [.. candidatesToExtract.Select(e => e.RecipeFk)],
+                    claimTag,
+                    innerCt
+                );
+
+                if (recordData.Count < 1)
+                {
+                    return true;
+                }
 
                 try
                 {
-                    await ExportRecordBatchAsync(db, searchClient, recordData, innerCt);
+                    await ExportRecipesToSearchIndexAsync(searchClient, recordData, innerCt);
                 }
                 catch (Exception batchException)
                     when (batchException is not OperationCanceledException)
                 {
                     logger.Error_ExportingBatchToSearchIndex(batchException);
-
                     foreach (RecipeRecordDataExtractedFromDatabase singleRecord in recordData)
                     {
+                        bool success = true;
                         try
                         {
-                            await ExportRecordBatchAsync(db, searchClient, [singleRecord], innerCt);
-                            await MarkRecordAsExtractedNoThrowAsync(
-                                db,
-                                claimTag,
-                                singleRecord.RecipeFk,
-                                singleRecord.SearchVersion,
+                            await ExportRecipesToSearchIndexAsync(
+                                searchClient,
+                                [singleRecord],
                                 innerCt
                             );
                         }
@@ -227,7 +245,22 @@ internal sealed class SearchExporterService(
                                 singleRecord.RecipeFk,
                                 recipeException
                             );
-                            await MarkExtractAsFailedNoThrowAsync(
+                            success = false;
+                        }
+                        if (success)
+                        {
+                            await MarkRecipeExtractAsSuccessNoThrowAsync(
+                                db,
+                                claimTag,
+                                singleRecord.RecipeFk,
+                                singleRecord.SearchVersion,
+                                true,
+                                innerCt
+                            );
+                        }
+                        else
+                        {
+                            await MarkRecipeExtractAsFailedNoThrowAsync(
                                 db,
                                 singleRecord.RecipeFk,
                                 singleRecord.SearchVersion,
@@ -241,27 +274,31 @@ internal sealed class SearchExporterService(
 
                 foreach (RecipeRecordDataExtractedFromDatabase singleRecord in recordData)
                 {
-                    await MarkRecordAsExtractedNoThrowAsync(
+                    await MarkRecipeExtractAsSuccessNoThrowAsync(
                         db,
                         claimTag,
                         singleRecord.RecipeFk,
                         singleRecord.SearchVersion,
+                        false,
                         innerCt
                     );
                 }
 
                 return true;
             },
-            (
-                _,
-                _
-            ) => { /* metrics */
+            (success, time) =>
+            {
+                metrics.ObserveSearchExportOperation(
+                    SearchExporterMetrics.RecipesKind,
+                    success,
+                    time
+                );
             },
             logger.Error_UnhandledExceptionWhenSearchExporting,
             outerCt
         );
 
-    private static async Task<int> ClaimRowsToExtractAsync(
+    private static async Task<int> ClaimRecipesAsync(
         ApplicationDbContext db,
         long leaseExpireTime,
         List<(long RecipeFk, string ConcurrencyTag)> candidateSelection,
@@ -290,7 +327,7 @@ internal sealed class SearchExporterService(
 
     private static ValueTask<
         List<(long RecipeFk, string ConcurrencyTag)>
-    > FindCandidatesToExtractAsync(ApplicationDbContext db, long now, CancellationToken innerCt) =>
+    > FindRecipesToExtractAsync(ApplicationDbContext db, long now, CancellationToken innerCt) =>
         db
             .RecipeSearchExtractionStatusEntries.AsNoTracking()
             .Where(searchExtractState =>
@@ -328,14 +365,18 @@ internal sealed class SearchExporterService(
             .Select(e => (e.RecipeFk, e.ConcurrencyTag)) // expression tree's don't support tuples
             .ToListAsync(innerCt);
 
-    private async Task MarkRecordAsExtractedNoThrowAsync(
+    private async Task MarkRecipeExtractAsSuccessNoThrowAsync(
         ApplicationDbContext db,
         string claimTag,
         long recipeFk,
         long searchVersion,
+        bool isRetry,
         CancellationToken innerCt
     )
     {
+        string outcome = isRetry
+            ? SearchExporterMetrics.RowsExportRetrySuccess
+            : SearchExporterMetrics.RowsExportSuccess;
         try
         {
             string nextTag = concurrencyTagProvider.NextTag();
@@ -362,11 +403,13 @@ internal sealed class SearchExporterService(
                 searchVersion,
                 ex
             );
+            outcome = SearchExporterMetrics.RowsExportDatabaseErrorSuccess;
         }
+
+        metrics.IncrementRowsExportedCounter(SearchExporterMetrics.RecipesKind, 1, outcome);
     }
 
-    private static async Task ExportRecordBatchAsync(
-        ApplicationDbContext db,
+    private static async Task ExportRecipesToSearchIndexAsync(
         IMeilisearchClient searchClient,
         List<RecipeRecordDataExtractedFromDatabase> entries,
         CancellationToken ct
@@ -395,14 +438,14 @@ internal sealed class SearchExporterService(
         }
     }
 
-    private static async Task<List<RecipeRecordDataExtractedFromDatabase>> GetExtractionDataAsync(
+    private static async Task<List<RecipeRecordDataExtractedFromDatabase>> ExtractRecipesAsync(
         ApplicationDbContext db,
         List<long> ids,
         string concurrencyTag,
         CancellationToken ct
     )
     {
-        return await db
+        List<RecipeRecordDataExtractedFromDatabase> list = await db
             .RecipeSearchExtractionStatusEntries.AsNoTracking()
             .Where(searchExtractState =>
                 ids.Contains(searchExtractState.RecipeFk)
@@ -416,6 +459,7 @@ internal sealed class SearchExporterService(
                 r.Recipe!.SearchVersion
             ))
             .ToListAsync(ct);
+        return list;
     }
 
     record class RecipeRecordDataExtractedFromDatabase(
@@ -426,7 +470,7 @@ internal sealed class SearchExporterService(
         long SearchVersion
     );
 
-    private async Task MarkExtractAsFailedNoThrowAsync(
+    private async Task MarkRecipeExtractAsFailedNoThrowAsync(
         ApplicationDbContext db,
         long recipeFk,
         long searchVersion,
@@ -434,6 +478,7 @@ internal sealed class SearchExporterService(
         CancellationToken ct
     )
     {
+        string outcome = SearchExporterMetrics.RowsExportRetrySuccess;
         try
         {
             long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
@@ -456,7 +501,10 @@ internal sealed class SearchExporterService(
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.Error_IncrementingExtractionAttemptCounter(recipeFk, searchVersion, ex);
+            outcome = SearchExporterMetrics.RowsExportDatabaseErrorFailure;
         }
+
+        metrics.IncrementRowsExportedCounter(SearchExporterMetrics.RecipesKind, 1, outcome);
     }
 
     /// <summary>
