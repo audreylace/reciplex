@@ -7,6 +7,7 @@ using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Database.DeletionWorker;
 using Reciplex.Server.Database.RecipeBooksDomain;
 using Reciplex.Server.Database.RecipesDomain;
+using Reciplex.Server.Database.SearchExporter;
 using Reciplex.Server.Database.Strategies;
 using Reciplex.Server.Database.UsersDomain;
 
@@ -33,6 +34,7 @@ public static partial class WebApplicationBuilderExtensions
         builder.Services.AddHostedService<DeletionWorkerService>();
         builder.Services.AddSingleton<DeletionWorkerServiceMetrics>();
         builder.Services.AddSingleton<RepeatedDatabaseActionStrategy>();
+        builder.Services.AddSingleton<SearchIndexCreationStrategy>();
 
         return builder;
     }

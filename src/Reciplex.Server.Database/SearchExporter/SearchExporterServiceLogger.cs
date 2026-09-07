@@ -42,17 +42,6 @@ static partial class SearchExporterServiceLogger
 
     [LoggerMessage(
         LogLevel.Error,
-        "Index creation task for index {IndexName} with id {TaskUid} failed : status was {TaskStatus}"
-    )]
-    public static partial void Error_IndexCreationTaskFailed(
-        this ILogger<SearchExporterService> logger,
-        string IndexName,
-        long? TaskUid,
-        MeilisearchTaskStatus? TaskStatus
-    );
-
-    [LoggerMessage(
-        LogLevel.Error,
         "Failed to increment deletion attempt counter for search index entry with primary id {SearchIndexId} and recipe record {RecordId}"
     )]
     public static partial void Error_IncrementingFailedIndexDeletionCounter(
@@ -76,17 +65,6 @@ static partial class SearchExporterServiceLogger
     [LoggerMessage(LogLevel.Error, "Exception running deletion operation on search index")]
     public static partial void Error_DeleteFromSearchIndex(
         this ILogger<SearchExporterService> logger,
-        Exception ex
-    );
-
-    [LoggerMessage(
-        LogLevel.Error,
-        "Exception running index creation for index {Index} with {PrimaryKey}"
-    )]
-    public static partial void Error_IndexCreationFailedWithException(
-        this ILogger<SearchExporterService> logger,
-        string Index,
-        string PrimaryKey,
         Exception ex
     );
 

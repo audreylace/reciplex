@@ -20,7 +20,8 @@ internal sealed class SearchExporterService(
     RepeatedDatabaseActionStrategy repeatedDatabaseActionStrategy,
     IClock clock,
     IConcurrencyTagProvider concurrencyTagProvider,
-    SearchExporterMetrics metrics
+    SearchExporterMetrics metrics,
+    SearchIndexCreationStrategy searchIndexCreationStrategy
 ) : BackgroundService
 {
     /// <summary>
@@ -61,7 +62,7 @@ internal sealed class SearchExporterService(
         {
             backoff = Math.Min(13, backoff + 1);
             bool anyWork = false;
-            if (await UpsertRecipeIndexAsync(stoppingToken))
+            if (await searchIndexCreationStrategy.UpsertRecipeIndexAsync(stoppingToken))
             {
                 anyWork = await DeleteEmptyRecipeSearchRowsAsync(stoppingToken);
                 anyWork |= await DeleteFromSearchIndexAsync(stoppingToken);
@@ -75,100 +76,6 @@ internal sealed class SearchExporterService(
 
             double seconds = Math.Min(3600, Math.Pow(2, backoff - 1));
             await Task.Delay(TimeSpan.FromSeconds(seconds), stoppingToken);
-        }
-    }
-
-    /// <summary>
-    /// Creates the recipe index if it does not already exist
-    /// </summary>
-    /// <param name="ct">async cancellation token</param>
-    /// <returns>true if the index exists</returns>
-    private async Task<bool> UpsertRecipeIndexAsync(CancellationToken ct)
-    {
-        if (_recipeIndexExists)
-        {
-            return true;
-        }
-        using var scope = sp.CreateAsyncScope();
-        if (
-            await UpsertIndexAsync(
-                scope.ServiceProvider.GetRequiredService<IMeilisearchClient>(),
-                RecipesSearchIndex,
-                PrimaryKeyPropertyName,
-                SearchExporterMetrics.RecipesKind,
-                ct
-            )
-        )
-        {
-            _recipeIndexExists = true;
-            return true;
-        }
-
-        return false;
-    }
-
-    /// <summary>
-    /// Creates an index with name <paramref name="indexName"/> and <paramref name="primaryKey"/>
-    /// if it does not already exist.
-    /// </summary>
-    /// <param name="searchClient">the http client for the remote search server</param>
-    /// <param name="indexName">the name of the index</param>
-    /// <param name="primaryKey">the primary key of the index</param>
-    /// <param name="metricKind">the metric kind</param>
-    /// <param name="ct">the async cancellation token</param>
-    private async Task<bool> UpsertIndexAsync(
-        IMeilisearchClient searchClient,
-        string indexName,
-        string primaryKey,
-        string metricKind,
-        CancellationToken ct
-    )
-    {
-        long startTimestamp = Stopwatch.GetTimestamp();
-        string outcome = SearchExporterMetrics.ExistsIndexOperationOutcomeKind;
-        try
-        {
-            GetIndexResponse? index = await searchClient.GetIndexAsync(indexName, ct);
-            if (index is null)
-            {
-                outcome = SearchExporterMetrics.CreatedIndexOperationOutcomeKind;
-                MeilisearchTaskResponse createResponse = await searchClient.CreateIndexAsync(
-                    indexName,
-                    primaryKey,
-                    ct
-                );
-
-                TaskStatusResponse? createTask = await searchClient.WaitForTaskCompletionAsync(
-                    createResponse.TaskUid,
-                    ct
-                );
-
-                if (createTask?.Status != MeilisearchTaskStatus.Succeeded)
-                {
-                    outcome = SearchExporterMetrics.ErrorIndexOperationOutcomeKind;
-                    logger.Error_IndexCreationTaskFailed(
-                        indexName,
-                        createResponse.TaskUid,
-                        createTask?.Status
-                    );
-                    return false;
-                }
-            }
-            return true;
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            outcome = SearchExporterMetrics.ErrorIndexOperationOutcomeKind;
-            logger.Error_IndexCreationFailedWithException(indexName, primaryKey, ex);
-            return false;
-        }
-        finally
-        {
-            metrics.ObserveRecordSearchIndexUpsert(
-                metricKind,
-                outcome,
-                Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
-            );
         }
     }
 
