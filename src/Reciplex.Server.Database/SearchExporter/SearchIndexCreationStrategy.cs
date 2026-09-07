@@ -41,11 +41,6 @@ class SearchIndexCreationStrategy
     private readonly Histogram<double> _searchIndexUpsertTime;
 
     /// <summary>
-    /// If the recipe index already exists
-    /// </summary>
-    private bool _recipeIndexExists;
-
-    /// <summary>
     /// constructor
     /// </summary>
     /// <param name="searchClient">the http search client</param>
@@ -82,21 +77,16 @@ class SearchIndexCreationStrategy
     /// <returns>true if the index exists</returns>
     public async Task<bool> UpsertRecipeIndexAsync(CancellationToken ct)
     {
-        if (_recipeIndexExists)
-        {
-            return true;
-        }
-
+        // todo - set search attributes
         if (
             await UpsertIndexAsync(
                 RecipesSearchIndex,
                 PrimaryKeyPropertyName,
-                SearchExporterMetrics.RecipesKind,
+                RecipeSearchExporterMetrics.RecipesKind,
                 ct
             )
         )
         {
-            _recipeIndexExists = true;
             return true;
         }
 
@@ -152,7 +142,7 @@ class SearchIndexCreationStrategy
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            outcome = SearchExporterMetrics.ErrorIndexOperationOutcomeKind;
+            outcome = RecipeSearchExporterMetrics.ErrorIndexOperationOutcomeKind;
             _logger.Error_IndexCreationFailedWithException(indexName, primaryKey, ex);
             return false;
         }

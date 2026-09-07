@@ -19,7 +19,7 @@ internal class RepeatedDatabaseActionStrategy(IServiceProvider sp)
     /// <returns>true if anything any real work was completed</returns>
     internal async Task<bool> RunUntilCompletionWithDelay(
         Func<ApplicationDbContext, CancellationToken, Task<bool>> action,
-        Action<bool, double> recordMetrics,
+        Action<bool, double>? recordMetrics,
         Action<Exception> exceptionLogger,
         CancellationToken ct
     )
@@ -37,12 +37,12 @@ internal class RepeatedDatabaseActionStrategy(IServiceProvider sp)
 
                 workDone = await action(db, ct);
                 anyWorkDone |= workDone;
-                recordMetrics(true, Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds);
+                recordMetrics?.(true, Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 exceptionLogger(ex);
-                recordMetrics(false, Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds);
+                recordMetrics?.(false, Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds);
                 await Task.Delay(TimeSpan.FromSeconds(10), ct);
                 break;
             }
@@ -62,7 +62,7 @@ internal class RepeatedDatabaseActionStrategy(IServiceProvider sp)
     /// <returns>true if anything any real work was completed</returns>
     internal async Task<bool> RunUntilCompletionWithDelay(
         Func<ApplicationDbContext, AsyncServiceScope, CancellationToken, Task<bool>> action,
-        Action<bool, double> recordMetrics,
+        Action<bool, double>? recordMetrics,
         Action<Exception> exceptionLogger,
         CancellationToken ct
     )
@@ -80,12 +80,12 @@ internal class RepeatedDatabaseActionStrategy(IServiceProvider sp)
 
                 workDone = await action(db, scope, ct);
                 anyWorkDone |= workDone;
-                recordMetrics(true, Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds);
+                recordMetrics?.(true, Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 exceptionLogger(ex);
-                recordMetrics(false, Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds);
+                recordMetrics?.(false, Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds);
                 await Task.Delay(TimeSpan.FromSeconds(10), ct);
                 break;
             }
