@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NodaTime;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Database.DbObjects;
@@ -24,18 +25,25 @@ namespace Reciplex.Server.Database.SearchExporter;
 ///  TODO -
 ///    [ ] Set proper fields on index
 /// </remarks>
-internal sealed class RecipeSearchExporterService(
-    ILogger<RecipeSearchExporterService> logger,
+internal sealed class RecipeSearchBackgroundExporterService(
+    ILogger<RecipeSearchBackgroundExporterService> logger,
     RepeatedDatabaseActionStrategy repeatedDatabaseActionStrategy,
     IClock clock,
     IConcurrencyTagProvider concurrencyTagProvider,
-    SearchIndexCreationStrategy searchIndexCreationStrategy
+    IMeilisearchClient searchClient,
+    IRecipeMutationNotifyService recipeMutationNotifyService,
+    IOptions<SearchExporterOptions> options
 ) : BackgroundService
 {
     /// <summary>
     /// Recipe search index
     /// </summary>
     private const string RecipesSearchIndex = "recipes";
+
+    /// <summary>
+    /// The primary key property name
+    /// </summary>
+    private const string PrimaryKeyPropertyName = "id";
 
     /// <summary>
     /// Max time a lease should be held.
@@ -48,11 +56,6 @@ internal sealed class RecipeSearchExporterService(
     private const int MaxBatchRetries = 17;
 
     /// <summary>
-    /// A value greater then 0 to trigger the collect and execute loop running again
-    /// </summary>
-    private const int LoopAgain = 1;
-
-    /// <summary>
     /// If the recipe index exists
     /// </summary>
     private bool _recipeIndexExists;
@@ -60,6 +63,11 @@ internal sealed class RecipeSearchExporterService(
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        if (!options.Value.Enable)
+        {
+            return;
+        }
+
         int backoff = 0;
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -67,9 +75,7 @@ internal sealed class RecipeSearchExporterService(
             bool anyWork = false;
             if (!_recipeIndexExists)
             {
-                _recipeIndexExists = await searchIndexCreationStrategy.UpsertRecipeIndexAsync(
-                    stoppingToken
-                );
+                _recipeIndexExists = await UpsertIndexAsync(stoppingToken);
             }
             if (_recipeIndexExists)
             {
@@ -87,13 +93,21 @@ internal sealed class RecipeSearchExporterService(
             }
 
             double seconds = Math.Min(3600, Math.Pow(2, backoff - 1));
-            await Task.Delay(TimeSpan.FromSeconds(seconds), stoppingToken);
+            CancellationTokenSource cancellationTokenSource =
+                CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+            cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(seconds));
+
+            try
+            {
+                await recipeMutationNotifyService.WaitForOne(stoppingToken);
+            }
+            catch (OperationCanceledException) { }
         }
     }
 
     private Task<bool> FindAndExportAsync(CancellationToken outerCt) =>
         repeatedDatabaseActionStrategy.RunUntilCompletionWithDelay(
-            async (db, scope, innerCt) =>
+            async (db, innerCt) =>
             {
                 List<(long RecipeFk, string ConcurrencyTag)> candidatesToExtract =
                     await FindRecipesToExportAsync(db, innerCt);
@@ -104,8 +118,6 @@ internal sealed class RecipeSearchExporterService(
                 }
 
                 long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
-                IMeilisearchClient searchClient =
-                    scope.ServiceProvider.GetRequiredService<IMeilisearchClient>();
                 string claimTag = concurrencyTagProvider.NextTag();
                 long leaseExpireTime = now + LeaseTime;
 
@@ -138,19 +150,13 @@ internal sealed class RecipeSearchExporterService(
 
                 try
                 {
-                    await ExportRecipesToSearchIndexAsync(searchClient, recordData, innerCt);
+                    await ExportRecipesToSearchIndexAsync(recordData, innerCt);
                 }
                 catch (Exception batchException)
                     when (batchException is not OperationCanceledException)
                 {
                     logger.Error_ExportingBatchToSearchIndex(batchException);
-                    await ExportRecipesInSerialAsync(
-                        db,
-                        searchClient,
-                        claimTag,
-                        recordData,
-                        innerCt
-                    );
+                    await ExportRecipesInSerialAsync(db, claimTag, recordData, innerCt);
                     return true;
                 }
 
@@ -167,17 +173,13 @@ internal sealed class RecipeSearchExporterService(
 
                 return true;
             },
-            (success, time) =>
-            {
-                metrics.ObserveOperation("extract_and_export_recipes", time, success);
-            },
+            null,
             logger.Error_UnhandledExceptionWhenSearchExporting,
             outerCt
         );
 
     private async Task ExportRecipesInSerialAsync(
         ApplicationDbContext db,
-        IMeilisearchClient searchClient,
         string claimTag,
         List<RecipeRecordDataExtractedFromDatabase> recordData,
         CancellationToken ct
@@ -188,7 +190,7 @@ internal sealed class RecipeSearchExporterService(
             bool success = true;
             try
             {
-                await ExportRecipesToSearchIndexAsync(searchClient, [singleRecord], ct);
+                await ExportRecipesToSearchIndexAsync([singleRecord], ct);
             }
             catch (Exception recipeException)
                 when (recipeException is not OperationCanceledException)
@@ -295,8 +297,7 @@ internal sealed class RecipeSearchExporterService(
         }
     }
 
-    private static async Task ExportRecipesToSearchIndexAsync(
-        IMeilisearchClient searchClient,
+    private async Task ExportRecipesToSearchIndexAsync(
         List<RecipeRecordDataExtractedFromDatabase> entries,
         CancellationToken ct
     )
@@ -339,14 +340,6 @@ internal sealed class RecipeSearchExporterService(
                 r.Recipe!.SearchVersion
             ))
             .ToListAsync(ct);
-
-    record class RecipeRecordDataExtractedFromDatabase(
-        long RecipeFk,
-        string Name,
-        string ShortDescription,
-        long RecipeBookFk,
-        long SearchVersion
-    );
 
     private async Task MarkRecipeExportAsFailedNoThrowAsync(
         ApplicationDbContext db,
@@ -498,7 +491,6 @@ internal sealed class RecipeSearchExporterService(
                 try
                 {
                     await DeleteRecipesFromSearchIndexAsync(
-                        searchClient,
                         candidatesToDelete.Select(c => c.RecipeFk),
                         innerCt
                     );
@@ -511,11 +503,7 @@ internal sealed class RecipeSearchExporterService(
                         bool success;
                         try
                         {
-                            await DeleteRecipesFromSearchIndexAsync(
-                                searchClient,
-                                [RecipeFk],
-                                innerCt
-                            );
+                            await DeleteRecipesFromSearchIndexAsync([RecipeFk], innerCt);
                             success = true;
                         }
                         catch (Exception innerEx) when (innerEx is not OperationCanceledException)
@@ -642,8 +630,7 @@ internal sealed class RecipeSearchExporterService(
         }
     }
 
-    private static async Task DeleteRecipesFromSearchIndexAsync(
-        IMeilisearchClient searchClient,
+    private async Task DeleteRecipesFromSearchIndexAsync(
         IEnumerable<long> entries,
         CancellationToken ct
     )
@@ -770,5 +757,46 @@ internal sealed class RecipeSearchExporterService(
             logger.Error_UnhandledExceptionDeletingStuckEntries,
             outerCt
         );
+    }
+
+    private async Task<bool> UpsertIndexAsync(CancellationToken ct)
+    {
+        try
+        {
+            GetIndexResponse? index = await searchClient.GetIndexAsync(RecipesSearchIndex, ct);
+            if (index is null)
+            {
+                MeilisearchTaskResponse createResponse = await searchClient.CreateIndexAsync(
+                    RecipesSearchIndex,
+                    PrimaryKeyPropertyName,
+                    ct
+                );
+
+                TaskStatusResponse? createTask = await searchClient.WaitForTaskCompletionAsync(
+                    createResponse.TaskUid,
+                    ct
+                );
+
+                if (createTask?.Status != MeilisearchTaskStatus.Succeeded)
+                {
+                    logger.Error_IndexCreationTaskFailed(
+                        RecipesSearchIndex,
+                        createResponse.TaskUid,
+                        createTask?.Status
+                    );
+                    return false;
+                }
+            }
+            return true;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.Error_IndexCreationFailedWithException(
+                RecipesSearchIndex,
+                PrimaryKeyPropertyName,
+                ex
+            );
+            return false;
+        }
     }
 }
