@@ -83,5 +83,5 @@ public class RecipeDbObject
     /// <summary>
     /// Pointer to recipe search extraction tracking record
     /// </summary>
-    public RecipeSearchExtractionStatusDbObject? RecipeSearchExtraction { get; set; }
+    public RecipeSearchWorkerStateDbObject? RecipeSearchExtraction { get; set; }
 }

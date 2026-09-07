@@ -57,4 +57,9 @@ public class RecipeSearchWorkerStateDbObject
     /// </summary>
     [ConcurrencyCheck]
     public required string ConcurrencyTag { get; set; } = "";
+
+    /// <summary>
+    /// If an extraction has ever been attempted
+    /// </summary>
+    public bool ExtractionAttempted { get; set; }
 }
