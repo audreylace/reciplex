@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -20,7 +19,6 @@ namespace Reciplex.Server.Database.SearchExporter;
 /// <param name="repeatedDatabaseActionStrategy">strategy for running repeated database actions</param>
 /// <param name="clock">clock for getting the current time</param>
 /// <param name="concurrencyTagProvider">concurrency tag provider</param>
-/// <param name="metrics">metrics for the service</param>
 /// <param name="searchIndexCreationStrategy">strategy for making a search index</param>
 /// <remarks>
 ///  TODO -
@@ -31,7 +29,6 @@ internal sealed class RecipeSearchExporterService(
     RepeatedDatabaseActionStrategy repeatedDatabaseActionStrategy,
     IClock clock,
     IConcurrencyTagProvider concurrencyTagProvider,
-    RecipeSearchExporterMetrics metrics,
     SearchIndexCreationStrategy searchIndexCreationStrategy
 ) : BackgroundService
 {
