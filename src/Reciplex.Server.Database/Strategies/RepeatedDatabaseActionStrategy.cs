@@ -7,7 +7,7 @@ namespace Reciplex.Server.Database.Strategies;
 /// Strategies to run actions over and over against the database
 /// </summary>
 /// <param name="sp">service provider to open up database scopes</param>
-internal class RepeatedDatabaseActionStrategy(IServiceProvider sp)
+internal sealed class RepeatedDatabaseActionStrategy(IServiceProvider sp)
 {
     /// <summary>
     /// Runs a database operation over and over with delay until <paramref name="action"/> returns false
@@ -37,12 +37,18 @@ internal class RepeatedDatabaseActionStrategy(IServiceProvider sp)
 
                 workDone = await action(db, ct);
                 anyWorkDone |= workDone;
-                recordMetrics?.(true, Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds);
+                recordMetrics?.Invoke(
+                    true,
+                    Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
+                );
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 exceptionLogger(ex);
-                recordMetrics?.(false, Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds);
+                recordMetrics?.Invoke(
+                    false,
+                    Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
+                );
                 await Task.Delay(TimeSpan.FromSeconds(10), ct);
                 break;
             }
@@ -80,12 +86,18 @@ internal class RepeatedDatabaseActionStrategy(IServiceProvider sp)
 
                 workDone = await action(db, scope, ct);
                 anyWorkDone |= workDone;
-                recordMetrics?.(true, Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds);
+                recordMetrics?.Invoke(
+                    true,
+                    Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
+                );
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 exceptionLogger(ex);
-                recordMetrics?.(false, Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds);
+                recordMetrics?.Invoke(
+                    false,
+                    Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
+                );
                 await Task.Delay(TimeSpan.FromSeconds(10), ct);
                 break;
             }

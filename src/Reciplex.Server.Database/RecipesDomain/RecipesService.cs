@@ -74,6 +74,7 @@ internal sealed class RecipesService(
         RecipeDbObject recipeDbObject = new()
         {
             RecipeBookFk = bookLookup.Book.Id,
+            SearchVersion = 1,
             Name = args.Name,
             ShortDescription = args.ShortDescription,
             Details = args.Details,
@@ -377,6 +378,7 @@ internal sealed class RecipesService(
         recipe.Details = args.Details;
         recipe.LastModified = clock.GetCurrentInstant().ToUnixTimeSeconds();
         recipe.ConcurrencyTag = concurrencyTagProvider.NextTag();
+        recipe.SearchVersion++;
         try
         {
             await dbContext.SaveChangesAsync(ct);
