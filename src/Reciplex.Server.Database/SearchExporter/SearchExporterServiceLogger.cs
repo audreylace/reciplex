@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Reciplex.Server.Meilisearch.Responses;
 
 namespace Reciplex.Server.Database.SearchExporter;
 
@@ -21,33 +20,6 @@ static partial class SearchExporterServiceLogger
     public static partial void Error_ExportingRecipeToSearchIndex(
         this ILogger<SearchExporterService> logger,
         long RecipeFk,
-        Exception ex
-    );
-
-    [LoggerMessage(LogLevel.Error, "Exception deleting a batch of records from the search index")]
-    public static partial void Error_DeletingBatchOfRecordsFromSearchIndex(
-        this ILogger<SearchExporterService> logger,
-        Exception ex
-    );
-
-    [LoggerMessage(
-        LogLevel.Error,
-        "Deletion task with id {TaskUid} failed : status was {TaskStatus}"
-    )]
-    public static partial void Error_DeletionTaskFailed(
-        this ILogger<SearchExporterService> logger,
-        long? TaskUid,
-        MeilisearchTaskStatus? TaskStatus
-    );
-
-    [LoggerMessage(
-        LogLevel.Error,
-        "Failed to increment deletion attempt counter for search index entry with primary id {SearchIndexId} and recipe record {RecordId}"
-    )]
-    public static partial void Error_IncrementingFailedIndexDeletionCounter(
-        this ILogger<SearchExporterService> logger,
-        long SearchIndexId,
-        long RecordId,
         Exception ex
     );
 

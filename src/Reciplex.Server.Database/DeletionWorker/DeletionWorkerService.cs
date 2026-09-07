@@ -30,7 +30,7 @@ internal sealed class DeletionWorkerService(
             bool anyWorkDone = false;
 
             anyWorkDone |= await RunUntilCompletionWithDelay(
-                DeletionDatabaseActionStrategy.CollectAndDelete(
+                CollectActDatabaseActionStrategy.CollectAndAct(
                     (db, ct) =>
                         db
                             .Recipes.Where(r =>
@@ -53,7 +53,7 @@ internal sealed class DeletionWorkerService(
             );
 
             anyWorkDone |= await RunUntilCompletionWithDelay(
-                DeletionDatabaseActionStrategy.CollectAndDelete(
+                CollectActDatabaseActionStrategy.CollectAndAct(
                     (db, ct) =>
                         db
                             .RecipeBookAccessEntries.Where(rAccessEntry =>
@@ -77,7 +77,7 @@ internal sealed class DeletionWorkerService(
             );
 
             anyWorkDone |= await RunUntilCompletionWithDelay(
-                DeletionDatabaseActionStrategy.CollectAndDelete(
+                CollectActDatabaseActionStrategy.CollectAndAct(
                     (db, ct) =>
                         db
                             .RecipeBooks.Where(r =>
@@ -97,7 +97,7 @@ internal sealed class DeletionWorkerService(
             );
 
             anyWorkDone |= await RunUntilCompletionWithDelay(
-                DeletionDatabaseActionStrategy.CollectAndDelete(
+                CollectActDatabaseActionStrategy.CollectAndAct(
                     (db, ct) =>
                         db
                             .Users.Where(user =>

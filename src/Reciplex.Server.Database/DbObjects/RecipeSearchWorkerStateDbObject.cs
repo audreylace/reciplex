@@ -38,9 +38,9 @@ public class RecipeSearchWorkerStateDbObject
     public long? LeaseExpireTime { get; set; }
 
     /// <summary>
-    /// The number of attempts against this record
+    /// The number of extract attempts against this record
     /// </summary>
-    public int ErrorCount { get; set; }
+    public int ExtractRetryCount { get; set; }
 
     /// <summary>
     /// The version observed at time of error
@@ -48,9 +48,9 @@ public class RecipeSearchWorkerStateDbObject
     public long? AttemptedExtractSearchVersion { get; set; }
 
     /// <summary>
-    /// The next time retry
+    /// The next extract retry time
     /// </summary>
-    public long? NextRetryTime { get; set; }
+    public long? NextExtractRetryTime { get; set; }
 
     /// <summary>
     /// The concurrency tag
@@ -62,4 +62,14 @@ public class RecipeSearchWorkerStateDbObject
     /// If an extraction has ever been attempted
     /// </summary>
     public bool ExtractionAttempted { get; set; }
+
+    /// <summary>
+    /// Next delete retry time
+    /// </summary>
+    public long? NextDeleteRetryTime { get; set; }
+
+    /// <summary>
+    /// How many delete attempts so far
+    /// </summary>
+    public int DeleteRetryCounter { get; set; }
 }

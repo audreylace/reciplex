@@ -36,6 +36,13 @@ public interface IMeilisearchClient
     )
         where T : class;
 
+    public Task<TaskStatusResponse?> UpsertDocumentsAndWaitAsync<T>(
+        string indexUid,
+        IEnumerable<T> documents,
+        CancellationToken ct
+    )
+        where T : class;
+
     /// <summary>
     /// Post a batch operation to delete a set of documents
     /// </summary>

@@ -160,4 +160,18 @@ public class MeilisearchClient(HttpClient httpClient) : IMeilisearchClient
             await Task.Delay(pollFrequency ?? TimeSpan.FromMilliseconds(100), ct);
         }
     }
+
+    public async Task<TaskStatusResponse?> UpsertDocumentsAndWaitAsync<T>(
+        string indexUid,
+        IEnumerable<T> documents,
+        CancellationToken ct
+    )
+        where T : class
+    {
+        MeilisearchTaskResponse result = await UpsertDocumentsAsync(indexUid, documents, ct);
+
+        TaskStatusResponse? taskStatus = await WaitForTaskCompletionAsync(result.TaskUid, ct);
+
+        return taskStatus;
+    }
 }
