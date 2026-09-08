@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 using Reciplex.Server.Meilisearch.Responses;
 
 namespace Reciplex.Server.Meilisearch;
@@ -63,4 +64,46 @@ public interface IMeilisearchClient
         CancellationToken ct,
         TimeSpan? pollFrequency = null
     );
+
+    public Task<MeilisearchTaskResponse> ReplaceFilterableAttributesAsync(
+        string indexUid,
+        IEnumerable<string> attributes,
+        CancellationToken ct
+    );
+
+    public async Task<MeiliFilterAttributes?> GetFilterableAttributesAsync(
+        string indexUid,
+        CancellationToken ct
+    );
+}
+
+[JsonConverter(typeof(MeiliFilterAttributesConverter))]
+public class MeiliFilterAttributes
+{
+    /// <summary>
+    /// List of properties with all filtering enabled
+    /// </summary>
+    public required List<string> Properties { get; init; }
+
+    /// <summary>
+    /// Set of attributes with enhanced configuration
+    /// </summary>
+    public required List<MeiliFilterAttributeConfig> MeiliFilterAttributeConfigs { get; init; }
+}
+
+public class MeiliFilterAttributeConfig
+{
+    public required List<string> AttributePatterns { get; init; }
+}
+
+public class MeiliAttributeFeatures
+{
+    public bool FacetSearch { get; init; }
+    public MeiliAttributeFilterFlags Filter { get; init; } = new();
+}
+
+public class MeiliAttributeFilterFlags
+{
+    public bool Equality { get; set; }
+    public bool Comparison { get; set; }
 }

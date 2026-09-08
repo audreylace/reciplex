@@ -174,4 +174,45 @@ public class MeilisearchClient(HttpClient httpClient) : IMeilisearchClient
 
         return taskStatus;
     }
+
+    public async Task<MeilisearchTaskResponse> ReplaceFilterableAttributesAsync(
+        string indexUid,
+        IEnumerable<string> attributes,
+        CancellationToken ct
+    )
+    {
+        using HttpResponseMessage response = await httpClient.PutAsJsonAsync(
+            $"indexes/{Uri.EscapeDataString(indexUid)}/settings/filterable-attributes",
+            attributes.ToArray(),
+            _options,
+            ct
+        );
+
+        ThrowIfIndexNotFound(response, indexUid);
+
+        return await DecodeTaskResponse(response, ct);
+    }
+
+    public async Task<MeiliFilterAttributes?> GetFilterableAttributesAsync(
+        string indexUid,
+        CancellationToken ct
+    )
+    {
+        using HttpResponseMessage response = await httpClient.GetAsync(
+            $"indexes/{Uri.EscapeDataString(indexUid)}/settings/filterable-attributes",
+            ct
+        );
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (response.StatusCode == System.Net.HttpStatusCode.OK)
+        {
+            return await ReadJsonOrThrow<MeiliFilterAttributes>(response, ct);
+        }
+
+        throw CreateUnhandledStatusCodeException(response);
+    }
 }

@@ -306,10 +306,10 @@ internal sealed class RecipeSearchBackgroundExporterService(
             RecipesSearchIndex,
             entries.Select(e => new RecipeSearchIndexEntry()
             {
-                Id = RecordIdAsStringForSearch.MakeRecipeStringKey(e.RecipeFk),
+                RecipeId = RecordIdAsStringForSearch.MakeRecipeStringKey(e.RecipeFk),
                 Name = e.Name,
                 ShortDescription = e.ShortDescription,
-                BookId = RecordIdAsStringForSearch.MakeRecipeBookStringKey(e.RecipeBookFk),
+                RecipeBookId = RecordIdAsStringForSearch.MakeRecipeBookStringKey(e.RecipeBookFk),
             }),
             ct
         );
