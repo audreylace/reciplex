@@ -12,10 +12,10 @@ public interface IMeilisearchClient
     /// <summary>
     /// Gets an index by its name or returns null if the index does not exist.
     /// </summary>
-    /// <param name="uid">the index id</param>
+    /// <param name="indexUid">the index id</param>
     /// <param name="ct">async cancellation token</param>
     /// <returns>info about the index if found or null otherwise</returns>
-    public Task<GetIndexResponse?> GetIndexAsync(string uid, CancellationToken ct);
+    public Task<GetIndexResponse?> GetIndexAsync(string indexUid, CancellationToken ct);
     public Task<MeilisearchTaskResponse> CreateIndexAsync(
         string uuid,
         string primaryKey,
@@ -71,7 +71,7 @@ public interface IMeilisearchClient
         CancellationToken ct
     );
 
-    public async Task<MeiliFilterAttributes?> GetFilterableAttributesAsync(
+    public Task<MeiliFilterAttributes?> GetFilterableAttributesAsync(
         string indexUid,
         CancellationToken ct
     );

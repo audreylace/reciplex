@@ -1,4 +1,4 @@
-namespace Reciplex.Server.Database.SearchExporter;
+namespace Reciplex.Server.Database.SearchExporter.Repositories;
 
 class UpsertRecipesInSearchIndexArgs
 {

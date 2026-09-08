@@ -1,4 +1,4 @@
-namespace Reciplex.Server.Database.SearchExporter;
+namespace Reciplex.Server.Database.SearchExporter.Repositories;
 
 /// <summary>
 /// Repository for a search index

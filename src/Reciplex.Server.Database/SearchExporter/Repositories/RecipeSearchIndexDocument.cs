@@ -1,11 +1,11 @@
 using Reciplex.Server.Database.DbObjects;
 
-namespace Reciplex.Server.Database.SearchExporter;
+namespace Reciplex.Server.Database.SearchExporter.Repositories;
 
 /// <summary>
-/// Search index entry for recipes
+/// Search index document for recipes as stored in the backend search
 /// </summary>
-public class RecipeSearchIndexEntry
+class RecipeSearchIndexDocument
 {
     /// <summary>
     /// The id of this search index entry. This is

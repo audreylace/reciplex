@@ -1,7 +1,8 @@
 using Microsoft.Extensions.Logging;
+using Reciplex.Server.Database.SearchExporter.Repositories;
 using Reciplex.Server.Meilisearch.Responses;
 
-namespace Reciplex.Server.Database.SearchExporter;
+namespace Reciplex.Server.Database.SearchExporter.Loggers;
 
 static partial class MeilisearchIndexRepositoryLogger
 {

@@ -7,7 +7,7 @@ namespace Reciplex.Server.Meilisearch;
 
 public class MeilisearchClient(HttpClient httpClient) : IMeilisearchClient
 {
-    record class CreateIndexRequest(string Uid, string PrimaryKey);
+    sealed record class CreateIndexRequest(string Uid, string PrimaryKey);
 
     private static readonly JsonSerializerOptions _options = new()
     {

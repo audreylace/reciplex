@@ -1,8 +1,10 @@
+using System.Globalization;
 using Microsoft.Extensions.Logging;
+using Reciplex.Server.Database.SearchExporter.Loggers;
 using Reciplex.Server.Meilisearch;
 using Reciplex.Server.Meilisearch.Responses;
 
-namespace Reciplex.Server.Database.SearchExporter;
+namespace Reciplex.Server.Database.SearchExporter.Repositories;
 
 /// <summary>
 /// Implements <see cref="ISearchIndexRepository"/>
@@ -36,10 +38,7 @@ sealed class MeilisearchIndexRepository(
         CancellationToken ct
     )
     {
-        HashSet<string> stringIds =
-        [
-            .. recipeIds.Select(id => RecordIdAsStringForSearch.MakeRecipeStringKey(id)),
-        ];
+        HashSet<string> stringIds = [.. recipeIds.Select(id => MakeRecipeStringKey(id))];
 
         if (stringIds.Count < 1)
         {
@@ -53,7 +52,7 @@ sealed class MeilisearchIndexRepository(
         {
             MeilisearchTaskResponse deleteTask = await searchClient.DeleteDocumentsAsync(
                 RecipesSearchIndexUid,
-                recipeIds.Select(id => RecordIdAsStringForSearch.MakeRecipeStringKey(id)),
+                recipeIds.Select(id => MakeRecipeStringKey(id)),
                 ct
             );
 
@@ -111,14 +110,12 @@ sealed class MeilisearchIndexRepository(
         {
             MeilisearchTaskResponse upsertResponse = await searchClient.UpsertDocumentsAsync(
                 RecipesSearchIndexUid,
-                args.Recipes.Select(e => new RecipeSearchIndexEntry()
+                args.Recipes.Select(e => new RecipeSearchIndexDocument()
                 {
-                    RecipeId = RecordIdAsStringForSearch.MakeRecipeStringKey(e.RecipeId),
+                    RecipeId = MakeRecipeStringKey(e.RecipeId),
                     Name = e.Name,
                     ShortDescription = e.ShortDescription,
-                    RecipeBookId = RecordIdAsStringForSearch.MakeRecipeBookStringKey(
-                        e.RecipeBookId
-                    ),
+                    RecipeBookId = MakeRecipeBookStringKey(e.RecipeBookId),
                 }),
                 ct
             );
@@ -252,6 +249,36 @@ sealed class MeilisearchIndexRepository(
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Creates a recipe key for search
+    /// </summary>
+    /// <param name="id">the id to convert</param>
+    /// <returns>the recipe key as a string</returns>
+    private static string MakeRecipeStringKey(long id)
+    {
+        return $"recipe{PaddedLong(id)}";
+    }
+
+    /// <summary>
+    /// Creates a recipe book key for search
+    /// </summary>
+    /// <param name="id">the id to convert</param>
+    /// <returns>the recipe book key as a string</returns>
+    private static string MakeRecipeBookStringKey(long id)
+    {
+        return $"recipeBook{PaddedLong(id)}";
+    }
+
+    /// <summary>
+    /// Creates a string padded to 19 places
+    /// </summary>
+    /// <param name="id">the long to pad</param>
+    /// <returns>the padded long as a string</returns>
+    private static string PaddedLong(long id)
+    {
+        return id.ToString("D19", CultureInfo.InvariantCulture);
     }
     #endregion  Private Methods
 }

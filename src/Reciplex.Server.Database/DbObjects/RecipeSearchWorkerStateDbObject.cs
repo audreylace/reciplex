@@ -38,6 +38,11 @@ public class RecipeSearchWorkerStateDbObject
     public long? LeaseExpireTime { get; set; }
 
     /// <summary>
+    /// Unique string identifying the lease this record is part of.
+    /// </summary>
+    public string? LeaseToken { get; set; }
+
+    /// <summary>
     /// The number of extract attempts against this record
     /// </summary>
     public int ExtractRetryCount { get; set; }
@@ -51,12 +56,6 @@ public class RecipeSearchWorkerStateDbObject
     /// The next extract retry time
     /// </summary>
     public long? NextExtractRetryTime { get; set; }
-
-    /// <summary>
-    /// The concurrency tag
-    /// </summary>
-    [ConcurrencyCheck]
-    public required string ConcurrencyTag { get; set; } = "";
 
     /// <summary>
     /// If an extraction has ever been attempted
