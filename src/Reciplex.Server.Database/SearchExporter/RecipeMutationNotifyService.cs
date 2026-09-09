@@ -23,7 +23,7 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
         _wakeChannel.Writer.TryWrite(0);
     }
 
-    public async Task WaitForOne(CancellationToken ct)
+    public async Task WaitForChange(CancellationToken ct)
     {
         if (!options.Value.Enable)
         {

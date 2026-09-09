@@ -9,6 +9,7 @@ using Reciplex.Server.Database.DeletionWorker;
 using Reciplex.Server.Database.RecipeBooksDomain;
 using Reciplex.Server.Database.RecipesDomain;
 using Reciplex.Server.Database.SearchExporter;
+using Reciplex.Server.Database.SearchExporter.HostedServices;
 using Reciplex.Server.Database.Strategies;
 using Reciplex.Server.Database.UsersDomain;
 using Reciplex.Server.Meilisearch;
@@ -64,6 +65,13 @@ public static partial class WebApplicationBuilderExtensions
                 configOptions.AuthenticationToken
             );
         });
+
+        if (configOptions.Enable)
+        {
+            builder.Services.AddHostedService<RecipeSearchIndexDeletionHostedService>();
+            builder.Services.AddHostedService<RecipeSearchLeaseBreakerHostedService>();
+            builder.Services.AddHostedService<RecipeSearchRowExporterHostedService>();
+        }
     }
 
     /// <summary>

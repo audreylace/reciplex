@@ -19,4 +19,10 @@ static partial class RecipeSearchIndexDeletionHostedServiceLogger
         this ILogger<RecipeSearchIndexDeletionHostedService> logger,
         Exception ex
     );
+
+    [LoggerMessage(LogLevel.Error, "Got an exception waiting for the renew task")]
+    public static partial void Error_RenewTaskFailed(
+        this ILogger<RecipeSearchIndexDeletionHostedService> logger,
+        Exception ex
+    );
 }

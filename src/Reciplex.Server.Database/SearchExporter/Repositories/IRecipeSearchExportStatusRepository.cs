@@ -83,12 +83,19 @@ interface IRecipeSearchExportStatusRepository
     );
 
     /// <summary>
-    /// Creates search status rows for recipes that do not have them
+    /// Creates search status rows for recipes that do not have them and takes out a lease on them
     /// </summary>
     /// <param name="max">max number of rows to create</param>
+    /// <param name="leaseToken">the lease token identifying this lease</param>
+    /// <param name="leaseExpireTime">the time the lease expires</param>
     /// <param name="ct">async cancellation token</param>
-    /// <returns>set or created rows</returns>
-    public Task<int> CreateSearchStatusRowsAsync(int max, CancellationToken ct);
+    /// <returns>ids of the locked rows for export</returns>
+    public Task<List<long>> CreateSearchStatusRowsAsync(
+        int max,
+        string leaseToken,
+        long leaseExpireTime,
+        CancellationToken ct
+    );
 
     /// <summary>
     /// Gets up to <paramref name="max"/> recipe ids that need to be re-extracted to the search index

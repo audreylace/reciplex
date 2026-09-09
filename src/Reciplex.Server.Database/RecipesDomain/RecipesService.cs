@@ -84,7 +84,7 @@ internal sealed class RecipesService(
         };
         dbContext.Add(recipeDbObject);
         await dbContext.SaveChangesAsync(ct);
-        recipeMutationNotifyService.NotifyOne();
+        recipeMutationNotifyService.NotifyNew();
         return new SuccessResult<RecipeDao>(DbObjectToRecipeDao(recipeDbObject, true));
     }
 
@@ -157,7 +157,6 @@ internal sealed class RecipesService(
         {
             return new ConflictResult();
         }
-        recipeMutationNotifyService.NotifyOne();
         return new EmptySuccessResult();
     }
 

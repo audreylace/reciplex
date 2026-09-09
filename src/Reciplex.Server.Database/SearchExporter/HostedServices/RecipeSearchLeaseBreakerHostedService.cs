@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -14,7 +13,7 @@ namespace Reciplex.Server.Database.SearchExporter.HostedServices;
 /// <param name="options">search exporter options to know if search feature is enabled</param>
 /// <param name="logger">The service logger</param>
 sealed class RecipeSearchLeaseBreakerHostedService(
-    IServiceProvider sp,
+    IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository,
     IOptions<SearchExporterOptions> options,
     ILogger<RecipeSearchLeaseBreakerHostedService> logger
 ) : BackgroundService
@@ -46,12 +45,9 @@ sealed class RecipeSearchLeaseBreakerHostedService(
         {
             while (!ct.IsCancellationRequested)
             {
-                await using var scope = sp.CreateAsyncScope();
-                IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository =
-                    scope.ServiceProvider.GetRequiredService<IRecipeSearchExportStatusRepository>();
                 if (
                     await recipeSearchExportStatusRepository.BreakLeasesAsync(
-                        100,
+                        options.Value.LeaseBreakBatchSize,
                         TenMinutesInSeconds,
                         TenMinutesInSeconds,
                         ct
@@ -60,10 +56,15 @@ sealed class RecipeSearchLeaseBreakerHostedService(
                 {
                     break;
                 }
-                await Task.Delay(200, ct); // 200ms delay so the database can breathe. Important for SQLite3 backend.
+
+                if (options.Value.LeaseBreakLoopPauseMs > 0)
+                {
+                    await Task.Delay(options.Value.LeaseBreakLoopPauseMs, ct); // 50ms delay so the database can breathe. Important for SQLite3 backend.
+                }
             }
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex)
+            when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             logger.Error_LeaseBreakingFailed(ex);
         }
