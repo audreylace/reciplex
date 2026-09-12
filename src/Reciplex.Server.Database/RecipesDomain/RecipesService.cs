@@ -5,6 +5,7 @@ using Reciplex.Server.Abstractions.StringIdProvider;
 using Reciplex.Server.Database.DbObjects;
 using Reciplex.Server.Database.RecipeBooksDomain;
 using Reciplex.Server.Database.Results;
+using Reciplex.Server.Database.SearchExporter;
 using Reciplex.Server.Database.UsersDomain;
 
 namespace Reciplex.Server.Database.RecipesDomain;
@@ -16,11 +17,13 @@ namespace Reciplex.Server.Database.RecipesDomain;
 /// <param name="clock">time provider</param>
 /// <param name="concurrencyTagProvider">concurrency token provider</param>
 /// <param name="stringIdProvider">string id marshaller</param>
+/// <param name="recipeMutationNotifyService">notifies interested parties on recipe addition or deletion</param>
 internal sealed class RecipesService(
     ApplicationDbContext dbContext,
     IClock clock,
     IConcurrencyTagProvider concurrencyTagProvider,
-    IStringIdProvider stringIdProvider
+    IStringIdProvider stringIdProvider,
+    IRecipeMutationNotifyService recipeMutationNotifyService
 ) : IRecipesService
 {
     /// <inheritdoc />
@@ -71,6 +74,7 @@ internal sealed class RecipesService(
         RecipeDbObject recipeDbObject = new()
         {
             RecipeBookFk = bookLookup.Book.Id,
+            SearchVersion = 1,
             Name = args.Name,
             ShortDescription = args.ShortDescription,
             Details = args.Details,
@@ -80,6 +84,7 @@ internal sealed class RecipesService(
         };
         dbContext.Add(recipeDbObject);
         await dbContext.SaveChangesAsync(ct);
+        recipeMutationNotifyService.NotifyNew();
         return new SuccessResult<RecipeDao>(DbObjectToRecipeDao(recipeDbObject, true));
     }
 
@@ -372,6 +377,7 @@ internal sealed class RecipesService(
         recipe.Details = args.Details;
         recipe.LastModified = clock.GetCurrentInstant().ToUnixTimeSeconds();
         recipe.ConcurrencyTag = concurrencyTagProvider.NextTag();
+        recipe.SearchVersion++;
         try
         {
             await dbContext.SaveChangesAsync(ct);
@@ -381,6 +387,7 @@ internal sealed class RecipesService(
             return new ConflictResult();
         }
 
+        recipeMutationNotifyService.NotifyOne();
         return new SuccessResult<RecipeDao>(DbObjectToRecipeDao(recipe, true));
     }
 

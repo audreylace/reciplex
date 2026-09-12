@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -7,7 +8,11 @@ using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Database.DeletionWorker;
 using Reciplex.Server.Database.RecipeBooksDomain;
 using Reciplex.Server.Database.RecipesDomain;
+using Reciplex.Server.Database.SearchExporter;
+using Reciplex.Server.Database.SearchExporter.HostedServices;
+using Reciplex.Server.Database.Strategies;
 using Reciplex.Server.Database.UsersDomain;
+using Reciplex.Server.Meilisearch;
 
 namespace Reciplex.Server.Database;
 
@@ -31,8 +36,42 @@ public static partial class WebApplicationBuilderExtensions
         builder.Services.AddRandomNumberGeneratorConcurrencyTagProvider();
         builder.Services.AddHostedService<DeletionWorkerService>();
         builder.Services.AddSingleton<DeletionWorkerServiceMetrics>();
+        builder.Services.AddSingleton<RepeatedDatabaseActionStrategy>();
+
+        ConfigureSearch(builder);
 
         return builder;
+    }
+
+    private static void ConfigureSearch(WebApplicationBuilder builder)
+    {
+        builder.Services.AddSingleton<IRecipeMutationNotifyService, RecipeMutationNotifyService>();
+        builder.Services.Configure<SearchExporterOptions>(
+            builder.Configuration.GetSection(SearchExporterOptions.SectionPath)
+        );
+
+        SearchExporterOptions configOptions = new();
+        builder.Configuration.GetSection(SearchExporterOptions.SectionPath).Bind(configOptions);
+        builder.Services.AddHttpClient<IMeilisearchClient, MeilisearchClient>(client =>
+        {
+            if (!configOptions.Enable)
+            {
+                return;
+            }
+
+            client.BaseAddress = new Uri(configOptions.Host);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                configOptions.AuthenticationToken
+            );
+        });
+
+        if (configOptions.Enable)
+        {
+            builder.Services.AddHostedService<RecipeSearchIndexDeletionHostedService>();
+            builder.Services.AddHostedService<RecipeSearchLeaseBreakerHostedService>();
+            builder.Services.AddHostedService<RecipeSearchRowExporterHostedService>();
+        }
     }
 
     /// <summary>
