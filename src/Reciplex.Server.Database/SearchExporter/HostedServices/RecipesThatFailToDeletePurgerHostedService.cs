@@ -32,7 +32,8 @@ class RecipesThatFailToDeletePurgerHostedService(
             try
             {
                 while (
-                    await repository.PurgeRecipeSearchEntriesWithTooManyRetries(
+                    !stoppingToken.IsCancellationRequested
+                    && await repository.PurgeRecipeSearchEntriesWithTooManyRetries(
                         options.Value.RecipesFailedToDeletePurgeSize,
                         options.Value.MaxRecipeDeleteAttempts,
                         stoppingToken

@@ -33,7 +33,10 @@ sealed class RecipeSearchIndexDeletionHostedService(
         PeriodicTimer periodicTimer = new(TimeSpan.FromMinutes(1));
         while (await periodicTimer.WaitForNextTickAsync(stoppingToken))
         {
-            while (await DeleteRecipesFromIndexAsync(stoppingToken)) { }
+            while (
+                !stoppingToken.IsCancellationRequested
+                && await DeleteRecipesFromIndexAsync(stoppingToken)
+            ) { }
         }
     }
 

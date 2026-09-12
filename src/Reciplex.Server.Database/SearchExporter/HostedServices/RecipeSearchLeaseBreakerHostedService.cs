@@ -33,7 +33,8 @@ sealed class RecipeSearchLeaseBreakerHostedService(
             try
             {
                 while (
-                    await recipeSearchExportStatusRepository.BreakLeasesAsync(
+                    !stoppingToken.IsCancellationRequested
+                    && await recipeSearchExportStatusRepository.BreakLeasesAsync(
                         options.Value.LeaseBreakBatchSize,
                         TenMinutesInSeconds,
                         TenMinutesInSeconds,
@@ -42,7 +43,8 @@ sealed class RecipeSearchLeaseBreakerHostedService(
                 ) { }
             }
             catch (Exception ex)
-                when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+                when (ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested
+                )
             {
                 logger.Error_LeaseBreakingFailed(ex);
             }
