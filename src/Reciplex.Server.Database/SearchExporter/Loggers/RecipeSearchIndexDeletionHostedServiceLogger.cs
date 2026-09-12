@@ -11,12 +11,10 @@ static partial class RecipeSearchIndexDeletionHostedServiceLogger
         Exception ex
     );
 
-    [LoggerMessage(
-        LogLevel.Error,
-        "Got an exception deleting recipes from the database with too many retries"
-    )]
-    public static partial void Error_PurgingRecipesFailed(
+    [LoggerMessage(LogLevel.Error, "Got an exception deleting recipe {RecipeId} from the index")]
+    public static partial void Error_DeletingRecipeFromIndexFailed(
         this ILogger<RecipeSearchIndexDeletionHostedService> logger,
+        long RecipeId,
         Exception ex
     );
 

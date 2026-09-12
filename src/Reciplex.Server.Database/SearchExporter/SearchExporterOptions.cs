@@ -25,23 +25,19 @@ public class SearchExporterOptions
     public int SearchDeleteBatchSize { get; set; } = 20;
 
     /// <summary>
-    /// Number of milliseconds to pause after extracting data from the database and
-    /// exporting it to the search index. Delay exists to ensure the search
-    /// export process does not fully consume the database resources. Lower
-    /// values combined with <see cref="SearchExportBatchSize" /> export faster
-    /// at the cost of more RAM, CPU, and database contention.
-    /// </summary>
-    public int SearchExportSuccessPauseMs { get; set; } = 20;
-
-    public int SearchExportDeleteLoopPauseMs { get; set; } = 50;
-
-    /// <summary>
-    /// How long to wait between each lease break loop
-    /// </summary>
-    public int LeaseBreakLoopPauseMs { get; set; } = 50;
-
-    /// <summary>
     /// Max number of lease records to break in one batch
     /// </summary>
     public int LeaseBreakBatchSize { get; set; } = 100;
+
+    /// <summary>
+    /// How long a lease is valid for
+    /// </summary>
+    public int LeaseLifetime { get; set; } = 5 * 60;
+
+    /// <summary>
+    /// Max time to attempt an export to the search index.
+    /// </summary>
+    public int MaxExportAttempts { get; set; } = 20;
+    public int MaxRecipeDeleteAttempts { get; set; } = 20;
+    public int RecipesFailedToDeletePurgeSize { get; set; } = 100;
 }

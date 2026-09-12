@@ -7,13 +7,13 @@ using Reciplex.Server.Database.SearchExporter.Repositories;
 
 namespace Reciplex.Server.Database.SearchExporter.HostedServices;
 
-class RecipeSearchRowExporterHostedService(
+class NewRecipeSearchRowExporterHostedService(
     IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository,
-    IOptions<SearchExporterOptions> options,
     IConcurrencyTagProvider tagProvider,
-    ILogger<RecipeSearchRowExporterHostedService> logger,
     IRecipeMutationNotifyService recipeMutationNotifyService,
-    RecipeSearchIndexExporterStrategy recipeSearchIndexExporterStrategy
+    RecipeSearchIndexExporterStrategy recipeSearchIndexExporterStrategy,
+    IOptions<SearchExporterOptions> options,
+    ILogger<NewRecipeSearchRowExporterHostedService> logger
 ) : BackgroundService
 {
     const int LeaseExpireTimeSeconds = 60 * 5; // 5 minutes
@@ -32,46 +32,37 @@ class RecipeSearchRowExporterHostedService(
                 while (!stoppingToken.IsCancellationRequested)
                 {
                     string leaseToken = tagProvider.NextTag();
-                    var list = await recipeSearchExportStatusRepository.GetRecipesToExtractAsync(
+                    var list = await recipeSearchExportStatusRepository.CreateSearchStatusRowsAsync(
                         options.Value.SearchExportBatchSize,
-                        options.Value.MaxExportAttempts,
+                        leaseToken,
+                        LeaseExpireTimeSeconds,
                         stoppingToken
                     );
+
                     if (list.Count < 1)
                     {
                         break;
                     }
 
                     if (
-                        await recipeSearchExportStatusRepository.ClaimAsync(
+                        await recipeSearchIndexExporterStrategy.ExportRecipesAsync(
                             list,
                             leaseToken,
-                            LeaseExpireTimeSeconds,
                             stoppingToken
-                        ) > 0
+                        )
                     )
                     {
-                        if (
-                            await recipeSearchIndexExporterStrategy.ExportRecipesAsync(
-                                list,
-                                leaseToken,
-                                stoppingToken
-                            )
-                        )
-                        {
-                            recipeMutationNotifyService.DrainUpToChange(
-                                options.Value.SearchExportBatchSize
-                            );
-                        }
+                        recipeMutationNotifyService.DrainUpToNew(
+                            options.Value.SearchExportBatchSize
+                        );
                     }
                 }
             }
             catch (Exception ex)
-                when (ex is not OperationCanceledException
-                    || ex is OperationCanceledException && !stoppingToken.IsCancellationRequested
+                when (ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested
                 )
             {
-                logger.Error_ChangedRecipeExportLoopFailed(ex);
+                logger.Error_NewRecipeExportLoopFailed(ex);
             }
 
             using CancellationTokenSource cancellationTokenSource =
@@ -79,13 +70,13 @@ class RecipeSearchRowExporterHostedService(
             cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(30));
             try
             {
-                await recipeMutationNotifyService.WaitForChange(cancellationTokenSource.Token);
-                recipeMutationNotifyService.DrainUpToChange(options.Value.SearchExportBatchSize);
+                await recipeMutationNotifyService.WaitForNew(cancellationTokenSource.Token);
+                recipeMutationNotifyService.DrainUpToNew(options.Value.SearchExportBatchSize);
             }
             catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested) { }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                logger.Error_ChangedRecipeExportLoopChannelFailed(ex);
+                logger.Error_NewRecipeExportLoopChannelFailed(ex);
             }
         }
     }

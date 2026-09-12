@@ -26,47 +26,26 @@ sealed class RecipeSearchLeaseBreakerHostedService(
             return;
         }
 
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            var jitter = Random.Shared.Next(30);
-            await Task.Delay(TimeSpan.FromSeconds(45 + jitter), stoppingToken);
-            await BreakLeasesAsync(stoppingToken);
-        }
-    }
-
-    /// <summary>
-    /// Breaks leases until no more are found with a small delay between each cycle.
-    /// </summary>
-    /// <param name="ct">async cancellation token</param>
-    private async Task BreakLeasesAsync(CancellationToken ct)
-    {
+        PeriodicTimer periodicTimer = new(TimeSpan.FromSeconds(15));
         const int TenMinutesInSeconds = 10 * 60;
-        try
+        while (await periodicTimer.WaitForNextTickAsync(stoppingToken))
         {
-            while (!ct.IsCancellationRequested)
+            try
             {
-                if (
+                while (
                     await recipeSearchExportStatusRepository.BreakLeasesAsync(
                         options.Value.LeaseBreakBatchSize,
                         TenMinutesInSeconds,
                         TenMinutesInSeconds,
-                        ct
-                    ) < 1
-                )
-                {
-                    break;
-                }
-
-                if (options.Value.LeaseBreakLoopPauseMs > 0)
-                {
-                    await Task.Delay(options.Value.LeaseBreakLoopPauseMs, ct); // 50ms delay so the database can breathe. Important for SQLite3 backend.
-                }
+                        stoppingToken
+                    ) > 0
+                ) { }
             }
-        }
-        catch (Exception ex)
-            when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
-        {
-            logger.Error_LeaseBreakingFailed(ex);
+            catch (Exception ex)
+                when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+            {
+                logger.Error_LeaseBreakingFailed(ex);
+            }
         }
     }
 }
