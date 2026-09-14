@@ -23,14 +23,4 @@ static partial class RecipeSearchIndexDeletionHostedServiceLogger
         this ILogger<RecipeSearchIndexDeletionHostedService> logger,
         Exception ex
     );
-
-    [LoggerMessage(
-        LogLevel.Warning,
-        "Got an exception deleting recipes from the search index. Running retry attempt {Attempt}."
-    )]
-    public static partial void Warning_DeleteAttemptFailed(
-        this ILogger<RecipeSearchIndexDeletionHostedService> logger,
-        int Attempt,
-        Exception? ex
-    );
 }
