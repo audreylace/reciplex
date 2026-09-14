@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Polly;
 using Reciplex.Server.Database.SearchExporter.Loggers;
 using Reciplex.Server.Database.SearchExporter.Repositories;
 
@@ -15,7 +16,8 @@ namespace Reciplex.Server.Database.SearchExporter.HostedServices;
 sealed class RecipeSearchLeaseBreakerHostedService(
     IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository,
     IOptions<SearchExporterOptions> options,
-    ILogger<RecipeSearchLeaseBreakerHostedService> logger
+    ILogger<RecipeSearchLeaseBreakerHostedService> logger,
+    ResiliencePipelineBuilderFactory resiliencePipelineBuilderFactory
 ) : BackgroundService
 {
     /// <inheritdoc />
@@ -26,21 +28,16 @@ sealed class RecipeSearchLeaseBreakerHostedService(
             return;
         }
 
-        PeriodicTimer periodicTimer = new(TimeSpan.FromSeconds(15));
+        ResiliencePipeline pipeline = resiliencePipelineBuilderFactory.BuildDeleteRowPipeline(ex =>
+            ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested
+        );
+        PeriodicTimer periodicTimer = new(TimeSpan.FromMinutes(1));
         const int TenMinutesInSeconds = 10 * 60;
         while (await periodicTimer.WaitForNextTickAsync(stoppingToken))
         {
             try
             {
-                while (
-                    !stoppingToken.IsCancellationRequested
-                    && await recipeSearchExportStatusRepository.BreakLeasesAsync(
-                        options.Value.LeaseBreakBatchSize,
-                        TenMinutesInSeconds,
-                        TenMinutesInSeconds,
-                        stoppingToken
-                    ) > 0
-                ) { }
+                await BreakLeaseLoopAsync(pipeline, TenMinutesInSeconds, stoppingToken);
             }
             catch (Exception ex)
                 when (ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested
@@ -49,5 +46,26 @@ sealed class RecipeSearchLeaseBreakerHostedService(
                 logger.Error_LeaseBreakingFailed(ex);
             }
         }
+    }
+
+    private async Task BreakLeaseLoopAsync(
+        ResiliencePipeline pipeline,
+        int TenMinutesInSeconds,
+        CancellationToken stoppingToken
+    )
+    {
+        while (
+            !stoppingToken.IsCancellationRequested
+            && await pipeline.ExecuteAsync(
+                async token =>
+                    await recipeSearchExportStatusRepository.BreakLeasesAsync(
+                        options.Value.LeaseBreakBatchSize,
+                        TenMinutesInSeconds,
+                        TenMinutesInSeconds,
+                        token
+                    ),
+                stoppingToken
+            ) > 0
+        ) { }
     }
 }

@@ -2,11 +2,12 @@ using Microsoft.Extensions.Logging;
 using Reciplex.Server.Database.SearchExporter.Loggers;
 using Reciplex.Server.Database.SearchExporter.Repositories;
 
-namespace Reciplex.Server.Database.SearchExporter.HostedServices;
+namespace Reciplex.Server.Database.SearchExporter;
 
 class RecipeSearchIndexExporterStrategy(
     IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository,
     ISearchIndexRepository searchIndexRepository,
+    LeaseRenewer leaseRenewer,
     ILogger<RecipeSearchIndexExporterStrategy> logger
 )
 {
@@ -30,14 +31,13 @@ class RecipeSearchIndexExporterStrategy(
 
             using CancellationTokenSource cancellationTokenSource =
                 CancellationTokenSource.CreateLinkedTokenSource(ct);
-            var renewer = new LeaseRenewer(
-                recipeSearchExportStatusRepository,
+            var renewerTask = leaseRenewer.ExecuteAsync(
                 leaseToken,
                 [.. data.Select(d => d.RecipeFk)],
                 5 * 60, // keep lease for 5 minutes
-                1000 * 30 // renew every 30 seconds
+                1000 * 30, // renew every 30 seconds
+                cancellationTokenSource.Token
             );
-            var renewerTask = renewer.ExecuteAsync(cancellationTokenSource.Token);
             try
             {
                 var result = await searchIndexRepository.UpsertRecipesAsync(

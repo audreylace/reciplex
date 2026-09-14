@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Polly;
 using Reciplex.Server.Database.SearchExporter.Loggers;
 using Reciplex.Server.Database.SearchExporter.Repositories;
 
@@ -15,6 +16,7 @@ namespace Reciplex.Server.Database.SearchExporter.HostedServices;
 /// <param name="logger">logger for the hosted service</param>
 class RecipesThatFailToDeletePurgerHostedService(
     IRecipeSearchExportStatusRepository repository,
+    ResiliencePipelineBuilderFactory resiliencePipelineBuilderFactory,
     IOptions<SearchExporterOptions> options,
     ILogger<RecipesThatFailToDeletePurgerHostedService> logger
 ) : BackgroundService
@@ -26,19 +28,15 @@ class RecipesThatFailToDeletePurgerHostedService(
             return;
         }
 
+        ResiliencePipeline pipeline = resiliencePipelineBuilderFactory.BuildDeleteRowPipeline(ex =>
+            ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested
+        );
         PeriodicTimer periodicTimer = new(TimeSpan.FromMinutes(1));
         while (await periodicTimer.WaitForNextTickAsync(stoppingToken))
         {
             try
             {
-                while (
-                    !stoppingToken.IsCancellationRequested
-                    && await repository.PurgeRecipeSearchEntriesWithTooManyRetries(
-                        options.Value.RecipesFailedToDeletePurgeSize,
-                        options.Value.MaxRecipeDeleteAttempts,
-                        stoppingToken
-                    ) > 0
-                ) { }
+                await PurgeUntilThereAreNoneAsync(pipeline, stoppingToken);
             }
             catch (Exception ex)
                 when (ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested
@@ -47,5 +45,24 @@ class RecipesThatFailToDeletePurgerHostedService(
                 logger.Error_PurgingRecipesFailed(ex);
             }
         }
+    }
+
+    private async Task PurgeUntilThereAreNoneAsync(
+        ResiliencePipeline pipeline,
+        CancellationToken stoppingToken
+    )
+    {
+        while (
+            !stoppingToken.IsCancellationRequested
+            && await pipeline.ExecuteAsync(
+                async token =>
+                    await repository.PurgeRecipeSearchEntriesWithTooManyRetries(
+                        options.Value.RecipesFailedToDeletePurgeSize,
+                        options.Value.MaxRecipeDeleteAttempts,
+                        token
+                    ),
+                stoppingToken
+            ) > 0
+        ) { }
     }
 }

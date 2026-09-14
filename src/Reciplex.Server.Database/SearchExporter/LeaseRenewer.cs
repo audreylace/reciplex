@@ -2,15 +2,15 @@ using Reciplex.Server.Database.SearchExporter.Repositories;
 
 namespace Reciplex.Server.Database.SearchExporter;
 
-class LeaseRenewer(
-    IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository,
-    string leaseToken,
-    List<long> ids,
-    long leaseExpireWindow,
-    int frequencyMs
-)
+class LeaseRenewer(IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository)
 {
-    public async Task ExecuteAsync(CancellationToken ct)
+    public async Task ExecuteAsync(
+        string leaseToken,
+        List<long> ids,
+        long leaseExpireWindow,
+        int frequencyMs,
+        CancellationToken ct
+    )
     {
         int maxRetries = 10;
         int retry = 0;

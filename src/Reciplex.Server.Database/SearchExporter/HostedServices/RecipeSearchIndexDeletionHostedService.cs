@@ -15,10 +15,10 @@ sealed class RecipeSearchIndexDeletionHostedService(
     ISearchIndexRepository searchIndexRepository,
     IOptions<SearchExporterOptions> options,
     IConcurrencyTagProvider concurrencyTagProvider,
+    LeaseRenewer leaseRenewer,
     ILogger<RecipeSearchIndexDeletionHostedService> logger
 ) : BackgroundService
 {
-    readonly int MaxErrorRetries = options.Value.MaxRecipeDeleteAttempts;
     readonly int LeaseTime = 5 * 60;
     const int LeaseRenewRate = 1000 * 30;
 
@@ -46,7 +46,7 @@ sealed class RecipeSearchIndexDeletionHostedService(
         {
             List<long> entries = await recipeSearchExportStatusRepository.GetRecipesToDeleteAsync(
                 options.Value.SearchDeleteBatchSize,
-                MaxErrorRetries,
+                options.Value.MaxRecipeDeleteAttempts,
                 ct
             );
 
@@ -74,17 +74,15 @@ sealed class RecipeSearchIndexDeletionHostedService(
                 return true;
             }
 
-            LeaseRenewer renewer = new(
-                recipeSearchExportStatusRepository,
+            using CancellationTokenSource cancellationTokenSource =
+                CancellationTokenSource.CreateLinkedTokenSource(ct);
+            var renewerTask = leaseRenewer.ExecuteAsync(
                 leaseToken,
                 entries,
                 LeaseTime,
-                LeaseRenewRate
+                LeaseRenewRate,
+                cancellationTokenSource.Token
             );
-
-            using CancellationTokenSource cancellationTokenSource =
-                CancellationTokenSource.CreateLinkedTokenSource(ct);
-            var renewerTask = renewer.ExecuteAsync(cancellationTokenSource.Token);
             try
             {
                 var outcome = await searchIndexRepository.DeleteRecipesAsync(entries, ct);
@@ -146,11 +144,13 @@ sealed class RecipeSearchIndexDeletionHostedService(
 
             try
             {
-                var outcome = await searchIndexRepository.DeleteRecipesAsync([recipeId], ct);
+                IndexMutationOperationOutcome outcome =
+                    await searchIndexRepository.DeleteRecipesAsync([recipeId], ct);
+
                 switch (outcome)
                 {
                     case IndexMutationOperationOutcome.Error:
-                        break;
+                        return resetBackoff;
                     case IndexMutationOperationOutcome.BatchFailed:
                         await recipeSearchExportStatusRepository.MarkRecipeDeletionFailedAndReleaseAsync(
                             recipeId,
@@ -172,7 +172,6 @@ sealed class RecipeSearchIndexDeletionHostedService(
                 when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
             {
                 logger.Error_DeletingRecipeFromIndexFailed(recipeId, ex);
-                await Task.Delay(20, ct); // delay 20ms on error in case transient
             }
         }
 

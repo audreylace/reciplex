@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Reciplex.Server.Database.SearchExporter.HostedServices;
 
 namespace Reciplex.Server.Database.SearchExporter.Loggers;
 
