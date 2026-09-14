@@ -31,13 +31,13 @@ sealed class RecipeSearchLeaseBreakerHostedService(
         ResiliencePipeline pipeline = resiliencePipelineBuilderFactory.BuildDeleteRowPipeline(ex =>
             ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested
         );
-        PeriodicTimer periodicTimer = new(TimeSpan.FromMinutes(1));
-        const int TenMinutesInSeconds = 10 * 60;
+        using PeriodicTimer periodicTimer = new(TimeSpan.FromMinutes(1));
+
         while (await periodicTimer.WaitForNextTickAsync(stoppingToken))
         {
             try
             {
-                await BreakLeaseLoopAsync(pipeline, TenMinutesInSeconds, stoppingToken);
+                await BreakLeaseLoopAsync(pipeline, stoppingToken);
             }
             catch (Exception ex)
                 when (ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested
@@ -50,10 +50,10 @@ sealed class RecipeSearchLeaseBreakerHostedService(
 
     private async Task BreakLeaseLoopAsync(
         ResiliencePipeline pipeline,
-        int TenMinutesInSeconds,
         CancellationToken stoppingToken
     )
     {
+        const int TenMinutesInSeconds = 10 * 60;
         while (
             !stoppingToken.IsCancellationRequested
             && await pipeline.ExecuteAsync(

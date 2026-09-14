@@ -31,7 +31,7 @@ class RecipesThatFailToDeletePurgerHostedService(
         ResiliencePipeline pipeline = resiliencePipelineBuilderFactory.BuildDeleteRowPipeline(ex =>
             ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested
         );
-        PeriodicTimer periodicTimer = new(TimeSpan.FromMinutes(1));
+        using PeriodicTimer periodicTimer = new(TimeSpan.FromMinutes(1));
         while (await periodicTimer.WaitForNextTickAsync(stoppingToken))
         {
             try

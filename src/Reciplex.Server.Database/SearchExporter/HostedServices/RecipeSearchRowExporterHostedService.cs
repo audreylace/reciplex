@@ -32,46 +32,49 @@ class RecipeSearchRowExporterHostedService(
                 while (!stoppingToken.IsCancellationRequested)
                 {
                     string leaseToken = tagProvider.NextTag();
-                    var list = await recipeSearchExportStatusRepository.GetRecipesToExtractAsync(
-                        options.Value.SearchExportBatchSize,
-                        options.Value.MaxExportAttempts,
-                        stoppingToken
-                    );
-                    if (list.Count < 1)
+                    var recipeIds =
+                        await recipeSearchExportStatusRepository.GetRecipesToExtractAsync(
+                            options.Value.SearchExportBatchSize,
+                            options.Value.MaxExportAttempts,
+                            stoppingToken
+                        );
+                    if (recipeIds.Count < 1)
                     {
                         break;
                     }
 
-                    if (
-                        await recipeSearchExportStatusRepository.ClaimAsync(
-                            list,
-                            leaseToken,
-                            LeaseExpireTimeSeconds,
-                            stoppingToken
-                        ) > 0
-                    )
+                    var claimCount = await recipeSearchExportStatusRepository.ClaimAsync(
+                        recipeIds,
+                        leaseToken,
+                        LeaseExpireTimeSeconds,
+                        stoppingToken
+                    );
+                    if (claimCount > 0)
                     {
                         if (
                             await recipeSearchIndexExporterStrategy.ExportRecipesAsync(
-                                list,
+                                recipeIds,
                                 leaseToken,
                                 stoppingToken
                             )
                         )
                         {
-                            recipeMutationNotifyService.DrainUpToChange(
-                                options.Value.SearchExportBatchSize
-                            );
+                            recipeMutationNotifyService.DrainUpToChange(claimCount);
                         }
                     }
                 }
             }
             catch (Exception ex)
-                when (ex is not OperationCanceledException
-                    || ex is OperationCanceledException && !stoppingToken.IsCancellationRequested
+                when (ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested
                 )
             {
                 logger.Error_ChangedRecipeExportLoopFailed(ex);
+
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                }
+                catch (OperationCanceledException) { }
             }
 
             using CancellationTokenSource cancellationTokenSource =
@@ -80,7 +83,6 @@ class RecipeSearchRowExporterHostedService(
             try
             {
                 await recipeMutationNotifyService.WaitForChange(cancellationTokenSource.Token);
-                recipeMutationNotifyService.DrainUpToChange(options.Value.SearchExportBatchSize);
             }
             catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested) { }
             catch (Exception ex) when (ex is not OperationCanceledException)

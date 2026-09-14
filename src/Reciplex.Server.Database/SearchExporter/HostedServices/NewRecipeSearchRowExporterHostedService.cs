@@ -52,9 +52,7 @@ class NewRecipeSearchRowExporterHostedService(
                         )
                     )
                     {
-                        recipeMutationNotifyService.DrainUpToNew(
-                            options.Value.SearchExportBatchSize
-                        );
+                        recipeMutationNotifyService.DrainUpToNew(list.Count);
                     }
                 }
             }
@@ -63,6 +61,7 @@ class NewRecipeSearchRowExporterHostedService(
                 )
             {
                 logger.Error_NewRecipeExportLoopFailed(ex);
+                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
 
             using CancellationTokenSource cancellationTokenSource =
@@ -71,7 +70,6 @@ class NewRecipeSearchRowExporterHostedService(
             try
             {
                 await recipeMutationNotifyService.WaitForNew(cancellationTokenSource.Token);
-                recipeMutationNotifyService.DrainUpToNew(options.Value.SearchExportBatchSize);
             }
             catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested) { }
             catch (Exception ex) when (ex is not OperationCanceledException)

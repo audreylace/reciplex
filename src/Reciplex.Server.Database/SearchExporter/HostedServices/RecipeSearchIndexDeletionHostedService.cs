@@ -30,7 +30,7 @@ sealed class RecipeSearchIndexDeletionHostedService(
             return;
         }
 
-        PeriodicTimer periodicTimer = new(TimeSpan.FromMinutes(1));
+        using PeriodicTimer periodicTimer = new(TimeSpan.FromMinutes(1));
         while (await periodicTimer.WaitForNextTickAsync(stoppingToken))
         {
             while (
@@ -172,6 +172,7 @@ sealed class RecipeSearchIndexDeletionHostedService(
                 when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
             {
                 logger.Error_DeletingRecipeFromIndexFailed(recipeId, ex);
+                await Task.Delay(TimeSpan.FromMilliseconds(50), ct);
             }
         }
 
