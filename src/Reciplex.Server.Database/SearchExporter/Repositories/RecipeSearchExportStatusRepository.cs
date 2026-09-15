@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using NodaTime;
 using Reciplex.Server.Database.DbObjects;
@@ -45,24 +46,56 @@ class RecipeSearchExportStatusRepository(
             return 0;
         }
 
-        int count = 0;
-        foreach (var entry in entries)
+        var parameter = Expression.Parameter(typeof(RecipeSearchWorkerStateDbObject), "e");
+        Expression? combinedPredicate = null;
+
+        foreach (var c in entries)
         {
-            count += await db
-                .RecipeSearchExtractionStatusEntries.Where(e =>
-                    e.RecipeFk == entry.RecipeFk
-                    && e.LeaseToken == entry.LeaseToken
-                    && e.LeaseExpireTime == e.LeaseExpireTime
-                )
-                .ExecuteUpdateAsync(
-                    s =>
-                        s.SetProperty(e => e.LeaseExpireTime, (long?)null)
-                            .SetProperty(e => e.LeaseToken, (string?)null),
-                    ct
-                );
+            // Build: e.RecipeFk == c.RecipeFk && e.LeaseToken == c.LeaseToken && e.LeaseExpireTime == c.LeaseExpireTime
+            var fkMatch = Expression.Equal(
+                Expression.Property(parameter, nameof(RecipeSearchWorkerStateDbObject.RecipeFk)),
+                Expression.Constant(c.RecipeFk)
+            );
+
+            var tokenMatch = Expression.Equal(
+                Expression.Property(parameter, nameof(RecipeSearchWorkerStateDbObject.LeaseToken)),
+                Expression.Constant(c.LeaseToken, typeof(string))
+            );
+
+            var expireMatch = Expression.Equal(
+                Expression.Property(
+                    parameter,
+                    nameof(RecipeSearchWorkerStateDbObject.LeaseExpireTime)
+                ),
+                Expression.Constant(c.LeaseExpireTime, typeof(long?))
+            );
+
+            var rowMatch = Expression.AndAlso(fkMatch, Expression.AndAlso(tokenMatch, expireMatch));
+
+            combinedPredicate =
+                combinedPredicate == null
+                    ? rowMatch
+                    : Expression.OrElse(combinedPredicate, rowMatch);
         }
 
-        return count;
+        if (combinedPredicate is null)
+        {
+            return 0;
+        }
+
+        var lambda = Expression.Lambda<Func<RecipeSearchWorkerStateDbObject, bool>>(
+            combinedPredicate,
+            parameter
+        );
+
+        return await db
+            .RecipeSearchExtractionStatusEntries.Where(lambda)
+            .ExecuteUpdateAsync(
+                s =>
+                    s.SetProperty(e => e.LeaseExpireTime, (long?)null)
+                        .SetProperty(e => e.LeaseToken, (string?)null),
+                ct
+            );
     }
 
     /// <inheritdoc />
@@ -115,9 +148,9 @@ class RecipeSearchExportStatusRepository(
             .Recipes.AsNoTracking()
             .DeleteFieldNull()
             .Where(r =>
-                r.RecipeSearchExtraction == null
-                && r.RecipeBook!.Deleted == null
+                r.RecipeBook!.Deleted == null
                 && r.RecipeBook!.Owner!.Deleted == null
+                && !db.RecipeSearchExtractionStatusEntries.Any(s => s.RecipeFk == r.Id)
             )
             .Select(r => r.Id)
             .Take(max)
@@ -182,6 +215,20 @@ class RecipeSearchExportStatusRepository(
         return await db
             .RecipeSearchExtractionStatusEntries.AsNoTracking()
             .Where(searchExtractState =>
+                searchExtractState.LeaseExpireTime == null
+                && searchExtractState.LeaseToken == null
+                && (
+                    (
+                        searchExtractState.ExtractRetryCount < maxRetries
+                        && (
+                            searchExtractState.NextExtractRetryTime == null
+                            || searchExtractState.NextExtractRetryTime < now
+                        )
+                    )
+                    || searchExtractState.Recipe!.SearchVersion
+                        > searchExtractState.AttemptedExtractSearchVersion
+                )
+                &&
                 // look for records never extracted or have since changed
                 (
                     searchExtractState.SearchVersion == null
@@ -191,20 +238,8 @@ class RecipeSearchExportStatusRepository(
                 && searchExtractState.Recipe!.Deleted == null
                 && searchExtractState.Recipe!.RecipeBook!.Deleted == null
                 && searchExtractState.Recipe!.RecipeBook!.Owner!.Deleted == null
-                // filter out records that are broken and respect retry backoff
-                && (
-                    (
-                        searchExtractState.ExtractRetryCount < maxRetries
-                        && (
-                            searchExtractState.NextExtractRetryTime == null
-                            || searchExtractState.NextExtractRetryTime < now
-                        )
-                    )
-                    || searchExtractState.Recipe.SearchVersion
-                        > searchExtractState.AttemptedExtractSearchVersion
-                )
-                && searchExtractState.LeaseExpireTime == null
-                && searchExtractState.LeaseToken == null
+            // filter out records that are broken and respect retry backoff
+
             )
             .Select(e => e.RecipeFk)
             .Take(max)
@@ -313,6 +348,7 @@ class RecipeSearchExportStatusRepository(
                 && (e.NextDeleteRetryTime == null || e.NextDeleteRetryTime < now)
             )
             .Select(e => e.RecipeFk)
+            .Take(max)
             .ToListAsync(ct);
     }
 

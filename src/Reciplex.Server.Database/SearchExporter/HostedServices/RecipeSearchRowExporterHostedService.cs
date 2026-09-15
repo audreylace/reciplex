@@ -16,15 +16,13 @@ class RecipeSearchRowExporterHostedService(
     RecipeSearchIndexExporterStrategy recipeSearchIndexExporterStrategy
 ) : BackgroundService
 {
-    const int LeaseExpireTimeSeconds = 60 * 5; // 5 minutes
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!options.Value.Enable)
         {
             return;
         }
-
+        int leaseExpireTimeSeconds = (int)TimeSpan.FromMinutes(5).TotalSeconds;
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -46,21 +44,16 @@ class RecipeSearchRowExporterHostedService(
                     var claimCount = await recipeSearchExportStatusRepository.ClaimAsync(
                         recipeIds,
                         leaseToken,
-                        LeaseExpireTimeSeconds,
+                        leaseExpireTimeSeconds,
                         stoppingToken
                     );
                     if (claimCount > 0)
                     {
-                        if (
-                            await recipeSearchIndexExporterStrategy.ExportRecipesAsync(
-                                recipeIds,
-                                leaseToken,
-                                stoppingToken
-                            )
-                        )
-                        {
-                            recipeMutationNotifyService.DrainUpToChange(claimCount);
-                        }
+                        await recipeSearchIndexExporterStrategy.ExportRecipesAsync(
+                            recipeIds,
+                            leaseToken,
+                            stoppingToken
+                        );
                     }
                 }
             }
@@ -77,12 +70,12 @@ class RecipeSearchRowExporterHostedService(
                 catch (OperationCanceledException) { }
             }
 
-            using CancellationTokenSource cancellationTokenSource =
-                CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
-            cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(30));
             try
             {
-                await recipeMutationNotifyService.WaitForChange(cancellationTokenSource.Token);
+                await recipeMutationNotifyService.WaitForChange(
+                    TimeSpan.FromSeconds(30),
+                    stoppingToken
+                );
             }
             catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested) { }
             catch (Exception ex) when (ex is not OperationCanceledException)

@@ -387,7 +387,7 @@ internal sealed class RecipesService(
             return new ConflictResult();
         }
 
-        recipeMutationNotifyService.NotifyOne();
+        recipeMutationNotifyService.NotifyChange();
         return new SuccessResult<RecipeDao>(DbObjectToRecipeDao(recipe, true));
     }
 

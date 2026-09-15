@@ -8,7 +8,15 @@ namespace Reciplex.Server.Database.DbObjects;
 /// <summary>
 /// Search extraction record
 /// </summary>
-[Index(nameof(RecipeFk), nameof(SearchVersion))]
+[Index(nameof(LeaseToken), nameof(LeaseExpireTime))]
+[Index(nameof(SearchVersion), nameof(LeaseExpireTime))]
+[Index(nameof(DeleteRetryCounter), nameof(LeaseExpireTime), nameof(NextDeleteRetryTime))]
+[Index(
+    nameof(LeaseExpireTime),
+    nameof(ExtractRetryCount),
+    nameof(NextExtractRetryTime),
+    nameof(SearchVersion)
+)]
 public class RecipeSearchWorkerStateDbObject
 {
     /// <summary>

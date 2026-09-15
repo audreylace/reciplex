@@ -7,7 +7,7 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
     : IRecipeMutationNotifyService
 {
     private readonly Channel<long> _changeChannel = Channel.CreateBounded<long>(
-        new BoundedChannelOptions(32)
+        new BoundedChannelOptions(1)
         {
             SingleReader = true,
             FullMode = BoundedChannelFullMode.DropWrite,
@@ -15,32 +15,12 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
     );
 
     private readonly Channel<long> _newChannel = Channel.CreateBounded<long>(
-        new BoundedChannelOptions(32)
+        new BoundedChannelOptions(1)
         {
             SingleReader = true,
             FullMode = BoundedChannelFullMode.DropWrite,
         }
     );
-
-    public bool DrainUpToChange(int count)
-    {
-        int counter = 0;
-        while (_changeChannel.Reader.TryRead(out _) && counter < count)
-        {
-            counter++;
-        }
-        return counter > 0;
-    }
-
-    public bool DrainUpToNew(int count)
-    {
-        int counter = 0;
-        while (_newChannel.Reader.TryRead(out _) && counter < count)
-        {
-            counter++;
-        }
-        return counter > 0;
-    }
 
     public void NotifyNew()
     {
@@ -51,7 +31,7 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
         _newChannel.Writer.TryWrite(0);
     }
 
-    public void NotifyOne()
+    public void NotifyChange()
     {
         if (!options.Value.Enable)
         {
@@ -60,37 +40,57 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
         _changeChannel.Writer.TryWrite(0);
     }
 
-    public async Task WaitForChange(CancellationToken ct)
+    public async Task WaitForChange(TimeSpan wait, CancellationToken ct)
     {
         if (!options.Value.Enable)
         {
             throw new InvalidOperationException();
         }
 
-        while (!ct.IsCancellationRequested && await _changeChannel.Reader.WaitToReadAsync(ct))
+        using CancellationTokenSource cancellationTokenSource =
+            CancellationTokenSource.CreateLinkedTokenSource(ct);
+        cancellationTokenSource.CancelAfter(wait);
+        try
         {
-            if (_changeChannel.Reader.TryRead(out _))
-            {
-                return;
-            }
-            ct.ThrowIfCancellationRequested();
+            while (
+                !cancellationTokenSource.IsCancellationRequested
+                && await _changeChannel.Reader.WaitToReadAsync(cancellationTokenSource.Token)
+                && _changeChannel.Reader.TryRead(out _)
+            ) { }
+        }
+        catch (OperationCanceledException)
+            when (cancellationTokenSource.Token.IsCancellationRequested
+                && !ct.IsCancellationRequested
+            )
+        {
+            return;
         }
     }
 
-    public async Task WaitForNew(CancellationToken ct)
+    public async Task WaitForNew(TimeSpan wait, CancellationToken ct)
     {
         if (!options.Value.Enable)
         {
             throw new InvalidOperationException();
         }
 
-        while (!ct.IsCancellationRequested && await _newChannel.Reader.WaitToReadAsync(ct))
+        using CancellationTokenSource cancellationTokenSource =
+            CancellationTokenSource.CreateLinkedTokenSource(ct);
+        cancellationTokenSource.CancelAfter(wait);
+        try
         {
-            if (_changeChannel.Reader.TryRead(out _))
-            {
-                return;
-            }
-            ct.ThrowIfCancellationRequested();
+            while (
+                !cancellationTokenSource.IsCancellationRequested
+                && await _newChannel.Reader.WaitToReadAsync(cancellationTokenSource.Token)
+                && _newChannel.Reader.TryRead(out _)
+            ) { }
+        }
+        catch (OperationCanceledException)
+            when (cancellationTokenSource.Token.IsCancellationRequested
+                && !ct.IsCancellationRequested
+            )
+        {
+            return;
         }
     }
 }
