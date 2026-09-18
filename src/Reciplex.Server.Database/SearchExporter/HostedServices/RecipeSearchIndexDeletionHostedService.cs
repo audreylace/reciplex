@@ -19,112 +19,135 @@ sealed class RecipeSearchIndexDeletionHostedService(
     ILogger<RecipeSearchIndexDeletionHostedService> logger
 ) : BackgroundService
 {
-    readonly int LeaseTime = 5 * 60;
-    const int LeaseRenewRate = 1000 * 30;
+    /// <summary>
+    /// Lease lifetime before expire
+    /// </summary>
+    readonly int LeaseTimeSeconds = (int)TimeSpan.FromMinutes(5).TotalSeconds;
+
+    /// <summary>
+    /// Lease renewal rate
+    /// </summary>
+    readonly int LeaseRenewRateMs = (int)TimeSpan.FromSeconds(30).TotalMilliseconds;
 
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!options.Value.Enable)
+        if (!options.Value.Enable) // exit if search is not enabled
         {
             return;
         }
 
         using PeriodicTimer periodicTimer = new(TimeSpan.FromMinutes(1));
-        while (await periodicTimer.WaitForNextTickAsync(stoppingToken))
+        while (!stoppingToken.IsCancellationRequested)
         {
-            while (
-                !stoppingToken.IsCancellationRequested
-                && await DeleteRecipesFromIndexAsync(stoppingToken)
-            ) { }
+            try
+            {
+                if (!await DeleteRecipesFromIndexAsync(stoppingToken))
+                {
+                    await periodicTimer.WaitForNextTickAsync(stoppingToken);
+                }
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                return; // exit on shutdown
+            }
+            catch (Exception ex)
+            {
+                logger.Error_DeleteRecipesFromIndexFailed(ex);
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    return; // exit background service
+                }
+                catch (Exception innerEx)
+                {
+                    logger.Error_ExceptionDuringPause(innerEx);
+                }
+            }
         }
     }
 
     private async Task<bool> DeleteRecipesFromIndexAsync(CancellationToken ct)
     {
+        List<long> entries = await recipeSearchExportStatusRepository.GetRecipesToDeleteAsync(
+            options.Value.SearchDeleteBatchSize,
+            options.Value.MaxRecipeDeleteAttempts,
+            ct
+        );
+
+        if (entries.Count < 1)
+        {
+            return false;
+        }
+
+        string leaseToken = concurrencyTagProvider.NextTag();
+        if (
+            await recipeSearchExportStatusRepository.ClaimAsync(
+                entries,
+                leaseToken,
+                LeaseTimeSeconds,
+                ct
+            ) < 1
+        )
+        {
+            return true;
+        }
+
+        entries = await recipeSearchExportStatusRepository.GetClaimedRecipes(leaseToken, ct);
+        if (entries.Count < 1)
+        {
+            return true;
+        }
+
+        using CancellationTokenSource cancellationTokenSource =
+            CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var renewerTask = leaseRenewer.ExecuteAsync(
+            leaseToken,
+            entries,
+            LeaseTimeSeconds,
+            LeaseRenewRateMs,
+            cancellationTokenSource.Token
+        );
         try
         {
-            List<long> entries = await recipeSearchExportStatusRepository.GetRecipesToDeleteAsync(
-                options.Value.SearchDeleteBatchSize,
-                options.Value.MaxRecipeDeleteAttempts,
-                ct
-            );
-
-            if (entries.Count < 1)
+            var outcome = await searchIndexRepository.DeleteRecipesAsync(entries, ct);
+            switch (outcome)
             {
-                return false;
+                case IndexMutationOperationOutcome.Success:
+                    await recipeSearchExportStatusRepository.DeleteRecipeSearchEntries(
+                        entries,
+                        leaseToken,
+                        ct
+                    );
+                    return true;
+                case IndexMutationOperationOutcome.Error:
+                    return false;
+                case IndexMutationOperationOutcome.BatchFailed:
+                    return await DeleteRecipesFromIndexInSerialAsync(
+                        entries,
+                        leaseToken,
+                        renewerTask,
+                        ct
+                    );
             }
-
-            string leaseToken = concurrencyTagProvider.NextTag();
-            if (
-                await recipeSearchExportStatusRepository.ClaimAsync(
-                    entries,
-                    leaseToken,
-                    LeaseTime,
-                    ct
-                ) < 1
-            )
-            {
-                return true;
-            }
-
-            entries = await recipeSearchExportStatusRepository.GetClaimedRecipes(leaseToken, ct);
-            if (entries.Count < 1)
-            {
-                return true;
-            }
-
-            using CancellationTokenSource cancellationTokenSource =
-                CancellationTokenSource.CreateLinkedTokenSource(ct);
-            var renewerTask = leaseRenewer.ExecuteAsync(
-                leaseToken,
-                entries,
-                LeaseTime,
-                LeaseRenewRate,
-                cancellationTokenSource.Token
-            );
+        }
+        finally
+        {
+            await cancellationTokenSource.CancelAsync();
             try
             {
-                var outcome = await searchIndexRepository.DeleteRecipesAsync(entries, ct);
-                switch (outcome)
-                {
-                    case IndexMutationOperationOutcome.Success:
-                        await recipeSearchExportStatusRepository.DeleteRecipeSearchEntries(
-                            entries,
-                            leaseToken,
-                            ct
-                        );
-                        return true;
-                    case IndexMutationOperationOutcome.Error:
-                        return false;
-                    case IndexMutationOperationOutcome.BatchFailed:
-                        return await DeleteRecipesFromIndexInSerialAsync(
-                            entries,
-                            leaseToken,
-                            renewerTask,
-                            ct
-                        );
-                }
+                await renewerTask;
             }
-            finally
+            catch (Exception ex)
             {
-                await cancellationTokenSource.CancelAsync();
-                try
-                {
-                    await renewerTask;
-                }
-                catch (Exception ex)
-                {
-                    logger.Error_RenewTaskFailed(ex);
-                }
+                logger.Error_RenewTaskFailed(ex);
             }
         }
-        catch (Exception ex)
-            when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
-        {
-            logger.Error_DeleteRecipesFromIndexFailed(ex);
-        }
-        return false;
+
+        return true;
     }
 
     private async Task<bool> DeleteRecipesFromIndexInSerialAsync(
@@ -159,12 +182,12 @@ sealed class RecipeSearchIndexDeletionHostedService(
                         );
                         break;
                     case IndexMutationOperationOutcome.Success:
-                        resetBackoff = true;
                         await recipeSearchExportStatusRepository.DeleteRecipeSearchEntries(
                             [recipeId],
                             leaseToken,
                             ct
                         );
+                        resetBackoff = true;
                         break;
                 }
             }

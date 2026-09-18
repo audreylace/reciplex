@@ -69,7 +69,10 @@ class NewRecipeSearchRowExporterHostedService(
                 {
                     return; // exit background service
                 }
-                catch (Exception) { }
+                catch (Exception innerEx)
+                {
+                    logger.Error_ExceptionDuringPause(innerEx);
+                }
             }
         }
     }
