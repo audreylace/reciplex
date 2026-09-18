@@ -29,6 +29,11 @@ sealed class RecipeSearchIndexDeletionHostedService(
     /// </summary>
     readonly int LeaseRenewRateMs = (int)TimeSpan.FromSeconds(30).TotalMilliseconds;
 
+    /// <summary>
+    /// Max renew attempts
+    /// </summary>
+    readonly int MaxRenewAttempts = 8;
+
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -112,6 +117,7 @@ sealed class RecipeSearchIndexDeletionHostedService(
             entries,
             LeaseTimeSeconds,
             LeaseRenewRateMs,
+            MaxRenewAttempts,
             cancellationTokenSource.Token
         );
         try

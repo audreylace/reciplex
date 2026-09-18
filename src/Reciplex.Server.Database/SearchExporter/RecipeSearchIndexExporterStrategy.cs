@@ -36,6 +36,7 @@ class RecipeSearchIndexExporterStrategy(
                 [.. data.Select(d => d.RecipeFk)],
                 5 * 60, // keep lease for 5 minutes
                 1000 * 30, // renew every 30 seconds
+                8, // attempt renew 8 times
                 cancellationTokenSource.Token
             );
             try
