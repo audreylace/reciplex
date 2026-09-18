@@ -39,14 +39,14 @@ class RecipeSearchRowExporterHostedService(
             try
             {
                 string leaseToken = tagProvider.NextTag();
-                var recipeIds = await exportStatusRepository.GetRecipesToExtractAsync(
+                List<long> recipeIds = await exportStatusRepository.GetRecipesToExtractAsync(
                     options.Value.SearchExportBatchSize,
                     options.Value.MaxExportAttempts,
                     stoppingToken
                 );
                 if (recipeIds.Count > 0)
                 {
-                    var claimCount = await exportStatusRepository.ClaimAsync(
+                    int claimCount = await exportStatusRepository.ClaimAsync(
                         recipeIds,
                         leaseToken,
                         leaseExpireTimeSeconds,
