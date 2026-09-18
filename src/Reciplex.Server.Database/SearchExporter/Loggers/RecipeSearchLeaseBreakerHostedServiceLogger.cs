@@ -10,4 +10,10 @@ static partial class RecipeSearchLeaseBreakerHostedServiceLogger
         this ILogger<RecipeSearchLeaseBreakerHostedService> logger,
         Exception ex
     );
+
+    [LoggerMessage(LogLevel.Error, "Got an exception while pausing")]
+    public static partial void Error_ExceptionDuringPause(
+        this ILogger<RecipeSearchLeaseBreakerHostedService> logger,
+        Exception ex
+    );
 }
