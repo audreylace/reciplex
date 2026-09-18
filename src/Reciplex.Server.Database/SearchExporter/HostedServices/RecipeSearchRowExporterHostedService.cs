@@ -71,8 +71,6 @@ class RecipeSearchRowExporterHostedService(
                 return; // exit background service
             }
             catch (Exception ex)
-                when (ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested
-                )
             {
                 logger.Error_ChangedRecipeExportLoopFailed(ex);
 

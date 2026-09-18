@@ -49,8 +49,6 @@ class RecipesThatFailToDeletePurgerHostedService(
                 return; // exit on shutdown
             }
             catch (Exception ex)
-                when (ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested
-                )
             {
                 logger.Error_PurgingRecipesFailed(ex);
 
