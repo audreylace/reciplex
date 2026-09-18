@@ -39,7 +39,10 @@ sealed class RecipeSearchLeaseBreakerHostedService(
             try
             {
                 await BreakLeaseLoopAsync(pipeline, stoppingToken);
-                await periodicTimer.WaitForNextTickAsync(stoppingToken)
+                if (!await periodicTimer.WaitForNextTickAsync(stoppingToken))
+                {
+                    return; // exit on shutdown
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

@@ -44,7 +44,10 @@ sealed class RecipeSearchIndexDeletionHostedService(
             {
                 if (!await DeleteRecipesFromIndexAsync(stoppingToken))
                 {
-                    await periodicTimer.WaitForNextTickAsync(stoppingToken);
+                    if (!await periodicTimer.WaitForNextTickAsync(stoppingToken))
+                    {
+                        return; // exit on shutdown
+                    }
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

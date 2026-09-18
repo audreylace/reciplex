@@ -12,37 +12,60 @@ namespace Reciplex.Server.Database.SearchExporter.HostedServices;
 /// delete attempts.
 /// </summary>
 /// <param name="repository">repository managing recipe search rows</param>
+/// <param name="resilienceFactory">resilience pipeline builder</param>
 /// <param name="options">options controlling the behavior of this background service</param>
 /// <param name="logger">logger for the hosted service</param>
 class RecipesThatFailToDeletePurgerHostedService(
     IRecipeSearchExportStatusRepository repository,
-    ResiliencePipelineBuilderFactory resiliencePipelineBuilderFactory,
+    ResiliencePipelineBuilderFactory resilienceFactory,
     IOptions<SearchExporterOptions> options,
     ILogger<RecipesThatFailToDeletePurgerHostedService> logger
 ) : BackgroundService
 {
+    /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!options.Value.Enable)
+        if (!options.Value.Enable) // exit if search is not enabled
         {
             return;
         }
 
-        ResiliencePipeline pipeline = resiliencePipelineBuilderFactory.BuildDeleteRowPipeline(ex =>
+        ResiliencePipeline pipeline = resilienceFactory.BuildDeleteRowPipeline(ex =>
             ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested
         );
         using PeriodicTimer periodicTimer = new(TimeSpan.FromMinutes(1));
-        while (await periodicTimer.WaitForNextTickAsync(stoppingToken))
+        while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
                 await PurgeUntilThereAreNoneAsync(pipeline, stoppingToken);
+                if (!await periodicTimer.WaitForNextTickAsync(stoppingToken))
+                {
+                    return; // exit on shutdown
+                }
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                return; // exit on shutdown
             }
             catch (Exception ex)
                 when (ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested
                 )
             {
                 logger.Error_PurgingRecipesFailed(ex);
+
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    return; // exit background service
+                }
+                catch (Exception innerEx)
+                {
+                    logger.Error_ExceptionDuringPause(innerEx);
+                }
             }
         }
     }
