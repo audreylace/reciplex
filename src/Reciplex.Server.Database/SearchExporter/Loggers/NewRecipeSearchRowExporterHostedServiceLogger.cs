@@ -19,10 +19,4 @@ static partial class NewRecipeSearchRowExporterHostedServiceLogger
         this ILogger<NewRecipeSearchRowExporterHostedService> logger,
         Exception ex
     );
-
-    [LoggerMessage(LogLevel.Error, "Got an exception while pausing")]
-    public static partial void Error_ExceptionDuringPause(
-        this ILogger<NewRecipeSearchRowExporterHostedService> logger,
-        Exception ex
-    );
 }

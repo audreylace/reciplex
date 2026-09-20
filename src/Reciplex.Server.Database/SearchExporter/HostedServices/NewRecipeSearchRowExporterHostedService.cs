@@ -60,18 +60,7 @@ class NewRecipeSearchRowExporterHostedService(
             catch (Exception ex)
             {
                 logger.Error_NewRecipeExportLoopFailed(ex);
-                try
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
-                }
-                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-                {
-                    return; // exit background service
-                }
-                catch (Exception innerEx)
-                {
-                    logger.Error_ExceptionDuringPause(innerEx);
-                }
+                await SafeDelay.DelayAsync(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }
     }

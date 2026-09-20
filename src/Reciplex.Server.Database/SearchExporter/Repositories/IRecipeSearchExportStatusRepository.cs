@@ -159,4 +159,16 @@ interface IRecipeSearchExportStatusRepository
         string leaseToken,
         CancellationToken ct
     );
+
+    public Task<int> MarkRecipesAsExtractedAndReleaseAsync(
+        List<(long RecipeId, long SearchVersion)> entries,
+        string leaseToken,
+        CancellationToken ct
+    );
+
+    public Task<int> MarkRecipeExtractionFailedAndReleaseAsync(
+        List<(long RecipeId, long SearchVersion)> entries,
+        string leaseToken,
+        CancellationToken ct
+    );
 }

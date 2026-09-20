@@ -27,7 +27,7 @@ static partial class RecipeSearchIndexDeletionHostedServiceLogger
         long RecipeId
     );
 
-    [LoggerMessage(LogLevel.Error, "Index deletion row renew task threw an exception")]
+    [LoggerMessage(LogLevel.Error, "Search index deletion lease renewer task threw an exception")]
     public static partial void Error_RenewTaskFailed(
         this ILogger<RecipeSearchIndexDeletionHostedService> logger,
         Exception ex

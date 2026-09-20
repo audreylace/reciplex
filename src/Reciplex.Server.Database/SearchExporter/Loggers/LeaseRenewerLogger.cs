@@ -20,10 +20,4 @@ static partial class LeaseRenewerLogger
         int Attempt,
         Exception? ex
     );
-
-    [LoggerMessage(LogLevel.Error, "Got an exception during a pause")]
-    public static partial void Error_ExceptionDuringPause(
-        this ILogger<LeaseRenewer> logger,
-        Exception? ex
-    );
 }

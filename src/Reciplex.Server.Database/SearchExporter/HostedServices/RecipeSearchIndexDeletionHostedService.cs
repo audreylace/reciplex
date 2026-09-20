@@ -117,7 +117,10 @@ sealed class RecipeSearchIndexDeletionHostedService(
         List<long> recipesThatFailed = [];
         try
         {
-            var outcome = await searchIndexRepository.DeleteRecipesAsync(claimedIds, ct);
+            var outcome = await searchIndexRepository.DeleteRecipesAsync(
+                claimedIds,
+                cancellationTokenSource.Token
+            );
             switch (outcome)
             {
                 case IndexMutationOperationOutcome.Success:
@@ -133,7 +136,10 @@ sealed class RecipeSearchIndexDeletionHostedService(
                     // Try one by one in case the failure was caused by one or several in the batch.
                     // The search index aborts the batch upload when one or more failed.
                     (recipesToDelete, recipesThatFailed, recipesToUnlock) =
-                        await DeleteRecipesFromIndexInSerialAsync(claimedIds, ct);
+                        await DeleteRecipesFromIndexInSerialAsync(
+                            claimedIds,
+                            cancellationTokenSource.Token
+                        );
                     break;
             }
         }
@@ -141,22 +147,25 @@ sealed class RecipeSearchIndexDeletionHostedService(
         {
             await cancellationTokenSource.CancelAsync();
             await renewerTask;
+        }
 
-            ct.ThrowIfCancellationRequested();
+        if (ct.IsCancellationRequested)
+        {
+            return;
+        }
 
-            // records outcomes to the database and clear leases
-            await UpdateSearchRowsAsync(
-                leaseToken,
-                recipesToUnlock,
-                recipesToDelete,
-                recipesThatFailed,
-                ct
-            );
+        // records outcomes to the database and clear leases
+        await UpdateSearchRowsAsync(
+            leaseToken,
+            recipesToUnlock,
+            recipesToDelete,
+            recipesThatFailed,
+            ct
+        );
 
-            if (delay)
-            {
-                await SafeDelay.DelayAsync(TimeSpan.FromSeconds(5), ct);
-            }
+        if (delay)
+        {
+            await SafeDelay.DelayAsync(TimeSpan.FromSeconds(5), ct);
         }
     }
 
@@ -164,10 +173,9 @@ sealed class RecipeSearchIndexDeletionHostedService(
     /// Renews leases on rows periodically until the token bound to <paramref name="cancellationTokenSource"/>
     /// is cancelled.
     /// </summary>
-    /// <param name="leaseToken"></param>
-    /// <param name="claimedIds"></param>
-    /// <param name="cancellationTokenSource"></param>
-    /// <returns></returns>
+    /// <param name="leaseToken">token identifying our lease</param>
+    /// <param name="claimedIds">the ids to renew</param>
+    /// <param name="cancellationTokenSource">token cancellation source. Cancelled when the renewer task returns.</param>
     private async Task RenewIdsPeriodicallyAsync(
         string leaseToken,
         List<long> claimedIds,
@@ -320,8 +328,10 @@ sealed class RecipeSearchIndexDeletionHostedService(
             }
             catch (Exception ex)
             {
+                recipesThatFailed.Add(recipeId);
+                recipesHandled.Remove(recipeId);
                 logger.Error_DeletingRecipeFromIndexFailed(recipeId, ex);
-                if (!await SafeDelay.DelayAsync(TimeSpan.FromSeconds(5), ct))
+                if (!await SafeDelay.DelayAsync(TimeSpan.FromMilliseconds(100), ct))
                 {
                     break;
                 }

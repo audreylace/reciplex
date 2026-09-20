@@ -34,10 +34,12 @@ class LeaseRenewer(
     )
     {
         int retry = 0;
+        using PeriodicTimer periodicTimer = new(frequency);
         while (!ct.IsCancellationRequested)
         {
             try
             {
+                await periodicTimer.WaitForNextTickAsync(ct);
                 if (
                     await recipeSearchExportStatusRepository.RenewLeasesAsync(
                         ids,
@@ -67,19 +69,6 @@ class LeaseRenewer(
                 {
                     logger.Warning_LeaseRenewAttemptFailed(retry, ex);
                 }
-            }
-
-            try
-            {
-                await Task.Delay(frequency, ct);
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                return;
-            }
-            catch (Exception ex)
-            {
-                logger.Error_ExceptionDuringPause(ex);
             }
         }
     }

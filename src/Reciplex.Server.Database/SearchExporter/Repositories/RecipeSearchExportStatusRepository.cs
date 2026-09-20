@@ -437,4 +437,143 @@ class RecipeSearchExportStatusRepository(
             .Select(e => e.RecipeFk)
             .ToListAsync(ct);
     }
+
+    public async Task<int> MarkRecipesDeletionFailedAndReleaseAsync(
+        List<long> recipeIds,
+        string leaseToken,
+        CancellationToken ct
+    )
+    {
+        await using ApplicationDbContext db = await dbFactory.CreateDbContextAsync(ct);
+        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+
+        return await db
+            .RecipeSearchExtractionStatusEntries.Where(searchExtractState =>
+                recipeIds.Contains(searchExtractState.RecipeFk)
+                && searchExtractState.LeaseToken == leaseToken
+                && searchExtractState.LeaseExpireTime != null
+            )
+            .ExecuteUpdateAsync(
+                s =>
+                    s.SetProperty(e => e.LeaseExpireTime, (long?)null)
+                        .SetProperty(e => e.LeaseToken, (string?)null)
+                        .SetProperty(
+                            e => e.NextDeleteRetryTime,
+                            e => now + (1 << e.DeleteRetryCounter)
+                        )
+                        .SetProperty(e => e.DeleteRetryCounter, e => e.DeleteRetryCounter + 1),
+                ct
+            );
+    }
+
+    public async Task<int> MarkRecipesAsExtractedAndReleaseAsync(
+        List<(long RecipeId, long SearchVersion)> entries,
+        string leaseToken,
+        CancellationToken ct
+    )
+    {
+        List<long> ids = [.. entries.Select(e => e.RecipeId)];
+        await using ApplicationDbContext db = await dbFactory.CreateDbContextAsync(ct);
+
+        var parameter = Expression.Parameter(typeof(RecipeSearchWorkerStateDbObject), "row");
+        var recipeFkProperty = Expression.Property(
+            parameter,
+            nameof(RecipeSearchWorkerStateDbObject.RecipeFk)
+        );
+        var searchVersionProperty = Expression.Property(
+            parameter,
+            nameof(RecipeSearchWorkerStateDbObject.SearchVersion)
+        );
+        Expression caseExpression = searchVersionProperty;
+
+        foreach (var (RecipeId, SearchVersion) in entries)
+        {
+            var test = Expression.Equal(recipeFkProperty, Expression.Constant(RecipeId));
+            var value = Expression.Constant(SearchVersion);
+
+            caseExpression = Expression.Condition(test, value, caseExpression);
+        }
+
+        var searchVersionLambda = Expression.Lambda<Func<RecipeSearchWorkerStateDbObject, long?>>(
+            caseExpression,
+            parameter
+        );
+
+        return await db
+            .RecipeSearchExtractionStatusEntries.Where(searchExtractState =>
+                ids.Contains(searchExtractState.RecipeFk)
+                && searchExtractState.LeaseToken == leaseToken
+                && searchExtractState.LeaseExpireTime != null
+            )
+            .ExecuteUpdateAsync(
+                s =>
+                    s.SetProperty(e => e.LeaseExpireTime, (long?)null)
+                        .SetProperty(e => e.LeaseToken, (string?)null)
+                        .SetProperty(e => e.ExtractRetryCount, 0)
+                        .SetProperty(e => e.NextExtractRetryTime, (long?)null)
+                        .SetProperty(e => e.SearchVersion, searchVersionLambda)
+                        .SetProperty(e => e.AttemptedExtractSearchVersion, (long?)null),
+                ct
+            );
+    }
+
+    public async Task<int> MarkRecipeExtractionFailedAndReleaseAsync(
+        List<(long RecipeId, long SearchVersion)> entries,
+        string leaseToken,
+        CancellationToken ct
+    )
+    {
+        List<long> ids = [.. entries.Select(e => e.RecipeId)];
+        await using ApplicationDbContext db = await dbFactory.CreateDbContextAsync(ct);
+
+        var parameter = Expression.Parameter(typeof(RecipeSearchWorkerStateDbObject), "row");
+        var recipeFkProperty = Expression.Property(
+            parameter,
+            nameof(RecipeSearchWorkerStateDbObject.RecipeFk)
+        );
+        var searchVersionProperty = Expression.Property(
+            parameter,
+            nameof(RecipeSearchWorkerStateDbObject.AttemptedExtractSearchVersion)
+        );
+        Expression caseExpression = searchVersionProperty;
+
+        foreach (var (RecipeId, SearchVersion) in entries)
+        {
+            var test = Expression.Equal(recipeFkProperty, Expression.Constant(RecipeId));
+            var value = Expression.Constant(SearchVersion);
+
+            caseExpression = Expression.Condition(test, value, caseExpression);
+        }
+
+        var searchVersionLambda = Expression.Lambda<Func<RecipeSearchWorkerStateDbObject, long?>>(
+            caseExpression,
+            parameter
+        );
+
+        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        return await db
+            .RecipeSearchExtractionStatusEntries.Where(searchExtractState =>
+                ids.Contains(searchExtractState.RecipeFk)
+                && searchExtractState.LeaseToken == leaseToken
+                && searchExtractState.LeaseExpireTime != null
+            )
+            .ExecuteUpdateAsync(
+                s =>
+                    s.SetProperty(e => e.LeaseExpireTime, (long?)null)
+                        .SetProperty(e => e.LeaseToken, (string?)null)
+                        .SetProperty(
+                            e => e.ExtractRetryCount,
+                            e =>
+                                e.Recipe!.SearchVersion == e.AttemptedExtractSearchVersion
+                                    ? e.ExtractRetryCount + 1
+                                    : 1
+                        )
+                        .SetProperty(e => e.AttemptedExtractSearchVersion, searchVersionLambda)
+                        .SetProperty(
+                            e => e.NextExtractRetryTime,
+                            e => now + (1 << e.ExtractRetryCount)
+                        ),
+                ct
+            );
+    }
 }
