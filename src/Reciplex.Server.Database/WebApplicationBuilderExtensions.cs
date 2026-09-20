@@ -11,6 +11,7 @@ using Reciplex.Server.Database.RecipesDomain;
 using Reciplex.Server.Database.SearchExporter;
 using Reciplex.Server.Database.SearchExporter.HostedServices;
 using Reciplex.Server.Database.SearchExporter.Repositories;
+using Reciplex.Server.Database.SearchExporter.SearchBackgroundTasks;
 using Reciplex.Server.Database.Strategies;
 using Reciplex.Server.Database.UsersDomain;
 using Reciplex.Server.Meilisearch;
@@ -71,6 +72,8 @@ public static partial class WebApplicationBuilderExtensions
                 );
             });
 
+            builder.Services.AddHostedService<RecipeSearchHostedBackgroundService>();
+
             builder.Services.AddSingleton<
                 IRecipeSearchExportStatusRepository,
                 RecipeSearchExportStatusRepository
@@ -78,17 +81,28 @@ public static partial class WebApplicationBuilderExtensions
             builder.Services.AddSingleton<ISearchIndexRepository, MeilisearchIndexRepository>();
             builder.Services.AddSingleton<LeaseRenewer>();
             builder.Services.AddSingleton<RecipeSearchIndexExporterStrategy>();
-            builder.Services.AddSingleton<
-                IRecipeIndexCreationCoordinator,
-                RecipeIndexCreationCoordinator
-            >();
             builder.Services.AddSingleton<ResiliencePipelineBuilderFactory>();
-            builder.Services.AddHostedService<NewRecipeSearchRowExporterHostedService>();
-            builder.Services.AddHostedService<RecipeSearchIndexDeletionHostedService>();
-            builder.Services.AddHostedService<RecipeSearchIndexSetupHostedService>();
-            builder.Services.AddHostedService<RecipeSearchLeaseBreakerHostedService>();
-            builder.Services.AddHostedService<RecipeSearchRowExporterHostedService>();
-            builder.Services.AddHostedService<RecipesThatFailToDeletePurgerHostedService>();
+            builder.Services.AddSingleton<
+                ISearchBackgroundTask,
+                NewRecipeExporterSearchBackgroundTask
+            >();
+            builder.Services.AddSingleton<
+                ISearchBackgroundTask,
+                RecipeDeletionSearchBackgroundTask
+            >();
+
+            builder.Services.AddSingleton<
+                ISearchBackgroundTask,
+                RecipeLeaseBreakerSearchBackgroundTask
+            >();
+            builder.Services.AddSingleton<
+                ISearchBackgroundTask,
+                ChangedRecipeExporterSearchBackgroundTask
+            >();
+            builder.Services.AddSingleton<
+                ISearchBackgroundTask,
+                RecipesThatFailToDeleteSearchBackgroundTask
+            >();
         }
     }
 

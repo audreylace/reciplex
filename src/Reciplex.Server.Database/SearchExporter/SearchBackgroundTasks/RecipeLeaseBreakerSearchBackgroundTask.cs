@@ -1,11 +1,10 @@
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Polly;
 using Reciplex.Server.Database.SearchExporter.Loggers;
 using Reciplex.Server.Database.SearchExporter.Repositories;
 
-namespace Reciplex.Server.Database.SearchExporter.HostedServices;
+namespace Reciplex.Server.Database.SearchExporter.SearchBackgroundTasks;
 
 /// <summary>
 /// Runs a periodic loop breaking leases that have not been renewed in the required time window
@@ -14,21 +13,16 @@ namespace Reciplex.Server.Database.SearchExporter.HostedServices;
 /// <param name="options">search options</param>
 /// <param name="logger">logger for the hosted service</param>
 /// <param name="resilienceFactory">factory for building a resilience pipeline</param>
-sealed class RecipeSearchLeaseBreakerHostedService(
+sealed class RecipeLeaseBreakerSearchBackgroundTask(
     IRecipeSearchExportStatusRepository repo,
     IOptions<SearchExporterOptions> options,
-    ILogger<RecipeSearchLeaseBreakerHostedService> logger,
+    ILogger<RecipeLeaseBreakerSearchBackgroundTask> logger,
     ResiliencePipelineBuilderFactory resilienceFactory
-) : BackgroundService
+) : ISearchBackgroundTask
 {
     /// <inheritdoc />
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!options.Value.Enable) // exit if search is not enabled
-        {
-            return;
-        }
-
         ResiliencePipeline pipeline = resilienceFactory.BuildDeleteRowPipeline(ex =>
             ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested
         );

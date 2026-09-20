@@ -1,11 +1,10 @@
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Database.SearchExporter.Loggers;
 using Reciplex.Server.Database.SearchExporter.Repositories;
 
-namespace Reciplex.Server.Database.SearchExporter.HostedServices;
+namespace Reciplex.Server.Database.SearchExporter.SearchBackgroundTasks;
 
 /// <summary>
 /// Finds and exports new recipes
@@ -17,29 +16,18 @@ namespace Reciplex.Server.Database.SearchExporter.HostedServices;
 /// <param name="options">options for the service</param>
 /// <param name="recipeIndexCreationCoordinator">ensures hosted services only export after the recipe index is created</param>
 /// <param name="logger">service logger</param>
-class NewRecipeSearchRowExporterHostedService(
+class NewRecipeExporterSearchBackgroundTask(
     IRecipeSearchExportStatusRepository searchRepo,
     IConcurrencyTagProvider tagProvider,
     IRecipeMutationNotifyService notificationService,
     RecipeSearchIndexExporterStrategy exporterStrategy,
     IOptions<SearchExporterOptions> options,
-    IRecipeIndexCreationCoordinator recipeIndexCreationCoordinator,
-    ILogger<NewRecipeSearchRowExporterHostedService> logger
-) : BackgroundService
+    ILogger<NewRecipeExporterSearchBackgroundTask> logger
+) : ISearchBackgroundTask
 {
     /// <inheritdoc />
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!options.Value.Enable) // exit if search is not enabled
-        {
-            return;
-        }
-
-        if (!await recipeIndexCreationCoordinator.WaitForIndexSetupAsync(stoppingToken))
-        {
-            return; // application is shutting down
-        }
-
         while (!stoppingToken.IsCancellationRequested)
         {
             try

@@ -1,11 +1,10 @@
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Database.SearchExporter.Loggers;
 using Reciplex.Server.Database.SearchExporter.Repositories;
 
-namespace Reciplex.Server.Database.SearchExporter.HostedServices;
+namespace Reciplex.Server.Database.SearchExporter.SearchBackgroundTasks;
 
 /// <summary>
 /// exports recipes with changes to the search index
@@ -16,30 +15,18 @@ namespace Reciplex.Server.Database.SearchExporter.HostedServices;
 /// <param name="logger">hosted service logger</param>
 /// <param name="notifyService">notifies when recipes have changed</param>
 /// <param name="searchExporterStrategy">strategy for exporting recipes to the search index</param>
-/// <param name="recipeIndexCreationCoordinator">ensures hosted services only export after the recipe index is created</param>
-class RecipeSearchRowExporterHostedService(
+class ChangedRecipeExporterSearchBackgroundTask(
     IRecipeSearchExportStatusRepository exportStatusRepository,
     IOptions<SearchExporterOptions> options,
     IConcurrencyTagProvider tagProvider,
-    ILogger<RecipeSearchRowExporterHostedService> logger,
+    ILogger<ChangedRecipeExporterSearchBackgroundTask> logger,
     IRecipeMutationNotifyService notifyService,
-    RecipeSearchIndexExporterStrategy searchExporterStrategy,
-    IRecipeIndexCreationCoordinator recipeIndexCreationCoordinator
-) : BackgroundService
+    RecipeSearchIndexExporterStrategy searchExporterStrategy
+) : ISearchBackgroundTask
 {
     /// <inheritdoc />
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!options.Value.Enable) // exit if search is not enabled
-        {
-            return;
-        }
-
-        if (!await recipeIndexCreationCoordinator.WaitForIndexSetupAsync(stoppingToken))
-        {
-            return; // application is shutting down
-        }
-
         while (!stoppingToken.IsCancellationRequested)
         {
             try

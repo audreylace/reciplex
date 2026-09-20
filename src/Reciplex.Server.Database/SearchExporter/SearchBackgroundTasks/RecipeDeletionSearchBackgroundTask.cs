@@ -1,38 +1,26 @@
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Database.SearchExporter.Loggers;
 using Reciplex.Server.Database.SearchExporter.Repositories;
 
-namespace Reciplex.Server.Database.SearchExporter.HostedServices;
+namespace Reciplex.Server.Database.SearchExporter.SearchBackgroundTasks;
 
 /// <summary>
 /// Purges recipes from the search index periodically
 /// </summary>
-sealed class RecipeSearchIndexDeletionHostedService(
+sealed class RecipeDeletionSearchBackgroundTask(
     IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository,
     ISearchIndexRepository searchIndexRepository,
     IOptions<SearchExporterOptions> options,
     IConcurrencyTagProvider concurrencyTagProvider,
     LeaseRenewer leaseRenewer,
-    IRecipeIndexCreationCoordinator recipeIndexCreationCoordinator,
-    ILogger<RecipeSearchIndexDeletionHostedService> logger
-) : BackgroundService
+    ILogger<RecipeDeletionSearchBackgroundTask> logger
+) : ISearchBackgroundTask
 {
     /// <inheritdoc />
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!options.Value.Enable) // exit if search is not enabled
-        {
-            return;
-        }
-
-        if (!await recipeIndexCreationCoordinator.WaitForIndexSetupAsync(stoppingToken))
-        {
-            return; // application is shutting down
-        }
-
         using PeriodicTimer periodicTimer = new(TimeSpan.FromMinutes(1));
         while (!stoppingToken.IsCancellationRequested)
         {

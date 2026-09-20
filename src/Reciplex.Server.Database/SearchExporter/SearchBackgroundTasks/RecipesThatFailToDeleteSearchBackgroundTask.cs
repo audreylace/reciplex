@@ -1,11 +1,10 @@
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Polly;
 using Reciplex.Server.Database.SearchExporter.Loggers;
 using Reciplex.Server.Database.SearchExporter.Repositories;
 
-namespace Reciplex.Server.Database.SearchExporter.HostedServices;
+namespace Reciplex.Server.Database.SearchExporter.SearchBackgroundTasks;
 
 /// <summary>
 /// Background service that purges recipes with too many
@@ -15,21 +14,16 @@ namespace Reciplex.Server.Database.SearchExporter.HostedServices;
 /// <param name="resilienceFactory">resilience pipeline builder</param>
 /// <param name="options">options controlling the behavior of this background service</param>
 /// <param name="logger">logger for the hosted service</param>
-class RecipesThatFailToDeletePurgerHostedService(
+class RecipesThatFailToDeleteSearchBackgroundTask(
     IRecipeSearchExportStatusRepository repository,
     ResiliencePipelineBuilderFactory resilienceFactory,
     IOptions<SearchExporterOptions> options,
-    ILogger<RecipesThatFailToDeletePurgerHostedService> logger
-) : BackgroundService
+    ILogger<RecipesThatFailToDeleteSearchBackgroundTask> logger
+) : ISearchBackgroundTask
 {
     /// <inheritdoc />
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!options.Value.Enable) // exit if search is not enabled
-        {
-            return;
-        }
-
         ResiliencePipeline pipeline = resilienceFactory.BuildDeleteRowPipeline(ex =>
             ex is not OperationCanceledException || !stoppingToken.IsCancellationRequested
         );
