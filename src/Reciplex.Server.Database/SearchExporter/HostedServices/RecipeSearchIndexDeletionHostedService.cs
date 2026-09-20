@@ -16,6 +16,7 @@ sealed class RecipeSearchIndexDeletionHostedService(
     IOptions<SearchExporterOptions> options,
     IConcurrencyTagProvider concurrencyTagProvider,
     LeaseRenewer leaseRenewer,
+    IRecipeIndexCreationCoordinator recipeIndexCreationCoordinator,
     ILogger<RecipeSearchIndexDeletionHostedService> logger
 ) : BackgroundService
 {
@@ -25,6 +26,11 @@ sealed class RecipeSearchIndexDeletionHostedService(
         if (!options.Value.Enable) // exit if search is not enabled
         {
             return;
+        }
+
+        if (!await recipeIndexCreationCoordinator.WaitForIndexSetupAsync(stoppingToken))
+        {
+            return; // application is shutting down
         }
 
         using PeriodicTimer periodicTimer = new(TimeSpan.FromMinutes(1));

@@ -15,6 +15,7 @@ namespace Reciplex.Server.Database.SearchExporter.HostedServices;
 /// <param name="notificationService">notifies when new recipes are created and ready for export</param>
 /// <param name="exporterStrategy">strategy for marshalling records to the search index</param>
 /// <param name="options">options for the service</param>
+/// <param name="recipeIndexCreationCoordinator">ensures hosted services only export after the recipe index is created</param>
 /// <param name="logger">service logger</param>
 class NewRecipeSearchRowExporterHostedService(
     IRecipeSearchExportStatusRepository searchRepo,
@@ -22,6 +23,7 @@ class NewRecipeSearchRowExporterHostedService(
     IRecipeMutationNotifyService notificationService,
     RecipeSearchIndexExporterStrategy exporterStrategy,
     IOptions<SearchExporterOptions> options,
+    IRecipeIndexCreationCoordinator recipeIndexCreationCoordinator,
     ILogger<NewRecipeSearchRowExporterHostedService> logger
 ) : BackgroundService
 {
@@ -31,6 +33,11 @@ class NewRecipeSearchRowExporterHostedService(
         if (!options.Value.Enable) // exit if search is not enabled
         {
             return;
+        }
+
+        if (!await recipeIndexCreationCoordinator.WaitForIndexSetupAsync(stoppingToken))
+        {
+            return; // application is shutting down
         }
 
         while (!stoppingToken.IsCancellationRequested)

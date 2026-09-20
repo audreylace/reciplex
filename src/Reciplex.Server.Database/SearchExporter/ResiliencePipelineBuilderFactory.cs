@@ -20,7 +20,7 @@ class ResiliencePipelineBuilderFactory(ILogger<ResiliencePipelineBuilderFactory>
                     UseJitter = true,
                     OnRetry = args =>
                     {
-                        logger.Warning_DeleteAttemptPlanned(
+                        logger.Warning_DeleteAttemptFailed(
                             args.AttemptNumber + 1,
                             args.Outcome.Exception
                         );

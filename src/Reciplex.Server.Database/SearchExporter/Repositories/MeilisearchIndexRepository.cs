@@ -74,7 +74,8 @@ sealed class MeilisearchIndexRepository(
 
             return IndexMutationOperationOutcome.Success;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex)
+            when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             logger.Error_RecipeDeleteBatchFailed(ex);
             return IndexMutationOperationOutcome.Error;
@@ -138,7 +139,8 @@ sealed class MeilisearchIndexRepository(
 
             return IndexMutationOperationOutcome.Success;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex)
+            when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             logger.Error_RecipeUpsertBatchFailed(ex);
 
@@ -188,7 +190,8 @@ sealed class MeilisearchIndexRepository(
                 }
             }
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex)
+            when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             logger.Error_IndexCreationFailed(
                 RecipesSearchIndexUid,
@@ -242,7 +245,8 @@ sealed class MeilisearchIndexRepository(
                 }
             }
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex)
+            when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             logger.Error_RecipeFilterAttributesUpdateFailed(ex);
             return false;

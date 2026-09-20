@@ -10,6 +10,7 @@ using Reciplex.Server.Database.RecipeBooksDomain;
 using Reciplex.Server.Database.RecipesDomain;
 using Reciplex.Server.Database.SearchExporter;
 using Reciplex.Server.Database.SearchExporter.HostedServices;
+using Reciplex.Server.Database.SearchExporter.Repositories;
 using Reciplex.Server.Database.Strategies;
 using Reciplex.Server.Database.UsersDomain;
 using Reciplex.Server.Meilisearch;
@@ -46,31 +47,48 @@ public static partial class WebApplicationBuilderExtensions
     private static void ConfigureSearch(WebApplicationBuilder builder)
     {
         builder.Services.AddSingleton<IRecipeMutationNotifyService, RecipeMutationNotifyService>();
+
         builder.Services.Configure<SearchExporterOptions>(
             builder.Configuration.GetSection(SearchExporterOptions.SectionPath)
         );
 
         SearchExporterOptions configOptions = new();
         builder.Configuration.GetSection(SearchExporterOptions.SectionPath).Bind(configOptions);
-        builder.Services.AddHttpClient<IMeilisearchClient, MeilisearchClient>(client =>
-        {
-            if (!configOptions.Enable)
-            {
-                return;
-            }
-
-            client.BaseAddress = new Uri(configOptions.Host);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-                "Bearer",
-                configOptions.AuthenticationToken
-            );
-        });
 
         if (configOptions.Enable)
         {
+            builder.Services.AddHttpClient<IMeilisearchClient, MeilisearchClient>(client =>
+            {
+                if (!configOptions.Enable)
+                {
+                    return;
+                }
+
+                client.BaseAddress = new Uri(configOptions.Host);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                    "Bearer",
+                    configOptions.AuthenticationToken
+                );
+            });
+
+            builder.Services.AddSingleton<
+                IRecipeSearchExportStatusRepository,
+                RecipeSearchExportStatusRepository
+            >();
+            builder.Services.AddSingleton<ISearchIndexRepository, MeilisearchIndexRepository>();
+            builder.Services.AddSingleton<LeaseRenewer>();
+            builder.Services.AddSingleton<RecipeSearchIndexExporterStrategy>();
+            builder.Services.AddSingleton<
+                IRecipeIndexCreationCoordinator,
+                RecipeIndexCreationCoordinator
+            >();
+            builder.Services.AddSingleton<ResiliencePipelineBuilderFactory>();
+            builder.Services.AddHostedService<NewRecipeSearchRowExporterHostedService>();
             builder.Services.AddHostedService<RecipeSearchIndexDeletionHostedService>();
+            builder.Services.AddHostedService<RecipeSearchIndexSetupHostedService>();
             builder.Services.AddHostedService<RecipeSearchLeaseBreakerHostedService>();
             builder.Services.AddHostedService<RecipeSearchRowExporterHostedService>();
+            builder.Services.AddHostedService<RecipesThatFailToDeletePurgerHostedService>();
         }
     }
 

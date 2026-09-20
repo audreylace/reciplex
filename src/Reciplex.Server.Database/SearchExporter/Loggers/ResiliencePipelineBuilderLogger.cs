@@ -8,7 +8,7 @@ static partial class ResiliencePipelineBuilderLogger
         LogLevel.Warning,
         "Got an exception running a delete operation. Running retry attempt {Attempt}."
     )]
-    public static partial void Warning_DeleteAttemptPlanned(
+    public static partial void Warning_DeleteAttemptFailed(
         this ILogger<ResiliencePipelineBuilderFactory> logger,
         int Attempt,
         Exception? ex

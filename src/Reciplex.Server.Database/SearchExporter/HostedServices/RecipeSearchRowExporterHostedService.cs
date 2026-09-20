@@ -16,13 +16,15 @@ namespace Reciplex.Server.Database.SearchExporter.HostedServices;
 /// <param name="logger">hosted service logger</param>
 /// <param name="notifyService">notifies when recipes have changed</param>
 /// <param name="searchExporterStrategy">strategy for exporting recipes to the search index</param>
+/// <param name="recipeIndexCreationCoordinator">ensures hosted services only export after the recipe index is created</param>
 class RecipeSearchRowExporterHostedService(
     IRecipeSearchExportStatusRepository exportStatusRepository,
     IOptions<SearchExporterOptions> options,
     IConcurrencyTagProvider tagProvider,
     ILogger<RecipeSearchRowExporterHostedService> logger,
     IRecipeMutationNotifyService notifyService,
-    RecipeSearchIndexExporterStrategy searchExporterStrategy
+    RecipeSearchIndexExporterStrategy searchExporterStrategy,
+    IRecipeIndexCreationCoordinator recipeIndexCreationCoordinator
 ) : BackgroundService
 {
     /// <inheritdoc />
@@ -31,6 +33,11 @@ class RecipeSearchRowExporterHostedService(
         if (!options.Value.Enable) // exit if search is not enabled
         {
             return;
+        }
+
+        if (!await recipeIndexCreationCoordinator.WaitForIndexSetupAsync(stoppingToken))
+        {
+            return; // application is shutting down
         }
 
         while (!stoppingToken.IsCancellationRequested)

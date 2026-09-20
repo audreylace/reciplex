@@ -67,7 +67,7 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
         }
     }
 
-    public async Task WaitForNew(TimeSpan wait, CancellationToken ct)
+    public async Task WaitForNew(TimeSpan timeout, CancellationToken ct)
     {
         if (!options.Value.Enable)
         {
@@ -76,7 +76,7 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
 
         using CancellationTokenSource cancellationTokenSource =
             CancellationTokenSource.CreateLinkedTokenSource(ct);
-        cancellationTokenSource.CancelAfter(wait);
+        cancellationTokenSource.CancelAfter(timeout);
         try
         {
             while (
