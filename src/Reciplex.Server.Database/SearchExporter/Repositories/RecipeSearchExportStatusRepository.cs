@@ -14,20 +14,22 @@ class RecipeSearchExportStatusRepository(
     /// <inheritdoc />
     public async Task<int> BreakLeasesAsync(
         int max,
-        long leaseMaxLookBack,
-        long leaseMaxLookAhead,
+        TimeSpan leaseMaxLookBack,
+        TimeSpan leaseMaxLookAhead,
         CancellationToken ct
     )
     {
         await using ApplicationDbContext db = await dbFactory.CreateDbContextAsync(ct);
         long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        long before = (long)(now - leaseMaxLookBack.TotalSeconds);
+        long after = (long)(now + leaseMaxLookAhead.TotalSeconds);
         var entries = await db
             .RecipeSearchExtractionStatusEntries.Where(e =>
                 (
                     e.LeaseExpireTime != null
                     && (
-                        e.LeaseExpireTime < (now - leaseMaxLookBack)
-                        || e.LeaseExpireTime > (now + leaseMaxLookAhead)
+                        e.LeaseExpireTime < before
+                        || e.LeaseExpireTime > after
                         || e.LeaseExpireTime == null
                     )
                 ) || (e.LeaseToken == null && e.LeaseExpireTime != null)
@@ -102,19 +104,20 @@ class RecipeSearchExportStatusRepository(
     public async Task<int> ClaimAsync(
         List<long> ids,
         string leaseToken,
-        long leaseExpireTime,
+        TimeSpan leaseExpireTime,
         CancellationToken ct
     )
     {
         await using ApplicationDbContext db = await dbFactory.CreateDbContextAsync(ct);
         long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        long expireTime = (long)(now + leaseExpireTime.TotalSeconds);
         return await db
             .RecipeSearchExtractionStatusEntries.Where(e =>
                 ids.Contains(e.RecipeFk) && e.LeaseToken == null && e.LeaseExpireTime == null
             )
             .ExecuteUpdateAsync(
                 s =>
-                    s.SetProperty(e => e.LeaseExpireTime, now + leaseExpireTime)
+                    s.SetProperty(e => e.LeaseExpireTime, expireTime)
                         .SetProperty(e => e.LeaseToken, leaseToken),
                 ct
             );
@@ -139,7 +142,7 @@ class RecipeSearchExportStatusRepository(
     public async Task<List<long>> CreateSearchStatusRowsAsync(
         int max,
         string leaseToken,
-        long leaseExpireTime,
+        TimeSpan leaseExpireTime,
         CancellationToken ct
     )
     {
@@ -161,14 +164,14 @@ class RecipeSearchExportStatusRepository(
         }
 
         long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
-
+        long expireTime = (long)(now + leaseExpireTime.TotalSeconds);
         foreach (var id in entries)
         {
             RecipeSearchWorkerStateDbObject recipeSearchIndexEntry = new()
             {
                 SearchVersion = null,
                 RecipeFk = id,
-                LeaseExpireTime = now + leaseExpireTime,
+                LeaseExpireTime = expireTime,
                 LeaseToken = leaseToken,
             };
             db.Add(recipeSearchIndexEntry);
@@ -205,7 +208,7 @@ class RecipeSearchExportStatusRepository(
     }
 
     public async Task<List<long>> GetRecipesToExtractAsync(
-        int max,
+        int batchSize,
         int maxRetries,
         CancellationToken ct
     )
@@ -242,7 +245,7 @@ class RecipeSearchExportStatusRepository(
 
             )
             .Select(e => e.RecipeFk)
-            .Take(max)
+            .Take(batchSize)
             .ToListAsync(ct);
     }
 
@@ -276,20 +279,18 @@ class RecipeSearchExportStatusRepository(
     public async Task<int> RenewLeasesAsync(
         List<long> ids,
         string leaseToken,
-        long leaseExpireTime,
+        TimeSpan leaseExpireTime,
         CancellationToken ct
     )
     {
         await using ApplicationDbContext db = await dbFactory.CreateDbContextAsync(ct);
         long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        long expireTime = (long)(now + leaseExpireTime.TotalSeconds);
         return await db
             .RecipeSearchExtractionStatusEntries.Where(e =>
                 ids.Contains(e.RecipeFk) && e.LeaseToken == leaseToken && e.LeaseExpireTime != null
             )
-            .ExecuteUpdateAsync(
-                s => s.SetProperty(e => e.LeaseExpireTime, now + leaseExpireTime),
-                ct
-            );
+            .ExecuteUpdateAsync(s => s.SetProperty(e => e.LeaseExpireTime, expireTime), ct);
     }
 
     public async Task<int> MarkRecipeExtractionFailedAndReleaseAsync(
@@ -328,7 +329,7 @@ class RecipeSearchExportStatusRepository(
     }
 
     public async Task<List<long>> GetRecipesToDeleteAsync(
-        int max,
+        int batchSize,
         int maxRetries,
         CancellationToken ct
     )
@@ -348,7 +349,7 @@ class RecipeSearchExportStatusRepository(
                 && (e.NextDeleteRetryTime == null || e.NextDeleteRetryTime < now)
             )
             .Select(e => e.RecipeFk)
-            .Take(max)
+            .Take(batchSize)
             .ToListAsync(ct);
     }
 
@@ -367,7 +368,7 @@ class RecipeSearchExportStatusRepository(
     }
 
     public async Task<int> PurgeRecipeSearchEntriesWithTooManyRetries(
-        int max,
+        int batchSize,
         int maxRetries,
         CancellationToken ct
     )
@@ -380,7 +381,7 @@ class RecipeSearchExportStatusRepository(
                 && e.LeaseToken == null
             )
             .Select(e => e.RecipeFk)
-            .Take(max)
+            .Take(batchSize)
             .ToListAsync(ct);
 
         if (entries.Count < 1)

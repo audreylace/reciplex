@@ -33,7 +33,6 @@ class NewRecipeSearchRowExporterHostedService(
             return;
         }
 
-        int leaseExpireTimeSeconds = (int)TimeSpan.FromMinutes(5).TotalSeconds;
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -42,7 +41,7 @@ class NewRecipeSearchRowExporterHostedService(
                 var list = await searchRepo.CreateSearchStatusRowsAsync(
                     options.Value.SearchExportBatchSize,
                     leaseToken,
-                    leaseExpireTimeSeconds,
+                    TimeSpan.FromMinutes(5),
                     stoppingToken
                 );
                 if (list.Count < 1)

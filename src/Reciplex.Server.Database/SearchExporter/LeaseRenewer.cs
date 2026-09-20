@@ -20,15 +20,15 @@ class LeaseRenewer(
     /// <param name="leaseToken">lease token</param>
     /// <param name="ids">set of ids to renew</param>
     /// <param name="leaseExpireWindow">the window after which the lease expires</param>
-    /// <param name="frequencyMs">the cadence of lease renewal</param>
+    /// <param name="frequency">the cadence of lease renewal</param>
     /// <param name="maxRetries">max number of tries</param>
     /// <param name="ct">async cancellation token</param>
     /// <returns>task that resolves on cancellation or when there are no more leases</returns>
     public async Task ExecuteAsync(
         string leaseToken,
         List<long> ids,
-        long leaseExpireWindow,
-        int frequencyMs,
+        TimeSpan leaseExpireWindow,
+        TimeSpan frequency,
         int maxRetries,
         CancellationToken ct
     )
@@ -44,7 +44,7 @@ class LeaseRenewer(
                         leaseToken,
                         leaseExpireWindow,
                         ct
-                    ) < 1
+                    ) != ids.Count
                 )
                 {
                     return;
@@ -71,7 +71,7 @@ class LeaseRenewer(
 
             try
             {
-                await Task.Delay(frequencyMs, ct);
+                await Task.Delay(frequency, ct);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {

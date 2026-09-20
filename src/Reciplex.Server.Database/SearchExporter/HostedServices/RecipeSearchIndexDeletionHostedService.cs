@@ -19,21 +19,6 @@ sealed class RecipeSearchIndexDeletionHostedService(
     ILogger<RecipeSearchIndexDeletionHostedService> logger
 ) : BackgroundService
 {
-    /// <summary>
-    /// Lease lifetime before expire
-    /// </summary>
-    readonly int LeaseTimeSeconds = (int)TimeSpan.FromMinutes(5).TotalSeconds;
-
-    /// <summary>
-    /// Lease renewal rate
-    /// </summary>
-    readonly int LeaseRenewRateMs = (int)TimeSpan.FromSeconds(30).TotalMilliseconds;
-
-    /// <summary>
-    /// Max renew attempts
-    /// </summary>
-    readonly int MaxRenewAttempts = 8;
-
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -47,12 +32,25 @@ sealed class RecipeSearchIndexDeletionHostedService(
         {
             try
             {
-                if (!await DeleteRecipesFromIndexAsync(stoppingToken))
+                // look for potential recipes that could be deleted from the search index
+                List<long> entries =
+                    await recipeSearchExportStatusRepository.GetRecipesToDeleteAsync(
+                        options.Value.SearchDeleteBatchSize,
+                        options.Value.MaxRecipeDeleteAttempts,
+                        stoppingToken
+                    );
+
+                // delay if no recipes were found, otherwise delete them
+                if (entries.Count < 1)
                 {
                     if (!await periodicTimer.WaitForNextTickAsync(stoppingToken))
                     {
-                        return; // exit on shutdown
+                        return; // exit on shutdown; periodic timer returns false when `stoppingToken` is cancelled.
                     }
+                }
+                else
+                {
+                    await DeleteRecipesFromIndexAsync(entries, stoppingToken);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -62,152 +60,274 @@ sealed class RecipeSearchIndexDeletionHostedService(
             catch (Exception ex)
             {
                 logger.Error_DeleteRecipesFromIndexFailed(ex);
-                try
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
-                }
-                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-                {
-                    return; // exit background service
-                }
-                catch (Exception innerEx)
-                {
-                    logger.Error_ExceptionDuringPause(innerEx);
-                }
+
+                // delay to prevent a tight loop on repeated failure
+                await SafeDelay.DelayAsync(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }
     }
 
-    private async Task<bool> DeleteRecipesFromIndexAsync(CancellationToken ct)
+    /// <summary>
+    /// Attempts to claim some subset of <paramref name="candidates"/> and then delete them from the search index
+    /// </summary>
+    /// <param name="candidates">ids to claim and delete</param>
+    /// <param name="ct">cancels the operation</param>
+    private async Task DeleteRecipesFromIndexAsync(List<long> candidates, CancellationToken ct)
     {
-        List<long> entries = await recipeSearchExportStatusRepository.GetRecipesToDeleteAsync(
-            options.Value.SearchDeleteBatchSize,
-            options.Value.MaxRecipeDeleteAttempts,
-            ct
-        );
-
-        if (entries.Count < 1)
-        {
-            return false;
-        }
-
+        // generate a unique lease token to identify our lease
         string leaseToken = concurrencyTagProvider.NextTag();
+
         if (
             await recipeSearchExportStatusRepository.ClaimAsync(
-                entries,
+                candidates,
                 leaseToken,
-                LeaseTimeSeconds,
+                TimeSpan.FromMinutes(5),
                 ct
             ) < 1
         )
         {
-            return true;
+            return; // claimed nothing; exit
         }
 
-        entries = await recipeSearchExportStatusRepository.GetClaimedRecipes(leaseToken, ct);
-        if (entries.Count < 1)
+        // determine the actual ids of claimed rows as its not guaranteed that we got all of candidates
+        var claimedIds = await recipeSearchExportStatusRepository.GetClaimedRecipes(leaseToken, ct);
+        if (claimedIds.Count < 1)
         {
-            return true;
+            return;
         }
 
         using CancellationTokenSource cancellationTokenSource =
             CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var renewerTask = leaseRenewer.ExecuteAsync(
+
+        // renew held rows in a background task
+        Task renewerTask = RenewIdsPeriodicallyAsync(
             leaseToken,
-            entries,
-            LeaseTimeSeconds,
-            LeaseRenewRateMs,
-            MaxRenewAttempts,
-            cancellationTokenSource.Token
+            claimedIds,
+            cancellationTokenSource
         );
+
+        bool delay = false;
+
+        // Ensure unlock on exception to minimize delays.
+        // Otherwise rows will be locked up to 10 minutes
+        // resulting in end user delays.
+        List<long> recipesToUnlock = claimedIds;
+
+        List<long> recipesToDelete = [];
+        List<long> recipesThatFailed = [];
         try
         {
-            var outcome = await searchIndexRepository.DeleteRecipesAsync(entries, ct);
+            var outcome = await searchIndexRepository.DeleteRecipesAsync(claimedIds, ct);
             switch (outcome)
             {
                 case IndexMutationOperationOutcome.Success:
-                    await recipeSearchExportStatusRepository.DeleteRecipeSearchEntries(
-                        entries,
-                        leaseToken,
-                        ct
-                    );
-                    return true;
+                    recipesToUnlock = [];
+                    recipesToDelete = claimedIds; // delete will unlock for us
+                    break;
+
                 case IndexMutationOperationOutcome.Error:
-                    return false;
+                    delay = true; // pause to avoid tight loop during search index outage
+                    break;
+
                 case IndexMutationOperationOutcome.BatchFailed:
-                    return await DeleteRecipesFromIndexInSerialAsync(
-                        entries,
-                        leaseToken,
-                        renewerTask,
-                        ct
-                    );
+                    // Try one by one in case the failure was caused by one or several in the batch.
+                    // The search index aborts the batch upload when one or more failed.
+                    (recipesToDelete, recipesThatFailed, recipesToUnlock) =
+                        await DeleteRecipesFromIndexInSerialAsync(claimedIds, ct);
+                    break;
             }
         }
         finally
         {
             await cancellationTokenSource.CancelAsync();
-            try
+            await renewerTask;
+
+            ct.ThrowIfCancellationRequested();
+
+            // records outcomes to the database and clear leases
+            await UpdateSearchRowsAsync(
+                leaseToken,
+                recipesToUnlock,
+                recipesToDelete,
+                recipesThatFailed,
+                ct
+            );
+
+            if (delay)
             {
-                await renewerTask;
-            }
-            catch (Exception ex)
-            {
-                logger.Error_RenewTaskFailed(ex);
+                await SafeDelay.DelayAsync(TimeSpan.FromSeconds(5), ct);
             }
         }
-
-        return true;
     }
 
-    private async Task<bool> DeleteRecipesFromIndexInSerialAsync(
-        List<long> recipeIds,
+    /// <summary>
+    /// Renews leases on rows periodically until the token bound to <paramref name="cancellationTokenSource"/>
+    /// is cancelled.
+    /// </summary>
+    /// <param name="leaseToken"></param>
+    /// <param name="claimedIds"></param>
+    /// <param name="cancellationTokenSource"></param>
+    /// <returns></returns>
+    private async Task RenewIdsPeriodicallyAsync(
         string leaseToken,
-        Task renewerTask,
+        List<long> claimedIds,
+        CancellationTokenSource cancellationTokenSource
+    )
+    {
+        try
+        {
+            await leaseRenewer.ExecuteAsync(
+                leaseToken,
+                claimedIds,
+                TimeSpan.FromMinutes(5), // lease is valid for 5 minutes
+                TimeSpan.FromSeconds(30), // renew every 30 seconds
+                8, // try renew up to 8 times on failure
+                cancellationTokenSource.Token
+            );
+        }
+        catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+        {
+            return;
+        }
+        catch (Exception ex)
+        {
+            logger.Error_RenewTaskFailed(ex);
+        }
+
+        if (!cancellationTokenSource.IsCancellationRequested)
+        {
+            await cancellationTokenSource.CancelAsync();
+        }
+    }
+
+    /// <summary>
+    /// Releases leases and records export outcomes to database.
+    /// <paramref name="recipesThatFailed"/>, <paramref name="recipesToDelete"/>, <paramref name="recipesToUnlock"/>
+    /// should not have any overlapping ids.
+    /// </summary>
+    /// <param name="leaseToken">token identifying the lease</param>
+    /// <param name="recipesToUnlock">recipes whose lease should be cleared and no outcome recorded</param>
+    /// <param name="recipesToDelete">recipes dropped from the search index and whose rows should be dropped from the database</param>
+    /// <param name="recipesThatFailed">recipes whose deletion failed</param>
+    /// <param name="ct">cancels the async operation</param>
+    private async Task UpdateSearchRowsAsync(
+        string leaseToken,
+        List<long> recipesToUnlock,
+        List<long> recipesToDelete,
+        List<long> recipesThatFailed,
         CancellationToken ct
     )
     {
-        bool resetBackoff = false;
-        foreach (long recipeId in recipeIds)
+        if (recipesToUnlock.Count > 0)
         {
-            if (renewerTask.IsCompleted)
-            {
-                return false;
-            }
-
             try
             {
-                IndexMutationOperationOutcome outcome =
-                    await searchIndexRepository.DeleteRecipesAsync([recipeId], ct);
-
-                switch (outcome)
-                {
-                    case IndexMutationOperationOutcome.Error:
-                        return resetBackoff;
-                    case IndexMutationOperationOutcome.BatchFailed:
-                        await recipeSearchExportStatusRepository.MarkRecipeDeletionFailedAndReleaseAsync(
-                            recipeId,
-                            leaseToken,
-                            ct
-                        );
-                        break;
-                    case IndexMutationOperationOutcome.Success:
-                        await recipeSearchExportStatusRepository.DeleteRecipeSearchEntries(
-                            [recipeId],
-                            leaseToken,
-                            ct
-                        );
-                        resetBackoff = true;
-                        break;
-                }
+                await recipeSearchExportStatusRepository.ClearLeasesAsync(
+                    recipesToUnlock,
+                    leaseToken,
+                    ct
+                );
             }
             catch (Exception ex)
                 when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
             {
-                logger.Error_DeletingRecipeFromIndexFailed(recipeId, ex);
-                await Task.Delay(TimeSpan.FromMilliseconds(50), ct);
+                logger.Error_FailedToClearLeases(ex);
             }
         }
 
-        return resetBackoff;
+        if (recipesToDelete.Count > 0)
+        {
+            try
+            {
+                await recipeSearchExportStatusRepository.DeleteRecipeSearchEntries(
+                    recipesToDelete,
+                    leaseToken,
+                    ct
+                );
+            }
+            catch (Exception ex)
+                when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+            {
+                logger.Error_FailedToDeleteRows(ex);
+            }
+        }
+
+        if (recipesThatFailed.Count > 0)
+        {
+            try
+            {
+                await recipeSearchExportStatusRepository.MarkRecipesDeletionFailedAndReleaseAsync(
+                    recipesThatFailed,
+                    leaseToken,
+                    ct
+                );
+            }
+            catch (Exception ex)
+                when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+            {
+                logger.Error_FailedToIncrementRowsFailureCounter(ex);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Deletes recipes from the search index one by one recording the outcome of each
+    /// </summary>
+    /// <param name="recipeIds">set of ids</param>
+    /// <param name="ct">cancels the async operation</param>
+    /// <returns>
+    /// tuple: first is the recipes dropped from the index, second set of recipes whose drop outcome failed,
+    /// third is the set of recipes skipped because <paramref name="ct"/> was cancelled or
+    /// because of a network error.
+    /// </returns>
+    private async Task<(
+        List<long> RecipesToDelete,
+        List<long> RecipesThatFailed,
+        List<long> RecipesToUnlock
+    )> DeleteRecipesFromIndexInSerialAsync(List<long> recipeIds, CancellationToken ct)
+    {
+        List<long> recipesToDelete = [];
+        List<long> recipesThatFailed = [];
+        HashSet<long> recipesHandled = [.. recipeIds];
+
+        foreach (long recipeId in recipeIds)
+        {
+            if (ct.IsCancellationRequested)
+            {
+                return new(recipesToDelete, recipesThatFailed, [.. recipesHandled]);
+            }
+
+            try
+            {
+                switch (await searchIndexRepository.DeleteRecipesAsync([recipeId], ct))
+                {
+                    case IndexMutationOperationOutcome.BatchFailed:
+                        recipesThatFailed.Add(recipeId);
+                        recipesHandled.Remove(recipeId);
+                        logger.Error_DeletingRecipeFromIndexFailed(recipeId);
+                        break;
+                    case IndexMutationOperationOutcome.Success:
+                        recipesToDelete.Add(recipeId);
+                        recipesHandled.Remove(recipeId);
+                        break;
+                    default:
+                        return new(recipesToDelete, recipesThatFailed, [.. recipesHandled]);
+                }
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                logger.Error_DeletingRecipeFromIndexFailed(recipeId, ex);
+                if (!await SafeDelay.DelayAsync(TimeSpan.FromSeconds(5), ct))
+                {
+                    break;
+                }
+            }
+        }
+
+        return new(recipesToDelete, recipesThatFailed, [.. recipesHandled]);
     }
 }

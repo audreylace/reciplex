@@ -73,15 +73,14 @@ sealed class RecipeSearchLeaseBreakerHostedService(
         CancellationToken stoppingToken
     )
     {
-        int TenMinutesInSeconds = (int)TimeSpan.FromMinutes(10).TotalSeconds;
         while (
             !stoppingToken.IsCancellationRequested
             && await pipeline.ExecuteAsync(
                 async token =>
                     await repo.BreakLeasesAsync(
                         options.Value.LeaseBreakBatchSize,
-                        TenMinutesInSeconds,
-                        TenMinutesInSeconds,
+                        TimeSpan.FromMinutes(10),
+                        TimeSpan.FromMinutes(10),
                         token
                     ),
                 stoppingToken

@@ -7,33 +7,33 @@ namespace Reciplex.Server.Database.SearchExporter.Repositories;
 interface IRecipeSearchExportStatusRepository
 {
     /// <summary>
-    /// Breaks up to <paramref name="max"/> leases that have expired.
+    /// Breaks up to <paramref name="batchSize"/> leases that have expired.
     /// </summary>
-    /// <param name="max">number of leases to break</param>
+    /// <param name="batchSize">number of leases to break</param>
     /// <param name="leaseMaxLookBack">How far in the past from now to consider leases still valid.</param>
     /// <param name="leaseMaxLookAhead">How far in the future from now to consider leases still valid.</param>
     /// <param name="ct">async cancellation token</param>
     /// <returns>number of leases broken</returns>
     public Task<int> BreakLeasesAsync(
-        int max,
-        long leaseMaxLookBack,
-        long leaseMaxLookAhead,
+        int batchSize,
+        TimeSpan leaseMaxLookBack,
+        TimeSpan leaseMaxLookAhead,
         CancellationToken ct
     );
 
     /// <summary>
     /// Renews rows with ids <paramref name="ids"/> with matching <paramref name="leaseToken"/>. Sets the new
-    /// expire time to <paramref name="leaseExpireTime"/>.
+    /// expire time to <paramref name="expireAfter"/>.
     /// </summary>
     /// <param name="ids">set of rows to renew</param>
     /// <param name="leaseToken">the lease token</param>
-    /// <param name="leaseExpireTime">the new lease expire time</param>
+    /// <param name="expireAfter">how far from now before the lease expires</param>
     /// <param name="ct">async cancellation token</param>
     /// <returns>number of rows updated</returns>
     public Task<int> RenewLeasesAsync(
         List<long> ids,
         string leaseToken,
-        long leaseExpireTime,
+        TimeSpan expireAfter,
         CancellationToken ct
     );
 
@@ -49,21 +49,17 @@ interface IRecipeSearchExportStatusRepository
     /// <summary>
     /// Claims leases on rows with ids <paramref name="ids"/> with a <c>null</c> lease token.
     /// Sets the claimed rows lease token to <paramref name="leaseToken" /> and its expire time
-    /// to <paramref name="leaseExpireTime" />
+    /// to <paramref name="expireAfter" />
     /// </summary>
     /// <param name="ids">set of rows to claim</param>
     /// <param name="leaseToken">the lease token identifying this lease</param>
-    /// <param name="leaseExpireTime">the time the lease expires</param>
+    /// <param name="expireAfter">how far from now before the lease expires</param>
     /// <param name="ct">async cancellation token</param>
-    /// <param name="extractionHazard">set to true to flip the extraction hazard field.
-    /// Extraction hazard is a one way flag that marks any rows that could
-    /// possibly have data in the search index.
-    /// </param>
     /// <returns>number of rows claimed</returns>
     public Task<int> ClaimAsync(
         List<long> ids,
         string leaseToken,
-        long leaseExpireTime,
+        TimeSpan expireAfter,
         CancellationToken ct
     );
 
@@ -85,26 +81,30 @@ interface IRecipeSearchExportStatusRepository
     /// <summary>
     /// Creates search status rows for recipes that do not have them and takes out a lease on them
     /// </summary>
-    /// <param name="max">max number of rows to create</param>
+    /// <param name="batchSize">max number of rows to create</param>
     /// <param name="leaseToken">the lease token identifying this lease</param>
-    /// <param name="leaseExpireTime">the time the lease expires</param>
+    /// <param name="expireAfter">how far from now before the lease expires</param>
     /// <param name="ct">async cancellation token</param>
     /// <returns>ids of the locked rows for export</returns>
     public Task<List<long>> CreateSearchStatusRowsAsync(
-        int max,
+        int batchSize,
         string leaseToken,
-        long leaseExpireTime,
+        TimeSpan expireAfter,
         CancellationToken ct
     );
 
     /// <summary>
-    /// Gets up to <paramref name="max"/> recipe ids that need to be re-extracted to the search index
+    /// Gets up to <paramref name="batchSize"/> recipe ids that need to be re-extracted to the search index
     /// </summary>
-    /// <param name="max">max number of recipes to extract</param>
+    /// <param name="batchSize">max number of recipes to extract</param>
     /// <param name="maxRetries">Recipes whose retry are at or beyond this are skipped</param>
     /// <param name="ct">async cancellation token</param>
     /// <returns>set of ids to extract</returns>
-    public Task<List<long>> GetRecipesToExtractAsync(int max, int maxRetries, CancellationToken ct);
+    public Task<List<long>> GetRecipesToExtractAsync(
+        int batchSize,
+        int maxRetries,
+        CancellationToken ct
+    );
 
     /// <summary>
     /// Marks a recipe as extracted up to <paramref name="searchVersion"/> and then releases the lease
@@ -143,13 +143,19 @@ interface IRecipeSearchExportStatusRepository
         CancellationToken ct
     );
     public Task<int> PurgeRecipeSearchEntriesWithTooManyRetries(
-        int max,
+        int batchSize,
         int maxRetries,
         CancellationToken ct
     );
 
     public Task<int> MarkRecipeDeletionFailedAndReleaseAsync(
         long id,
+        string leaseToken,
+        CancellationToken ct
+    );
+
+    public Task<int> MarkRecipesDeletionFailedAndReleaseAsync(
+        List<long> recipeIds,
         string leaseToken,
         CancellationToken ct
     );

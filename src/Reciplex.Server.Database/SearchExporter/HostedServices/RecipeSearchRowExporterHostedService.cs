@@ -33,7 +33,6 @@ class RecipeSearchRowExporterHostedService(
             return;
         }
 
-        int leaseExpireTimeSeconds = (int)TimeSpan.FromMinutes(5).TotalSeconds;
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -49,7 +48,7 @@ class RecipeSearchRowExporterHostedService(
                     int claimCount = await exportStatusRepository.ClaimAsync(
                         recipeIds,
                         leaseToken,
-                        leaseExpireTimeSeconds,
+                        TimeSpan.FromMinutes(5),
                         stoppingToken
                     );
                     if (claimCount > 0)

@@ -11,11 +11,7 @@ class RecipeSearchIndexExporterStrategy(
     ILogger<RecipeSearchIndexExporterStrategy> logger
 )
 {
-    public async Task<bool> ExportRecipesAsync(
-        List<long> ids,
-        string leaseToken,
-        CancellationToken ct
-    )
+    public async Task ExportRecipesAsync(List<long> ids, string leaseToken, CancellationToken ct)
     {
         try
         {
@@ -26,7 +22,7 @@ class RecipeSearchIndexExporterStrategy(
             );
             if (data.Count < 1)
             {
-                return true;
+                return;
             }
 
             using CancellationTokenSource cancellationTokenSource =
@@ -34,8 +30,8 @@ class RecipeSearchIndexExporterStrategy(
             var renewerTask = leaseRenewer.ExecuteAsync(
                 leaseToken,
                 [.. data.Select(d => d.RecipeFk)],
-                5 * 60, // keep lease for 5 minutes
-                1000 * 30, // renew every 30 seconds
+                TimeSpan.FromMinutes(5), // keep lease for 5 minutes
+                TimeSpan.FromSeconds(30), // renew every 30 seconds
                 8, // attempt renew 8 times
                 cancellationTokenSource.Token
             );
@@ -61,7 +57,7 @@ class RecipeSearchIndexExporterStrategy(
                 switch (result)
                 {
                     case IndexMutationOperationOutcome.Error:
-                        return false;
+                        break;
                     case IndexMutationOperationOutcome.Success:
                         foreach (var recipe in data)
                         {
@@ -74,10 +70,7 @@ class RecipeSearchIndexExporterStrategy(
                         }
                         break;
                     case IndexMutationOperationOutcome.BatchFailed:
-                        if (!await ExtractRecipesInSerial(leaseToken, data, renewerTask, ct))
-                        {
-                            return false;
-                        }
+                        await ExtractRecipesInSerial(leaseToken, data, renewerTask, ct);
                         break;
                     default:
                         throw new NotImplementedException();
@@ -102,13 +95,10 @@ class RecipeSearchIndexExporterStrategy(
             )
         {
             logger.Error_SearchExportFailed(ex);
-            return false;
         }
-
-        return true;
     }
 
-    private async Task<bool> ExtractRecipesInSerial(
+    private async Task ExtractRecipesInSerial(
         string leaseToken,
         List<RecipeRecordDataExtractedFromDatabase> data,
         Task renewerTask,
@@ -119,7 +109,7 @@ class RecipeSearchIndexExporterStrategy(
         {
             if (renewerTask.IsCompleted)
             {
-                return false;
+                return;
             }
 
             IndexMutationOperationOutcome result = await searchIndexRepository.UpsertRecipesAsync(
@@ -150,7 +140,7 @@ class RecipeSearchIndexExporterStrategy(
                     );
                     break;
                 case IndexMutationOperationOutcome.Error:
-                    return false;
+                    return;
                 case IndexMutationOperationOutcome.BatchFailed:
                     await recipeSearchExportStatusRepository.MarkRecipeExtractionFailedAndReleaseAsync(
                         recipe.RecipeFk,
@@ -163,6 +153,5 @@ class RecipeSearchIndexExporterStrategy(
                     throw new NotImplementedException();
             }
         }
-        return true;
     }
 }
