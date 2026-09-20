@@ -3,7 +3,7 @@ using Reciplex.Server.Database.SearchExporter.SearchBackgroundTasks;
 
 namespace Reciplex.Server.Database.SearchExporter.Loggers;
 
-static partial class RecipesThatFailToDeletePurgerHostedServiceLogger
+static partial class RecipesThatFailToDeleteSearchBackgroundTaskLogger
 {
     [LoggerMessage(
         LogLevel.Warning,

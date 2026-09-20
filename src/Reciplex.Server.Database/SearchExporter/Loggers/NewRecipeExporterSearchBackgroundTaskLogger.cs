@@ -3,7 +3,7 @@ using Reciplex.Server.Database.SearchExporter.SearchBackgroundTasks;
 
 namespace Reciplex.Server.Database.SearchExporter.Loggers;
 
-static partial class NewRecipeSearchRowExporterHostedServiceLogger
+static partial class NewRecipeExporterSearchBackgroundTaskLogger
 {
     [LoggerMessage(
         LogLevel.Error,

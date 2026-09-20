@@ -3,7 +3,7 @@ using Reciplex.Server.Database.SearchExporter.SearchBackgroundTasks;
 
 namespace Reciplex.Server.Database.SearchExporter.Loggers;
 
-static partial class RecipeSearchLeaseBreakerHostedServiceLogger
+static partial class RecipeLeaseBreakerSearchBackgroundTaskLogger
 {
     [LoggerMessage(LogLevel.Error, "Got an exception while breaking leases")]
     public static partial void Error_LeaseBreakingFailed(

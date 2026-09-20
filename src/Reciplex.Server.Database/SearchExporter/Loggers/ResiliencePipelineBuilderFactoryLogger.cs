@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Reciplex.Server.Database.SearchExporter.Loggers;
 
-static partial class ResiliencePipelineBuilderLogger
+static partial class ResiliencePipelineBuilderFactoryLogger
 {
     [LoggerMessage(
         LogLevel.Warning,
