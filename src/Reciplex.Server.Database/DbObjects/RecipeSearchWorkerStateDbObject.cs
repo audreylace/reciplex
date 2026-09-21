@@ -31,13 +31,13 @@ public class RecipeSearchWorkerStateDbObject
     [ForeignKey(nameof(RecipeFk))]
     [Required]
     [DeleteBehavior(DeleteBehavior.Restrict)]
-    [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.None)]
     public RecipeDbObject? Recipe { get; set; }
 
     /// <summary>
     /// Database FK to <see cref="RecipeDbObject"/> for property <see cref="Recipe"/>
     /// </summary>
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
     public long RecipeFk { get; init; }
 
     /// <summary>

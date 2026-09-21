@@ -12,7 +12,7 @@ namespace Reciplex.Server.Database.SearchExporter.Repositories;
 /// <param name="searchClient">client for calling the remote</param>
 /// <param name="logger">service logger</param>
 sealed class MeilisearchIndexRepository(
-    MeilisearchClient searchClient,
+    IMeilisearchClient searchClient,
     ILogger<MeilisearchIndexRepository> logger
 ) : ISearchIndexRepository
 {

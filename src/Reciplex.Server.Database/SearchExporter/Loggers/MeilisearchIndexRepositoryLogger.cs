@@ -6,7 +6,10 @@ namespace Reciplex.Server.Database.SearchExporter.Loggers;
 
 static partial class MeilisearchIndexRepositoryLogger
 {
-    [LoggerMessage(LogLevel.Error, "Failed to create {Index} with {PrimaryKey}.")]
+    [LoggerMessage(
+        LogLevel.Error,
+        "Failed to create index '{Index}' with primary key '{PrimaryKey}'."
+    )]
     public static partial void Error_IndexCreationFailed(
         this ILogger<MeilisearchIndexRepository> logger,
         string Index,
@@ -16,7 +19,7 @@ static partial class MeilisearchIndexRepositoryLogger
 
     [LoggerMessage(
         LogLevel.Error,
-        "Task {TaskId} failed with status {Status} when creating {Index} with {PrimaryKey}."
+        "Task {TaskId} failed with status {Status} when creating index '{Index}' with primary key '{PrimaryKey}'."
     )]
     public static partial void Error_IndexCreationFailed(
         this ILogger<MeilisearchIndexRepository> logger,
@@ -28,7 +31,7 @@ static partial class MeilisearchIndexRepositoryLogger
 
     [LoggerMessage(
         LogLevel.Error,
-        "Got null response waiting for task completion when creating {Index} with {PrimaryKey}. Task id is {TaskId}."
+        "Got null response waiting for task completion when creating index '{Index}' with primary key '{PrimaryKey}'. Task id is {TaskId}."
     )]
     public static partial void Error_IndexCreationFailed(
         this ILogger<MeilisearchIndexRepository> logger,

@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Polly;
+using Polly.Retry;
+using Polly.Timeout;
 using Reciplex.Server.Abstractions;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Database.DeletionWorker;
@@ -58,19 +61,22 @@ public static partial class WebApplicationBuilderExtensions
 
         if (configOptions.Enable)
         {
-            builder.Services.AddHttpClient<IMeilisearchClient, MeilisearchClient>(client =>
-            {
-                if (!configOptions.Enable)
+            builder.Services.AddSingleton<IMeilisearchClient, MeilisearchClient>();
+            builder
+                .Services.AddHttpClient<IMeilisearchClient, MeilisearchClient>(client =>
                 {
-                    return;
-                }
+                    if (!configOptions.Enable)
+                    {
+                        return;
+                    }
 
-                client.BaseAddress = new Uri(configOptions.Host);
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-                    "Bearer",
-                    configOptions.AuthenticationToken
-                );
-            });
+                    client.BaseAddress = new Uri(configOptions.Host);
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                        "Bearer",
+                        configOptions.AuthenticationToken
+                    );
+                })
+                .AddStandardResilienceHandler();
 
             builder.Services.AddHostedService<RecipeSearchHostedBackgroundService>();
 
@@ -137,7 +143,7 @@ public static partial class WebApplicationBuilderExtensions
             builder.Configuration.GetSection(SqliteApplicationDbContextOptions.SectionPath)
         );
 
-        builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
             options.UseSqlite(
                 configOptions.DatabaseConnection,
                 b =>
