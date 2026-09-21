@@ -15,7 +15,7 @@ namespace Reciplex.Server.Database.SearchExporter.SearchBackgroundTasks;
 /// <param name="logger">hosted service logger</param>
 /// <param name="notifyService">notifies when recipes have changed</param>
 /// <param name="searchExporterStrategy">strategy for exporting recipes to the search index</param>
-class ChangedRecipeExporterSearchBackgroundTask(
+sealed class ChangedRecipeExporterSearchBackgroundTask(
     IRecipeSearchExportStatusRepository exportStatusRepository,
     IOptions<SearchExporterOptions> options,
     IConcurrencyTagProvider tagProvider,

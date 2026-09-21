@@ -14,7 +14,7 @@ namespace Reciplex.Server.Database.SearchExporter.SearchBackgroundTasks;
 /// <param name="resilienceFactory">resilience pipeline builder</param>
 /// <param name="options">options controlling the behavior of this background service</param>
 /// <param name="logger">logger for the hosted service</param>
-class RecipesThatFailToDeleteSearchBackgroundTask(
+sealed class RecipesThatFailToDeleteSearchBackgroundTask(
     IRecipeSearchExportStatusRepository repository,
     ResiliencePipelineBuilderFactory resilienceFactory,
     IOptions<SearchExporterOptions> options,

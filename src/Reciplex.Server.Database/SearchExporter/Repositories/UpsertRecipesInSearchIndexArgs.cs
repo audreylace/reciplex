@@ -1,6 +1,6 @@
 namespace Reciplex.Server.Database.SearchExporter.Repositories;
 
-class UpsertRecipesInSearchIndexArgs
+sealed class UpsertRecipesInSearchIndexArgs
 {
     public ICollection<RecipeSearchIndexInformation> Recipes { get; set; } = [];
 }

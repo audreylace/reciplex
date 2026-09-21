@@ -5,7 +5,7 @@ using Reciplex.Server.Database.SearchExporter.Loggers;
 
 namespace Reciplex.Server.Database.SearchExporter;
 
-class ResiliencePipelineBuilderFactory(ILogger<ResiliencePipelineBuilderFactory> logger)
+sealed class ResiliencePipelineBuilderFactory(ILogger<ResiliencePipelineBuilderFactory> logger)
 {
     public ResiliencePipeline BuildDeleteRowPipeline(Func<Exception, bool> shouldHandle)
     {

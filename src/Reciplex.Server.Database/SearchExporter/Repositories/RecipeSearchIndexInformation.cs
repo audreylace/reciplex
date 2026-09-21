@@ -1,6 +1,6 @@
 namespace Reciplex.Server.Database.SearchExporter.Repositories;
 
-class RecipeSearchIndexInformation
+sealed class RecipeSearchIndexInformation
 {
     public required long RecipeId { get; init; }
     public required string Name { get; init; }

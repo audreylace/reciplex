@@ -9,7 +9,7 @@ namespace Reciplex.Server.Database.SearchExporter;
 /// </summary>
 /// <param name="recipeSearchExportStatusRepository">repository storing search status rows</param>
 /// <param name="logger">logger for this class</param>
-class LeaseRenewer(
+sealed class LeaseRenewer(
     IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository,
     ILogger<LeaseRenewer> logger
 )

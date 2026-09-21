@@ -6,7 +6,7 @@ using Reciplex.Server.Database.RecipesDomain;
 
 namespace Reciplex.Server.Database.SearchExporter.Repositories;
 
-class RecipeSearchExportStatusRepository(
+sealed class RecipeSearchExportStatusRepository(
     IDbContextFactory<ApplicationDbContext> dbFactory,
     IClock clock
 ) : IRecipeSearchExportStatusRepository

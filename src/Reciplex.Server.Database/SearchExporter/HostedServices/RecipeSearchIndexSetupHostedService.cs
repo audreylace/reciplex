@@ -11,7 +11,7 @@ namespace Reciplex.Server.Database.SearchExporter.HostedServices;
 /// Runs search operations in the background
 /// </summary>
 /// <param name="searchIndexRepository">repository for search data</param>
-class RecipeSearchHostedBackgroundService(
+sealed class RecipeSearchHostedBackgroundService(
     ISearchIndexRepository searchIndexRepository,
     IServiceProvider sp,
     ILogger<RecipeSearchHostedBackgroundService> logger

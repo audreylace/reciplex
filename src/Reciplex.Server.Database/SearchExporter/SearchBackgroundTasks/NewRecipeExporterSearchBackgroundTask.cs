@@ -16,7 +16,7 @@ namespace Reciplex.Server.Database.SearchExporter.SearchBackgroundTasks;
 /// <param name="options">options for the service</param>
 /// <param name="recipeIndexCreationCoordinator">ensures hosted services only export after the recipe index is created</param>
 /// <param name="logger">service logger</param>
-class NewRecipeExporterSearchBackgroundTask(
+sealed class NewRecipeExporterSearchBackgroundTask(
     IRecipeSearchExportStatusRepository searchRepo,
     IConcurrencyTagProvider tagProvider,
     IRecipeMutationNotifyService notificationService,

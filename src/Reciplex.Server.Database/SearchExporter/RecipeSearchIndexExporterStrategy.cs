@@ -11,7 +11,7 @@ namespace Reciplex.Server.Database.SearchExporter;
 /// <param name="searchIndexRepository">repository representing the search index</param>
 /// <param name="leaseRenewer">strategy for renewing leases held while extraction takes place</param>
 /// <param name="logger">instance logger</param>
-class RecipeSearchIndexExporterStrategy(
+sealed class RecipeSearchIndexExporterStrategy(
     IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository,
     ISearchIndexRepository searchIndexRepository,
     LeaseRenewer leaseRenewer,

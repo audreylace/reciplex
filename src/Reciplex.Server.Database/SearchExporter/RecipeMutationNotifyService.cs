@@ -40,7 +40,7 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
         _changeChannel.Writer.TryWrite(0);
     }
 
-    public async Task WaitForChange(TimeSpan wait, CancellationToken ct)
+    public async Task WaitForChange(TimeSpan timeout, CancellationToken ct)
     {
         if (!options.Value.Enable)
         {
@@ -49,7 +49,7 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
 
         using CancellationTokenSource cancellationTokenSource =
             CancellationTokenSource.CreateLinkedTokenSource(ct);
-        cancellationTokenSource.CancelAfter(wait);
+        cancellationTokenSource.CancelAfter(timeout);
         try
         {
             while (

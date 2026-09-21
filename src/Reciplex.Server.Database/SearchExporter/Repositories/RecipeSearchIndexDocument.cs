@@ -5,7 +5,7 @@ namespace Reciplex.Server.Database.SearchExporter.Repositories;
 /// <summary>
 /// Search index document for recipes as stored in the backend search
 /// </summary>
-class RecipeSearchIndexDocument
+sealed class RecipeSearchIndexDocument
 {
     /// <summary>
     /// The id of this search index entry. This is
