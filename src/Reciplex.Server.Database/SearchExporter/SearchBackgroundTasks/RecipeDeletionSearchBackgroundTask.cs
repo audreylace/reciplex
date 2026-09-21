@@ -139,8 +139,18 @@ sealed class RecipeDeletionSearchBackgroundTask(
         }
         finally
         {
-            await cancellationTokenSource.CancelAsync();
-            await renewerTask;
+            try
+            {
+                if (!cancellationTokenSource.IsCancellationRequested)
+                {
+                    await cancellationTokenSource.CancelAsync();
+                }
+                await renewerTask;
+            }
+            catch (Exception ex)
+            {
+                logger.Error_RenewTaskFailed(ex);
+            }
         }
 
         if (ct.IsCancellationRequested)
@@ -188,17 +198,13 @@ sealed class RecipeDeletionSearchBackgroundTask(
             );
         }
         catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+        { }
+        finally
         {
-            return;
-        }
-        catch (Exception ex)
-        {
-            logger.Error_RenewTaskFailed(ex);
-        }
-
-        if (!cancellationTokenSource.IsCancellationRequested)
-        {
-            await cancellationTokenSource.CancelAsync();
+            if (!cancellationTokenSource.IsCancellationRequested)
+            {
+                await cancellationTokenSource.CancelAsync();
+            }
         }
     }
 

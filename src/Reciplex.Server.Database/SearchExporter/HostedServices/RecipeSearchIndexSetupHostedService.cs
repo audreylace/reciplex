@@ -59,7 +59,7 @@ class RecipeSearchHostedBackgroundService(
                     )
                 )
                 {
-                    return;
+                    break;
                 }
             }
         }
@@ -76,7 +76,6 @@ class RecipeSearchHostedBackgroundService(
         finally
         {
             await cancellationTokenSource.CancelAsync();
-
             try
             {
                 await backgroundTask;
@@ -91,38 +90,41 @@ class RecipeSearchHostedBackgroundService(
 
     private async Task RunBackgroundTasksAsync(CancellationTokenSource cancellationTokenSource)
     {
-        await using var scope = sp.CreateAsyncScope();
-        IEnumerable<ISearchBackgroundTask> searchBackgroundTasks =
-            scope.ServiceProvider.GetServices<ISearchBackgroundTask>();
         List<Task> backgroundTasks = [];
-        foreach (var task in searchBackgroundTasks)
-        {
-            backgroundTasks.Add(task.ExecuteAsync(cancellationTokenSource.Token));
-        }
-
-        if (backgroundTasks.Count < 1)
-        {
-            await cancellationTokenSource.CancelAsync();
-            return;
-        }
         try
         {
-            await Task.WhenAny(backgroundTasks);
-        }
-        catch (Exception) { }
+            await using var scope = sp.CreateAsyncScope();
+            IEnumerable<ISearchBackgroundTask> searchBackgroundTasks =
+                scope.ServiceProvider.GetServices<ISearchBackgroundTask>();
 
-        await cancellationTokenSource.CancelAsync();
-
-        foreach (var task in backgroundTasks)
-        {
-            try
+            foreach (var task in searchBackgroundTasks)
             {
-                await task;
+                backgroundTasks.Add(task.ExecuteAsync(cancellationTokenSource.Token));
             }
-            catch (OperationCanceledException) { }
-            catch (Exception ex)
+
+            if (backgroundTasks.Count > 0)
             {
-                logger.Error_BackgroundTaskFailed(ex);
+                try
+                {
+                    await Task.WhenAny(backgroundTasks);
+                }
+                catch (Exception) { }
+            }
+        }
+        finally
+        {
+            await cancellationTokenSource.CancelAsync();
+            foreach (var task in backgroundTasks)
+            {
+                try
+                {
+                    await task;
+                }
+                catch (OperationCanceledException) { }
+                catch (Exception ex)
+                {
+                    logger.Error_BackgroundTaskFailed(ex);
+                }
             }
         }
     }
