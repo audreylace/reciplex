@@ -9,6 +9,7 @@ using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Abstractions.StringIdProvider;
 using Reciplex.Server.Database.DbObjects;
 using Reciplex.Server.Database.Results;
+using Reciplex.Server.Database.SearchExporter;
 using Reciplex.Server.Database.UsersDomain;
 
 namespace Reciplex.Server.Database.RecipeBooksDomain;
@@ -17,7 +18,8 @@ internal sealed class RecipeBooksService(
     IClock clock,
     IConcurrencyTagProvider concurrencyTagProvider,
     ApplicationDbContext dbContext,
-    IStringIdProvider stringIdProvider
+    IStringIdProvider stringIdProvider,
+    IRecipeMutationNotifyService recipeMutationNotifyService
 ) : IRecipeBooksService
 {
     /// <inheritdoc />
@@ -129,6 +131,8 @@ internal sealed class RecipeBooksService(
         {
             return new ConflictResult();
         }
+
+        recipeMutationNotifyService.NotifyDelete();
 
         return new EmptySuccessResult();
     }

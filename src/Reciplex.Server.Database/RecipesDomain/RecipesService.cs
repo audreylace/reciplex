@@ -157,6 +157,7 @@ internal sealed class RecipesService(
         {
             return new ConflictResult();
         }
+        recipeMutationNotifyService.NotifyDelete();
         return new EmptySuccessResult();
     }
 

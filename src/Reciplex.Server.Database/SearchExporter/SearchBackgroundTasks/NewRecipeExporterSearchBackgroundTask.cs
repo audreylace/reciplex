@@ -33,7 +33,7 @@ sealed class NewRecipeExporterSearchBackgroundTask(
             try
             {
                 string leaseToken = tagProvider.NextTag();
-                var list = await searchRepo.CreateSearchStatusRowsAsync(
+                List<long> list = await searchRepo.CreateSearchStatusRowsAsync(
                     options.Value.SearchExportBatchSize,
                     leaseToken,
                     TimeSpan.FromMinutes(5),
@@ -41,7 +41,10 @@ sealed class NewRecipeExporterSearchBackgroundTask(
                 );
                 if (list.Count < 1)
                 {
-                    await notificationService.WaitForNew(TimeSpan.FromSeconds(30), stoppingToken);
+                    await notificationService.WaitForNewAsync(
+                        TimeSpan.FromMinutes(10),
+                        stoppingToken
+                    );
                 }
                 else
                 {

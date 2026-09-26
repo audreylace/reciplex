@@ -40,6 +40,7 @@ sealed class RecipeSearchExportStatusRepository(
                 e.LeaseToken,
                 e.LeaseExpireTime,
             })
+            .OrderBy(e => e.RecipeFk)
             .Take(max)
             .ToListAsync(ct);
 
@@ -155,6 +156,7 @@ sealed class RecipeSearchExportStatusRepository(
                 && r.RecipeBook!.Owner!.Deleted == null
                 && !db.RecipeSearchExtractionStatusEntries.Any(s => s.RecipeFk == r.Id)
             )
+            .OrderBy(r => r.Id)
             .Select(r => r.Id)
             .Take(max)
             .ToListAsync(ct);
@@ -244,6 +246,7 @@ sealed class RecipeSearchExportStatusRepository(
             // filter out records that are broken and respect retry backoff
 
             )
+            .OrderBy(e => e.RecipeFk)
             .Select(e => e.RecipeFk)
             .Take(batchSize)
             .ToListAsync(ct);
@@ -348,6 +351,7 @@ sealed class RecipeSearchExportStatusRepository(
                 && e.DeleteRetryCounter < maxRetries
                 && (e.NextDeleteRetryTime == null || e.NextDeleteRetryTime < now)
             )
+            .OrderBy(e => e.RecipeFk)
             .Select(e => e.RecipeFk)
             .Take(batchSize)
             .ToListAsync(ct);
@@ -380,6 +384,7 @@ sealed class RecipeSearchExportStatusRepository(
                 && e.DeleteRetryCounter >= maxRetries
                 && e.LeaseToken == null
             )
+            .OrderBy(e => e.RecipeFk)
             .Select(e => e.RecipeFk)
             .Take(batchSize)
             .ToListAsync(ct);
@@ -489,7 +494,7 @@ sealed class RecipeSearchExportStatusRepository(
         foreach (var (RecipeId, SearchVersion) in entries)
         {
             var test = Expression.Equal(recipeFkProperty, Expression.Constant(RecipeId));
-            var value = Expression.Constant(SearchVersion);
+            var value = Expression.Constant((long?)SearchVersion, typeof(long?));
 
             caseExpression = Expression.Condition(test, value, caseExpression);
         }

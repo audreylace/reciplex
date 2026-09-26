@@ -15,13 +15,13 @@ sealed class RecipeDeletionSearchBackgroundTask(
     IOptions<SearchExporterOptions> options,
     IConcurrencyTagProvider concurrencyTagProvider,
     LeaseRenewer leaseRenewer,
-    ILogger<RecipeDeletionSearchBackgroundTask> logger
+    ILogger<RecipeDeletionSearchBackgroundTask> logger,
+    IRecipeMutationNotifyService notificationService
 ) : ISearchBackgroundTask
 {
     /// <inheritdoc />
     public async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using PeriodicTimer periodicTimer = new(TimeSpan.FromMinutes(1));
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -37,10 +37,10 @@ sealed class RecipeDeletionSearchBackgroundTask(
                 // delay if no recipes were found, otherwise delete them
                 if (entries.Count < 1)
                 {
-                    if (!await periodicTimer.WaitForNextTickAsync(stoppingToken))
-                    {
-                        return; // exit on shutdown; periodic timer returns false when `stoppingToken` is cancelled.
-                    }
+                    await notificationService.WaitForDeleteAsync(
+                        TimeSpan.FromMinutes(10),
+                        stoppingToken
+                    );
                 }
                 else
                 {
@@ -106,7 +106,6 @@ sealed class RecipeDeletionSearchBackgroundTask(
         // Otherwise rows will be locked up to 10 minutes
         // resulting in end user delays.
         List<long> recipesToUnlock = claimedIds;
-
         List<long> recipesToDelete = [];
         List<long> recipesThatFailed = [];
         try
@@ -137,7 +136,14 @@ sealed class RecipeDeletionSearchBackgroundTask(
                     break;
             }
         }
-        finally
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
+        catch (Exception ex)
+        {
+            logger.Error_DeleteRecipesFromIndexFailed(ex);
+            delay = true;
+        }
+
+        try
         {
             try
             {
@@ -145,29 +151,35 @@ sealed class RecipeDeletionSearchBackgroundTask(
                 {
                     await cancellationTokenSource.CancelAsync();
                 }
-                await renewerTask;
             }
-            catch (Exception ex)
-            {
-                logger.Error_RenewTaskFailed(ex);
-            }
-        }
+            catch (ObjectDisposedException) { }
 
-        if (ct.IsCancellationRequested)
+            await renewerTask;
+        }
+        catch (Exception ex)
         {
-            return;
+            logger.Error_RenewTaskFailed(ex);
         }
 
-        // records outcomes to the database and clear leases
-        await UpdateSearchRowsAsync(
-            leaseToken,
-            recipesToUnlock,
-            recipesToDelete,
-            recipesThatFailed,
-            ct
-        );
+        if (ct.IsCancellationRequested || delay) // release locks on shutdown or error
+        {
+            using CancellationTokenSource cancellation = new();
+            cancellation.CancelAfter(TimeSpan.FromSeconds(5));
+            await UpdateSearchRowsAsync(leaseToken, claimedIds, [], [], cancellation.Token);
+        }
+        else
+        {
+            // records outcomes to the database and clear leases
+            await UpdateSearchRowsAsync(
+                leaseToken,
+                recipesToUnlock,
+                recipesToDelete,
+                recipesThatFailed,
+                ct
+            );
+        }
 
-        if (delay)
+        if (delay && !ct.IsCancellationRequested)
         {
             await SafeDelay.DelayAsync(TimeSpan.FromSeconds(5), ct);
         }
@@ -201,10 +213,14 @@ sealed class RecipeDeletionSearchBackgroundTask(
         { }
         finally
         {
-            if (!cancellationTokenSource.IsCancellationRequested)
+            try
             {
-                await cancellationTokenSource.CancelAsync();
+                if (!cancellationTokenSource.IsCancellationRequested)
+                {
+                    await cancellationTokenSource.CancelAsync();
+                }
             }
+            catch (ObjectDisposedException) { }
         }
     }
 

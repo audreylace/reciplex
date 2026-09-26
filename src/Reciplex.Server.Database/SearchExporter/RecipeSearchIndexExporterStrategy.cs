@@ -81,7 +81,41 @@ sealed class RecipeSearchIndexExporterStrategy(
                     break;
             }
         }
-        finally
+        catch (OperationCanceledException)
+        {
+            await CleanupAsync(
+                leaseToken,
+                [.. recipeData.Select(d => d.RecipeFk)],
+                cancellationTokenSource,
+                renewerTask,
+                ct
+            );
+            return;
+        }
+        catch (Exception)
+        {
+            await CleanupAsync(
+                leaseToken,
+                [.. recipeData.Select(d => d.RecipeFk)],
+                cancellationTokenSource,
+                renewerTask,
+                ct
+            );
+            throw;
+        }
+
+        await UpdateSearchRowsAsync(leaseToken, idsToUnlock, idsExtracted, idsFailed, ct);
+    }
+
+    private async Task CleanupAsync(
+        string leaseToken,
+        List<long> ids,
+        CancellationTokenSource cancellationTokenSource,
+        Task renewerTask,
+        CancellationToken ct
+    )
+    {
+        try
         {
             try
             {
@@ -89,21 +123,31 @@ sealed class RecipeSearchIndexExporterStrategy(
                 {
                     await cancellationTokenSource.CancelAsync();
                 }
-                await renewerTask;
             }
-            catch (OperationCanceledException) { }
-            catch (Exception ex)
-            {
-                logger.Error_RenewTaskFailed(ex);
-            }
-        }
+            catch (ObjectDisposedException) { }
 
-        if (ct.IsCancellationRequested)
+            await renewerTask;
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
         {
-            return;
+            logger.Error_RenewTaskFailed(ex);
         }
 
-        await UpdateSearchRowsAsync(leaseToken, idsToUnlock, idsExtracted, idsFailed, ct);
+        try
+        {
+            if (ct.IsCancellationRequested) // release locks on shutdown
+            {
+                using CancellationTokenSource cancellation = new();
+                cancellation.CancelAfter(TimeSpan.FromSeconds(5));
+                await UpdateSearchRowsAsync(leaseToken, ids, [], [], cancellation.Token);
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.Error_LeaseReleaseFailed(ex);
+        }
     }
 
     private async Task<(
@@ -210,10 +254,14 @@ sealed class RecipeSearchIndexExporterStrategy(
         { }
         finally
         {
-            if (!cancellationTokenSource.IsCancellationRequested)
+            try
             {
-                await cancellationTokenSource.CancelAsync();
+                if (!cancellationTokenSource.IsCancellationRequested)
+                {
+                    await cancellationTokenSource.CancelAsync();
+                }
             }
+            catch (ObjectDisposedException) { }
         }
     }
 

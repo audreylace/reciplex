@@ -41,6 +41,7 @@ internal sealed class DeletionWorkerService(
                                 )
                                 && r.RecipeSearchExtraction == null
                             )
+                            .OrderBy(r => r.Id)
                             .Select(r => r.Id)
                             .Take(100)
                             .ToListAsync(ct),
@@ -63,6 +64,7 @@ internal sealed class DeletionWorkerService(
                                     || rAccessEntry.RecipeBook!.Owner!.Deleted != null
                                 )
                             )
+                            .OrderBy(r => r.Id)
                             .Select(r => r.Id)
                             .Take(100)
                             .ToListAsync(ct),
@@ -85,6 +87,7 @@ internal sealed class DeletionWorkerService(
                                 && !r.Recipes.Any()
                                 && !r.AdditionalUsers.Any()
                             )
+                            .OrderBy(r => r.Id)
                             .Select(r => r.Id)
                             .Take(100)
                             .ToListAsync(ct),
@@ -105,6 +108,7 @@ internal sealed class DeletionWorkerService(
                                 && !user.RecipeBookAccessEntities.Any()
                                 && !user.BooksTheUserOwns.Any()
                             )
+                            .OrderBy(r => r.Id)
                             .Select(r => r.Id)
                             .Take(100)
                             .ToListAsync(ct),

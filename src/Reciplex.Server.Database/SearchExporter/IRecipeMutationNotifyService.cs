@@ -4,6 +4,8 @@ public interface IRecipeMutationNotifyService
 {
     void NotifyChange();
     Task WaitForChange(TimeSpan timeout, CancellationToken ct);
-    Task WaitForNew(TimeSpan timeout, CancellationToken ct);
     void NotifyNew();
+    Task WaitForNewAsync(TimeSpan timeout, CancellationToken ct);
+    void NotifyDelete();
+    Task WaitForDeleteAsync(TimeSpan timeout, CancellationToken ct);
 }

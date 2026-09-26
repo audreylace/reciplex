@@ -84,28 +84,30 @@ public static partial class WebApplicationBuilderExtensions
                 IRecipeSearchExportStatusRepository,
                 RecipeSearchExportStatusRepository
             >();
+            builder.Services.AddSingleton<
+                ISearchIndexExporterScopeFactory,
+                SearchIndexExporterScopeFactory
+            >();
+            builder.Services.AddScoped<ISearchIndexExporterScope, SearchIndexExporterScope>();
             builder.Services.AddSingleton<ISearchIndexRepository, MeilisearchIndexRepository>();
             builder.Services.AddSingleton<LeaseRenewer>();
             builder.Services.AddSingleton<RecipeSearchIndexExporterStrategy>();
             builder.Services.AddSingleton<ResiliencePipelineBuilderFactory>();
-            builder.Services.AddSingleton<
+            builder.Services.AddScoped<
                 ISearchBackgroundTask,
                 NewRecipeExporterSearchBackgroundTask
             >();
-            builder.Services.AddSingleton<
-                ISearchBackgroundTask,
-                RecipeDeletionSearchBackgroundTask
-            >();
+            builder.Services.AddScoped<ISearchBackgroundTask, RecipeDeletionSearchBackgroundTask>();
 
-            builder.Services.AddSingleton<
+            builder.Services.AddScoped<
                 ISearchBackgroundTask,
                 RecipeLeaseBreakerSearchBackgroundTask
             >();
-            builder.Services.AddSingleton<
+            builder.Services.AddScoped<
                 ISearchBackgroundTask,
                 ChangedRecipeExporterSearchBackgroundTask
             >();
-            builder.Services.AddSingleton<
+            builder.Services.AddScoped<
                 ISearchBackgroundTask,
                 RecipesThatFailToDeleteSearchBackgroundTask
             >();

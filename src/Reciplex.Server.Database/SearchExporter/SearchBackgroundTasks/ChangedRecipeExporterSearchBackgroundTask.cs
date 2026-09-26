@@ -56,7 +56,7 @@ sealed class ChangedRecipeExporterSearchBackgroundTask(
                 }
                 else
                 {
-                    await notifyService.WaitForChange(TimeSpan.FromSeconds(30), stoppingToken);
+                    await notifyService.WaitForChange(TimeSpan.FromMinutes(10), stoppingToken);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
