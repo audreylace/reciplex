@@ -1,8 +1,8 @@
 using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Reciplex.Server.Database.Strategies;
 
 namespace Reciplex.Server.Database.DeletionWorker;
 
@@ -13,7 +13,7 @@ namespace Reciplex.Server.Database.DeletionWorker;
 /// <param name="metrics">metrics for DeletionWorkerService</param>
 /// <param name="logger">Logger for writing exceptions and diagnostics</param>
 internal sealed class DeletionWorkerService(
-    IServiceProvider sp,
+    RepeatedDatabaseActionStrategy repeatedDatabaseActionStrategy,
     DeletionWorkerServiceMetrics metrics,
     ILogger<DeletionWorkerService> logger
 ) : BackgroundService
@@ -30,26 +30,30 @@ internal sealed class DeletionWorkerService(
             bool anyWorkDone = false;
 
             anyWorkDone |= await RunUntilCompletionWithDelay(
-                CollectAndDelete(
+                CollectActDatabaseActionStrategy.CollectAndAct(
                     (db, ct) =>
                         db
                             .Recipes.Where(r =>
-                                r.Deleted != null
-                                || r.RecipeBook!.Deleted != null
-                                || r.RecipeBook!.Owner!.Deleted != null
+                                (
+                                    r.Deleted != null
+                                    || r.RecipeBook!.Deleted != null
+                                    || r.RecipeBook!.Owner!.Deleted != null
+                                )
+                                && r.RecipeSearchExtraction == null
                             )
                             .Select(r => r.Id)
                             .Take(100)
                             .ToListAsync(ct),
                     (db, ids, ct) =>
-                        db.Recipes.Where(r => ids.Contains(r.Id)).ExecuteDeleteAsync(ct)
+                        db.Recipes.Where(r => ids.Contains(r.Id)).ExecuteDeleteAsync(ct),
+                    MetricObserver(DeletionWorkerServiceMetrics.RecipesVariant)
                 ),
                 DeletionWorkerServiceMetrics.RecipesVariant,
                 stoppingToken
             );
 
             anyWorkDone |= await RunUntilCompletionWithDelay(
-                CollectAndDelete(
+                CollectActDatabaseActionStrategy.CollectAndAct(
                     (db, ct) =>
                         db
                             .RecipeBookAccessEntries.Where(rAccessEntry =>
@@ -65,14 +69,15 @@ internal sealed class DeletionWorkerService(
                     (db, ids, ct) =>
                         db
                             .RecipeBookAccessEntries.Where(r => ids.Contains(r.Id))
-                            .ExecuteDeleteAsync(ct)
+                            .ExecuteDeleteAsync(ct),
+                    MetricObserver(DeletionWorkerServiceMetrics.RecipeBookAccessEntries)
                 ),
                 DeletionWorkerServiceMetrics.RecipeBookAccessEntries,
                 stoppingToken
             );
 
             anyWorkDone |= await RunUntilCompletionWithDelay(
-                CollectAndDelete(
+                CollectActDatabaseActionStrategy.CollectAndAct(
                     (db, ct) =>
                         db
                             .RecipeBooks.Where(r =>
@@ -84,14 +89,15 @@ internal sealed class DeletionWorkerService(
                             .Take(100)
                             .ToListAsync(ct),
                     (db, ids, ct) =>
-                        db.RecipeBooks.Where(r => ids.Contains(r.Id)).ExecuteDeleteAsync(ct)
+                        db.RecipeBooks.Where(r => ids.Contains(r.Id)).ExecuteDeleteAsync(ct),
+                    MetricObserver(DeletionWorkerServiceMetrics.RecipeBooksVariant)
                 ),
                 DeletionWorkerServiceMetrics.RecipeBooksVariant,
                 stoppingToken
             );
 
             anyWorkDone |= await RunUntilCompletionWithDelay(
-                CollectAndDelete(
+                CollectActDatabaseActionStrategy.CollectAndAct(
                     (db, ct) =>
                         db
                             .Users.Where(user =>
@@ -102,7 +108,8 @@ internal sealed class DeletionWorkerService(
                             .Select(r => r.Id)
                             .Take(100)
                             .ToListAsync(ct),
-                    (db, ids, ct) => db.Users.Where(r => ids.Contains(r.Id)).ExecuteDeleteAsync(ct)
+                    (db, ids, ct) => db.Users.Where(r => ids.Contains(r.Id)).ExecuteDeleteAsync(ct),
+                    MetricObserver(DeletionWorkerServiceMetrics.UsersVariant)
                 ),
                 DeletionWorkerServiceMetrics.UsersVariant,
                 stoppingToken
@@ -133,40 +140,13 @@ internal sealed class DeletionWorkerService(
         }
     }
 
-    /// <summary>
-    /// Collects ids to delete and then deletes them
-    /// </summary>
-    /// <param name="collect">the query to get the ids list</param>
-    /// <param name="delete">the query to execute the delete on the id list</param>
-    /// <returns>delegate to hand off to <see cref="RunUntilCompletionWithDelay"/> </returns>
-    private Func<ApplicationDbContext, string, CancellationToken, Task<bool>> CollectAndDelete(
-        Func<ApplicationDbContext, CancellationToken, Task<List<long>>> collect,
-        Func<ApplicationDbContext, List<long>, CancellationToken, Task<int>> delete
-    )
+    private Action<double, double, long> MetricObserver(string databaseObjectName)
     {
-        return async (db, databaseObjectName, ct) =>
+        return (collectTime, time, rows) =>
         {
-            long startTimestamp = Stopwatch.GetTimestamp();
-            var ids = await collect(db, ct);
-            metrics.ObserveDeletionCandidateQuery(
-                databaseObjectName,
-                Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
-            );
-
-            if (ids.Count <= 0)
-            {
-                return false; // we did nothing!
-            }
-
-            startTimestamp = Stopwatch.GetTimestamp();
-            long count = await delete(db, ids, ct);
-            metrics.ObserveDeletionQuery(
-                databaseObjectName,
-                Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
-            );
-
-            metrics.IncRowsDeleted(count, databaseObjectName);
-            return count > 0;
+            metrics.ObserveDeletionCandidateQuery(databaseObjectName, collectTime);
+            metrics.ObserveDeletionQuery(databaseObjectName, time);
+            metrics.IncRowsDeleted(rows, databaseObjectName);
         };
     }
 
@@ -177,45 +157,17 @@ internal sealed class DeletionWorkerService(
     /// <param name="databaseObjectName">name of the operation for metrics</param>
     /// <param name="ct">async cancellation token</param>
     /// <returns>true if anything any real work was completed</returns>
-    private async Task<bool> RunUntilCompletionWithDelay(
-        Func<ApplicationDbContext, string, CancellationToken, Task<bool>> action,
+    internal async Task<bool> RunUntilCompletionWithDelay(
+        Func<ApplicationDbContext, CancellationToken, Task<bool>> action,
         string databaseObjectName,
         CancellationToken ct
     )
     {
-        bool anyWorkDone = false;
-        bool workDone;
-        do
-        {
-            long startTimestamp = Stopwatch.GetTimestamp();
-            try
-            {
-                await using AsyncServiceScope scope = sp.CreateAsyncScope();
-                await using ApplicationDbContext db =
-                    scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-                workDone = await action(db, databaseObjectName, ct);
-                anyWorkDone |= workDone;
-                metrics.RecordOperationOutcome(
-                    true,
-                    databaseObjectName,
-                    Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
-                );
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                logger.RunUntilCompletionWithDelayError(databaseObjectName, ex);
-                metrics.RecordOperationOutcome(
-                    false,
-                    databaseObjectName,
-                    Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
-                );
-                await Task.Delay(TimeSpan.FromSeconds(10), ct);
-                break;
-            }
-            await Task.Delay(TimeSpan.FromSeconds(1), ct);
-        } while (workDone);
-
-        return anyWorkDone;
+        return await repeatedDatabaseActionStrategy.RunUntilCompletionWithDelay(
+            (db, ct) => action(db, ct),
+            (result, time) => metrics.RecordOperationOutcome(result, databaseObjectName, time),
+            ex => logger.RunUntilCompletionWithDelayError(databaseObjectName, ex),
+            ct
+        );
     }
 }

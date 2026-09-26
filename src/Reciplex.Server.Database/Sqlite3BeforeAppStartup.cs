@@ -38,5 +38,9 @@ public class Sqlite3BeforeAppStartup(
             // Applies any pending migrations and creates the database if it doesn't exist
             await context.Database.MigrateAsync(ct);
         }
+        else if (options.Value.Dangerous_UseEnsureCreation)
+        {
+            await context.Database.EnsureCreatedAsync(ct);
+        }
     }
 };

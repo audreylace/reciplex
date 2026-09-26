@@ -12,6 +12,7 @@ namespace Reciplex.Server.Database.DbObjects;
 /// </list>
 /// </remarks>
 [Index(nameof(Authority), nameof(Subject), IsUnique = false)]
+[Index(nameof(Deleted))]
 public class UserDbObject
 {
     public const int DisplayNameMaxLength = 64;
