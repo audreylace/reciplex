@@ -100,7 +100,7 @@ internal sealed class DeletionWorkerServiceMetrics
     /// </summary>
     /// <param name="count">the number of rows</param>
     /// <param name="rowKind">the type of row</param>
-    public void IncRowsDeleted(long count, string rowKind)
+    public void ObserveRowsDeleted(long count, string rowKind)
     {
         if (count < 1)
         {
@@ -109,7 +109,12 @@ internal sealed class DeletionWorkerServiceMetrics
         _rowsDeletedCounter.Add(count, new KeyValuePair<string, object?>("row_kind", rowKind));
     }
 
-    public void IncOutcome(string rowKind, bool success)
+    /// <summary>
+    /// Observes the outcome of a collect and then delete operation
+    /// </summary>
+    /// <param name="rowKind">the type of row</param>
+    /// <param name="success">true if the operation is a success</param>
+    public void ObserveOperationOutcome(string rowKind, bool success)
     {
         _operationOutcomeCounter.Add(
             1,

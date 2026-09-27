@@ -1,5 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
-
 namespace Reciplex.Server.Database.Strategies;
 
 internal static class CollectActDatabaseActionStrategy
@@ -28,33 +26,6 @@ internal static class CollectActDatabaseActionStrategy
             }
 
             long count = await act(db, ids, ct);
-            observeOperation(count);
-
-            return count > 0;
-        };
-    }
-
-    internal static Func<
-        ApplicationDbContext,
-        AsyncServiceScope,
-        CancellationToken,
-        Task<bool>
-    > CollectAndAct<T>(
-        Func<ApplicationDbContext, AsyncServiceScope, CancellationToken, Task<List<T>>> collect,
-        Func<ApplicationDbContext, AsyncServiceScope, List<T>, CancellationToken, Task<int>> act,
-        Action<long> observeOperation
-    )
-    {
-        return async (db, scope, ct) =>
-        {
-            var ids = await collect(db, scope, ct);
-            if (ids.Count <= 0)
-            {
-                return false; // we did nothing!
-            }
-
-            long count = await act(db, scope, ids, ct);
-
             observeOperation(count);
 
             return count > 0;

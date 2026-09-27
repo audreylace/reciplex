@@ -9,7 +9,7 @@ namespace Reciplex.Server.Database.DeletionWorker;
 /// <summary>
 /// Background worker that finishes deletion of documents
 /// </summary>
-/// <param name="sp">Service provider for opening scopes.</param>
+/// <param name="repeatedDatabaseActionStrategy">Strategy for running a collect followed by act operation</param>
 /// <param name="metrics">metrics for DeletionWorkerService</param>
 /// <param name="logger">Logger for writing exceptions and diagnostics</param>
 internal sealed class DeletionWorkerService(
@@ -27,98 +27,111 @@ internal sealed class DeletionWorkerService(
             && await periodicTimer.WaitForNextTickAsync(stoppingToken)
         )
         {
+            bool success = true;
             long startTimestamp = Stopwatch.GetTimestamp();
-            await RunUntilCompletionWithDelay(
-                CollectActDatabaseActionStrategy.CollectAndAct(
-                    (db, ct) =>
-                        db
-                            .Recipes.Where(r =>
-                                (
-                                    r.Deleted != null
-                                    || r.RecipeBook!.Deleted != null
-                                    || r.RecipeBook!.Owner!.Deleted != null
+            try
+            {
+                await RunUntilCompletionWithDelay(
+                    CollectActDatabaseActionStrategy.CollectAndAct(
+                        (db, ct) =>
+                            db
+                                .Recipes.Where(r =>
+                                    (
+                                        r.Deleted != null
+                                        || r.RecipeBook!.Deleted != null
+                                        || r.RecipeBook!.Owner!.Deleted != null
+                                    )
+                                    && r.RecipeSearchExtraction == null
                                 )
-                                && r.RecipeSearchExtraction == null
-                            )
-                            .OrderBy(r => r.Id)
-                            .Select(r => r.Id)
-                            .Take(100)
-                            .ToListAsync(ct),
-                    (db, ids, ct) =>
-                        db.Recipes.Where(r => ids.Contains(r.Id)).ExecuteDeleteAsync(ct),
-                    MetricObserver(DeletionWorkerServiceMetrics.RecipesVariant)
-                ),
-                DeletionWorkerServiceMetrics.RecipesVariant,
-                stoppingToken
-            );
+                                .OrderBy(r => r.Id)
+                                .Select(r => r.Id)
+                                .Take(100)
+                                .ToListAsync(ct),
+                        (db, ids, ct) =>
+                            db.Recipes.Where(r => ids.Contains(r.Id)).ExecuteDeleteAsync(ct),
+                        MetricObserver(DeletionWorkerServiceMetrics.RecipesVariant)
+                    ),
+                    DeletionWorkerServiceMetrics.RecipesVariant,
+                    stoppingToken
+                );
 
-            await RunUntilCompletionWithDelay(
-                CollectActDatabaseActionStrategy.CollectAndAct(
-                    (db, ct) =>
-                        db
-                            .RecipeBookAccessEntries.Where(rAccessEntry =>
-                                (
-                                    rAccessEntry.User!.Deleted != null
-                                    || rAccessEntry.RecipeBook!.Deleted != null
-                                    || rAccessEntry.RecipeBook!.Owner!.Deleted != null
+                await RunUntilCompletionWithDelay(
+                    CollectActDatabaseActionStrategy.CollectAndAct(
+                        (db, ct) =>
+                            db
+                                .RecipeBookAccessEntries.Where(rAccessEntry =>
+                                    (
+                                        rAccessEntry.User!.Deleted != null
+                                        || rAccessEntry.RecipeBook!.Deleted != null
+                                        || rAccessEntry.RecipeBook!.Owner!.Deleted != null
+                                    )
                                 )
-                            )
-                            .OrderBy(r => r.Id)
-                            .Select(r => r.Id)
-                            .Take(100)
-                            .ToListAsync(ct),
-                    (db, ids, ct) =>
-                        db
-                            .RecipeBookAccessEntries.Where(r => ids.Contains(r.Id))
-                            .ExecuteDeleteAsync(ct),
-                    MetricObserver(DeletionWorkerServiceMetrics.RecipeBookAccessEntries)
-                ),
-                DeletionWorkerServiceMetrics.RecipeBookAccessEntries,
-                stoppingToken
-            );
+                                .OrderBy(r => r.Id)
+                                .Select(r => r.Id)
+                                .Take(100)
+                                .ToListAsync(ct),
+                        (db, ids, ct) =>
+                            db
+                                .RecipeBookAccessEntries.Where(r => ids.Contains(r.Id))
+                                .ExecuteDeleteAsync(ct),
+                        MetricObserver(DeletionWorkerServiceMetrics.RecipeBookAccessEntries)
+                    ),
+                    DeletionWorkerServiceMetrics.RecipeBookAccessEntries,
+                    stoppingToken
+                );
 
-            await RunUntilCompletionWithDelay(
-                CollectActDatabaseActionStrategy.CollectAndAct(
-                    (db, ct) =>
-                        db
-                            .RecipeBooks.Where(r =>
-                                (r.Deleted != null || r.Owner!.Deleted != null)
-                                && !r.Recipes.Any()
-                                && !r.AdditionalUsers.Any()
-                            )
-                            .OrderBy(r => r.Id)
-                            .Select(r => r.Id)
-                            .Take(100)
-                            .ToListAsync(ct),
-                    (db, ids, ct) =>
-                        db.RecipeBooks.Where(r => ids.Contains(r.Id)).ExecuteDeleteAsync(ct),
-                    MetricObserver(DeletionWorkerServiceMetrics.RecipeBooksVariant)
-                ),
-                DeletionWorkerServiceMetrics.RecipeBooksVariant,
-                stoppingToken
-            );
+                await RunUntilCompletionWithDelay(
+                    CollectActDatabaseActionStrategy.CollectAndAct(
+                        (db, ct) =>
+                            db
+                                .RecipeBooks.Where(r =>
+                                    (r.Deleted != null || r.Owner!.Deleted != null)
+                                    && !r.Recipes.Any()
+                                    && !r.AdditionalUsers.Any()
+                                )
+                                .OrderBy(r => r.Id)
+                                .Select(r => r.Id)
+                                .Take(100)
+                                .ToListAsync(ct),
+                        (db, ids, ct) =>
+                            db.RecipeBooks.Where(r => ids.Contains(r.Id)).ExecuteDeleteAsync(ct),
+                        MetricObserver(DeletionWorkerServiceMetrics.RecipeBooksVariant)
+                    ),
+                    DeletionWorkerServiceMetrics.RecipeBooksVariant,
+                    stoppingToken
+                );
 
-            await RunUntilCompletionWithDelay(
-                CollectActDatabaseActionStrategy.CollectAndAct(
-                    (db, ct) =>
-                        db
-                            .Users.Where(user =>
-                                user.Deleted != null
-                                && !user.RecipeBookAccessEntities.Any()
-                                && !user.BooksTheUserOwns.Any()
-                            )
-                            .OrderBy(r => r.Id)
-                            .Select(r => r.Id)
-                            .Take(100)
-                            .ToListAsync(ct),
-                    (db, ids, ct) => db.Users.Where(r => ids.Contains(r.Id)).ExecuteDeleteAsync(ct),
-                    MetricObserver(DeletionWorkerServiceMetrics.UsersVariant)
-                ),
-                DeletionWorkerServiceMetrics.UsersVariant,
-                stoppingToken
-            );
-
-            metrics.ObserveMainLoop(Stopwatch.GetElapsedTime(startTimestamp), true);
+                await RunUntilCompletionWithDelay(
+                    CollectActDatabaseActionStrategy.CollectAndAct(
+                        (db, ct) =>
+                            db
+                                .Users.Where(user =>
+                                    user.Deleted != null
+                                    && !user.RecipeBookAccessEntities.Any()
+                                    && !user.BooksTheUserOwns.Any()
+                                )
+                                .OrderBy(r => r.Id)
+                                .Select(r => r.Id)
+                                .Take(100)
+                                .ToListAsync(ct),
+                        (db, ids, ct) =>
+                            db.Users.Where(r => ids.Contains(r.Id)).ExecuteDeleteAsync(ct),
+                        MetricObserver(DeletionWorkerServiceMetrics.UsersVariant)
+                    ),
+                    DeletionWorkerServiceMetrics.UsersVariant,
+                    stoppingToken
+                );
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                logger.Error_ExceptionInMainLoop(ex);
+                success = false;
+            }
+            metrics.ObserveMainLoop(Stopwatch.GetElapsedTime(startTimestamp), success);
         }
     }
 
@@ -126,7 +139,7 @@ internal sealed class DeletionWorkerService(
     {
         return (rows) =>
         {
-            metrics.IncRowsDeleted(rows, databaseObjectName);
+            metrics.ObserveRowsDeleted(rows, databaseObjectName);
         };
     }
 
@@ -145,7 +158,7 @@ internal sealed class DeletionWorkerService(
     {
         return await repeatedDatabaseActionStrategy.RunUntilCompletionWithDelay(
             (db, ct) => action(db, ct),
-            (result) => metrics.IncOutcome(databaseObjectName, result),
+            (result) => metrics.ObserveOperationOutcome(databaseObjectName, result),
             ex => logger.RunUntilCompletionWithDelayError(databaseObjectName, ex),
             ct
         );
