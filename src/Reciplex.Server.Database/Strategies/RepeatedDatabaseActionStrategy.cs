@@ -19,7 +19,7 @@ internal sealed class RepeatedDatabaseActionStrategy(IServiceProvider sp)
     /// <returns>true if anything any real work was completed</returns>
     internal async Task<bool> RunUntilCompletionWithDelay(
         Func<ApplicationDbContext, CancellationToken, Task<bool>> action,
-        Action<bool, double>? recordMetrics,
+        Action<bool>? recordMetrics,
         Action<Exception> exceptionLogger,
         CancellationToken ct
     )
@@ -28,7 +28,6 @@ internal sealed class RepeatedDatabaseActionStrategy(IServiceProvider sp)
         bool workDone;
         do
         {
-            long startTimestamp = Stopwatch.GetTimestamp();
             try
             {
                 await using AsyncServiceScope scope = sp.CreateAsyncScope();
@@ -37,18 +36,12 @@ internal sealed class RepeatedDatabaseActionStrategy(IServiceProvider sp)
 
                 workDone = await action(db, ct);
                 anyWorkDone |= workDone;
-                recordMetrics?.Invoke(
-                    true,
-                    Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
-                );
+                recordMetrics?.Invoke(true);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 exceptionLogger(ex);
-                recordMetrics?.Invoke(
-                    false,
-                    Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
-                );
+                recordMetrics?.Invoke(false);
                 await Task.Delay(TimeSpan.FromSeconds(10), ct);
                 break;
             }
@@ -68,7 +61,7 @@ internal sealed class RepeatedDatabaseActionStrategy(IServiceProvider sp)
     /// <returns>true if anything any real work was completed</returns>
     internal async Task<bool> RunUntilCompletionWithDelay(
         Func<ApplicationDbContext, AsyncServiceScope, CancellationToken, Task<bool>> action,
-        Action<bool, double>? recordMetrics,
+        Action<bool>? recordMetrics,
         Action<Exception> exceptionLogger,
         CancellationToken ct
     )
@@ -77,7 +70,6 @@ internal sealed class RepeatedDatabaseActionStrategy(IServiceProvider sp)
         bool workDone;
         do
         {
-            long startTimestamp = Stopwatch.GetTimestamp();
             try
             {
                 await using AsyncServiceScope scope = sp.CreateAsyncScope();
@@ -86,18 +78,12 @@ internal sealed class RepeatedDatabaseActionStrategy(IServiceProvider sp)
 
                 workDone = await action(db, scope, ct);
                 anyWorkDone |= workDone;
-                recordMetrics?.Invoke(
-                    true,
-                    Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
-                );
+                recordMetrics?.Invoke(true);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 exceptionLogger(ex);
-                recordMetrics?.Invoke(
-                    false,
-                    Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
-                );
+                recordMetrics?.Invoke(false);
                 await Task.Delay(TimeSpan.FromSeconds(10), ct);
                 break;
             }

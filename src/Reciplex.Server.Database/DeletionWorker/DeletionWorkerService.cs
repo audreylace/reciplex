@@ -21,15 +21,14 @@ internal sealed class DeletionWorkerService(
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        int backoff = 0;
-        while (!stoppingToken.IsCancellationRequested)
+        using PeriodicTimer periodicTimer = new(TimeSpan.FromMinutes(1));
+        while (
+            !stoppingToken.IsCancellationRequested
+            && await periodicTimer.WaitForNextTickAsync(stoppingToken)
+        )
         {
             long startTimestamp = Stopwatch.GetTimestamp();
-            backoff = Math.Min(10, backoff + 1);
-            metrics.SetRunningStatus(true);
-            bool anyWorkDone = false;
-
-            anyWorkDone |= await RunUntilCompletionWithDelay(
+            await RunUntilCompletionWithDelay(
                 CollectActDatabaseActionStrategy.CollectAndAct(
                     (db, ct) =>
                         db
@@ -53,7 +52,7 @@ internal sealed class DeletionWorkerService(
                 stoppingToken
             );
 
-            anyWorkDone |= await RunUntilCompletionWithDelay(
+            await RunUntilCompletionWithDelay(
                 CollectActDatabaseActionStrategy.CollectAndAct(
                     (db, ct) =>
                         db
@@ -78,7 +77,7 @@ internal sealed class DeletionWorkerService(
                 stoppingToken
             );
 
-            anyWorkDone |= await RunUntilCompletionWithDelay(
+            await RunUntilCompletionWithDelay(
                 CollectActDatabaseActionStrategy.CollectAndAct(
                     (db, ct) =>
                         db
@@ -99,7 +98,7 @@ internal sealed class DeletionWorkerService(
                 stoppingToken
             );
 
-            anyWorkDone |= await RunUntilCompletionWithDelay(
+            await RunUntilCompletionWithDelay(
                 CollectActDatabaseActionStrategy.CollectAndAct(
                     (db, ct) =>
                         db
@@ -119,37 +118,14 @@ internal sealed class DeletionWorkerService(
                 stoppingToken
             );
 
-            if (anyWorkDone)
-            {
-                backoff = 1;
-            }
-
-            double minutes = Math.Min(60, Math.Pow(2, backoff - 1));
-
-            if (anyWorkDone)
-            {
-                logger.CleanupWorkDone(minutes);
-            }
-            else
-            {
-                logger.NoCleanupWorkDone(minutes);
-            }
-
-            metrics.SetRunningStatus(false);
-            metrics.ObserveMainLoop(
-                minutes,
-                Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds
-            );
-            await Task.Delay(TimeSpan.FromMinutes(minutes), stoppingToken);
+            metrics.ObserveMainLoop(Stopwatch.GetElapsedTime(startTimestamp), true);
         }
     }
 
-    private Action<double, double, long> MetricObserver(string databaseObjectName)
+    private Action<long> MetricObserver(string databaseObjectName)
     {
-        return (collectTime, time, rows) =>
+        return (rows) =>
         {
-            metrics.ObserveDeletionCandidateQuery(databaseObjectName, collectTime);
-            metrics.ObserveDeletionQuery(databaseObjectName, time);
             metrics.IncRowsDeleted(rows, databaseObjectName);
         };
     }
@@ -169,7 +145,7 @@ internal sealed class DeletionWorkerService(
     {
         return await repeatedDatabaseActionStrategy.RunUntilCompletionWithDelay(
             (db, ct) => action(db, ct),
-            (result, time) => metrics.RecordOperationOutcome(result, databaseObjectName, time),
+            (result) => metrics.IncOutcome(databaseObjectName, result),
             ex => logger.RunUntilCompletionWithDelayError(databaseObjectName, ex),
             ct
         );
