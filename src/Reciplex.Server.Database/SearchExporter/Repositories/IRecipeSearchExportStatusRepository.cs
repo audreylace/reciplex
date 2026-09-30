@@ -79,21 +79,6 @@ interface IRecipeSearchExportStatusRepository
     );
 
     /// <summary>
-    /// Creates search status rows for recipes that do not have them and takes out a lease on them
-    /// </summary>
-    /// <param name="batchSize">max number of rows to create</param>
-    /// <param name="leaseToken">the lease token identifying this lease</param>
-    /// <param name="expireAfter">how far from now before the lease expires</param>
-    /// <param name="ct">async cancellation token</param>
-    /// <returns>ids of the locked rows for export</returns>
-    public Task<List<long>> CreateSearchStatusRowsAsync(
-        int batchSize,
-        string leaseToken,
-        TimeSpan expireAfter,
-        CancellationToken ct
-    );
-
-    /// <summary>
     /// Gets up to <paramref name="batchSize"/> recipe ids that need to be re-extracted to the search index
     /// </summary>
     /// <param name="batchSize">max number of recipes to extract</param>
@@ -127,12 +112,14 @@ interface IRecipeSearchExportStatusRepository
     /// <param name="id">the recipe id</param>
     /// <param name="searchVersion">the recipe search version</param>
     /// <param name="leaseToken">the recipe token</param>
+    /// <param name="maxRetries">max number of tries for a given version before giving up</param>
     /// <param name="ct">async cancellation token</param>
     /// <returns>number of rows updated</returns>
     public Task<int> MarkRecipeExtractionFailedAndReleaseAsync(
         long id,
         long searchVersion,
         string leaseToken,
+        int maxRetries,
         CancellationToken ct
     );
 
@@ -153,21 +140,8 @@ interface IRecipeSearchExportStatusRepository
         string leaseToken,
         CancellationToken ct
     );
-
     public Task<int> MarkRecipesDeletionFailedAndReleaseAsync(
         List<long> recipeIds,
-        string leaseToken,
-        CancellationToken ct
-    );
-
-    public Task<int> MarkRecipesAsExtractedAndReleaseAsync(
-        List<(long RecipeId, long SearchVersion)> entries,
-        string leaseToken,
-        CancellationToken ct
-    );
-
-    public Task<int> MarkRecipeExtractionFailedAndReleaseAsync(
-        List<(long RecipeId, long SearchVersion)> entries,
         string leaseToken,
         CancellationToken ct
     );

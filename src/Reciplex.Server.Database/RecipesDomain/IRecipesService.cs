@@ -111,7 +111,7 @@ public interface IRecipesService
     /// <returns>result of the operation</returns>
     Task<
         DatabaseResultVariant<
-            SuccessResult<RecipeListEntryDao>,
+            SuccessResult<List<RecipeListEntryDao>>,
             FeatureNotEnabledResult,
             BookNotFoundResult,
             UserNotFoundResult,

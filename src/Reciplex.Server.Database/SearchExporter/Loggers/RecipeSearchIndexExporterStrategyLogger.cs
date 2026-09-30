@@ -29,18 +29,17 @@ static partial class RecipeSearchIndexExporterStrategyLogger
         Exception ex
     );
 
-    [LoggerMessage(LogLevel.Error, "Failed to mark one or more recipes as extracted")]
+    [LoggerMessage(LogLevel.Error, "Failed to mark recipe '{RowId}' as extracted")]
     public static partial void Error_MarkingAsExtractedFailed(
         this ILogger<RecipeSearchIndexExporterStrategy> logger,
+        long RowId,
         Exception ex
     );
 
-    [LoggerMessage(
-        LogLevel.Error,
-        "Failed trying to make one or more recipes as failing extraction"
-    )]
+    [LoggerMessage(LogLevel.Error, "Failed trying to mark recipe '{RowId}' as failing extraction")]
     public static partial void Error_IncrementingExtractionAttemptFailed(
         this ILogger<RecipeSearchIndexExporterStrategy> logger,
+        long RowId,
         Exception ex
     );
 }

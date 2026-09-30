@@ -291,5 +291,13 @@ sealed class MeilisearchIndexRepository(
         return id.ToString("D19", CultureInfo.InvariantCulture);
     }
 
+    public Task<List<RecipeSearchIndexInformation>> SearchRecipesAsync(
+        SearchRecipesIndexArgs args,
+        CancellationToken ct
+    )
+    {
+        throw new NotImplementedException();
+    }
+
     #endregion  Private Methods
 }

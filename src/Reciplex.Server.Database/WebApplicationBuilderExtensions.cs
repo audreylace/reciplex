@@ -93,10 +93,6 @@ public static partial class WebApplicationBuilderExtensions
             builder.Services.AddSingleton<LeaseRenewer>();
             builder.Services.AddSingleton<RecipeSearchIndexExporterStrategy>();
             builder.Services.AddSingleton<ResiliencePipelineBuilderFactory>();
-            builder.Services.AddScoped<
-                ISearchBackgroundTask,
-                NewRecipeExporterSearchBackgroundTask
-            >();
             builder.Services.AddScoped<ISearchBackgroundTask, RecipeDeletionSearchBackgroundTask>();
 
             builder.Services.AddScoped<

@@ -50,6 +50,7 @@ sealed class ChangedRecipeExporterSearchBackgroundTask(
                         await searchExporterStrategy.ExportRecipesAsync(
                             recipeIds,
                             leaseToken,
+                            options.Value.MaxExportAttempts,
                             stoppingToken
                         );
                     }

@@ -84,10 +84,11 @@ internal sealed class RecipesService(
             Created = now,
             LastModified = now,
             ConcurrencyTag = concurrencyTagProvider.NextTag(),
+            RecipeSearchExtraction = new(),
         };
         dbContext.Add(recipeDbObject);
         await dbContext.SaveChangesAsync(ct);
-        recipeMutationNotifyService.NotifyNew();
+        recipeMutationNotifyService.NotifyChange();
         return new SuccessResult<RecipeDao>(DbObjectToRecipeDao(recipeDbObject, true));
     }
 
@@ -351,6 +352,7 @@ internal sealed class RecipesService(
         RecipeDbObject? recipe = await dbContext
             .Recipes.WithRecipeId(recipeId)
             .DeleteFieldNull()
+            .Include(r => r.RecipeSearchExtraction)
             .FirstOrDefaultAsync(ct);
 
         if (recipe is null)
@@ -382,6 +384,11 @@ internal sealed class RecipesService(
         recipe.LastModified = clock.GetCurrentInstant().ToUnixTimeSeconds();
         recipe.ConcurrencyTag = concurrencyTagProvider.NextTag();
         recipe.SearchVersion++;
+
+        // reset search export tracking
+        recipe.RecipeSearchExtraction?.Extracted = false;
+        recipe.RecipeSearchExtraction?.ExtractRetryCount = 0;
+        recipe.RecipeSearchExtraction?.NextExtractRetryTime = null;
         try
         {
             await dbContext.SaveChangesAsync(ct);

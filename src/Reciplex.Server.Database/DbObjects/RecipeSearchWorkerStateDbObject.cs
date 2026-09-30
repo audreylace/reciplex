@@ -9,21 +9,16 @@ namespace Reciplex.Server.Database.DbObjects;
 /// Search extraction record
 /// </summary>
 [Index(nameof(LeaseToken), nameof(LeaseExpireTime))]
-[Index(nameof(SearchVersion), nameof(LeaseExpireTime))]
-[Index(nameof(DeleteRetryCounter), nameof(LeaseExpireTime), nameof(NextDeleteRetryTime))]
+[Index(nameof(LeaseExpireTime))]
 [Index(
+    nameof(Extracted),
     nameof(LeaseExpireTime),
     nameof(ExtractRetryCount),
-    nameof(NextExtractRetryTime),
-    nameof(SearchVersion)
+    nameof(NextExtractRetryTime)
 )]
+[Index(nameof(LeaseExpireTime), nameof(DeleteRetryCounter), nameof(NextDeleteRetryTime))]
 public class RecipeSearchWorkerStateDbObject
 {
-    /// <summary>
-    /// The extracted search version
-    /// </summary>
-    public required long? SearchVersion { get; set; }
-
     /// <summary>
     /// The recipe
     /// </summary>
@@ -56,19 +51,9 @@ public class RecipeSearchWorkerStateDbObject
     public int ExtractRetryCount { get; set; }
 
     /// <summary>
-    /// The version observed at time of error
-    /// </summary>
-    public long? AttemptedExtractSearchVersion { get; set; }
-
-    /// <summary>
     /// The next extract retry time
     /// </summary>
     public long? NextExtractRetryTime { get; set; }
-
-    /// <summary>
-    /// If an extraction has ever been attempted
-    /// </summary>
-    public bool ExtractionAttempted { get; set; }
 
     /// <summary>
     /// Next delete retry time
@@ -79,4 +64,9 @@ public class RecipeSearchWorkerStateDbObject
     /// How many delete attempts so far
     /// </summary>
     public int DeleteRetryCounter { get; set; }
+
+    /// <summary>
+    /// If the row has been extracted
+    /// </summary>
+    public bool Extracted { get; set; }
 }

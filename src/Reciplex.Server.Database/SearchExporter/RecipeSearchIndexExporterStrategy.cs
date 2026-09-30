@@ -24,8 +24,14 @@ sealed class RecipeSearchIndexExporterStrategy(
     /// </summary>
     /// <param name="ids">set of row primary ids</param>
     /// <param name="leaseToken">the token of the held lease</param>
+    /// <param name="maxExportAttempts">max number of export attempts</param>
     /// <param name="ct">async cancellation token</param>
-    public async Task ExportRecipesAsync(List<long> ids, string leaseToken, CancellationToken ct)
+    public async Task ExportRecipesAsync(
+        List<long> ids,
+        string leaseToken,
+        int maxExportAttempts,
+        CancellationToken ct
+    )
     {
         var recipeData = await recipeSearchExportStatusRepository.ExtractRecipeDataAsync(
             ids,
@@ -88,6 +94,7 @@ sealed class RecipeSearchIndexExporterStrategy(
                 [.. recipeData.Select(d => d.RecipeFk)],
                 cancellationTokenSource,
                 renewerTask,
+                maxExportAttempts,
                 ct
             );
             return;
@@ -99,12 +106,20 @@ sealed class RecipeSearchIndexExporterStrategy(
                 [.. recipeData.Select(d => d.RecipeFk)],
                 cancellationTokenSource,
                 renewerTask,
+                maxExportAttempts,
                 ct
             );
             throw;
         }
 
-        await UpdateSearchRowsAsync(leaseToken, idsToUnlock, idsExtracted, idsFailed, ct);
+        await UpdateSearchRowsAsync(
+            leaseToken,
+            idsToUnlock,
+            idsExtracted,
+            idsFailed,
+            maxExportAttempts,
+            ct
+        );
     }
 
     private async Task CleanupAsync(
@@ -112,6 +127,7 @@ sealed class RecipeSearchIndexExporterStrategy(
         List<long> ids,
         CancellationTokenSource cancellationTokenSource,
         Task renewerTask,
+        int maxExportAttempts,
         CancellationToken ct
     )
     {
@@ -140,7 +156,14 @@ sealed class RecipeSearchIndexExporterStrategy(
             {
                 using CancellationTokenSource cancellation = new();
                 cancellation.CancelAfter(TimeSpan.FromSeconds(5));
-                await UpdateSearchRowsAsync(leaseToken, ids, [], [], cancellation.Token);
+                await UpdateSearchRowsAsync(
+                    leaseToken,
+                    ids,
+                    [],
+                    [],
+                    maxExportAttempts,
+                    cancellation.Token
+                );
             }
         }
         catch (OperationCanceledException) { }
@@ -274,12 +297,14 @@ sealed class RecipeSearchIndexExporterStrategy(
     /// <param name="recipesToUnlock">recipes whose lease should be cleared and no outcome recorded</param>
     /// <param name="recipesExtracted">recipes dropped from the search index and whose rows should be dropped from the database</param>
     /// <param name="recipesThatFailed">recipes whose deletion failed</param>
+    /// <param name="maxAttempts">max number of export attempts</param>
     /// <param name="ct">cancels the async operation</param>
     private async Task UpdateSearchRowsAsync(
         string leaseToken,
         List<long> recipesToUnlock,
         List<RecipeRecordDataExtractedFromDatabase> recipesExtracted,
         List<RecipeRecordDataExtractedFromDatabase> recipesThatFailed,
+        int maxAttempts,
         CancellationToken ct
     )
     {
@@ -302,43 +327,44 @@ sealed class RecipeSearchIndexExporterStrategy(
 
         if (recipesExtracted.Count > 0)
         {
-            try
+            foreach (var rowPtr in recipesExtracted)
             {
-                await recipeSearchExportStatusRepository.MarkRecipesAsExtractedAndReleaseAsync(
-                    [
-                        .. recipesExtracted.Select(r =>
-                            ((long, long))new(r.RecipeFk, r.SearchVersion)
-                        ),
-                    ],
-                    leaseToken,
-                    ct
-                );
-            }
-            catch (Exception ex)
-                when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
-            {
-                logger.Error_MarkingAsExtractedFailed(ex);
+                try
+                {
+                    await recipeSearchExportStatusRepository.MarkRecipeAsExtractedAndReleaseAsync(
+                        rowPtr.RecipeFk,
+                        rowPtr.SearchVersion,
+                        leaseToken,
+                        ct
+                    );
+                }
+                catch (Exception ex)
+                    when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+                {
+                    logger.Error_MarkingAsExtractedFailed(rowPtr.RecipeFk, ex);
+                }
             }
         }
 
         if (recipesThatFailed.Count > 0)
         {
-            try
+            foreach (var rowPtr in recipesThatFailed)
             {
-                await recipeSearchExportStatusRepository.MarkRecipeExtractionFailedAndReleaseAsync(
-                    [
-                        .. recipesExtracted.Select(r =>
-                            ((long, long))new(r.RecipeFk, r.SearchVersion)
-                        ),
-                    ],
-                    leaseToken,
-                    ct
-                );
-            }
-            catch (Exception ex)
-                when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
-            {
-                logger.Error_IncrementingExtractionAttemptFailed(ex);
+                try
+                {
+                    await recipeSearchExportStatusRepository.MarkRecipeExtractionFailedAndReleaseAsync(
+                        rowPtr.RecipeFk,
+                        rowPtr.SearchVersion,
+                        leaseToken,
+                        maxAttempts,
+                        ct
+                    );
+                }
+                catch (Exception ex)
+                    when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+                {
+                    logger.Error_IncrementingExtractionAttemptFailed(rowPtr.RecipeFk, ex);
+                }
             }
         }
     }

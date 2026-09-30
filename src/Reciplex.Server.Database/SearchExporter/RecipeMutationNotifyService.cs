@@ -14,14 +14,6 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
         }
     );
 
-    private readonly Channel<long> _newChannel = Channel.CreateBounded<long>(
-        new BoundedChannelOptions(1)
-        {
-            SingleReader = true,
-            FullMode = BoundedChannelFullMode.DropWrite,
-        }
-    );
-
     private readonly Channel<long> _deleteChannel = Channel.CreateBounded<long>(
         new BoundedChannelOptions(1)
         {
@@ -29,15 +21,6 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
             FullMode = BoundedChannelFullMode.DropWrite,
         }
     );
-
-    public void NotifyNew()
-    {
-        if (!options.Value.Enable)
-        {
-            return;
-        }
-        _newChannel.Writer.TryWrite(0);
-    }
 
     public void NotifyChange()
     {
@@ -60,11 +43,6 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
     public Task WaitForChange(TimeSpan timeout, CancellationToken ct)
     {
         return WaitOnChannel(_changeChannel, timeout, ct);
-    }
-
-    public Task WaitForNewAsync(TimeSpan timeout, CancellationToken ct)
-    {
-        return WaitOnChannel(_newChannel, timeout, ct);
     }
 
     public Task WaitForDeleteAsync(TimeSpan timeout, CancellationToken ct)
