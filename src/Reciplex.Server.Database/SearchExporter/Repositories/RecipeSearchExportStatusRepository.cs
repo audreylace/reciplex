@@ -217,7 +217,10 @@ sealed class RecipeSearchExportStatusRepository(
                         .SetProperty(e => e.NextExtractRetryTime, (long?)null)
                         .SetProperty(
                             e => e.Extracted,
-                            e => e.Recipe!.SearchVersion == searchVersion
+                            e =>
+                                db.Recipes.Where(r => r.Id == e.RecipeFk)
+                                    .Select(r => r.SearchVersion)
+                                    .FirstOrDefault() == searchVersion
                         ),
                 ct
             );
@@ -264,21 +267,27 @@ sealed class RecipeSearchExportStatusRepository(
                         .SetProperty(
                             e => e.ExtractRetryCount,
                             e =>
-                                e.Recipe!.SearchVersion == searchVersion
+                                db.Recipes.Where(r => r.Id == e.RecipeFk)
+                                    .Select(r => r.SearchVersion)
+                                    .FirstOrDefault() == searchVersion
                                     ? e.ExtractRetryCount + 1
                                     : 0
                         )
                         .SetProperty(
                             e => e.NextExtractRetryTime,
                             e =>
-                                e.Recipe!.SearchVersion == searchVersion
+                                db.Recipes.Where(r => r.Id == e.RecipeFk)
+                                    .Select(r => r.SearchVersion)
+                                    .FirstOrDefault() == searchVersion
                                     ? now + (1 << e.ExtractRetryCount + 1)
                                     : null
                         )
                         .SetProperty(
                             e => e.Extracted,
                             e =>
-                                e.Recipe!.SearchVersion == searchVersion
+                                db.Recipes.Where(r => r.Id == e.RecipeFk)
+                                    .Select(r => r.SearchVersion)
+                                    .FirstOrDefault() == searchVersion
                                     && e.ExtractRetryCount + 1 >= maxRetries
                                 || e.Extracted
                         ),
