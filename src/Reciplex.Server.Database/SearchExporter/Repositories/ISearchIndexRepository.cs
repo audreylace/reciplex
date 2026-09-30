@@ -33,4 +33,15 @@ interface ISearchIndexRepository
         IEnumerable<long> recipeIds,
         CancellationToken ct
     );
+
+    /// <summary>
+    /// If the search feature is enabled
+    /// </summary>
+    /// <returns>true if enabled</returns>
+    public bool IsEnabled();
+
+    public Task<List<RecipeSearchIndexInformation>> SearchRecipesAsync(
+        SearchRecipesIndexArgs args,
+        CancellationToken ct
+    );
 }

@@ -1,5 +1,6 @@
 using System.Globalization;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Reciplex.Server.Database.SearchExporter.Loggers;
 using Reciplex.Server.Meilisearch;
 using Reciplex.Server.Meilisearch.Responses;
@@ -11,9 +12,11 @@ namespace Reciplex.Server.Database.SearchExporter.Repositories;
 /// </summary>
 /// <param name="searchClient">client for calling the remote</param>
 /// <param name="logger">service logger</param>
+/// <param name="options">application options</param>
 sealed class MeilisearchIndexRepository(
     IMeilisearchClient searchClient,
-    ILogger<MeilisearchIndexRepository> logger
+    ILogger<MeilisearchIndexRepository> logger,
+    IOptions<SearchExporterOptions> options
 ) : ISearchIndexRepository
 {
     #region Constants
@@ -147,6 +150,9 @@ sealed class MeilisearchIndexRepository(
             return IndexMutationOperationOutcome.Error;
         }
     }
+
+    /// <inheritdoc />
+    public bool IsEnabled() => options.Value.Enable;
 
     #endregion ISearchIndexRepository Implementation
 
@@ -284,5 +290,6 @@ sealed class MeilisearchIndexRepository(
     {
         return id.ToString("D19", CultureInfo.InvariantCulture);
     }
+
     #endregion  Private Methods
 }

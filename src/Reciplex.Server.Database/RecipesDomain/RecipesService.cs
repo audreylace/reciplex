@@ -6,6 +6,7 @@ using Reciplex.Server.Database.DbObjects;
 using Reciplex.Server.Database.RecipeBooksDomain;
 using Reciplex.Server.Database.Results;
 using Reciplex.Server.Database.SearchExporter;
+using Reciplex.Server.Database.SearchExporter.Repositories;
 using Reciplex.Server.Database.UsersDomain;
 
 namespace Reciplex.Server.Database.RecipesDomain;
@@ -18,12 +19,14 @@ namespace Reciplex.Server.Database.RecipesDomain;
 /// <param name="concurrencyTagProvider">concurrency token provider</param>
 /// <param name="stringIdProvider">string id marshaller</param>
 /// <param name="recipeMutationNotifyService">notifies interested parties on recipe addition or deletion</param>
+/// <param name="searchIndexRepository">repository for searching for recipes</param>
 internal sealed class RecipesService(
     ApplicationDbContext dbContext,
     IClock clock,
     IConcurrencyTagProvider concurrencyTagProvider,
     IStringIdProvider stringIdProvider,
-    IRecipeMutationNotifyService recipeMutationNotifyService
+    IRecipeMutationNotifyService recipeMutationNotifyService,
+    ISearchIndexRepository? searchIndexRepository
 ) : IRecipesService
 {
     /// <inheritdoc />
@@ -405,4 +408,90 @@ internal sealed class RecipesService(
             Details = recipeDbObject.Details,
             MayEdit = mayEdit,
         };
+
+    public async Task<
+        DatabaseResultVariant<
+            SuccessResult<List<RecipeListEntryDao>>,
+            FeatureNotEnabledResult,
+            BookNotFoundResult,
+            UserNotFoundResult,
+            ValidationFailureResult
+        >
+    > SearchRecipesAsync(string userKey, SearchRecipesArgs args, CancellationToken ct)
+    {
+        // todo - use validation class instead of throwing
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(args.MaxBooks, nameof(args.MaxBooks));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(args.MaxResults, nameof(args.MaxResults));
+
+        if (searchIndexRepository is null || !searchIndexRepository.IsEnabled())
+        {
+            return new FeatureNotEnabledResult();
+        }
+
+        if (
+            !stringIdProvider.TryParseStringKey(userKey, out long userId)
+            || !await dbContext.Users.UserExistsNotDeletedAsync(userId, ct)
+        )
+        {
+            return new UserNotFoundResult(userKey);
+        }
+
+        List<long> bookIds = [];
+        if (args.Books.Count > 0)
+        {
+            foreach (string bookKey in args.Books)
+            {
+                if (!stringIdProvider.TryParseStringKey(bookKey, out long bookId))
+                {
+                    return new BookNotFoundResult(bookKey);
+                }
+                BookWithMaterializedPermissions? bookLookup = await dbContext
+                    .RecipeBooks.AsNoTracking()
+                    .GetBookAndPermissionsAsync(bookId, userId, ct);
+
+                if (bookLookup is null || !bookLookup.PermissionFlags.MayViewBook)
+                {
+                    return new BookNotFoundResult(bookKey);
+                }
+
+                bookIds.Add(bookId);
+            }
+        }
+        else
+        {
+            bookIds = await dbContext
+                .RecipeBooks.AsNoTracking()
+                .NotDeleted()
+                .UserHasAccess(userId)
+                .OrderBy(book => book.Id)
+                .Select(book => book.Id)
+                .Take(args.MaxBooks)
+                .ToListAsync(ct);
+        }
+
+        if (bookIds.Count < 1) // no books - nothing to search...
+        {
+            return new SuccessResult<List<RecipeListEntryDao>>([]);
+        }
+
+        var matchesFromSearchIndex = await searchIndexRepository.SearchRecipesAsync(
+            new()
+            {
+                SearchString = args.SearchString,
+                BookIds = bookIds,
+                MaxResults = args.MaxResults,
+            },
+            ct
+        );
+
+        return new SuccessResult<List<RecipeListEntryDao>>([
+            .. matchesFromSearchIndex.Select(r => new RecipeListEntryDao()
+            {
+                Id = stringIdProvider.AsString(r.RecipeId),
+                Name = r.Name,
+                ShortDescription = r.ShortDescription,
+                BookId = stringIdProvider.AsString(r.RecipeBookId),
+            }),
+        ]);
+    }
 }

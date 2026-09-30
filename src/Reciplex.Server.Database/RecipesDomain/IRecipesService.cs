@@ -101,4 +101,21 @@ public interface IRecipesService
         ListRecipesArgs args,
         CancellationToken cancellationToken = default
     );
+
+    /// <summary>
+    /// Looks for recipes using the search backend. This is an optional feature and is not always enabled.
+    /// </summary>
+    /// <param name="userKey">The key of the acting user</param>
+    /// <param name="searchString">the user's search string</param>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>result of the operation</returns>
+    Task<
+        DatabaseResultVariant<
+            SuccessResult<RecipeListEntryDao>,
+            FeatureNotEnabledResult,
+            BookNotFoundResult,
+            UserNotFoundResult,
+            ValidationFailureResult
+        >
+    > SearchRecipesAsync(string userKey, SearchRecipesArgs args, CancellationToken ct);
 }
