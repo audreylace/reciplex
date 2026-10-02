@@ -55,7 +55,12 @@ public class RecipesSearchController(IRecipesService recipeService) : Controller
             ValidationFailureResult
         > result = await recipeService.SearchRecipesAsync(
             userKey,
-            new() { SearchString = searchString },
+            new()
+            {
+                SearchString = searchString,
+                // todo - limit
+                // todo - pagination?
+            },
             cancellationToken
         );
         return result.Result switch
