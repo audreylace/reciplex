@@ -59,7 +59,7 @@ sealed class RecipesThatFailToDeleteSearchBackgroundTask(
             !stoppingToken.IsCancellationRequested
             && await pipeline.ExecuteAsync(
                 async token =>
-                    await repository.PurgeRecipeSearchEntriesWithTooManyRetries(
+                    await repository.PurgeRecipeSearchEntriesWithTooManyDeleteRetries(
                         options.Value.RecipesFailedToDeletePurgeSize,
                         options.Value.MaxRecipeDeleteAttempts,
                         token

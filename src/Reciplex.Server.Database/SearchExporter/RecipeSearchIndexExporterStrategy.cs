@@ -61,7 +61,7 @@ sealed class RecipeSearchIndexExporterStrategy(
                 {
                     Recipes =
                     [
-                        .. recipeData.Select(d => new RecipeSearchIndexInformation()
+                        .. recipeData.Select(d => new RecipeSearchIndexDocument()
                         {
                             RecipeId = d.RecipeFk,
                             RecipeBookId = d.RecipeBookFk,
@@ -201,7 +201,7 @@ sealed class RecipeSearchIndexExporterStrategy(
                         {
                             Recipes =
                             [
-                                new RecipeSearchIndexInformation()
+                                new RecipeSearchIndexDocument()
                                 {
                                     RecipeId = recipe.RecipeFk,
                                     RecipeBookId = recipe.RecipeBookFk,

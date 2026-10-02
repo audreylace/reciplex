@@ -51,9 +51,9 @@ public interface IMeilisearchClient
     /// <param name="documentIds">documents to create or replace</param>
     /// <param name="ct">async cancellation token</param>
     /// <returns>the result throwing on failure or if the index does not exist</returns>
-    public Task<MeilisearchTaskResponse> DeleteDocumentsAsync(
+    public Task<MeilisearchTaskResponse> DeleteDocumentsAsync<T>(
         string indexUid,
-        IEnumerable<string> documentIds,
+        IEnumerable<T> documentIds,
         CancellationToken ct
     );
 
@@ -75,35 +75,18 @@ public interface IMeilisearchClient
         string indexUid,
         CancellationToken ct
     );
-}
-
-[JsonConverter(typeof(MeiliFilterAttributesConverter))]
-public class MeiliFilterAttributes
-{
-    /// <summary>
-    /// List of properties with all filtering enabled
-    /// </summary>
-    public required List<string> Properties { get; init; }
 
     /// <summary>
-    /// Set of attributes with enhanced configuration
+    /// Runs a complex search via the post endpoint
     /// </summary>
-    public required List<MeiliFilterAttributeConfig> MeiliFilterAttributeConfigs { get; init; }
-}
-
-public class MeiliFilterAttributeConfig
-{
-    public required List<string> AttributePatterns { get; init; }
-}
-
-public class MeiliAttributeFeatures
-{
-    public bool FacetSearch { get; init; }
-    public MeiliAttributeFilterFlags Filter { get; init; } = new();
-}
-
-public class MeiliAttributeFilterFlags
-{
-    public bool Equality { get; set; }
-    public bool Comparison { get; set; }
+    /// <param name="indexUid">the index id</param>
+    /// <param name="args">search args</param>
+    /// <param name="ct">async cancellation token</param>
+    /// <typeparam name="TIndexDocument">shape of the index document</typeparam>
+    /// <returns>the search result or null if the index is not found</returns>
+    public Task<SearchQueryResponse<TIndexDocument>?> SearchByPostAsync<TIndexDocument>(
+        string indexUid,
+        SearchByPostArgs args,
+        CancellationToken ct
+    );
 }

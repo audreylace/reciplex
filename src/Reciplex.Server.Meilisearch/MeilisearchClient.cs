@@ -72,9 +72,9 @@ public class MeilisearchClient(HttpClient httpClient) : IMeilisearchClient
             ?? throw new MeilisearchApiException("response unexpectedly decoded to null");
     }
 
-    public async Task<MeilisearchTaskResponse> DeleteDocumentsAsync(
+    public async Task<MeilisearchTaskResponse> DeleteDocumentsAsync<T>(
         string indexUid,
-        IEnumerable<string> documentIds,
+        IEnumerable<T> documentIds,
         CancellationToken ct
     )
     {
@@ -211,6 +211,36 @@ public class MeilisearchClient(HttpClient httpClient) : IMeilisearchClient
         if (response.StatusCode == System.Net.HttpStatusCode.OK)
         {
             return await ReadJsonOrThrow<MeiliFilterAttributes>(response, ct);
+        }
+
+        throw CreateUnhandledStatusCodeException(response);
+    }
+
+    /// <inheritdoc />
+    public async Task<SearchQueryResponse<TIndexDocument>?> SearchByPostAsync<TIndexDocument>(
+        string indexUid,
+        SearchByPostArgs args,
+        CancellationToken ct
+    )
+    {
+        using HttpResponseMessage response = await httpClient.PostAsJsonAsync(
+            $"indexes/{Uri.EscapeDataString(indexUid)}/search",
+            new SearchQueryRequestBody()
+            {
+                Filter = args.FilterString,
+                SearchString = args.SearchString,
+            },
+            ct
+        );
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (response.StatusCode == System.Net.HttpStatusCode.OK)
+        {
+            return await ReadJsonOrThrow<SearchQueryResponse<TIndexDocument>>(response, ct);
         }
 
         throw CreateUnhandledStatusCodeException(response);

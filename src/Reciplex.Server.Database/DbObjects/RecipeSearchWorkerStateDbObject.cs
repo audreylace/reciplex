@@ -13,10 +13,11 @@ namespace Reciplex.Server.Database.DbObjects;
 [Index(
     nameof(Extracted),
     nameof(LeaseExpireTime),
-    nameof(ExtractRetryCount),
-    nameof(NextExtractRetryTime)
+    nameof(NextExtractRetryTime),
+    nameof(ExtractRetryCount)
 )]
-[Index(nameof(LeaseExpireTime), nameof(DeleteRetryCounter), nameof(NextDeleteRetryTime))]
+[Index(nameof(LeaseExpireTime), nameof(DeleteRetryCounter))]
+[Index(nameof(LeaseExpireTime), nameof(NextDeleteRetryTime), nameof(DeleteRetryCounter))]
 public class RecipeSearchWorkerStateDbObject
 {
     /// <summary>

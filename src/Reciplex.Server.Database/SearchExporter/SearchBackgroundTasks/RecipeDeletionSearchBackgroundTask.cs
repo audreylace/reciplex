@@ -38,7 +38,7 @@ sealed class RecipeDeletionSearchBackgroundTask(
                 if (entries.Count < 1)
                 {
                     await notificationService.WaitForDeleteAsync(
-                        TimeSpan.FromMinutes(10),
+                        TimeSpan.FromMinutes(1),
                         stoppingToken
                     );
                 }

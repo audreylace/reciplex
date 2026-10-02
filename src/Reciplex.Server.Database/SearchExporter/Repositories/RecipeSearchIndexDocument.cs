@@ -11,7 +11,7 @@ sealed class RecipeSearchIndexDocument
     /// The id of this search index entry. This is
     /// the base 10 encoding of <see cref="RecipeDbObject.Id"/>.
     /// </summary>
-    public required string RecipeId { get; set; }
+    public required long RecipeId { get; set; }
 
     /// <summary>
     /// The name of the recipe
@@ -27,5 +27,5 @@ sealed class RecipeSearchIndexDocument
     /// The main parent book id encoded in base 10 derived from <see cref="RecipeBookDbObject.Id"/>
     /// mapped via <see cref="RecipeDbObject.RecipeBook"/>.
     /// </summary>
-    public required string RecipeBookId { get; set; }
+    public required long RecipeBookId { get; set; }
 }

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Reciplex.Server.Database.SearchExporter.Loggers;
@@ -41,9 +42,9 @@ sealed class MeilisearchIndexRepository(
         CancellationToken ct
     )
     {
-        HashSet<string> stringIds = [.. recipeIds.Select(id => MakeRecipeStringKey(id))];
+        HashSet<long> idSet = [.. recipeIds];
 
-        if (stringIds.Count < 1)
+        if (idSet.Count < 1)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(recipeIds),
@@ -55,7 +56,7 @@ sealed class MeilisearchIndexRepository(
         {
             MeilisearchTaskResponse deleteTask = await searchClient.DeleteDocumentsAsync(
                 RecipesSearchIndexUid,
-                recipeIds.Select(id => MakeRecipeStringKey(id)),
+                idSet,
                 ct
             );
 
@@ -116,10 +117,10 @@ sealed class MeilisearchIndexRepository(
                 RecipesSearchIndexUid,
                 args.Recipes.Select(e => new RecipeSearchIndexDocument()
                 {
-                    RecipeId = MakeRecipeStringKey(e.RecipeId),
+                    RecipeId = e.RecipeId,
                     Name = e.Name,
                     ShortDescription = e.ShortDescription,
-                    RecipeBookId = MakeRecipeBookStringKey(e.RecipeBookId),
+                    RecipeBookId = e.RecipeBookId,
                 }),
                 ct
             );
@@ -153,6 +154,50 @@ sealed class MeilisearchIndexRepository(
 
     /// <inheritdoc />
     public bool IsEnabled() => options.Value.Enable;
+
+    /// <inheritdoc />
+    public async Task<List<RecipeSearchIndexDocument>> SearchRecipesAsync(
+        SearchRecipesIndexArgs args,
+        CancellationToken ct
+    )
+    {
+        string? filterString = null;
+
+        if (args.BookIds?.Count > 0)
+        {
+            StringBuilder @string = new();
+
+            bool first = true;
+            foreach (long id in args.BookIds)
+            {
+                if (!first)
+                {
+                    @string.Append(" OR ");
+                }
+
+                first = false;
+                @string.Append("recipeBookId = \"");
+                @string.Append(id);
+                @string.Append('"');
+            }
+
+            filterString = @string.ToString();
+        }
+
+        SearchQueryResponse<RecipeSearchIndexDocument>? result =
+            await searchClient.SearchByPostAsync<RecipeSearchIndexDocument>(
+                RecipesSearchIndexUid,
+                new() { SearchString = args.SearchString, FilterString = filterString },
+                ct
+            );
+
+        if (result is null)
+        {
+            return [];
+        }
+
+        return result.Hits;
+    }
 
     #endregion ISearchIndexRepository Implementation
 
@@ -259,44 +304,6 @@ sealed class MeilisearchIndexRepository(
         }
 
         return true;
-    }
-
-    /// <summary>
-    /// Creates a recipe key for search
-    /// </summary>
-    /// <param name="id">the id to convert</param>
-    /// <returns>the recipe key as a string</returns>
-    private static string MakeRecipeStringKey(long id)
-    {
-        return $"recipe{PaddedLong(id)}";
-    }
-
-    /// <summary>
-    /// Creates a recipe book key for search
-    /// </summary>
-    /// <param name="id">the id to convert</param>
-    /// <returns>the recipe book key as a string</returns>
-    private static string MakeRecipeBookStringKey(long id)
-    {
-        return $"recipeBook{PaddedLong(id)}";
-    }
-
-    /// <summary>
-    /// Creates a string padded to 19 places
-    /// </summary>
-    /// <param name="id">the long to pad</param>
-    /// <returns>the padded long as a string</returns>
-    private static string PaddedLong(long id)
-    {
-        return id.ToString("D19", CultureInfo.InvariantCulture);
-    }
-
-    public Task<List<RecipeSearchIndexInformation>> SearchRecipesAsync(
-        SearchRecipesIndexArgs args,
-        CancellationToken ct
-    )
-    {
-        throw new NotImplementedException();
     }
 
     #endregion  Private Methods

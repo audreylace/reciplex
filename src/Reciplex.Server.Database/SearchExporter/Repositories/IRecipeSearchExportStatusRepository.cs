@@ -129,17 +129,12 @@ interface IRecipeSearchExportStatusRepository
         string leaseToken,
         CancellationToken ct
     );
-    public Task<int> PurgeRecipeSearchEntriesWithTooManyRetries(
+    public Task<int> PurgeRecipeSearchEntriesWithTooManyDeleteRetries(
         int batchSize,
         int maxRetries,
         CancellationToken ct
     );
 
-    public Task<int> MarkRecipeDeletionFailedAndReleaseAsync(
-        long id,
-        string leaseToken,
-        CancellationToken ct
-    );
     public Task<int> MarkRecipesDeletionFailedAndReleaseAsync(
         List<long> recipeIds,
         string leaseToken,

@@ -40,7 +40,7 @@ interface ISearchIndexRepository
     /// <returns>true if enabled</returns>
     public bool IsEnabled();
 
-    public Task<List<RecipeSearchIndexInformation>> SearchRecipesAsync(
+    public Task<List<RecipeSearchIndexDocument>> SearchRecipesAsync(
         SearchRecipesIndexArgs args,
         CancellationToken ct
     );

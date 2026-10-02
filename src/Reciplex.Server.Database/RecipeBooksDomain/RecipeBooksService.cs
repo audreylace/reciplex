@@ -17,7 +17,7 @@ namespace Reciplex.Server.Database.RecipeBooksDomain;
 internal sealed class RecipeBooksService(
     IClock clock,
     IConcurrencyTagProvider concurrencyTagProvider,
-    ApplicationDbContext dbContext,
+    IDbContextFactory<ApplicationDbContext> dbFactory,
     IStringIdProvider stringIdProvider,
     IRecipeMutationNotifyService recipeMutationNotifyService
 ) : IRecipeBooksService
@@ -31,6 +31,7 @@ internal sealed class RecipeBooksService(
         >
     > CreateRecipeBookAsync(string userKey, CreateRecipeBookArgs createArgs, CancellationToken ct)
     {
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (
             !stringIdProvider.TryParseStringKey(userKey, out long userId)
             || !await dbContext.Users.UserExistsNotDeletedAsync(userId, ct)
@@ -95,6 +96,7 @@ internal sealed class RecipeBooksService(
             };
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return (DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>)
@@ -164,6 +166,7 @@ internal sealed class RecipeBooksService(
             };
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return new UserNotFoundResult(userKey);
@@ -197,6 +200,7 @@ internal sealed class RecipeBooksService(
             return new UserNotFoundResult(userKey);
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return new UserNotFoundResult(userKey);
@@ -295,6 +299,7 @@ internal sealed class RecipeBooksService(
             };
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return (DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>)
@@ -382,6 +387,7 @@ internal sealed class RecipeBooksService(
             };
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return (DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>)
@@ -455,6 +461,7 @@ internal sealed class RecipeBooksService(
             };
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return new UserNotFoundResult(userKey);
@@ -474,17 +481,7 @@ internal sealed class RecipeBooksService(
             return new ForbiddenResult();
         }
 
-        return new SuccessResult<List<RecipeBookUserPermissionsDao>>(
-            await ToBookPermissionEnumerable(bookId, ct).ToListAsync(ct)
-        );
-    }
-
-    private async IAsyncEnumerable<RecipeBookUserPermissionsDao> ToBookPermissionEnumerable(
-        long bookId,
-        [EnumeratorCancellation] CancellationToken ct
-    )
-    {
-        string bookKey = stringIdProvider.AsString(bookId);
+        List<RecipeBookUserPermissionsDao> result = [];
         await foreach (
             var row in dbContext
                 .RecipeBookAccessEntries.AsNoTracking()
@@ -502,16 +499,20 @@ internal sealed class RecipeBooksService(
                 .WithCancellation(ct)
         )
         {
-            yield return new()
-            {
-                UserKey = stringIdProvider.AsString(row.UserFk),
-                BookKey = bookKey,
-                MayEditBook = row.MayEditBook,
-                MayViewBook = row.MayViewBook,
-                UserDisplayName = row.DisplayName,
-                Reviewed = row.Reviewed,
-            };
+            result.Add(
+                new()
+                {
+                    UserKey = stringIdProvider.AsString(row.UserFk),
+                    BookKey = bookKey,
+                    MayEditBook = row.MayEditBook,
+                    MayViewBook = row.MayViewBook,
+                    UserDisplayName = row.DisplayName,
+                    Reviewed = row.Reviewed,
+                }
+            );
         }
+
+        return new SuccessResult<List<RecipeBookUserPermissionsDao>>(result);
     }
 
     /// <inheritdoc />
@@ -550,6 +551,7 @@ internal sealed class RecipeBooksService(
             };
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return (DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>)
@@ -682,6 +684,7 @@ internal sealed class RecipeBooksService(
             };
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return new UserNotFoundResult(userKey);
@@ -763,6 +766,7 @@ internal sealed class RecipeBooksService(
             };
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return new UserNotFoundResult(userKey);
@@ -863,6 +867,7 @@ internal sealed class RecipeBooksService(
             };
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return new UserNotFoundResult(userKey);

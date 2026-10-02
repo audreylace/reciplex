@@ -334,7 +334,7 @@ sealed class RecipeSearchExportStatusRepository(
             .ExecuteDeleteAsync(ct);
     }
 
-    public async Task<int> PurgeRecipeSearchEntriesWithTooManyRetries(
+    public async Task<int> PurgeRecipeSearchEntriesWithTooManyDeleteRetries(
         int batchSize,
         int maxRetries,
         CancellationToken ct
@@ -362,34 +362,6 @@ sealed class RecipeSearchExportStatusRepository(
                 && e.LeaseExpireTime == null
             )
             .ExecuteDeleteAsync(ct);
-    }
-
-    public async Task<int> MarkRecipeDeletionFailedAndReleaseAsync(
-        long id,
-        string leaseToken,
-        CancellationToken ct
-    )
-    {
-        await using ApplicationDbContext db = await dbFactory.CreateDbContextAsync(ct);
-        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
-
-        return await db
-            .RecipeSearchExtractionStatusEntries.Where(searchExtractState =>
-                searchExtractState.RecipeFk == id
-                && searchExtractState.LeaseToken == leaseToken
-                && searchExtractState.LeaseExpireTime != null
-            )
-            .ExecuteUpdateAsync(
-                s =>
-                    s.SetProperty(e => e.LeaseExpireTime, (long?)null)
-                        .SetProperty(e => e.LeaseToken, (string?)null)
-                        .SetProperty(
-                            e => e.NextDeleteRetryTime,
-                            e => now + (1 << e.DeleteRetryCounter)
-                        )
-                        .SetProperty(e => e.DeleteRetryCounter, e => e.DeleteRetryCounter + 1),
-                ct
-            );
     }
 
     public async Task<List<long>> GetClaimedRecipes(string leaseToken, CancellationToken ct)
