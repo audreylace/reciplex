@@ -10,6 +10,7 @@ namespace Reciplex.Server.Database.DbObjects;
 /// </summary>
 [Index(nameof(OwnerFk))]
 [Index(nameof(Deleted))]
+[Index(nameof(Deleted), nameof(OwnerFk))]
 public class RecipeBookDbObject
 {
     public const int NameMaxLength = 128;

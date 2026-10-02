@@ -13,11 +13,11 @@ namespace Reciplex.Server.Database.UsersDomain;
 /// <summary>
 /// Implements <see cref="IUsersService"/>
 /// </summary>
-/// <param name="applicationDbContext">the database connection</param>
+/// <param name="dbFactory">database connection factory</param>
 /// <param name="concurrencyTagProvider">provider for generating concurrency tags</param>
 /// <param name="clock">clock for getting time</param>
 public class UsersService(
-    ApplicationDbContext applicationDbContext,
+    IDbContextFactory<ApplicationDbContext> dbFactory,
     IConcurrencyTagProvider concurrencyTagProvider,
     IStringIdProvider stringIdProvider,
     IClock clock
@@ -46,6 +46,9 @@ public class UsersService(
             Authority = args.Authority,
         };
 
+        await using ApplicationDbContext applicationDbContext =
+            await dbFactory.CreateDbContextAsync(ct);
+
         applicationDbContext.Add(u);
         await applicationDbContext.SaveChangesAsync(ct);
 
@@ -69,6 +72,8 @@ public class UsersService(
             return new UserNotFoundResult(userKey);
         }
 
+        await using ApplicationDbContext applicationDbContext =
+            await dbFactory.CreateDbContextAsync(ct);
         UserDbObject? userRecord = await applicationDbContext
             .Users.WithId(userId)
             .UserNotDeleted()
@@ -111,6 +116,8 @@ public class UsersService(
             return new UserNotFoundResult(userKey);
         }
 
+        await using ApplicationDbContext applicationDbContext =
+            await dbFactory.CreateDbContextAsync(cancellationToken);
         var result = await applicationDbContext
             .Users.AsNoTracking()
             .WithId(userId)
@@ -137,6 +144,8 @@ public class UsersService(
         CancellationToken ct
     )
     {
+        await using ApplicationDbContext applicationDbContext =
+            await dbFactory.CreateDbContextAsync(ct);
         return await applicationDbContext
             .Users.AsNoTracking()
             .Where(u => u.Authority == authority && u.Subject == subject)
@@ -165,6 +174,8 @@ public class UsersService(
             return new UserNotFoundResult(userKey);
         }
 
+        await using ApplicationDbContext applicationDbContext =
+            await dbFactory.CreateDbContextAsync(ct);
         var user = await applicationDbContext
             .Users.AsNoTracking()
             .WithId(userId)
@@ -219,6 +230,8 @@ public class UsersService(
             return new ValidationFailureResult(validationResult.ToDictionary());
         }
 
+        await using ApplicationDbContext applicationDbContext =
+            await dbFactory.CreateDbContextAsync(ct);
         UserDbObject? u = await applicationDbContext
             .Users.WithId(userId)
             .UserNotDeleted()
