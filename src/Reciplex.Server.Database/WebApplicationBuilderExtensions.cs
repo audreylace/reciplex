@@ -42,6 +42,7 @@ public static partial class WebApplicationBuilderExtensions
         builder.Services.AddHostedService<DeletionWorkerService>();
         builder.Services.AddSingleton<DeletionWorkerServiceMetrics>();
         builder.Services.AddSingleton<RepeatedDatabaseActionStrategy>();
+        builder.Services.AddHostedService<RecipeDeletionWorkerHostedService>();
 
         ConfigureSearch(builder);
 

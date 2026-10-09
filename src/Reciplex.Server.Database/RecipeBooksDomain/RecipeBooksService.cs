@@ -73,7 +73,7 @@ internal sealed class RecipeBooksService(
             ValidationFailureResult,
             ConflictResult
         >
-    > DeleteRecipeBookAsync(string bookKey, string userKey, string ocTag, CancellationToken ct)
+    > QueueRecipeBookDeleteAsync(string bookKey, string userKey, string ocTag, CancellationToken ct)
     {
         DatabaseResultVariant<UserNotFoundResult, NotFoundResult>? error = ParseBookAndUser(
             bookKey,
@@ -122,19 +122,35 @@ internal sealed class RecipeBooksService(
             return new ConflictResult();
         }
 
+        bool triggerSearchIndexCleanup = false;
         long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
         MarkBookDirty(book, now);
         book.Deleted = now;
+        //
+        // give 1 minute to let background tasks settle
+        book.NextDeletePoll = now + (long)TimeSpan.FromMinutes(1).TotalSeconds;
+        using var transaction = await dbContext.Database.BeginTransactionAsync(ct);
         try
         {
+            triggerSearchIndexCleanup = await RecipeBookDeletionHelper.CleanupBookLinksAsync(
+                dbContext,
+                bookId,
+                now,
+                ct
+            );
             await dbContext.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
         }
         catch (DbUpdateConcurrencyException)
         {
+            await transaction.RollbackAsync(ct);
             return new ConflictResult();
         }
 
-        recipeMutationNotifyService.NotifyDelete();
+        if (triggerSearchIndexCleanup)
+        {
+            recipeMutationNotifyService.TriggerSearchIndexDelete();
+        }
 
         return new EmptySuccessResult();
     }

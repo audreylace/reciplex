@@ -92,16 +92,14 @@ interface IRecipeSearchExportStatusRepository
     );
 
     /// <summary>
-    /// Marks a recipe as extracted up to <paramref name="searchVersion"/> and then releases the lease
+    /// Marks a recipe as extracted and then releases the lease
     /// </summary>
     /// <param name="id">the recipe id</param>
-    /// <param name="searchVersion">the recipe search version</param>
     /// <param name="leaseToken">the recipe token</param>
     /// <param name="ct">async cancellation token</param>
     /// <returns>number of rows updated</returns>
     public Task<int> MarkRecipeAsExtractedAndReleaseAsync(
         long id,
-        long searchVersion,
         string leaseToken,
         CancellationToken ct
     );
@@ -110,14 +108,12 @@ interface IRecipeSearchExportStatusRepository
     /// Marks a recipe extract as failed and then releases the lease
     /// </summary>
     /// <param name="id">the recipe id</param>
-    /// <param name="searchVersion">the recipe search version</param>
     /// <param name="leaseToken">the recipe token</param>
     /// <param name="maxRetries">max number of tries for a given version before giving up</param>
     /// <param name="ct">async cancellation token</param>
     /// <returns>number of rows updated</returns>
     public Task<int> MarkRecipeExtractionFailedAndReleaseAsync(
         long id,
-        long searchVersion,
         string leaseToken,
         int maxRetries,
         CancellationToken ct

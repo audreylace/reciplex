@@ -98,7 +98,7 @@ public class RecipesController(IRecipesService recipeService) : ControllerBase
             ForbiddenResult,
             UserNotFoundResult,
             Database.Results.ConflictResult
-        > deleteResult = await recipeService.DeleteRecipeAsync(
+        > deleteResult = await recipeService.QueueRecipeDeleteAsync(
             recipeKey,
             userKey,
             ifMatch.Value,

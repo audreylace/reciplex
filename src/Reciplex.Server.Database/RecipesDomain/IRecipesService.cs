@@ -19,7 +19,7 @@ public interface IRecipesService
     > GetRecipeAsync(string recipeKey, string userKey, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Deletes a recipe
+    /// Queues a recipe's deletion
     /// </summary>
     /// <param name="recipeKey">the recipe id</param>
     /// <param name="userKey">id of the requesting user for access control</param>
@@ -34,7 +34,7 @@ public interface IRecipesService
             UserNotFoundResult,
             ConflictResult
         >
-    > DeleteRecipeAsync(
+    > QueueRecipeDeleteAsync(
         string recipeKey,
         string userKey,
         string concurrencyTag,

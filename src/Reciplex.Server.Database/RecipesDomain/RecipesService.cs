@@ -97,6 +97,7 @@ internal sealed class RecipesService(
             recipeDbObject.RecipeSearchExtraction = new RecipeSearchWorkerStateDbObject
             {
                 RecipeFk = recipeDbObject.Id,
+                RecipeBookFk = bookLookup.Book.Id,
             };
             await dbContext.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
@@ -106,7 +107,7 @@ internal sealed class RecipesService(
             await transaction.RollbackAsync(ct);
             throw;
         }
-        recipeMutationNotifyService.NotifyChange();
+        recipeMutationNotifyService.TriggerSearchExtraction();
         return new SuccessResult<RecipeDao>(DbObjectToRecipeDao(recipeDbObject, true));
     }
 
@@ -119,7 +120,7 @@ internal sealed class RecipesService(
             UserNotFoundResult,
             ConflictResult
         >
-    > DeleteRecipeAsync(
+    > QueueRecipeDeleteAsync(
         string recipeKey,
         string userKey,
         string concurrencyTag,
@@ -182,7 +183,7 @@ internal sealed class RecipesService(
         {
             return new ConflictResult();
         }
-        recipeMutationNotifyService.NotifyDelete();
+        recipeMutationNotifyService.TriggerSearchIndexDelete();
         return new EmptySuccessResult();
     }
 
@@ -419,7 +420,7 @@ internal sealed class RecipesService(
             return new ConflictResult();
         }
 
-        recipeMutationNotifyService.NotifyChange();
+        recipeMutationNotifyService.TriggerSearchExtraction();
         return new SuccessResult<RecipeDao>(DbObjectToRecipeDao(recipe, true));
     }
 

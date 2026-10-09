@@ -6,7 +6,7 @@ namespace Reciplex.Server.Database.SearchExporter;
 public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options)
     : IRecipeMutationNotifyService
 {
-    private readonly Channel<long> _changeChannel = Channel.CreateBounded<long>(
+    private readonly Channel<long> _searchIndexChangeChannel = Channel.CreateBounded<long>(
         new BoundedChannelOptions(1)
         {
             SingleReader = true,
@@ -14,7 +14,7 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
         }
     );
 
-    private readonly Channel<long> _deleteChannel = Channel.CreateBounded<long>(
+    private readonly Channel<long> _searchIndexDeleteChannel = Channel.CreateBounded<long>(
         new BoundedChannelOptions(1)
         {
             SingleReader = true,
@@ -22,32 +22,50 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
         }
     );
 
-    public void NotifyChange()
+    private readonly Channel<long> _recipeDeleteChannel = Channel.CreateBounded<long>(
+        new BoundedChannelOptions(1)
+        {
+            SingleReader = true,
+            FullMode = BoundedChannelFullMode.DropWrite,
+        }
+    );
+
+    public void TriggerRecipeDelete()
+    {
+        _recipeDeleteChannel.Writer.TryWrite(0);
+    }
+
+    public void TriggerSearchExtraction()
     {
         if (!options.Value.Enable)
         {
             return;
         }
-        _changeChannel.Writer.TryWrite(0);
+        _searchIndexChangeChannel.Writer.TryWrite(0);
     }
 
-    public void NotifyDelete()
+    public void TriggerSearchIndexDelete()
     {
         if (!options.Value.Enable)
         {
             return;
         }
-        _deleteChannel.Writer.TryWrite(0);
+        _searchIndexDeleteChannel.Writer.TryWrite(0);
     }
 
-    public Task WaitForChange(TimeSpan timeout, CancellationToken ct)
+    public Task WaitForRecipeDeleteTriggerAsync(TimeSpan timeout, CancellationToken ct)
     {
-        return WaitOnChannel(_changeChannel, timeout, ct);
+        return WaitOnChannel(_recipeDeleteChannel, timeout, ct);
     }
 
-    public Task WaitForDeleteAsync(TimeSpan timeout, CancellationToken ct)
+    public Task WaitForSearchExtractionTriggerAsync(TimeSpan timeout, CancellationToken ct)
     {
-        return WaitOnChannel(_deleteChannel, timeout, ct);
+        return WaitOnChannel(_searchIndexChangeChannel, timeout, ct);
+    }
+
+    public Task WaitForSearchIndexDeleteTriggerAsync(TimeSpan timeout, CancellationToken ct)
+    {
+        return WaitOnChannel(_searchIndexDeleteChannel, timeout, ct);
     }
 
     private async Task WaitOnChannel(Channel<long> channel, TimeSpan timeout, CancellationToken ct)

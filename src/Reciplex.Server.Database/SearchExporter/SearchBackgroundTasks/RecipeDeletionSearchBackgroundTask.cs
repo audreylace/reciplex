@@ -37,7 +37,7 @@ sealed class RecipeDeletionSearchBackgroundTask(
                 // delay if no recipes were found, otherwise delete them
                 if (entries.Count < 1)
                 {
-                    await notificationService.WaitForDeleteAsync(
+                    await notificationService.WaitForSearchIndexDeleteTriggerAsync(
                         TimeSpan.FromMinutes(1),
                         stoppingToken
                     );

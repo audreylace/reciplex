@@ -7,6 +7,7 @@ namespace Reciplex.Server.Database.SearchExporter.Repositories;
 
 sealed class RecipeSearchExportStatusRepository(
     IDbContextFactory<ApplicationDbContext> dbFactory,
+    IRecipeMutationNotifyService mutationNotifyService,
     IClock clock
 ) : IRecipeSearchExportStatusRepository
 {
@@ -174,10 +175,6 @@ sealed class RecipeSearchExportStatusRepository(
                 // look for records never extracted or have since changed
                 searchExtractState.ExtractionStatus == SearchExtractionStatus.PendingExtraction
                 && searchExtractState.LeaseExpireTime == null
-                // filter soft deleted records
-                && searchExtractState.Recipe!.Deleted == null
-                && searchExtractState.Recipe!.RecipeBook!.Deleted == null
-                && searchExtractState.Recipe!.RecipeBook!.Owner!.Deleted == null
                 && (
                     // filter out records that are broken and respect retry backoff
                     (
@@ -195,7 +192,6 @@ sealed class RecipeSearchExportStatusRepository(
 
     public async Task<int> MarkRecipeAsExtractedAndReleaseAsync(
         long id,
-        long searchVersion,
         string leaseToken,
         CancellationToken ct
     )
@@ -242,7 +238,6 @@ sealed class RecipeSearchExportStatusRepository(
 
     public async Task<int> MarkRecipeExtractionFailedAndReleaseAsync(
         long id,
-        long searchVersion,
         string leaseToken,
         int maxRetries,
         CancellationToken ct
@@ -277,12 +272,7 @@ sealed class RecipeSearchExportStatusRepository(
         long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
         return await db
             .RecipeSearchExtractionStatusEntries.Where(e =>
-                (
-                    e.Recipe!.Deleted != null
-                    || e.Recipe.RecipeBook!.Deleted != null
-                    || e.Recipe.RecipeBook!.Owner!.Deleted != null
-                )
-                && e.LeaseExpireTime == null
+                e.LeaseExpireTime == null
                 && e.LeaseToken == null
                 && e.ExtractionStatus == SearchExtractionStatus.PendingDelete
                 && (e.NextRetryTime == null || e.NextRetryTime < now)
@@ -301,7 +291,7 @@ sealed class RecipeSearchExportStatusRepository(
     )
     {
         await using ApplicationDbContext db = await dbFactory.CreateDbContextAsync(ct);
-        return await db
+        int count = await db
             .RecipeSearchExtractionStatusEntries.Where(e =>
                 ids.Contains(e.RecipeFk)
                 && e.LeaseToken == leaseToken
@@ -309,6 +299,13 @@ sealed class RecipeSearchExportStatusRepository(
                 && e.ExtractionStatus == SearchExtractionStatus.PendingDelete
             )
             .ExecuteDeleteAsync(ct);
+
+        if (count > 0)
+        {
+            mutationNotifyService.TriggerRecipeDelete();
+        }
+
+        return count;
     }
 
     public async Task<int> PurgeRecipeSearchEntriesWithTooManyDeleteRetries(
@@ -334,7 +331,7 @@ sealed class RecipeSearchExportStatusRepository(
             return 0;
         }
 
-        return await db
+        int count = await db
             .RecipeSearchExtractionStatusEntries.Where(e =>
                 entries.Contains(e.RecipeFk)
                 && e.ExtractionStatus == SearchExtractionStatus.PendingDelete
@@ -342,6 +339,13 @@ sealed class RecipeSearchExportStatusRepository(
                 && e.LeaseExpireTime == null
             )
             .ExecuteDeleteAsync(ct);
+
+        if (count > 0)
+        {
+            mutationNotifyService.TriggerRecipeDelete();
+        }
+
+        return count;
     }
 
     public async Task<List<long>> GetClaimedRecipes(string leaseToken, CancellationToken ct)

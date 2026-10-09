@@ -333,7 +333,6 @@ sealed class RecipeSearchIndexExporterStrategy(
                 {
                     await recipeSearchExportStatusRepository.MarkRecipeAsExtractedAndReleaseAsync(
                         rowPtr.RecipeFk,
-                        rowPtr.SearchVersion,
                         leaseToken,
                         ct
                     );
@@ -354,7 +353,6 @@ sealed class RecipeSearchIndexExporterStrategy(
                 {
                     await recipeSearchExportStatusRepository.MarkRecipeExtractionFailedAndReleaseAsync(
                         rowPtr.RecipeFk,
-                        rowPtr.SearchVersion,
                         leaseToken,
                         maxAttempts,
                         ct

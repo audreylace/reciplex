@@ -35,6 +35,22 @@ public class RecipeSearchWorkerStateDbObject
     public long RecipeFk { get; init; }
 
     /// <summary>
+    /// The recipe book
+    /// </summary>
+    [DisallowNull]
+    [ForeignKey(nameof(RecipeBookFk))]
+    [Required]
+    [DeleteBehavior(DeleteBehavior.Restrict)]
+    public RecipeBookDbObject? Book { get; set; }
+
+    /// <summary>
+    /// Database FK to <see cref="RecipeBookDbObject"/> for property <see cref="Book"/>
+    /// </summary>
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    public long RecipeBookFk { get; init; }
+
+    /// <summary>
     /// Sole lock mechanism. Null = free to claim.
     /// </summary>
     public long? LeaseExpireTime { get; set; }

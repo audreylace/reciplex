@@ -83,4 +83,7 @@ public class RecipeBookDbObject
     /// Populated if the recipe book is deleted. The value is the time of deletion.
     /// </summary>
     public long? Deleted { get; set; }
+
+    public long? NextDeletePoll { get; set; }
+    public long NextDeletePollCounter { get; set; }
 }

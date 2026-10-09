@@ -77,11 +77,6 @@ public class RecipeDbObject
     public long? Deleted { get; set; }
 
     /// <summary>
-    /// The search version
-    /// </summary>
-    public required long SearchVersion { get; set; }
-
-    /// <summary>
     /// Pointer to recipe search extraction tracking record
     /// </summary>
     public RecipeSearchWorkerStateDbObject? RecipeSearchExtraction { get; set; }

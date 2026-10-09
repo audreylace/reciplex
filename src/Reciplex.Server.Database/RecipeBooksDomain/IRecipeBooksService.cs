@@ -62,7 +62,12 @@ public interface IRecipeBooksService
             ValidationFailureResult,
             ConflictResult
         >
-    > DeleteRecipeBookAsync(string bookKey, string userKey, string ocTag, CancellationToken ct);
+    > QueueRecipeBookDeleteAsync(
+        string bookKey,
+        string userKey,
+        string ocTag,
+        CancellationToken ct
+    );
 
     /// <summary>
     /// Creates a recipe book
