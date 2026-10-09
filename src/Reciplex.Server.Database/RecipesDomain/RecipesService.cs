@@ -81,7 +81,6 @@ internal sealed class RecipesService(
         RecipeDbObject recipeDbObject = new()
         {
             RecipeBookFk = bookLookup.Book.Id,
-            SearchVersion = 1,
             Name = args.Name,
             ShortDescription = args.ShortDescription,
             Details = args.Details,
@@ -144,6 +143,7 @@ internal sealed class RecipesService(
         RecipeDbObject? recipe = await dbContext
             .Recipes.WithRecipeId(recipeId)
             .DeleteFieldNull()
+            .Include(r => r.RecipeSearchExtraction)
             .FirstOrDefaultAsync(ct);
 
         if (recipe is null)
@@ -173,6 +173,7 @@ internal sealed class RecipesService(
         recipe.LastModified = now;
         recipe.Deleted = now;
         recipe.ConcurrencyTag = concurrencyTagProvider.NextTag();
+        recipe.RecipeSearchExtraction?.ResetTrackingStatus(SearchExtractionStatus.PendingDelete);
         try
         {
             await dbContext.SaveChangesAsync(ct);
@@ -406,12 +407,9 @@ internal sealed class RecipesService(
         recipe.Details = args.Details;
         recipe.LastModified = clock.GetCurrentInstant().ToUnixTimeSeconds();
         recipe.ConcurrencyTag = concurrencyTagProvider.NextTag();
-        recipe.SearchVersion++;
-
-        // reset search export tracking
-        recipe.RecipeSearchExtraction?.Extracted = false;
-        recipe.RecipeSearchExtraction?.ExtractRetryCount = 0;
-        recipe.RecipeSearchExtraction?.NextExtractRetryTime = null;
+        recipe.RecipeSearchExtraction?.ResetTrackingStatus(
+            SearchExtractionStatus.PendingExtraction
+        );
         try
         {
             await dbContext.SaveChangesAsync(ct);
@@ -521,12 +519,15 @@ internal sealed class RecipesService(
         List<RecipeListEntryDao> entries = [];
         foreach (var r in matchesFromSearchIndex)
         {
-            if (await dbContext.Recipes.WithRecipeId(r.RecipeId).DeleteFieldNull().AnyAsync(ct))
+            if (
+                r is { RecipeId: long id, Kind: RecipeBookSearchIndexDocumentKind.Recipe }
+                && await dbContext.Recipes.WithRecipeId(id).DeleteFieldNull().AnyAsync(ct)
+            )
             {
                 entries.Add(
                     new RecipeListEntryDao()
                     {
-                        Id = stringIdProvider.AsString(r.RecipeId),
+                        Id = stringIdProvider.AsString(id),
                         Name = r.Name,
                         ShortDescription = r.ShortDescription,
                         BookId = stringIdProvider.AsString(r.RecipeBookId),

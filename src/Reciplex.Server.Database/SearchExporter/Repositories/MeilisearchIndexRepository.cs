@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Reciplex.Server.Database.SearchExporter.Loggers;
@@ -56,7 +57,7 @@ sealed class MeilisearchIndexRepository(
         {
             MeilisearchTaskResponse deleteTask = await searchClient.DeleteDocumentsAsync(
                 RecipesSearchIndexUid,
-                idSet,
+                idSet.Select(id => RecipeBookSearchIndexDocument.AsRecipeId(id)),
                 ct
             );
 
@@ -115,13 +116,14 @@ sealed class MeilisearchIndexRepository(
         {
             MeilisearchTaskResponse upsertResponse = await searchClient.UpsertDocumentsAsync(
                 RecipesSearchIndexUid,
-                args.Recipes.Select(e => new RecipeSearchIndexDocument()
-                {
-                    RecipeId = e.RecipeId,
-                    Name = e.Name,
-                    ShortDescription = e.ShortDescription,
-                    RecipeBookId = e.RecipeBookId,
-                }),
+                args.Recipes.Select(e =>
+                    RecipeBookSearchIndexDocument.ForRecipe(
+                        e.RecipeId,
+                        e.RecipeBookId,
+                        e.Name,
+                        e.ShortDescription
+                    )
+                ),
                 ct
             );
 
@@ -156,38 +158,43 @@ sealed class MeilisearchIndexRepository(
     public bool IsEnabled() => options.Value.Enable;
 
     /// <inheritdoc />
-    public async Task<List<RecipeSearchIndexDocument>> SearchRecipesAsync(
+    public async Task<List<RecipeBookSearchIndexDocument>> SearchRecipesAsync(
         SearchRecipesIndexArgs args,
         CancellationToken ct
     )
     {
-        string? filterString = null;
+        StringBuilder filterString = new();
 
+        // builds filter that looks like this:
+        //   with books
+        // kind = 2 AND ( recipeBookId = 1 OR recipeBookId = 2 )
+        //   without books
+        // kind = 2
+        filterString.Append("kind = ");
+        filterString.Append((int)RecipeBookSearchIndexDocumentKind.Recipe);
         if (args.BookIds?.Count > 0)
         {
-            StringBuilder @string = new();
-
             bool first = true;
+
+            filterString.Append(" AND ( ");
             foreach (long id in args.BookIds)
             {
                 if (!first)
                 {
-                    @string.Append(" OR ");
+                    filterString.Append(" OR ");
                 }
 
                 first = false;
-                @string.Append("recipeBookId = \"");
-                @string.Append(id);
-                @string.Append('"');
+                filterString.Append("recipeBookId = ");
+                filterString.Append(id);
             }
-
-            filterString = @string.ToString();
+            filterString.Append(") ");
         }
 
-        SearchQueryResponse<RecipeSearchIndexDocument>? result =
-            await searchClient.SearchByPostAsync<RecipeSearchIndexDocument>(
+        SearchQueryResponse<RecipeBookSearchIndexDocument>? result =
+            await searchClient.SearchByPostAsync<RecipeBookSearchIndexDocument>(
                 RecipesSearchIndexUid,
-                new() { SearchString = args.SearchString, FilterString = filterString },
+                new() { SearchString = args.SearchString, FilterString = filterString.ToString() },
                 ct
             );
 
@@ -268,11 +275,15 @@ sealed class MeilisearchIndexRepository(
             }
 
             const string RecipeBookIdPropertyKey = "recipeBookId";
-            if (filterAttributes.Properties.IndexOf(RecipeBookIdPropertyKey) == -1)
+            const string RecipeDocumentKind = "kind";
+            if (
+                filterAttributes.Properties.IndexOf(RecipeBookIdPropertyKey) == -1
+                || filterAttributes.Properties.IndexOf(RecipeDocumentKind) == -1
+            )
             {
                 var replaceTask = await searchClient.ReplaceFilterableAttributesAsync(
                     RecipesSearchIndexUid,
-                    [RecipeBookIdPropertyKey],
+                    [RecipeBookIdPropertyKey, RecipeDocumentKind],
                     ct
                 );
 

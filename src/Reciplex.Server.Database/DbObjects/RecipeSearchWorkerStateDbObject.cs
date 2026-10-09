@@ -11,13 +11,11 @@ namespace Reciplex.Server.Database.DbObjects;
 [Index(nameof(LeaseToken), nameof(LeaseExpireTime))]
 [Index(nameof(LeaseExpireTime))]
 [Index(
-    nameof(Extracted),
+    nameof(ExtractionStatus),
     nameof(LeaseExpireTime),
-    nameof(NextExtractRetryTime),
-    nameof(ExtractRetryCount)
+    nameof(NextRetryTime),
+    nameof(RetryCount)
 )]
-[Index(nameof(LeaseExpireTime), nameof(DeleteRetryCounter))]
-[Index(nameof(LeaseExpireTime), nameof(NextDeleteRetryTime), nameof(DeleteRetryCounter))]
 public class RecipeSearchWorkerStateDbObject
 {
     /// <summary>
@@ -49,25 +47,33 @@ public class RecipeSearchWorkerStateDbObject
     /// <summary>
     /// The number of extract attempts against this record
     /// </summary>
-    public int ExtractRetryCount { get; set; }
+    public int RetryCount { get; set; }
 
     /// <summary>
     /// The next extract retry time
     /// </summary>
-    public long? NextExtractRetryTime { get; set; }
+    public long? NextRetryTime { get; set; }
 
     /// <summary>
-    /// Next delete retry time
+    /// The row extraction status
     /// </summary>
-    public long? NextDeleteRetryTime { get; set; }
+    public SearchExtractionStatus ExtractionStatus { get; set; } =
+        SearchExtractionStatus.PendingExtraction;
 
     /// <summary>
-    /// How many delete attempts so far
+    /// Resets the tracking status for a recipe search export state object
     /// </summary>
-    public int DeleteRetryCounter { get; set; }
+    /// <param name="newStatus">the new status to set it to</param>
+    public void ResetTrackingStatus(SearchExtractionStatus newStatus)
+    {
+        ExtractionStatus = newStatus;
 
-    /// <summary>
-    /// If the row has been extracted
-    /// </summary>
-    public bool Extracted { get; set; }
+        // reset counters
+        RetryCount = 0;
+        NextRetryTime = null;
+
+        // break existing lease to invalidate an existing operation
+        LeaseExpireTime = null;
+        LeaseToken = null;
+    }
 }

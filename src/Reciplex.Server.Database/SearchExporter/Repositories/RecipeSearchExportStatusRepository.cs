@@ -147,6 +147,7 @@ sealed class RecipeSearchExportStatusRepository(
             .RecipeSearchExtractionStatusEntries.AsNoTracking()
             .Where(searchExtractState =>
                 ids.Contains(searchExtractState.RecipeFk)
+                && searchExtractState.ExtractionStatus == SearchExtractionStatus.PendingExtraction
                 && searchExtractState.LeaseToken == leaseToken
                 && searchExtractState.LeaseExpireTime != null
             )
@@ -154,8 +155,7 @@ sealed class RecipeSearchExportStatusRepository(
                 r.RecipeFk,
                 r.Recipe!.Name,
                 r.Recipe!.ShortDescription,
-                r.Recipe!.RecipeBookFk,
-                r.Recipe!.SearchVersion
+                r.Recipe!.RecipeBookFk
             ))
             .ToListAsync(ct);
     }
@@ -172,22 +172,20 @@ sealed class RecipeSearchExportStatusRepository(
             .RecipeSearchExtractionStatusEntries.AsNoTracking()
             .Where(searchExtractState =>
                 // look for records never extracted or have since changed
-                !searchExtractState.Extracted
+                searchExtractState.ExtractionStatus == SearchExtractionStatus.PendingExtraction
                 && searchExtractState.LeaseExpireTime == null
-                && (
-                    (
-                        // filter out records that are broken and respect retry backoff
-                        searchExtractState.ExtractRetryCount < maxRetries
-                        && (
-                            searchExtractState.NextExtractRetryTime == null
-                            || searchExtractState.NextExtractRetryTime < now
-                        )
-                    )
-                )
                 // filter soft deleted records
                 && searchExtractState.Recipe!.Deleted == null
                 && searchExtractState.Recipe!.RecipeBook!.Deleted == null
                 && searchExtractState.Recipe!.RecipeBook!.Owner!.Deleted == null
+                && (
+                    // filter out records that are broken and respect retry backoff
+                    (
+                        searchExtractState.NextRetryTime == null
+                        || searchExtractState.NextRetryTime < now
+                    )
+                    && searchExtractState.RetryCount < maxRetries
+                )
             )
             .OrderBy(e => e.RecipeFk)
             .Select(e => e.RecipeFk)
@@ -208,19 +206,17 @@ sealed class RecipeSearchExportStatusRepository(
                 searchExtractState.RecipeFk == id
                 && searchExtractState.LeaseToken == leaseToken
                 && searchExtractState.LeaseExpireTime != null
+                && searchExtractState.ExtractionStatus == SearchExtractionStatus.PendingExtraction
             )
             .ExecuteUpdateAsync(
                 s =>
                     s.SetProperty(e => e.LeaseExpireTime, (long?)null)
                         .SetProperty(e => e.LeaseToken, (string?)null)
-                        .SetProperty(e => e.ExtractRetryCount, 0)
-                        .SetProperty(e => e.NextExtractRetryTime, (long?)null)
+                        .SetProperty(e => e.RetryCount, 0)
+                        .SetProperty(e => e.NextRetryTime, (long?)null)
                         .SetProperty(
-                            e => e.Extracted,
-                            e =>
-                                db.Recipes.Where(r => r.Id == e.RecipeFk)
-                                    .Select(r => r.SearchVersion)
-                                    .FirstOrDefault() == searchVersion
+                            e => e.ExtractionStatus,
+                            e => SearchExtractionStatus.Extracted
                         ),
                 ct
             );
@@ -257,6 +253,7 @@ sealed class RecipeSearchExportStatusRepository(
         return await db
             .RecipeSearchExtractionStatusEntries.Where(searchExtractState =>
                 searchExtractState.RecipeFk == id
+                && searchExtractState.ExtractionStatus == SearchExtractionStatus.PendingExtraction
                 && searchExtractState.LeaseToken == leaseToken
                 && searchExtractState.LeaseExpireTime != null
             )
@@ -264,33 +261,8 @@ sealed class RecipeSearchExportStatusRepository(
                 s =>
                     s.SetProperty(e => e.LeaseExpireTime, (long?)null)
                         .SetProperty(e => e.LeaseToken, (string?)null)
-                        .SetProperty(
-                            e => e.ExtractRetryCount,
-                            e =>
-                                db.Recipes.Where(r => r.Id == e.RecipeFk)
-                                    .Select(r => r.SearchVersion)
-                                    .FirstOrDefault() == searchVersion
-                                    ? e.ExtractRetryCount + 1
-                                    : 0
-                        )
-                        .SetProperty(
-                            e => e.NextExtractRetryTime,
-                            e =>
-                                db.Recipes.Where(r => r.Id == e.RecipeFk)
-                                    .Select(r => r.SearchVersion)
-                                    .FirstOrDefault() == searchVersion
-                                    ? now + (1 << e.ExtractRetryCount + 1)
-                                    : null
-                        )
-                        .SetProperty(
-                            e => e.Extracted,
-                            e =>
-                                db.Recipes.Where(r => r.Id == e.RecipeFk)
-                                    .Select(r => r.SearchVersion)
-                                    .FirstOrDefault() == searchVersion
-                                    && e.ExtractRetryCount + 1 >= maxRetries
-                                || e.Extracted
-                        ),
+                        .SetProperty(e => e.RetryCount, e => e.RetryCount + 1)
+                        .SetProperty(e => e.NextRetryTime, e => now + (1 << e.RetryCount + 1)),
                 ct
             );
     }
@@ -311,8 +283,10 @@ sealed class RecipeSearchExportStatusRepository(
                     || e.Recipe.RecipeBook!.Owner!.Deleted != null
                 )
                 && e.LeaseExpireTime == null
-                && e.DeleteRetryCounter < maxRetries
-                && (e.NextDeleteRetryTime == null || e.NextDeleteRetryTime < now)
+                && e.LeaseToken == null
+                && e.ExtractionStatus == SearchExtractionStatus.PendingDelete
+                && (e.NextRetryTime == null || e.NextRetryTime < now)
+                && e.RetryCount < maxRetries
             )
             .OrderBy(e => e.RecipeFk)
             .Select(e => e.RecipeFk)
@@ -329,7 +303,10 @@ sealed class RecipeSearchExportStatusRepository(
         await using ApplicationDbContext db = await dbFactory.CreateDbContextAsync(ct);
         return await db
             .RecipeSearchExtractionStatusEntries.Where(e =>
-                ids.Contains(e.RecipeFk) && e.LeaseToken == leaseToken && e.LeaseExpireTime != null
+                ids.Contains(e.RecipeFk)
+                && e.LeaseToken == leaseToken
+                && e.LeaseExpireTime != null
+                && e.ExtractionStatus == SearchExtractionStatus.PendingDelete
             )
             .ExecuteDeleteAsync(ct);
     }
@@ -343,7 +320,9 @@ sealed class RecipeSearchExportStatusRepository(
         await using ApplicationDbContext db = await dbFactory.CreateDbContextAsync(ct);
         var entries = await db
             .RecipeSearchExtractionStatusEntries.Where(e =>
-                e.LeaseExpireTime == null && e.DeleteRetryCounter >= maxRetries
+                e.ExtractionStatus == SearchExtractionStatus.PendingDelete
+                && e.LeaseExpireTime == null
+                && e.RetryCount >= maxRetries
             )
             .OrderBy(e => e.RecipeFk)
             .Select(e => e.RecipeFk)
@@ -358,7 +337,8 @@ sealed class RecipeSearchExportStatusRepository(
         return await db
             .RecipeSearchExtractionStatusEntries.Where(e =>
                 entries.Contains(e.RecipeFk)
-                && e.DeleteRetryCounter >= maxRetries
+                && e.ExtractionStatus == SearchExtractionStatus.PendingDelete
+                && e.RetryCount >= maxRetries
                 && e.LeaseExpireTime == null
             )
             .ExecuteDeleteAsync(ct);
@@ -387,6 +367,7 @@ sealed class RecipeSearchExportStatusRepository(
         return await db
             .RecipeSearchExtractionStatusEntries.Where(searchExtractState =>
                 recipeIds.Contains(searchExtractState.RecipeFk)
+                && searchExtractState.ExtractionStatus == SearchExtractionStatus.PendingDelete
                 && searchExtractState.LeaseToken == leaseToken
                 && searchExtractState.LeaseExpireTime != null
             )
@@ -394,11 +375,8 @@ sealed class RecipeSearchExportStatusRepository(
                 s =>
                     s.SetProperty(e => e.LeaseExpireTime, (long?)null)
                         .SetProperty(e => e.LeaseToken, (string?)null)
-                        .SetProperty(
-                            e => e.NextDeleteRetryTime,
-                            e => now + (1 << e.DeleteRetryCounter)
-                        )
-                        .SetProperty(e => e.DeleteRetryCounter, e => e.DeleteRetryCounter + 1),
+                        .SetProperty(e => e.RetryCount, e => now + (1 << e.RetryCount))
+                        .SetProperty(e => e.RetryCount, e => e.RetryCount + 1),
                 ct
             );
     }

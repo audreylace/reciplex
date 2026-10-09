@@ -1,17 +1,29 @@
 using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Reciplex.Server.Meilisearch.Responses;
 
 namespace Reciplex.Server.Meilisearch;
 
-public class MeilisearchClient(HttpClient httpClient) : IMeilisearchClient
+public class MeilisearchClient(
+    HttpClient httpClient,
+    IHostEnvironment env,
+    ILogger<MeilisearchClient> logger
+) : IMeilisearchClient
 {
     sealed record class CreateIndexRequest(string Uid, string PrimaryKey);
 
     private static readonly JsonSerializerOptions _options = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
+
+    private static readonly JsonSerializerOptions _prettyJsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = true,
     };
 
     public async Task<MeilisearchTaskResponse> CreateIndexAsync(
@@ -78,9 +90,21 @@ public class MeilisearchClient(HttpClient httpClient) : IMeilisearchClient
         CancellationToken ct
     )
     {
+        var idsAsArray = documentIds.ToArray();
+        if (env.IsDevelopment() && logger.IsEnabled(LogLevel.Information))
+        {
+#pragma warning disable CA1848 // Use the LoggerMessage delegates - suppress because this is for development only
+            logger.LogInformation(
+                "Deleting documents in index '{Index}': \n{Json}",
+                indexUid,
+                JsonSerializer.Serialize(idsAsArray, _prettyJsonOptions)
+            );
+#pragma warning restore CA1848 // Use the LoggerMessage delegates - suppress because this is for development only
+        }
+
         using HttpResponseMessage response = await httpClient.PostAsJsonAsync(
             $"indexes/{Uri.EscapeDataString(indexUid)}/documents/delete-batch",
-            documentIds.ToArray(),
+            idsAsArray,
             _options,
             ct
         );
@@ -131,9 +155,21 @@ public class MeilisearchClient(HttpClient httpClient) : IMeilisearchClient
     )
         where T : class
     {
+        var documentArray = documents.ToArray();
+        if (env.IsDevelopment() && logger.IsEnabled(LogLevel.Information))
+        {
+#pragma warning disable CA1848 // Use the LoggerMessage delegates - suppress because this is for development only
+            logger.LogInformation(
+                "Upsert documents in index '{Index}': \n{Json}",
+                indexUid,
+                JsonSerializer.Serialize(documentArray, _prettyJsonOptions)
+            );
+#pragma warning restore CA1848 // Use the LoggerMessage delegates - suppress because this is for development only
+        }
+
         using HttpResponseMessage response = await httpClient.PostAsJsonAsync(
             $"indexes/{Uri.EscapeDataString(indexUid)}/documents",
-            documents.ToArray(),
+            documentArray,
             _options,
             ct
         );
@@ -181,9 +217,21 @@ public class MeilisearchClient(HttpClient httpClient) : IMeilisearchClient
         CancellationToken ct
     )
     {
+        var attributesAsArray = attributes.ToArray();
+        if (env.IsDevelopment() && logger.IsEnabled(LogLevel.Information))
+        {
+#pragma warning disable CA1848 // Use the LoggerMessage delegates - suppress because this is for development only
+            logger.LogInformation(
+                "Updating '{Index}' index filter attributes: \n{Json}",
+                indexUid,
+                JsonSerializer.Serialize(attributesAsArray, _prettyJsonOptions)
+            );
+#pragma warning restore CA1848 // Use the LoggerMessage delegates - suppress because this is for development only
+        }
+
         using HttpResponseMessage response = await httpClient.PutAsJsonAsync(
             $"indexes/{Uri.EscapeDataString(indexUid)}/settings/filterable-attributes",
-            attributes.ToArray(),
+            attributesAsArray,
             _options,
             ct
         );
@@ -223,13 +271,27 @@ public class MeilisearchClient(HttpClient httpClient) : IMeilisearchClient
         CancellationToken ct
     )
     {
+        var body = new SearchQueryRequestBody()
+        {
+            Filter = args.FilterString,
+            SearchString = args.SearchString,
+        };
+
+        if (env.IsDevelopment() && logger.IsEnabled(LogLevel.Information))
+        {
+#pragma warning disable CA1848 // Use the LoggerMessage delegates - suppress because this is for development only
+            logger.LogInformation(
+                "Searching index '{Index}': \n{Json}",
+                indexUid,
+                JsonSerializer.Serialize(body, _prettyJsonOptions)
+            );
+#pragma warning restore CA1848 // Use the LoggerMessage delegates - suppress because this is for development only
+        }
+
         using HttpResponseMessage response = await httpClient.PostAsJsonAsync(
             $"indexes/{Uri.EscapeDataString(indexUid)}/search",
-            new SearchQueryRequestBody()
-            {
-                Filter = args.FilterString,
-                SearchString = args.SearchString,
-            },
+            body,
+            _options,
             ct
         );
 

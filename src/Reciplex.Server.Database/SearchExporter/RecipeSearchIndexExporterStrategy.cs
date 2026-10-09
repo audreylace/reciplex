@@ -61,12 +61,12 @@ sealed class RecipeSearchIndexExporterStrategy(
                 {
                     Recipes =
                     [
-                        .. recipeData.Select(d => new RecipeSearchIndexDocument()
+                        .. recipeData.Select(recipe => new RecipeSearchDao()
                         {
-                            RecipeId = d.RecipeFk,
-                            RecipeBookId = d.RecipeBookFk,
-                            Name = d.Name,
-                            ShortDescription = d.ShortDescription,
+                            RecipeId = recipe.RecipeFk,
+                            RecipeBookId = recipe.RecipeBookFk,
+                            Name = recipe.Name,
+                            ShortDescription = recipe.ShortDescription,
                         }),
                     ],
                 },
@@ -201,7 +201,7 @@ sealed class RecipeSearchIndexExporterStrategy(
                         {
                             Recipes =
                             [
-                                new RecipeSearchIndexDocument()
+                                new RecipeSearchDao()
                                 {
                                     RecipeId = recipe.RecipeFk,
                                     RecipeBookId = recipe.RecipeBookFk,
