@@ -27,4 +27,15 @@ public class SqliteApplicationDbContextOptions
     /// Set to true to enable migrations
     /// </summary>
     public bool EnableMigrations { get; set; }
+
+    /// <summary>
+    /// Set to true to use the ensure creation variant to setup the database instead of enable migrations.
+    /// Intended for testing only.
+    /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Naming",
+        "CA1707:Identifiers should not contain underscores",
+        Justification = "Ensure obvious in the json"
+    )]
+    public bool Dangerous_UseEnsureCreation { get; set; }
 }

@@ -19,7 +19,7 @@ public interface IRecipesService
     > GetRecipeAsync(string recipeKey, string userKey, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Deletes a recipe
+    /// Queues a recipe's deletion
     /// </summary>
     /// <param name="recipeKey">the recipe id</param>
     /// <param name="userKey">id of the requesting user for access control</param>
@@ -34,7 +34,7 @@ public interface IRecipesService
             UserNotFoundResult,
             ConflictResult
         >
-    > DeleteRecipeAsync(
+    > QueueRecipeDeleteAsync(
         string recipeKey,
         string userKey,
         string concurrencyTag,
@@ -101,4 +101,21 @@ public interface IRecipesService
         ListRecipesArgs args,
         CancellationToken cancellationToken = default
     );
+
+    /// <summary>
+    /// Looks for recipes using the search backend. This is an optional feature and is not always enabled.
+    /// </summary>
+    /// <param name="userKey">The key of the acting user</param>
+    /// <param name="searchString">the user's search string</param>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>result of the operation</returns>
+    Task<
+        DatabaseResultVariant<
+            SuccessResult<List<RecipeListEntryDao>>,
+            FeatureNotEnabledResult,
+            BookNotFoundResult,
+            UserNotFoundResult,
+            ValidationFailureResult
+        >
+    > SearchRecipesAsync(string userKey, SearchRecipesArgs args, CancellationToken ct);
 }

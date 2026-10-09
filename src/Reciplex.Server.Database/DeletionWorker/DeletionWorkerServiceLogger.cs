@@ -24,30 +24,14 @@ internal static partial class DeletionWorkerServiceLogger
     );
 
     /// <summary>
-    /// Message logging when no cleanup work done
+    /// Logged from <see cref="RunUntilCompletionWithDelay"/> when an error is hit
     /// </summary>
     /// <param name="logger">logger to use</param>
-    /// <param name="minutes">the time duration</param>
-    [LoggerMessage(
-        "No cleanup work done. Will run again in {minutes} minutes.",
-        Level = LogLevel.Information
-    )]
-    public static partial void NoCleanupWorkDone(
+    /// <param name="databaseObjectName">the database object</param>
+    /// <param name="ex">the encountered error</param>
+    [LoggerMessage("Caught exception in delete loop", Level = LogLevel.Error)]
+    public static partial void Error_ExceptionInMainLoop(
         this ILogger<DeletionWorkerService> logger,
-        double minutes
-    );
-
-    /// <summary>
-    /// Message logging when cleanup work was done
-    /// </summary>
-    /// <param name="logger">logger to use</param>
-    /// <param name="minutes">the time duration</param>
-    [LoggerMessage(
-        "Cleanup work done. Will run again in {minutes} minutes.",
-        Level = LogLevel.Information
-    )]
-    public static partial void CleanupWorkDone(
-        this ILogger<DeletionWorkerService> logger,
-        double minutes
+        Exception ex
     );
 }
