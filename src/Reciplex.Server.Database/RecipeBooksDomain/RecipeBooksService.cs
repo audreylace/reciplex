@@ -134,7 +134,7 @@ internal sealed class RecipeBooksService(
             return new ConflictResult();
         }
 
-        recipeMutationNotifyService.TriggerSearchIndexDelete();
+        recipeMutationNotifyService.TriggerBookDelete();
 
         return new EmptySuccessResult();
     }

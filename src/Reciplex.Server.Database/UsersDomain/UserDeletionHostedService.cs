@@ -6,13 +6,21 @@ using Reciplex.Server.Database.SearchExporter;
 
 namespace Reciplex.Server.Database.UsersDomain;
 
-class UsersQueuedForDeletionHostedService(
+/// <summary>
+/// Finishes user deletion in the background
+/// </summary>
+/// <param name="usersService">user repository</param>
+/// <param name="deletionSignal">service for signaling that there is work to do</param>
+/// <param name="recipeBooksService">book repository</param>
+/// <param name="logger">logger for this instance</param>
+sealed class UserDeletionHostedService(
     IUsersService usersService,
-    IUsersQueuedForDeletionNotificationService notificationService,
+    IUserDeletionSignal deletionSignal,
     IRecipeBooksService recipeBooksService,
-    ILogger<UsersQueuedForDeletionHostedService> logger
+    ILogger<UserDeletionHostedService> logger
 ) : BackgroundService
 {
+    /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.Info_LoopStarting();
@@ -24,11 +32,11 @@ class UsersQueuedForDeletionHostedService(
                     await usersService.GetNextUserQueuedForDeletionAsync(stoppingToken);
                 if (nextEntry.Result is EmptySuccessResult)
                 {
-                    await notificationService.WaitForWake(TimeSpan.FromMinutes(1), stoppingToken);
+                    await deletionSignal.WaitForSignal(TimeSpan.FromMinutes(1), stoppingToken);
                 }
                 else if (nextEntry.Result is SuccessResult<UserDao> successResult)
                 {
-                    await PurgeOneUserAsync(successResult.Value, stoppingToken);
+                    await TryPurgeOneUserAsync(successResult.Value, stoppingToken);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -45,7 +53,12 @@ class UsersQueuedForDeletionHostedService(
         logger.Info_LoopStopping();
     }
 
-    private async Task PurgeOneUserAsync(UserDao userDao, CancellationToken ct)
+    /// <summary>
+    /// Attempts to purge one user from the database
+    /// </summary>
+    /// <param name="userDao">the user to purge</param>
+    /// <param name="ct">cancels the operation</param>
+    private async Task TryPurgeOneUserAsync(UserDao userDao, CancellationToken ct)
     {
         // clear user's access entries
         DatabaseResultVariant<EmptySuccessResult, UserNotFoundResult> accessEntryDeletionResult =
@@ -65,11 +78,12 @@ class UsersQueuedForDeletionHostedService(
                 await recipeBooksService.HasAnyBooksAsync(userDao.Id, ct);
 
             if (
-                (
-                    bookQueryResult.Result is SuccessResult<bool> doesUserOwnAnyBooks
-                    && doesUserOwnAnyBooks.Value
-                )
-                || bookQueryResult.Result is UserNotFoundResult
+                bookQueryResult.Result switch
+                {
+                    SuccessResult<bool> hasBooks => !hasBooks.Value, // Purge if user owns NO remaining books
+                    UserNotFoundResult => true, // user does not exist in book system so they should not own any books
+                    _ => false,
+                }
             )
             {
                 DatabaseResultVariant<
@@ -82,26 +96,14 @@ class UsersQueuedForDeletionHostedService(
                     ct
                 );
 
-                if (userResult.Result is not EmptySuccessResult)
+                if (userResult.Result is EmptySuccessResult)
                 {
-                    DatabaseResultVariant<
-                        EmptySuccessResult,
-                        ConflictResult,
-                        ValidationFailureResult
-                    > purgeResult = await usersService.PurgeUserFromDatabaseAsync(
-                        userDao.Id,
-                        userDao.ConcurrencyTag,
-                        ct
-                    );
-
-                    if (purgeResult.Result is EmptySuccessResult)
-                    {
-                        return;
-                    }
+                    return;
                 }
             }
         }
 
+        // if we are here that means we need to try again at some future time so re-queue
         await usersService.RequeueUserForDeletionAsync(userDao.Id, userDao.ConcurrencyTag, ct);
     }
 }

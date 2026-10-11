@@ -31,7 +31,11 @@ public static partial class WebApplicationBuilderExtensions
         this WebApplicationBuilder builder
     )
     {
+        // user services
         builder.Services.AddSingleton<IUsersService, UsersService>();
+        builder.Services.AddSingleton<IUserDeletionSignal, UserDeletionSignal>();
+        builder.Services.AddHostedService<UserDeletionHostedService>();
+
         builder.Services.AddSingleton<IRecipesService, RecipesService>();
         builder.Services.AddSingleton<IRecipeBooksService, RecipeBooksService>();
         builder.Services.AddRandomNumberGeneratorConcurrencyTagProvider();

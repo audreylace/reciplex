@@ -22,7 +22,7 @@ public class UsersService(
     IDbContextFactory<ApplicationDbContext> dbFactory,
     IConcurrencyTagProvider concurrencyTagProvider,
     IStringIdProvider stringIdProvider,
-    IUsersQueuedForDeletionNotificationService userDeletionNotify,
+    IUserDeletionSignal userDeletionNotify,
     IClock clock
 ) : IUsersService
 {
@@ -38,7 +38,7 @@ public class UsersService(
             return new ValidationFailureResult(validationResult.ToDictionary());
         }
 
-        long now = Now();
+        long now = clock.NowUtcUnixSeconds();
         UserDbObject u = new()
         {
             ConcurrencyTag = concurrencyTagProvider.NextTag(),
@@ -93,46 +93,22 @@ public class UsersService(
             return new ConflictResult();
         }
 
-        long now = Now();
+        long now = clock.NowUtcUnixSeconds();
         userRecord.ConcurrencyTag = concurrencyTagProvider.NextTag();
         userRecord.LastModified = now;
         userRecord.IsDeleted = true;
+        userRecord.DeletedTime = now;
 
-        //using var transaction = await applicationDbContext.Database.BeginTransactionAsync(ct);
         try
         {
             await applicationDbContext.SaveChangesAsync(ct);
-
-            // await applicationDbContext
-            //     .RecipeBookAccessEntries.Where(acl => acl.UserFk == userRecord.Id)
-            //     .ExecuteDeleteAsync(ct);
-
-            // var bookTag = concurrencyTagProvider.NextTag();
-            // var wakeBookDeletionWorker =
-            //     await applicationDbContext
-            //         .RecipeBooks.UserOwnsBook(userRecord.Id)
-            //         .NotDeleted()
-            //         .ExecuteUpdateAsync(
-            //             p =>
-            //                 p.SetProperty(b => b.IsDeleted, true)
-            //                     .SetProperty(b => b.ConcurrencyTag, bookTag)
-            //                     .SetProperty(b => b.LastModified, now),
-            //             ct
-            //         ) > 0;
-
-            //await transaction.CommitAsync(ct);
-
-            // if (wakeBookDeletionWorker)
-            // {
-            //     notifyService.TriggerBookDelete();
-            // }
         }
         catch (DBConcurrencyException)
         {
             return new ConflictResult();
         }
 
-        userDeletionNotify.TriggerWake();
+        userDeletionNotify.SignalDeletion();
 
         return new EmptySuccessResult();
     }
@@ -278,7 +254,7 @@ public class UsersService(
             return new ConflictResult();
         }
 
-        long now = Now();
+        long now = clock.NowUtcUnixSeconds();
         u.ConcurrencyTag = concurrencyTagProvider.NextTag();
         u.LastModified = now;
         u.DisplayName = args.DisplayName;
@@ -302,21 +278,12 @@ public class UsersService(
         );
     }
 
-    /// <summary>
-    /// Now as a long 64 but unix time stamp with second resolution
-    /// </summary>
-    /// <returns>the value</returns>
-    private long Now()
-    {
-        return clock.GetCurrentInstant().ToUnixTimeSeconds();
-    }
-
     /// <inheritdoc />
     public async Task<
         DatabaseResultVariant<EmptySuccessResult, SuccessResult<UserDao>>
     > GetNextUserQueuedForDeletionAsync(CancellationToken ct)
     {
-        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        long now = clock.NowUtcUnixSeconds();
         await using ApplicationDbContext applicationDbContext =
             await dbFactory.CreateDbContextAsync(ct);
         var queryData = await applicationDbContext
@@ -351,12 +318,10 @@ public class UsersService(
     {
         if (!stringIdProvider.TryParseStringKey(userKey, out long userId))
         {
-            return new ValidationFailureResult(
-                new Dictionary<string, string[]>() { { "userKey", ["invalid user key"] } }
-            );
+            return BadUserKey();
         }
 
-        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        long now = clock.NowUtcUnixSeconds();
         await using ApplicationDbContext applicationDbContext =
             await dbFactory.CreateDbContextAsync(ct);
         var queryData = await applicationDbContext
@@ -395,6 +360,17 @@ public class UsersService(
         return new ConflictResult();
     }
 
+    private static DatabaseResultVariant<
+        EmptySuccessResult,
+        ConflictResult,
+        ValidationFailureResult
+    > BadUserKey()
+    {
+        return new ValidationFailureResult(
+            new Dictionary<string, string[]>() { { "userKey", ["invalid user key"] } }
+        );
+    }
+
     /// <inheritdoc />
     public async Task<
         DatabaseResultVariant<EmptySuccessResult, ConflictResult, ValidationFailureResult>
@@ -402,9 +378,7 @@ public class UsersService(
     {
         if (!stringIdProvider.TryParseStringKey(userKey, out long userId))
         {
-            return new ValidationFailureResult(
-                new Dictionary<string, string[]>() { { "userKey", ["invalid user key"] } }
-            );
+            return BadUserKey();
         }
 
         await using ApplicationDbContext applicationDbContext =

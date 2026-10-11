@@ -4,15 +4,18 @@ using Microsoft.EntityFrameworkCore;
 namespace Reciplex.Server.Database.DbObjects;
 
 /// <summary>
-/// Top level user db object
+/// Identifies an identity for a (<see cref="Authority"/>, <see cref="Subject"/>) pair.
 /// </summary>
 /// <remarks>
 /// <list type="bullet">
-/// <item>Has clustered index on (<see cref="Authority"/>, <see cref="Subject"/>)</item>
+/// <item>Has clustered index on (<see cref="Authority"/>, <see cref="Subject"/>) for OIDC lookup. This is not unique.</item>
+/// <item>Has clustered index on (<see cref="IsDeleted"/>, <see cref="NextDeletePoll"/>) for user cleanup queue</item>
+/// <item>Has index on <see cref="IsDeleted"/> to quickly determine if a user is deleted</item>
 /// </list>
 /// </remarks>
 [Index(nameof(Authority), nameof(Subject), IsUnique = false)]
 [Index(nameof(IsDeleted), nameof(NextDeletePoll))]
+[Index(nameof(IsDeleted))]
 public class UserDbObject
 {
     public const int DisplayNameMaxLength = 64;
@@ -55,6 +58,11 @@ public class UserDbObject
     public bool IsDeleted { get; set; }
 
     /// <summary>
+    /// Timestamp of deletion
+    /// </summary>
+    public long? DeletedTime { get; set; }
+
+    /// <summary>
     /// When the user was modified
     /// </summary>
     public required long LastModified { get; set; }
@@ -75,6 +83,15 @@ public class UserDbObject
     /// </summary>
     public ICollection<RecipeBookDbObject> BooksTheUserOwns { get; set; } = [];
 
+    /// <summary>
+    /// Next timestamp to check for user deletion cleanup. Defaults to 0 to avoid issues
+    /// with different databases sorting null to start or end.
+    /// </summary>
     public long NextDeletePoll { get; set; }
+
+    /// <summary>
+    /// Counter used to increasing backoff. Defaults to 0 to avoid issues
+    /// with different databases sorting null to start or end.
+    /// </summary>
     public long NextDeletePollCounter { get; set; }
 }
