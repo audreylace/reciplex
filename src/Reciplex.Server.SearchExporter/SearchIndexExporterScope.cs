@@ -1,6 +1,9 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Reciplex.Server.Database.SearchIndexDomain;
+using Reciplex.Server.Database.SearchIndexTrackingDomain;
 using Reciplex.Server.SearchExporter.Loggers;
+using Reciplex.Server.SearchExporter.Options;
 using Reciplex.Server.SearchExporter.SearchBackgroundTasks;
 
 namespace Reciplex.Server.SearchExporter;
@@ -8,14 +11,50 @@ namespace Reciplex.Server.SearchExporter;
 class SearchIndexExporterScope(
     IEnumerable<ISearchBackgroundTask> searchBackgroundTasks,
     ISearchIndexRepository searchIndexRepository,
-    ILogger<SearchIndexExporterScope> logger
+    ILogger<SearchIndexExporterScope> logger,
+    IOptions<SearchExporterOptions> options,
+    IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository
 ) : ISearchIndexExporterScope
 {
     public async Task ExecuteAsync(CancellationToken ct)
     {
+        if (!options.Value.Enable)
+        {
+            await DeleteUnusedRecipeSearchEntriesLoopAsync(ct);
+            return;
+        }
+
+        if (options.Value.PauseSync)
+        {
+            return;
+        }
+
         if (await searchIndexRepository.EnsureSetupCompleteAsync(ct))
         {
             await RunTasksAndCheckAsync(ct);
+        }
+    }
+
+    private async Task DeleteUnusedRecipeSearchEntriesLoopAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            try
+            {
+                await recipeSearchExportStatusRepository.WaitForSearchDeleteWorkAsync(
+                    TimeSpan.FromMinutes(1),
+                    ct
+                );
+                await recipeSearchExportStatusRepository.PurgeMarkedForDeletionAsync(ct);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                logger.Error_SearchEntryDeletionFailed(ex);
+            }
         }
     }
 

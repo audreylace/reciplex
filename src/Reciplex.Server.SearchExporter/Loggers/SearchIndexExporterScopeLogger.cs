@@ -16,4 +16,10 @@ static partial class SearchIndexExporterScopeLogger
         this ILogger<SearchIndexExporterScope> logger,
         Exception? ex
     );
+
+    [LoggerMessage(LogLevel.Error, "Recipe search entry deletion failed")]
+    public static partial void Error_SearchEntryDeletionFailed(
+        this ILogger<SearchIndexExporterScope> logger,
+        Exception? ex
+    );
 }

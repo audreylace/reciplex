@@ -26,12 +26,12 @@ sealed class MeilisearchIndexRepository(
     /// <summary>
     /// Recipe search index name
     /// </summary>
-    private const string RecipesSearchIndexUid = "recipes";
+    private const string RecipesSearchIndexUid = "recipeBooks";
 
     /// <summary>
     /// The primary key for the recipe search index
     /// </summary>
-    private const string RecipeSearchIndexPrimaryKeyPropertyName = "recipeId";
+    private const string SearchIndexPrimaryKeyPropertyName = "id";
 
     #endregion Constants
 
@@ -95,7 +95,7 @@ sealed class MeilisearchIndexRepository(
             return false;
         }
 
-        return await UpdateRecipeIndexFilterAttributesIfNeededAsync(ct);
+        return await UpdateIndexFilterAttributesIfNeededAsync(ct);
     }
 
     /// <inheritdoc />
@@ -218,7 +218,7 @@ sealed class MeilisearchIndexRepository(
             {
                 MeilisearchTaskResponse createResponse = await searchClient.CreateIndexAsync(
                     RecipesSearchIndexUid,
-                    RecipeSearchIndexPrimaryKeyPropertyName,
+                    SearchIndexPrimaryKeyPropertyName,
                     ct
                 );
 
@@ -232,7 +232,7 @@ sealed class MeilisearchIndexRepository(
                     logger.Error_IndexCreationFailed(
                         createResponse.TaskUid,
                         RecipesSearchIndexUid,
-                        RecipeSearchIndexPrimaryKeyPropertyName
+                        SearchIndexPrimaryKeyPropertyName
                     );
                     return false;
                 }
@@ -242,7 +242,7 @@ sealed class MeilisearchIndexRepository(
                         createResponse.TaskUid,
                         createTask.Status,
                         RecipesSearchIndexUid,
-                        RecipeSearchIndexPrimaryKeyPropertyName
+                        SearchIndexPrimaryKeyPropertyName
                     );
                     return false;
                 }
@@ -253,7 +253,7 @@ sealed class MeilisearchIndexRepository(
         {
             logger.Error_IndexCreationFailed(
                 RecipesSearchIndexUid,
-                RecipeSearchIndexPrimaryKeyPropertyName,
+                SearchIndexPrimaryKeyPropertyName,
                 ex
             );
             return false;
@@ -262,7 +262,7 @@ sealed class MeilisearchIndexRepository(
         return true;
     }
 
-    private async Task<bool> UpdateRecipeIndexFilterAttributesIfNeededAsync(CancellationToken ct)
+    private async Task<bool> UpdateIndexFilterAttributesIfNeededAsync(CancellationToken ct)
     {
         try
         {

@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Reciplex.Server.Meilisearch;
 
-class SearchQueryRequestBody
+sealed class SearchQueryRequestBody
 {
     [JsonPropertyName("q")]
     public required string SearchString { get; init; }
