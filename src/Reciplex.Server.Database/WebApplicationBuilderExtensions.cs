@@ -3,12 +3,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Polly;
-using Polly.Retry;
-using Polly.Timeout;
 using Reciplex.Server.Abstractions;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
-using Reciplex.Server.Database.DeletionWorker;
 using Reciplex.Server.Database.RecipeBooksDomain;
 using Reciplex.Server.Database.RecipesDomain;
 using Reciplex.Server.Database.SearchExporter;
@@ -39,8 +35,6 @@ public static partial class WebApplicationBuilderExtensions
         builder.Services.AddSingleton<IRecipesService, RecipesService>();
         builder.Services.AddSingleton<IRecipeBooksService, RecipeBooksService>();
         builder.Services.AddRandomNumberGeneratorConcurrencyTagProvider();
-        builder.Services.AddHostedService<DeletionWorkerService>();
-        builder.Services.AddSingleton<DeletionWorkerServiceMetrics>();
         builder.Services.AddSingleton<RepeatedDatabaseActionStrategy>();
         builder.Services.AddHostedService<RecipePurgeWorkerHostedService>();
 
