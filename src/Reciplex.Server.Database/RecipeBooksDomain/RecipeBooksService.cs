@@ -485,7 +485,6 @@ internal sealed class RecipeBooksService(
         await foreach (
             var row in dbContext
                 .RecipeBookAccessEntries.AsNoTracking()
-                .NotDeleted()
                 .ScopeToBook(bookId)
                 .Select(u => new
                 {
@@ -599,7 +598,6 @@ internal sealed class RecipeBooksService(
 
             var existingRow = await dbContext
                 .RecipeBookAccessEntries.ScopeToBook(bookId)
-                .NotDeleted()
                 .WithUserId(userEntryId)
                 .FirstOrDefaultAsync(ct);
 

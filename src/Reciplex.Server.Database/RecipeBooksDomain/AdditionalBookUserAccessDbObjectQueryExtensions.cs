@@ -8,17 +8,6 @@ namespace Reciplex.Server.Database.RecipeBooksDomain;
 static class AdditionalBookUserAccessDbObjectQueryExtensions
 {
     /// <summary>
-    /// Filters out <see cref="AdditionalBookUserAccessDbObject"/>
-    /// where either the book or user object is deleted
-    /// </summary>
-    public static IQueryable<AdditionalBookUserAccessDbObject> NotDeleted(
-        this IQueryable<AdditionalBookUserAccessDbObject> query
-    )
-    {
-        return query.Where(e => e.User!.IsDeleted == null && e.RecipeBook!.IsDeleted == null);
-    }
-
-    /// <summary>
     /// Scopes the list of <see cref="AdditionalBookUserAccessDbObject"/>
     /// to only those related to <see cref="RecipeBookDbObject"/> with
     /// primary key <paramref name="bookId"/>.
