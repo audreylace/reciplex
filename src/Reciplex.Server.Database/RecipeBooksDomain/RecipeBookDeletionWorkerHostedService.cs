@@ -1,171 +1,111 @@
-using System.Data;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using NodaTime;
-using Reciplex.Server.Database.DbObjects;
+using Reciplex.Server.Database.Results;
 using Reciplex.Server.Database.SearchExporter;
 
 namespace Reciplex.Server.Database.RecipeBooksDomain;
 
+/// <summary>
+/// Hosted service that finishes deletion of recipe books
+/// </summary>
+/// <param name="notificationService">service for sending notifications between services</param>
+/// <param name="logger">logger for this instance</param>
+/// <param name="booksService">service for manipulating database objects</param>
 class RecipeBookDeletionWorkerHostedService(
-    IDbContextFactory<ApplicationDbContext> dbFactory,
-    IClock clock,
     IRecipeMutationNotifyService notificationService,
-    ILogger<RecipeBookDeletionWorkerHostedService> logger
+    ILogger<RecipeBookDeletionWorkerHostedService> logger,
+    IRecipeBooksService booksService
 ) : BackgroundService
 {
+    /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        Queue<(long Id, long When)> skipIdsQueue = [];
-        HashSet<long> skipIdsHash = [];
-        int lookupQueryFails = 0;
+        logger.Info_RecipeBookLoopStarting();
         while (!stoppingToken.IsCancellationRequested)
         {
-            try
-            {
-                var now = clock.GetCurrentInstant().ToUnixTimeSeconds();
-                RemoveExpiredEntries(skipIdsQueue, skipIdsHash, now);
-                using var dbContext = await dbFactory.CreateDbContextAsync(stoppingToken);
-                RecipeBookDbObject? book = await dbContext
-                    .RecipeBooks.Where(book =>
-                        book.Deleted != null
-                        && (book.NextDeletePoll == null || book.NextDeletePoll < now)
-                        && skipIdsHash.Contains(book.Id)
-                    )
-                    .OrderBy(r => r.NextDeletePoll)
-                    .ThenBy(r => r.Id)
-                    .FirstOrDefaultAsync(stoppingToken);
-
-                lookupQueryFails = 0;
-                if (book is not null)
-                {
-                    await TryDeleteBookAsync(
-                        skipIdsQueue,
-                        skipIdsHash,
-                        now,
-                        dbContext,
-                        book,
-                        stoppingToken
-                    );
-                }
-                else
-                {
-                    await notificationService.WaitForBookDeleteTriggerAsync(
-                        TimeSpan.FromMinutes(1),
-                        stoppingToken
-                    );
-                }
-            }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-            {
-                return;
-            }
-            catch (Exception ex)
-            {
-                // delay to prevent a tight loop on repeated failure
-                logger.Error_BackgroundLoopFailure(ex);
-                await SafeDelay.DelayAsync(TimeSpan.FromSeconds(5), stoppingToken);
-                lookupQueryFails++;
-                if (lookupQueryFails > 10)
-                {
-                    skipIdsHash.Clear();
-                    skipIdsQueue.Clear();
-                    lookupQueryFails = 10;
-                }
-            }
+            await RunLoopOnceAsync(stoppingToken);
         }
+        logger.Info_RecipeBookLoopStopping();
     }
 
-    private static void RemoveExpiredEntries(
-        Queue<(long Id, long When)> skipIdsQueue,
-        HashSet<long> skipIdsHash,
-        long now
-    )
+    /// <summary>
+    /// Runs the loop once
+    /// </summary>
+    /// <param name="ct">async cancellation token</param>
+    private async Task RunLoopOnceAsync(CancellationToken ct)
     {
-        while (
-            skipIdsQueue.TryPeek(out var queuePeek)
-            && queuePeek.When < now
-            && skipIdsQueue.TryDequeue(out var queueEntry)
-        )
+        try
         {
-            skipIdsHash.Remove(queueEntry.Id);
+            // get next book off the delete queue
+            DatabaseResultVariant<
+                EmptySuccessResult,
+                SuccessResult<RecipeBookDeletionQueueEntry>
+            > queueEntry = await booksService.GetNextBookQueuedForDeletionAsync(ct);
+
+            if (queueEntry.Result is SuccessResult<RecipeBookDeletionQueueEntry> successResult)
+            {
+                await TryDeleteBookAsync(successResult.Value, ct);
+            }
+            else
+            {
+                await notificationService.WaitForBookDeleteTriggerAsync(
+                    TimeSpan.FromMinutes(1),
+                    ct
+                );
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            return;
+        }
+        catch (Exception ex)
+        {
+            // delay to prevent a tight loop on repeated failure
+            logger.Error_BackgroundLoopFailure(ex);
+            await SafeDelay.DelayAsync(TimeSpan.FromSeconds(5), ct);
         }
     }
 
+    /// <summary>
+    /// Attempts final purge of recipe book
+    /// </summary>
+    /// <param name="queueEntry">the book</param>
+    /// <param name="ct">async cancellation token</param>
     private async Task TryDeleteBookAsync(
-        Queue<(long Id, long When)> skipIdsQueue,
-        HashSet<long> skipIdsHash,
-        long now,
-        ApplicationDbContext dbContext,
-        RecipeBookDbObject book,
-        CancellationToken stoppingToken
+        RecipeBookDeletionQueueEntry queueEntry,
+        CancellationToken ct
     )
     {
         try
         {
-            bool notify = await RecipeBookDeletionHelper.CleanupBookLinksAsync(
-                dbContext,
-                book.Id,
-                now,
-                stoppingToken
-            );
+            DatabaseResultVariant<EmptySuccessResult, ConflictResult> result =
+                await booksService.PurgeRecipeBookAsync(
+                    queueEntry.Id,
+                    queueEntry.ConcurrencyTag,
+                    ct
+                );
 
-            if (
-                !await dbContext
-                    .Recipes.Where(r => r.RecipeBookFk == book.Id)
-                    .AnyAsync(stoppingToken)
-            )
+            if (result.Result is ConflictResult)
             {
-                dbContext.Remove(book);
-                await dbContext.SaveChangesAsync(stoppingToken);
-            }
-            else
-            {
-                book.NextDeletePollCounter = Math.Min(16, book.NextDeletePollCounter + 1);
-                book.NextDeletePoll = now + (1 << (int)book.NextDeletePollCounter);
-                await dbContext.SaveChangesAsync(stoppingToken);
-
-                if (notify)
-                {
-                    notificationService.TriggerSearchIndexDelete();
-                }
+                await booksService.RequeueRecipesBooksForDeletionAsync(
+                    queueEntry.Id,
+                    queueEntry.ConcurrencyTag,
+                    ct
+                );
             }
         }
-        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            throw;
+            return;
         }
         catch (Exception ex)
         {
-            logger.Error_BookDeleteFailed(book.Id, ex);
-            AddIdToSkipQueue(skipIdsQueue, skipIdsHash, book.Id);
-        }
-    }
-
-    private void AddIdToSkipQueue(
-        Queue<(long Id, long When)> skipIdsQueue,
-        HashSet<long> skipIdsHash,
-        long bookId
-    )
-    {
-        const int MaxEntries = 100;
-        if (skipIdsHash.Add(bookId))
-        {
-            skipIdsQueue.Enqueue(
-                (
-                    bookId,
-                    clock.GetCurrentInstant().ToUnixTimeSeconds()
-                        + (long)TimeSpan.FromMinutes(1).TotalSeconds
-                )
+            logger.Error_BookDeleteFailed(queueEntry.Id, ex);
+            await booksService.RequeueRecipesBooksForDeletionAsync(
+                queueEntry.Id,
+                queueEntry.ConcurrencyTag,
+                ct
             );
-            if (skipIdsQueue.Count > MaxEntries)
-            {
-                if (skipIdsQueue.TryDequeue(out (long Id, long When) tuple))
-                {
-                    skipIdsHash.Remove(tuple.Id);
-                }
-            }
         }
     }
 }

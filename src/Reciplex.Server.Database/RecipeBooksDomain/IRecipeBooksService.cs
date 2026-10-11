@@ -69,6 +69,37 @@ public interface IRecipeBooksService
         CancellationToken ct
     );
 
+    Task<
+        DatabaseResultVariant<EmptySuccessResult, ConflictResult>
+    > RequeueRecipesBooksForDeletionAsync(
+        string bookKey,
+        string concurrencyToken,
+        CancellationToken ct
+    );
+
+    Task<
+        DatabaseResultVariant<EmptySuccessResult, UserNotFoundResult>
+    > QueueRecipesBooksOwnedByUserForDeletionAsync(string userKey, CancellationToken ct);
+
+    Task<
+        DatabaseResultVariant<EmptySuccessResult, UserNotFoundResult>
+    > DeleteRecipesBookAccessEntriesOwnedByUserAsync(string userKey, CancellationToken ct);
+
+    Task<DatabaseResultVariant<SuccessResult<bool>, UserNotFoundResult>> HasAnyBooksAsync(
+        string userKey,
+        CancellationToken ct
+    );
+
+    Task<
+        DatabaseResultVariant<EmptySuccessResult, SuccessResult<RecipeBookDeletionQueueEntry>>
+    > GetNextBookQueuedForDeletionAsync(CancellationToken ct);
+
+    Task<DatabaseResultVariant<EmptySuccessResult, ConflictResult>> PurgeRecipeBookAsync(
+        string bookKey,
+        string concurrencyToken,
+        CancellationToken ct
+    );
+
     /// <summary>
     /// Creates a recipe book
     /// </summary>

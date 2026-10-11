@@ -15,7 +15,7 @@ static class AdditionalBookUserAccessDbObjectQueryExtensions
         this IQueryable<AdditionalBookUserAccessDbObject> query
     )
     {
-        return query.Where(e => e.User!.Deleted == null && e.RecipeBook!.Deleted == null);
+        return query.Where(e => e.User!.IsDeleted == null && e.RecipeBook!.IsDeleted == null);
     }
 
     /// <summary>

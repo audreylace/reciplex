@@ -9,7 +9,6 @@ namespace Reciplex.Server.Database.DbObjects;
 /// Controls access to a recipe book. Allows other users to access someones recipe book.
 /// </summary>
 [Index(nameof(UserFk), nameof(RecipeBookFk), IsUnique = true)] // clustered index to ensure one user entry per recipe book
-[Index(nameof(UserFk))]
 [Index(nameof(RecipeBookFk))]
 public class AdditionalBookUserAccessDbObject
 {

@@ -4,6 +4,11 @@ static class SafeDelay
 {
     public static async Task<bool> DelayAsync(TimeSpan delay, CancellationToken ct)
     {
+        if (ct.IsCancellationRequested)
+        {
+            return true;
+        }
+
         try
         {
             await Task.Delay(delay, ct);

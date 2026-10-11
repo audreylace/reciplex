@@ -35,14 +35,14 @@ public static partial class WebApplicationBuilderExtensions
         this WebApplicationBuilder builder
     )
     {
-        builder.Services.AddScoped<IUsersService, UsersService>();
-        builder.Services.AddScoped<IRecipesService, RecipesService>();
-        builder.Services.AddScoped<IRecipeBooksService, RecipeBooksService>();
+        builder.Services.AddSingleton<IUsersService, UsersService>();
+        builder.Services.AddSingleton<IRecipesService, RecipesService>();
+        builder.Services.AddSingleton<IRecipeBooksService, RecipeBooksService>();
         builder.Services.AddRandomNumberGeneratorConcurrencyTagProvider();
         builder.Services.AddHostedService<DeletionWorkerService>();
         builder.Services.AddSingleton<DeletionWorkerServiceMetrics>();
         builder.Services.AddSingleton<RepeatedDatabaseActionStrategy>();
-        builder.Services.AddHostedService<RecipeDeletionWorkerHostedService>();
+        builder.Services.AddHostedService<RecipePurgeWorkerHostedService>();
 
         ConfigureSearch(builder);
 

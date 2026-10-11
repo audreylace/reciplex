@@ -12,7 +12,7 @@ namespace Reciplex.Server.Database.DbObjects;
 /// </list>
 /// </remarks>
 [Index(nameof(Authority), nameof(Subject), IsUnique = false)]
-[Index(nameof(Deleted))]
+[Index(nameof(IsDeleted), nameof(NextDeletePoll))]
 public class UserDbObject
 {
     public const int DisplayNameMaxLength = 64;
@@ -50,9 +50,9 @@ public class UserDbObject
     public required string Authority { get; set; }
 
     /// <summary>
-    /// Populated if the user is deleted. The value is the time of deletion.
+    /// True if the user is deleted
     /// </summary>
-    public long? Deleted { get; set; }
+    public bool IsDeleted { get; set; }
 
     /// <summary>
     /// When the user was modified
@@ -74,4 +74,7 @@ public class UserDbObject
     /// Books the user owns
     /// </summary>
     public ICollection<RecipeBookDbObject> BooksTheUserOwns { get; set; } = [];
+
+    public long NextDeletePoll { get; set; }
+    public long NextDeletePollCounter { get; set; }
 }

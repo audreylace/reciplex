@@ -37,9 +37,9 @@ internal sealed class DeletionWorkerService(
                             db
                                 .Recipes.Where(r =>
                                     (
-                                        r.Deleted != null
-                                        || r.RecipeBook!.Deleted != null
-                                        || r.RecipeBook!.Owner!.Deleted != null
+                                        r.IsDeleted != null
+                                        || r.RecipeBook!.IsDeleted != null
+                                        || r.RecipeBook!.Owner!.IsDeleted != null
                                     )
                                     && r.RecipeSearchExtraction == null
                                 )
@@ -61,9 +61,9 @@ internal sealed class DeletionWorkerService(
                             db
                                 .RecipeBookAccessEntries.Where(rAccessEntry =>
                                     (
-                                        rAccessEntry.User!.Deleted != null
-                                        || rAccessEntry.RecipeBook!.Deleted != null
-                                        || rAccessEntry.RecipeBook!.Owner!.Deleted != null
+                                        rAccessEntry.User!.IsDeleted != null
+                                        || rAccessEntry.RecipeBook!.IsDeleted != null
+                                        || rAccessEntry.RecipeBook!.Owner!.IsDeleted != null
                                     )
                                 )
                                 .OrderBy(r => r.Id)
@@ -85,7 +85,7 @@ internal sealed class DeletionWorkerService(
                         (db, ct) =>
                             db
                                 .RecipeBooks.Where(r =>
-                                    (r.Deleted != null || r.Owner!.Deleted != null)
+                                    (r.IsDeleted != null || r.Owner!.IsDeleted != null)
                                     && !r.Recipes.Any()
                                     && !r.AdditionalUsers.Any()
                                 )
@@ -106,7 +106,7 @@ internal sealed class DeletionWorkerService(
                         (db, ct) =>
                             db
                                 .Users.Where(user =>
-                                    user.Deleted != null
+                                    user.IsDeleted != null
                                     && !user.RecipeBookAccessEntities.Any()
                                     && !user.BooksTheUserOwns.Any()
                                 )

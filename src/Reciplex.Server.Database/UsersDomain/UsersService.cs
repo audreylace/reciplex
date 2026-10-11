@@ -15,11 +15,14 @@ namespace Reciplex.Server.Database.UsersDomain;
 /// </summary>
 /// <param name="dbFactory">database connection factory</param>
 /// <param name="concurrencyTagProvider">provider for generating concurrency tags</param>
+/// <param name="stringIdProvider">provider for marshalling user keys to and from strings</param>
+/// <param name="userDeletionNotify">service for notifying the background deletion worker to wake up</param>
 /// <param name="clock">clock for getting time</param>
 public class UsersService(
     IDbContextFactory<ApplicationDbContext> dbFactory,
     IConcurrencyTagProvider concurrencyTagProvider,
     IStringIdProvider stringIdProvider,
+    IUsersQueuedForDeletionNotificationService userDeletionNotify,
     IClock clock
 ) : IUsersService
 {
@@ -65,7 +68,7 @@ public class UsersService(
     /// <inheritdoc />
     public async Task<
         DatabaseResultVariant<EmptySuccessResult, ConflictResult, UserNotFoundResult>
-    > DeleteUserAsync(string userKey, string concurrencyToken, CancellationToken ct)
+    > QueueUserDeleteAsync(string userKey, string concurrencyToken, CancellationToken ct)
     {
         if (!stringIdProvider.TryParseStringKey(userKey, out long userId))
         {
@@ -74,12 +77,13 @@ public class UsersService(
 
         await using ApplicationDbContext applicationDbContext =
             await dbFactory.CreateDbContextAsync(ct);
+
         UserDbObject? userRecord = await applicationDbContext
             .Users.WithId(userId)
             .UserNotDeleted()
             .FirstOrDefaultAsync(ct);
 
-        if (userRecord is null || userRecord.Deleted != null)
+        if (userRecord is null || userRecord.IsDeleted)
         {
             return new UserNotFoundResult(userKey);
         }
@@ -92,16 +96,43 @@ public class UsersService(
         long now = Now();
         userRecord.ConcurrencyTag = concurrencyTagProvider.NextTag();
         userRecord.LastModified = now;
-        userRecord.Deleted = now;
+        userRecord.IsDeleted = true;
 
+        //using var transaction = await applicationDbContext.Database.BeginTransactionAsync(ct);
         try
         {
             await applicationDbContext.SaveChangesAsync(ct);
+
+            // await applicationDbContext
+            //     .RecipeBookAccessEntries.Where(acl => acl.UserFk == userRecord.Id)
+            //     .ExecuteDeleteAsync(ct);
+
+            // var bookTag = concurrencyTagProvider.NextTag();
+            // var wakeBookDeletionWorker =
+            //     await applicationDbContext
+            //         .RecipeBooks.UserOwnsBook(userRecord.Id)
+            //         .NotDeleted()
+            //         .ExecuteUpdateAsync(
+            //             p =>
+            //                 p.SetProperty(b => b.IsDeleted, true)
+            //                     .SetProperty(b => b.ConcurrencyTag, bookTag)
+            //                     .SetProperty(b => b.LastModified, now),
+            //             ct
+            //         ) > 0;
+
+            //await transaction.CommitAsync(ct);
+
+            // if (wakeBookDeletionWorker)
+            // {
+            //     notifyService.TriggerBookDelete();
+            // }
         }
         catch (DBConcurrencyException)
         {
             return new ConflictResult();
         }
+
+        userDeletionNotify.TriggerWake();
 
         return new EmptySuccessResult();
     }
@@ -237,7 +268,7 @@ public class UsersService(
             .UserNotDeleted()
             .FirstOrDefaultAsync(ct);
 
-        if (u is null || u.Deleted != null)
+        if (u is null || u.IsDeleted)
         {
             return new UserNotFoundResult(userKey);
         }
@@ -278,5 +309,124 @@ public class UsersService(
     private long Now()
     {
         return clock.GetCurrentInstant().ToUnixTimeSeconds();
+    }
+
+    /// <inheritdoc />
+    public async Task<
+        DatabaseResultVariant<EmptySuccessResult, SuccessResult<UserDao>>
+    > GetNextUserQueuedForDeletionAsync(CancellationToken ct)
+    {
+        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        await using ApplicationDbContext applicationDbContext =
+            await dbFactory.CreateDbContextAsync(ct);
+        var queryData = await applicationDbContext
+            .Users.Where(u => u.IsDeleted && u.NextDeletePoll < now)
+            .Select(u => new
+            {
+                u.Id,
+                u.DisplayName,
+                u.ConcurrencyTag,
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (queryData is null)
+        {
+            return new EmptySuccessResult();
+        }
+
+        return new SuccessResult<UserDao>(
+            new()
+            {
+                Id = stringIdProvider.AsString(queryData.Id),
+                DisplayName = queryData.DisplayName,
+                ConcurrencyTag = queryData.ConcurrencyTag,
+            }
+        );
+    }
+
+    /// <inheritdoc />
+    public async Task<
+        DatabaseResultVariant<EmptySuccessResult, ConflictResult, ValidationFailureResult>
+    > RequeueUserForDeletionAsync(string userKey, string concurrencyToken, CancellationToken ct)
+    {
+        if (!stringIdProvider.TryParseStringKey(userKey, out long userId))
+        {
+            return new ValidationFailureResult(
+                new Dictionary<string, string[]>() { { "userKey", ["invalid user key"] } }
+            );
+        }
+
+        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        await using ApplicationDbContext applicationDbContext =
+            await dbFactory.CreateDbContextAsync(ct);
+        var queryData = await applicationDbContext
+            .Users.Where(u => u.IsDeleted && u.Id == userId && u.ConcurrencyTag == concurrencyToken)
+            .Select(u => new { u.NextDeletePoll, u.NextDeletePollCounter })
+            .FirstOrDefaultAsync(ct);
+
+        if (queryData is null)
+        {
+            return new ConflictResult();
+        }
+
+        // otherwise work is still pending revisit book with backoff
+        var nextPollCounter = Math.Min(16, queryData.NextDeletePollCounter + 1);
+        var nextPollTs = now + (1 << (int)queryData.NextDeletePollCounter);
+        var newTag = concurrencyTagProvider.NextTag();
+
+        if (
+            await applicationDbContext
+                .Users.Where(u =>
+                    u.IsDeleted && u.Id == userId && u.ConcurrencyTag == concurrencyToken
+                )
+                .ExecuteUpdateAsync(
+                    p =>
+                        p.SetProperty(u => u.NextDeletePoll, nextPollTs)
+                            .SetProperty(u => u.LastModified, now)
+                            .SetProperty(u => u.ConcurrencyTag, newTag)
+                            .SetProperty(u => u.NextDeletePollCounter, nextPollCounter),
+                    ct
+                ) > 0
+        )
+        {
+            return new EmptySuccessResult();
+        }
+
+        return new ConflictResult();
+    }
+
+    /// <inheritdoc />
+    public async Task<
+        DatabaseResultVariant<EmptySuccessResult, ConflictResult, ValidationFailureResult>
+    > PurgeUserFromDatabaseAsync(string userKey, string concurrencyToken, CancellationToken ct)
+    {
+        if (!stringIdProvider.TryParseStringKey(userKey, out long userId))
+        {
+            return new ValidationFailureResult(
+                new Dictionary<string, string[]>() { { "userKey", ["invalid user key"] } }
+            );
+        }
+
+        await using ApplicationDbContext applicationDbContext =
+            await dbFactory.CreateDbContextAsync(ct);
+        try
+        {
+            if (
+                await applicationDbContext
+                    .Users.Where(u =>
+                        u.IsDeleted && u.Id == userId && u.ConcurrencyTag == concurrencyToken
+                    )
+                    .ExecuteDeleteAsync(ct) < 1
+            )
+            {
+                return new ConflictResult();
+            }
+        }
+        catch (DbUpdateException)
+        {
+            return new ConflictResult();
+        }
+
+        return new EmptySuccessResult();
     }
 }

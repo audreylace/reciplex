@@ -9,8 +9,7 @@ namespace Reciplex.Server.Database.DbObjects;
 /// Recipe book database object
 /// </summary>
 [Index(nameof(OwnerFk))]
-[Index(nameof(Deleted))]
-[Index(nameof(Deleted), nameof(OwnerFk))]
+[Index(nameof(IsDeleted), nameof(NextDeletePoll))]
 public class RecipeBookDbObject
 {
     public const int NameMaxLength = 128;
@@ -80,10 +79,10 @@ public class RecipeBookDbObject
     public string ShareKey { get; set; } = "";
 
     /// <summary>
-    /// Populated if the recipe book is deleted. The value is the time of deletion.
+    /// If the book is deleted
     /// </summary>
-    public long? Deleted { get; set; }
+    public bool IsDeleted { get; set; }
 
-    public long? NextDeletePoll { get; set; }
+    public long NextDeletePoll { get; set; }
     public long NextDeletePollCounter { get; set; }
 }

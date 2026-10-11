@@ -10,13 +10,42 @@ namespace Reciplex.Server.Database.RecipeBooksDomain;
 static class RecipeBookQueryExtensions
 {
     /// <summary>
-    /// Limits query to books that are not deleted. Filters out books whose owner is deleted.
+    /// Limits query to books that are not deleted.
     /// </summary>
     public static IQueryable<RecipeBookDbObject> NotDeleted(
         this IQueryable<RecipeBookDbObject> query
     )
     {
-        return query.Where(book => book.Deleted == null && book.Owner!.Deleted == null);
+        return query.Where(book => !book.IsDeleted);
+    }
+
+    /// <summary>
+    /// Limits query to books that are deleted.
+    /// </summary>
+    public static IQueryable<RecipeBookDbObject> IsDeleted(
+        this IQueryable<RecipeBookDbObject> query
+    )
+    {
+        return query.Where(book => book.IsDeleted);
+    }
+
+    /// <summary>
+    /// Limits query to books that are deleted.
+    /// </summary>
+    public static IQueryable<RecipeBookDbObject> WithConcurrencyTag(
+        this IQueryable<RecipeBookDbObject> query,
+        string concurrencyTag
+    )
+    {
+        return query.Where(book => book.ConcurrencyTag == concurrencyTag);
+    }
+
+    public static IQueryable<RecipeBookDbObject> UserOwnsBook(
+        this IQueryable<RecipeBookDbObject> query,
+        long userId
+    )
+    {
+        return query.Where(book => book.OwnerFk == userId);
     }
 
     /// <summary>

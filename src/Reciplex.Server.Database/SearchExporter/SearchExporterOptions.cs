@@ -7,6 +7,11 @@ public class SearchExporterOptions
     /// </summary>
     public const string SectionPath = "Reciplex:SearchExporter";
     public bool Enable { get; set; }
+
+    /// <summary>
+    /// When true, syncing is disabled
+    /// </summary>
+    public bool PauseSync { get; set; }
     public string AuthenticationToken { get; set; } = "";
     public string Host { get; set; } = "";
 

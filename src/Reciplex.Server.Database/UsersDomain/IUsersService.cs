@@ -58,7 +58,7 @@ public interface IUsersService
     );
 
     /// <summary>
-    /// Deletes a user
+    /// Queues a user for deletion
     /// </summary>
     /// <param name="userKey">the user key to delete</param>
     /// <param name="concurrencyToken">the concurrency token</param>
@@ -66,7 +66,49 @@ public interface IUsersService
     /// <returns>task that resolves on operation completion with information on the outcome</returns>
     Task<
         DatabaseResultVariant<EmptySuccessResult, ConflictResult, UserNotFoundResult>
-    > DeleteUserAsync(string userKey, string concurrencyToken, CancellationToken ct);
+    > QueueUserDeleteAsync(string userKey, string concurrencyToken, CancellationToken ct);
+
+    /// <summary>
+    /// Gets the next user record queue for deletion
+    /// </summary>
+    /// <param name="ct">cancellation token for the async operation</param>
+    /// <returns>
+    /// <see cref="EmptySuccessResult"/> when
+    /// there is no user to delete. Success result with the user to delete.
+    /// </returns>
+    Task<
+        DatabaseResultVariant<EmptySuccessResult, SuccessResult<UserDao>>
+    > GetNextUserQueuedForDeletionAsync(CancellationToken ct);
+
+    /// <summary>
+    /// Requeues a user for deletion
+    /// </summary>
+    /// <param name="userKey">the user key to requeue</param>
+    /// <param name="concurrencyToken">the concurrency token</param>
+    /// <param name="ct">cancellation token for the async operation</param>
+    /// <returns>
+    /// <see cref="EmptySuccessResult"/> on success.
+    /// <see cref="ConflictResult"/> if the record was modified.
+    /// <see cref="ValidationFailureResult"/> is <paramref name="userKey"/> is invalid.
+    /// </returns>
+    Task<
+        DatabaseResultVariant<EmptySuccessResult, ConflictResult, ValidationFailureResult>
+    > RequeueUserForDeletionAsync(string userKey, string concurrencyToken, CancellationToken ct);
+
+    /// <summary>
+    /// Purges the user data from the database
+    /// </summary>
+    /// <param name="userKey">the user key of the user to purge from the database</param>
+    /// <param name="concurrencyToken">the concurrency token</param>
+    /// <param name="ct">cancellation token for the async operation</param>
+    /// <returns>
+    /// <see cref="EmptySuccessResult"/> on success.
+    /// <see cref="ConflictResult"/> if the record was modified.
+    /// <see cref="ValidationFailureResult"/> is <paramref name="userKey"/> is invalid.
+    /// </returns>
+    Task<
+        DatabaseResultVariant<EmptySuccessResult, ConflictResult, ValidationFailureResult>
+    > PurgeUserFromDatabaseAsync(string userKey, string concurrencyToken, CancellationToken ct);
 
     /// <summary>
     /// Updates a user

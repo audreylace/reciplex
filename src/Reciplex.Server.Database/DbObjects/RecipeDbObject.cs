@@ -9,8 +9,7 @@ namespace Reciplex.Server.Database.DbObjects;
 /// A recipe held inside of a <see cref="RecipeBookDbObject"/>
 /// </summary>
 [Index(nameof(RecipeBookFk))]
-[Index(nameof(Deleted))]
-[Index(nameof(Deleted), nameof(RecipeBookFk))]
+[Index(nameof(IsDeleted))]
 public class RecipeDbObject
 {
     public const int NameMaxLength = 128;
@@ -72,9 +71,9 @@ public class RecipeDbObject
     public long RecipeBookFk { get; init; }
 
     /// <summary>
-    /// Populated if the recipe is deleted. The value is the time of deletion.
+    /// True if the recipe is deleted
     /// </summary>
-    public long? Deleted { get; set; }
+    public bool IsDeleted { get; set; }
 
     /// <summary>
     /// Pointer to recipe search extraction tracking record

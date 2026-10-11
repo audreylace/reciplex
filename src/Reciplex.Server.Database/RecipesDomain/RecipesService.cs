@@ -143,7 +143,7 @@ internal sealed class RecipesService(
 
         RecipeDbObject? recipe = await dbContext
             .Recipes.WithRecipeId(recipeId)
-            .DeleteFieldNull()
+            .NotDeleted()
             .Include(r => r.RecipeSearchExtraction)
             .FirstOrDefaultAsync(ct);
 
@@ -172,7 +172,7 @@ internal sealed class RecipesService(
 
         long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
         recipe.LastModified = now;
-        recipe.Deleted = now;
+        recipe.IsDeleted = true;
         recipe.ConcurrencyTag = concurrencyTagProvider.NextTag();
         recipe.RecipeSearchExtraction?.ResetTrackingStatus(SearchExtractionStatus.PendingDelete);
         try
@@ -209,7 +209,7 @@ internal sealed class RecipesService(
         RecipeDbObject? recipe = await dbContext
             .Recipes.AsNoTracking()
             .WithRecipeId(recipeId)
-            .DeleteFieldNull()
+            .NotDeleted()
             .FirstOrDefaultAsync(ct);
 
         if (recipe is null)
@@ -254,7 +254,7 @@ internal sealed class RecipesService(
             .NotDeleted()
             .UserHasAccess(userId)
             .SelectMany(b => b.Recipes)
-            .DeleteFieldNull();
+            .NotDeleted();
 
         if (!string.IsNullOrWhiteSpace(args.RecipeBookKey))
         {
@@ -376,7 +376,7 @@ internal sealed class RecipesService(
 
         RecipeDbObject? recipe = await dbContext
             .Recipes.WithRecipeId(recipeId)
-            .DeleteFieldNull()
+            .NotDeleted()
             .Include(r => r.RecipeSearchExtraction)
             .FirstOrDefaultAsync(ct);
 
@@ -522,7 +522,7 @@ internal sealed class RecipesService(
         {
             if (
                 r is { RecipeId: long id, Kind: RecipeBookSearchIndexDocumentKind.Recipe }
-                && await dbContext.Recipes.WithRecipeId(id).DeleteFieldNull().AnyAsync(ct)
+                && await dbContext.Recipes.WithRecipeId(id).NotDeleted().AnyAsync(ct)
             )
             {
                 entries.Add(

@@ -122,35 +122,19 @@ internal sealed class RecipeBooksService(
             return new ConflictResult();
         }
 
-        bool triggerSearchIndexCleanup = false;
         long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
         MarkBookDirty(book, now);
-        book.Deleted = now;
-        //
-        // give 1 minute to let background tasks settle
-        book.NextDeletePoll = now + (long)TimeSpan.FromMinutes(1).TotalSeconds;
-        using var transaction = await dbContext.Database.BeginTransactionAsync(ct);
+        book.IsDeleted = true;
         try
         {
-            triggerSearchIndexCleanup = await RecipeBookDeletionHelper.CleanupBookLinksAsync(
-                dbContext,
-                bookId,
-                now,
-                ct
-            );
             await dbContext.SaveChangesAsync(ct);
-            await transaction.CommitAsync(ct);
         }
         catch (DbUpdateConcurrencyException)
         {
-            await transaction.RollbackAsync(ct);
             return new ConflictResult();
         }
 
-        if (triggerSearchIndexCleanup)
-        {
-            recipeMutationNotifyService.TriggerSearchIndexDelete();
-        }
+        recipeMutationNotifyService.TriggerSearchIndexDelete();
 
         return new EmptySuccessResult();
     }
@@ -928,7 +912,7 @@ internal sealed class RecipeBooksService(
     }
 
     /// <summary>
-    /// Helper method to mark a book as dirt
+    /// Helper method to mark a book as dirty
     /// </summary>
     /// <param name="book">the book to mark</param>
     /// <param name="now">the now instant if one is already in use for the whole operation</param>
@@ -991,5 +975,233 @@ internal sealed class RecipeBooksService(
         }
 
         return null;
+    }
+
+    public async Task<
+        DatabaseResultVariant<EmptySuccessResult, UserNotFoundResult>
+    > QueueRecipesBooksOwnedByUserForDeletionAsync(string userKey, CancellationToken ct)
+    {
+        if (!stringIdProvider.TryParseStringKey(userKey, out long userId))
+        {
+            return new UserNotFoundResult(userKey);
+        }
+
+        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        string token = concurrencyTagProvider.NextTag();
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+        await dbContext
+            .RecipeBooks.Where(b => b.OwnerFk == userId && !b.IsDeleted)
+            .ExecuteUpdateAsync(
+                p =>
+                    p.SetProperty(p => p.IsDeleted, true)
+                        .SetProperty(p => p.LastModified, now)
+                        .SetProperty(p => p.ConcurrencyTag, token),
+                ct
+            );
+
+        recipeMutationNotifyService.TriggerBookDelete();
+
+        return new EmptySuccessResult();
+    }
+
+    public async Task<
+        DatabaseResultVariant<EmptySuccessResult, UserNotFoundResult>
+    > DeleteRecipesBookAccessEntriesOwnedByUserAsync(string userKey, CancellationToken ct)
+    {
+        if (!stringIdProvider.TryParseStringKey(userKey, out long userId))
+        {
+            return new UserNotFoundResult(userKey);
+        }
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+        await dbContext
+            .RecipeBookAccessEntries.Where(acl => acl.UserFk == userId)
+            .ExecuteDeleteAsync(ct);
+
+        return new EmptySuccessResult();
+    }
+
+    public async Task<
+        DatabaseResultVariant<SuccessResult<bool>, UserNotFoundResult>
+    > HasAnyBooksAsync(string userKey, CancellationToken ct)
+    {
+        if (!stringIdProvider.TryParseStringKey(userKey, out long userId))
+        {
+            return new UserNotFoundResult(userKey);
+        }
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+        return new SuccessResult<bool>(
+            await dbContext.RecipeBooks.Where(b => b.OwnerFk == userId).AnyAsync(ct)
+        );
+    }
+
+    public async Task<
+        DatabaseResultVariant<EmptySuccessResult, SuccessResult<RecipeBookDeletionQueueEntry>>
+    > GetNextBookQueuedForDeletionAsync(CancellationToken ct)
+    {
+        var now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+
+        // get next book off the delete queue
+        var book = await dbContext
+            .RecipeBooks.IsDeleted()
+            .Where(book => book.NextDeletePoll < now)
+            .OrderBy(r => r.NextDeletePoll)
+            .ThenBy(r => r.Id)
+            .Select(b => new { b.Id, b.ConcurrencyTag })
+            .FirstOrDefaultAsync(ct);
+
+        if (book is null)
+        {
+            return new EmptySuccessResult();
+        }
+
+        return new SuccessResult<RecipeBookDeletionQueueEntry>(
+            new RecipeBookDeletionQueueEntry()
+            {
+                Id = stringIdProvider.AsString(book.Id),
+                ConcurrencyTag = book.ConcurrencyTag,
+            }
+        );
+    }
+
+    public async Task<
+        DatabaseResultVariant<EmptySuccessResult, ConflictResult>
+    > RequeueRecipesBooksForDeletionAsync(
+        string bookKey,
+        string concurrencyToken,
+        CancellationToken ct
+    )
+    {
+        if (!stringIdProvider.TryParseStringKey(bookKey, out long bookId))
+        {
+            return new ConflictResult();
+        }
+
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+        var queryData = await dbContext
+            .RecipeBooks.WithBookId(bookId)
+            .IsDeleted()
+            .WithConcurrencyTag(concurrencyToken)
+            .Select(b => new { b.NextDeletePoll, b.NextDeletePollCounter })
+            .FirstOrDefaultAsync(ct);
+
+        if (queryData is null)
+        {
+            return new ConflictResult();
+        }
+
+        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        var nextDeletePollCounter = Math.Min(16, queryData.NextDeletePollCounter + 1);
+        var nextDeletePoll = now + (1 << (int)queryData.NextDeletePollCounter);
+        var nextConcurrencyTag = concurrencyTagProvider.NextTag();
+
+        return
+            await dbContext
+                .RecipeBooks.WithBookId(bookId)
+                .IsDeleted()
+                .WithConcurrencyTag(concurrencyToken)
+                .ExecuteUpdateAsync(
+                    p =>
+                        p.SetProperty(b => b.NextDeletePoll, nextDeletePoll)
+                            .SetProperty(b => b.ConcurrencyTag, nextConcurrencyTag)
+                            .SetProperty(b => b.LastModified, now),
+                    ct
+                ) > 0
+            ? new EmptySuccessResult()
+            : new ConflictResult();
+    }
+
+    public async Task<
+        DatabaseResultVariant<EmptySuccessResult, ConflictResult>
+    > PurgeRecipeBookAsync(string bookKey, string concurrencyToken, CancellationToken ct)
+    {
+        if (!stringIdProvider.TryParseStringKey(bookKey, out long bookId))
+        {
+            return new ConflictResult();
+        }
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+
+        // check if the books exists, has matching concurrency token,
+        // and is deleted
+        if (
+            !await dbContext
+                .RecipeBooks.WithBookId(bookId)
+                .IsDeleted()
+                .WithConcurrencyTag(concurrencyToken)
+                .AnyAsync(ct)
+        )
+        {
+            return new ConflictResult();
+        }
+
+        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+
+        // flag recipes deleted so they stop showing up while background cleanup is in progress
+        bool anyRecipesDeleted =
+            await dbContext
+                .Recipes.Where(r => r.RecipeBookFk == bookId && !r.IsDeleted)
+                .ExecuteUpdateAsync(
+                    s =>
+                        s.SetProperty(r => r.IsDeleted, true)
+                            .SetProperty(r => r.LastModified, now)
+                            .SetProperty(r => r.ConcurrencyTag, concurrencyTagProvider.NextTag()),
+                    ct
+                ) > 0;
+
+        // populate search extraction entries to start search cleanup
+        bool anySearchEntriesQueued =
+            await dbContext
+                .RecipeSearchExtractionStatusEntries.Where(r =>
+                    r.RecipeBookFk == bookId
+                    && r.ExtractionStatus != SearchExtractionStatus.PendingDelete
+                )
+                .ExecuteUpdateAsync(
+                    s =>
+                        s.SetProperty(r => r.RetryCount, 0)
+                            .SetProperty(
+                                r => r.ExtractionStatus,
+                                SearchExtractionStatus.PendingDelete
+                            )
+                            .SetProperty(r => r.NextRetryTime, (long?)null)
+                            .SetProperty(r => r.LeaseToken, (string?)null)
+                            .SetProperty(r => r.LeaseExpireTime, (long?)null),
+                    ct
+                ) > 0;
+
+        if (anyRecipesDeleted || anySearchEntriesQueued)
+        {
+            recipeMutationNotifyService.TriggerSearchIndexDelete();
+            recipeMutationNotifyService.TriggerRecipeDelete();
+        }
+        else
+        {
+            await dbContext
+                .Recipes.Where(r => r.RecipeBookFk == bookId && r.RecipeSearchExtraction == null)
+                .ExecuteDeleteAsync(ct);
+        }
+
+        if (
+            anyRecipesDeleted
+            || anySearchEntriesQueued
+            || await dbContext.Recipes.Where(r => r.RecipeBookFk == bookId).AnyAsync(ct)
+        )
+        {
+            return new ConflictResult();
+        }
+
+        await dbContext
+            .RecipeBookAccessEntries.Where(access => access.RecipeBookFk == bookId)
+            .ExecuteDeleteAsync(ct);
+
+        try
+        {
+            await dbContext.RecipeBooks.WithBookId(bookId).ExecuteDeleteAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            return new ConflictResult();
+        }
+
+        return new EmptySuccessResult();
     }
 }
