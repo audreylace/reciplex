@@ -11,7 +11,6 @@ using Reciplex.Server.Database.SearchExporter;
 using Reciplex.Server.Database.SearchExporter.HostedServices;
 using Reciplex.Server.Database.SearchExporter.Repositories;
 using Reciplex.Server.Database.SearchExporter.SearchBackgroundTasks;
-using Reciplex.Server.Database.Strategies;
 using Reciplex.Server.Database.UsersDomain;
 using Reciplex.Server.Meilisearch;
 
@@ -36,10 +35,13 @@ public static partial class WebApplicationBuilderExtensions
         builder.Services.AddSingleton<IUserDeletionSignal, UserDeletionSignal>();
         builder.Services.AddHostedService<UserDeletionHostedService>();
 
+        // recipes
         builder.Services.AddSingleton<IRecipesService, RecipesService>();
+        builder.Services.AddHostedService<RecipeDeletionHostedService>();
+
         builder.Services.AddSingleton<IRecipeBooksService, RecipeBooksService>();
         builder.Services.AddRandomNumberGeneratorConcurrencyTagProvider();
-        builder.Services.AddHostedService<RecipePurgeWorkerHostedService>();
+        builder.Services.AddHostedService<RecipeDeletionHostedService>();
 
         ConfigureSearch(builder);
 

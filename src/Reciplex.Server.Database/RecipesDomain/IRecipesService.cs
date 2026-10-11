@@ -118,4 +118,12 @@ public interface IRecipesService
             ValidationFailureResult
         >
     > SearchRecipesAsync(string userKey, SearchRecipesArgs args, CancellationToken ct);
+
+    /// <summary>
+    /// Removes recipes with the delete status from the database that do not have associated dependent
+    /// records.
+    /// </summary>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>number of rows dropped</returns>
+    Task<int> PurgeDeletedUnreferencedRecipesAsync(CancellationToken ct);
 }

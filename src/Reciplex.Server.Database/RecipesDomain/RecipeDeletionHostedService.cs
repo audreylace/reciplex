@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Reciplex.Server.Database.SearchExporter;
+using Reciplex.Server.Database.SearchExporter.Repositories;
 
 namespace Reciplex.Server.Database.RecipesDomain;
 
@@ -10,14 +11,15 @@ namespace Reciplex.Server.Database.RecipesDomain;
 /// Background service that does final recipe purging from the database
 /// </summary>
 /// <param name="dbFactory">factory for getting database connections</param>
-/// <param name="recipeNotificationService">notification service for trigger cleanup runs on demand</param>
+/// <param name="recipeSearchExportStatusRepository">repository holding search extraction status information</param>
+/// <param name="recipesService">repository holding recipes</param>
 /// <param name="options">search options</param>
 /// <param name="logger">logger for this instance</param>
-class RecipePurgeWorkerHostedService(
-    IDbContextFactory<ApplicationDbContext> dbFactory,
-    IRecipeMutationNotifyService recipeNotificationService,
+class RecipeDeletionHostedService(
+    IRecipesService recipesService,
+    IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository,
     IOptions<SearchExporterOptions> options,
-    ILogger<RecipePurgeWorkerHostedService> logger
+    ILogger<RecipeDeletionHostedService> logger
 ) : BackgroundService
 {
     /// <inheritdoc />
@@ -41,25 +43,12 @@ class RecipePurgeWorkerHostedService(
     {
         try
         {
-            using var dbContext = await dbFactory.CreateDbContextAsync(ct);
-
             if (!options.Value.Enable) // if search extraction is not enabled then purge the extraction entries ourselves
             {
-                await dbContext
-                    .RecipeSearchExtractionStatusEntries.Where(e =>
-                        e.ExtractionStatus == DbObjects.SearchExtractionStatus.PendingDelete
-                    )
-                    .ExecuteDeleteAsync(ct);
+                await recipeSearchExportStatusRepository.PurgeMarkedForDeletionAsync(ct);
             }
 
-            await dbContext
-                .Recipes.Where(r => r.RecipeSearchExtraction == null && r.IsDeleted)
-                .ExecuteDeleteAsync(ct);
-
-            await recipeNotificationService.WaitForRecipeDeleteTriggerAsync(
-                TimeSpan.FromMinutes(1),
-                ct
-            );
+            await recipesService.PurgeDeletedUnreferencedRecipesAsync(ct);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {

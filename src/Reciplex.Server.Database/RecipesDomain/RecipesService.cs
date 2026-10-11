@@ -74,7 +74,7 @@ internal sealed class RecipesService(
             return new ForbiddenResult();
         }
 
-        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        long now = clock.NowUtcUnixSeconds();
 
         await using var transaction = await dbContext.Database.BeginTransactionAsync(ct);
 
@@ -170,11 +170,12 @@ internal sealed class RecipesService(
             return new ConflictResult();
         }
 
-        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        long now = clock.NowUtcUnixSeconds();
         recipe.LastModified = now;
         recipe.IsDeleted = true;
         recipe.ConcurrencyTag = concurrencyTagProvider.NextTag();
         recipe.RecipeSearchExtraction?.ResetTrackingStatus(SearchExtractionStatus.PendingDelete);
+        recipe.DeletedTime = now;
         try
         {
             await dbContext.SaveChangesAsync(ct);
@@ -406,7 +407,7 @@ internal sealed class RecipesService(
         recipe.Name = args.Name;
         recipe.ShortDescription = args.ShortDescription;
         recipe.Details = args.Details;
-        recipe.LastModified = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        recipe.LastModified = clock.NowUtcUnixSeconds();
         recipe.ConcurrencyTag = concurrencyTagProvider.NextTag();
         recipe.RecipeSearchExtraction?.ResetTrackingStatus(
             SearchExtractionStatus.PendingExtraction
@@ -538,5 +539,14 @@ internal sealed class RecipesService(
         }
 
         return new SuccessResult<List<RecipeListEntryDao>>(entries);
+    }
+
+    /// <inheritdoc />
+    public async Task<int> PurgeDeletedUnreferencedRecipesAsync(CancellationToken ct)
+    {
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+        return await dbContext
+            .Recipes.Where(r => r.RecipeSearchExtraction == null && r.IsDeleted)
+            .ExecuteDeleteAsync(ct);
     }
 }

@@ -384,4 +384,14 @@ sealed class RecipeSearchExportStatusRepository(
                 ct
             );
     }
+
+    public async Task<int> PurgeMarkedForDeletionAsync(CancellationToken ct)
+    {
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+        return await dbContext
+            .RecipeSearchExtractionStatusEntries.Where(e =>
+                e.ExtractionStatus == SearchExtractionStatus.PendingDelete
+            )
+            .ExecuteDeleteAsync(ct);
+    }
 }

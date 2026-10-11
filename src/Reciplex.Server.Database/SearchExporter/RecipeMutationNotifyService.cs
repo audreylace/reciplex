@@ -22,14 +22,6 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
         }
     );
 
-    private readonly Channel<long> _recipeDeleteChannel = Channel.CreateBounded<long>(
-        new BoundedChannelOptions(1)
-        {
-            SingleReader = true,
-            FullMode = BoundedChannelFullMode.DropWrite,
-        }
-    );
-
     private readonly Channel<long> _bookDeleteChannel = Channel.CreateBounded<long>(
         new BoundedChannelOptions(1)
         {
@@ -41,11 +33,6 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
     public void TriggerBookDelete()
     {
         _bookDeleteChannel.Writer.TryWrite(0);
-    }
-
-    public void TriggerRecipeDelete()
-    {
-        _recipeDeleteChannel.Writer.TryWrite(0);
     }
 
     public void TriggerSearchExtraction()
@@ -69,11 +56,6 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
     public Task WaitForBookDeleteTriggerAsync(TimeSpan timeout, CancellationToken ct)
     {
         return WaitOnChannel(_searchIndexChangeChannel, timeout, ct);
-    }
-
-    public Task WaitForRecipeDeleteTriggerAsync(TimeSpan timeout, CancellationToken ct)
-    {
-        return WaitOnChannel(_recipeDeleteChannel, timeout, ct);
     }
 
     public Task WaitForSearchExtractionTriggerAsync(TimeSpan timeout, CancellationToken ct)

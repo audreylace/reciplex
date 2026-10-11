@@ -136,4 +136,6 @@ interface IRecipeSearchExportStatusRepository
         string leaseToken,
         CancellationToken ct
     );
+
+    public Task<int> PurgeMarkedForDeletionAsync(CancellationToken ct);
 }

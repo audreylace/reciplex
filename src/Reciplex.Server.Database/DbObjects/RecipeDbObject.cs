@@ -76,6 +76,11 @@ public class RecipeDbObject
     public bool IsDeleted { get; set; }
 
     /// <summary>
+    /// Timestamp of deletion
+    /// </summary>
+    public long? DeletedTime { get; set; }
+
+    /// <summary>
     /// Pointer to recipe search extraction tracking record
     /// </summary>
     public RecipeSearchWorkerStateDbObject? RecipeSearchExtraction { get; set; }
