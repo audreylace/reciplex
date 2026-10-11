@@ -19,6 +19,6 @@ class UsersQueuedForDeletionNotificationService() : IUsersQueuedForDeletionNotif
 
     public Task WaitForWake(TimeSpan timeout, CancellationToken ct)
     {
-       return _user.WaitOnChannel(timeout, ct)
+        return _user.WaitOnChannel(timeout, ct);
     }
 }

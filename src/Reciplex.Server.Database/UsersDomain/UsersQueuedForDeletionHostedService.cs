@@ -48,17 +48,11 @@ class UsersQueuedForDeletionHostedService(
     private async Task PurgeOneUserAsync(UserDao userDao, CancellationToken ct)
     {
         // clear user's access entries
-        DatabaseResultVariant<
-            EmptySuccessResult,
-            ValidationFailureResult
-        > accessEntryDeletionResult =
+        DatabaseResultVariant<EmptySuccessResult, UserNotFoundResult> accessEntryDeletionResult =
             await recipeBooksService.DeleteRecipesBookAccessEntriesOwnedByUserAsync(userDao.Id, ct);
 
         // queue recipe book's owned by the user for deletion
-        DatabaseResultVariant<
-            EmptySuccessResult,
-            ValidationFailureResult
-        > booksDeletionQueueResult =
+        DatabaseResultVariant<EmptySuccessResult, UserNotFoundResult> booksDeletionQueueResult =
             await recipeBooksService.QueueRecipesBooksOwnedByUserForDeletionAsync(userDao.Id, ct);
 
         if (

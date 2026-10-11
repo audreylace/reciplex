@@ -30,6 +30,19 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
         }
     );
 
+    private readonly Channel<long> _bookDeleteChannel = Channel.CreateBounded<long>(
+        new BoundedChannelOptions(1)
+        {
+            SingleReader = true,
+            FullMode = BoundedChannelFullMode.DropWrite,
+        }
+    );
+
+    public void TriggerBookDelete()
+    {
+        _bookDeleteChannel.Writer.TryWrite(0);
+    }
+
     public void TriggerRecipeDelete()
     {
         _recipeDeleteChannel.Writer.TryWrite(0);
@@ -51,6 +64,11 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
             return;
         }
         _searchIndexDeleteChannel.Writer.TryWrite(0);
+    }
+
+    public Task WaitForBookDeleteTriggerAsync(TimeSpan timeout, CancellationToken ct)
+    {
+        return WaitOnChannel(_searchIndexChangeChannel, timeout, ct);
     }
 
     public Task WaitForRecipeDeleteTriggerAsync(TimeSpan timeout, CancellationToken ct)
@@ -75,28 +93,6 @@ public class RecipeMutationNotifyService(IOptions<SearchExporterOptions> options
             throw new InvalidOperationException();
         }
 
-        using CancellationTokenSource cancellationTokenSource =
-            CancellationTokenSource.CreateLinkedTokenSource(ct);
-        cancellationTokenSource.CancelAfter(timeout);
-        try
-        {
-            while (
-                !cancellationTokenSource.IsCancellationRequested
-                && await channel.Reader.WaitToReadAsync(cancellationTokenSource.Token)
-            )
-            {
-                if (channel.Reader.TryRead(out _))
-                {
-                    return;
-                }
-            }
-        }
-        catch (OperationCanceledException)
-            when (cancellationTokenSource.Token.IsCancellationRequested
-                && !ct.IsCancellationRequested
-            )
-        {
-            return;
-        }
+        await channel.WaitOnChannel(timeout, ct);
     }
 }
