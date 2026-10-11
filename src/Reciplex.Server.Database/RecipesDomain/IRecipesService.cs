@@ -126,4 +126,16 @@ public interface IRecipesService
     /// <param name="ct">async cancellation token</param>
     /// <returns>number of rows dropped</returns>
     Task<int> PurgeDeletedUnreferencedRecipesAsync(CancellationToken ct);
+
+    /// <summary>
+    /// Removes recipes with the delete status from the database that do not have associated dependent
+    /// records.
+    /// </summary>
+    /// <param name="bookId">the book to scope to</param>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>number of rows dropped</returns>
+    Task<int> PurgeDeletedUnreferencedRecipesAsync(long bookId, CancellationToken ct);
+
+    Task<int> QueueRecipesInBookForDeletion(long bookId, CancellationToken ct);
+    Task<bool> AnyRecipesInBookAsync(long bookId, CancellationToken ct);
 }

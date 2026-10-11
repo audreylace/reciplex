@@ -7,7 +7,7 @@ static partial class RecipeBookDeletionWorkerHostedServiceLogger
     [LoggerMessage(LogLevel.Error, "Got an exception deleting book '{BookId}'")]
     public static partial void Error_BookDeleteFailed(
         this ILogger<RecipeBookDeletionWorkerHostedService> logger,
-        string BookId,
+        long BookId,
         Exception ex
     );
 

@@ -72,7 +72,7 @@ public interface IRecipeBooksService
     Task<
         DatabaseResultVariant<EmptySuccessResult, ConflictResult>
     > RequeueRecipesBooksForDeletionAsync(
-        string bookKey,
+        long bookId,
         string concurrencyToken,
         CancellationToken ct
     );
@@ -95,7 +95,7 @@ public interface IRecipeBooksService
     > GetNextBookQueuedForDeletionAsync(CancellationToken ct);
 
     Task<DatabaseResultVariant<EmptySuccessResult, ConflictResult>> PurgeRecipeBookAsync(
-        string bookKey,
+        long bookId,
         string concurrencyToken,
         CancellationToken ct
     );
@@ -250,4 +250,17 @@ public interface IRecipeBooksService
         > entriesToAddUpdateOrDelete,
         CancellationToken ct
     );
+
+    /// <summary>
+    /// Signals to background processes that there is work related to books being deleted
+    /// </summary>
+    void SignalDeletion();
+
+    /// <summary>
+    /// Internal background processes wait on this for a singla that there
+    /// is work to do related to books being deleted.
+    /// </summary>
+    /// <param name="timeout">how long to wait</param>
+    /// <param name="ct">cancels the operation</param>
+    public Task WaitForDeleteSignal(TimeSpan timeout, CancellationToken ct);
 }

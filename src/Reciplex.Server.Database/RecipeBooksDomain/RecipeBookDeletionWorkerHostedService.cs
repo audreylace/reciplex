@@ -1,20 +1,22 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Reciplex.Server.Abstractions;
+using Reciplex.Server.Database.RecipesDomain;
 using Reciplex.Server.Database.Results;
-using Reciplex.Server.Database.SearchExporter;
+using Reciplex.Server.Database.SearchIndexTrackingDomain;
 
 namespace Reciplex.Server.Database.RecipeBooksDomain;
 
 /// <summary>
 /// Hosted service that finishes deletion of recipe books
 /// </summary>
-/// <param name="notificationService">service for sending notifications between services</param>
 /// <param name="logger">logger for this instance</param>
 /// <param name="booksService">service for manipulating database objects</param>
 class RecipeBookDeletionWorkerHostedService(
-    IRecipeMutationNotifyService notificationService,
     ILogger<RecipeBookDeletionWorkerHostedService> logger,
-    IRecipeBooksService booksService
+    IRecipeBooksService booksService,
+    IRecipesService recipesService,
+    IRecipeSearchExportStatusRepository searchExportStatusRepository
 ) : BackgroundService
 {
     /// <inheritdoc />
@@ -48,10 +50,7 @@ class RecipeBookDeletionWorkerHostedService(
             }
             else
             {
-                await notificationService.WaitForBookDeleteTriggerAsync(
-                    TimeSpan.FromMinutes(1),
-                    ct
-                );
+                await booksService.WaitForDeleteSignal(TimeSpan.FromMinutes(1), ct);
             }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -78,6 +77,27 @@ class RecipeBookDeletionWorkerHostedService(
     {
         try
         {
+            bool waitOnRecipeDeleteQueue =
+                await recipesService.QueueRecipesInBookForDeletion(queueEntry.Id, ct) > 0;
+
+            bool waitOnSearchExtractionStatus =
+                await searchExportStatusRepository.MarkExtractionStatusForBookAsPendingDeleteAsync(
+                    queueEntry.Id,
+                    ct
+                ) > 0;
+
+            await recipesService.PurgeDeletedUnreferencedRecipesAsync(queueEntry.Id, ct);
+
+            if (waitOnRecipeDeleteQueue || waitOnSearchExtractionStatus)
+            {
+                await booksService.RequeueRecipesBooksForDeletionAsync(
+                    queueEntry.Id,
+                    queueEntry.ConcurrencyTag,
+                    ct
+                );
+                return;
+            }
+
             DatabaseResultVariant<EmptySuccessResult, ConflictResult> result =
                 await booksService.PurgeRecipeBookAsync(
                     queueEntry.Id,

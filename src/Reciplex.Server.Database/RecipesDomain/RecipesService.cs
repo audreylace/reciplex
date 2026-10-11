@@ -1,12 +1,14 @@
+using System.Threading.Channels;
 using Microsoft.EntityFrameworkCore;
 using NodaTime;
+using Reciplex.Server.Abstractions;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Abstractions.StringIdProvider;
 using Reciplex.Server.Database.DbObjects;
 using Reciplex.Server.Database.RecipeBooksDomain;
 using Reciplex.Server.Database.Results;
-using Reciplex.Server.Database.SearchExporter;
-using Reciplex.Server.Database.SearchExporter.Repositories;
+using Reciplex.Server.Database.SearchIndexDomain;
+using Reciplex.Server.Database.SearchIndexTrackingDomain;
 using Reciplex.Server.Database.UsersDomain;
 
 namespace Reciplex.Server.Database.RecipesDomain;
@@ -25,8 +27,8 @@ internal sealed class RecipesService(
     IClock clock,
     IConcurrencyTagProvider concurrencyTagProvider,
     IStringIdProvider stringIdProvider,
-    IRecipeMutationNotifyService recipeMutationNotifyService,
-    ISearchIndexRepository? searchIndexRepository
+    IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository,
+    ISearchIndexRepository searchIndexRepository
 ) : IRecipesService
 {
     /// <inheritdoc />
@@ -107,7 +109,7 @@ internal sealed class RecipesService(
             await transaction.RollbackAsync(ct);
             throw;
         }
-        recipeMutationNotifyService.TriggerSearchExtraction();
+        recipeSearchExportStatusRepository.SignalSearchExtractionWork();
         return new SuccessResult<RecipeDao>(DbObjectToRecipeDao(recipeDbObject, true));
     }
 
@@ -184,7 +186,7 @@ internal sealed class RecipesService(
         {
             return new ConflictResult();
         }
-        recipeMutationNotifyService.TriggerSearchIndexDelete();
+        recipeSearchExportStatusRepository.SignalSearchDeleteWork();
         return new EmptySuccessResult();
     }
 
@@ -421,7 +423,7 @@ internal sealed class RecipesService(
             return new ConflictResult();
         }
 
-        recipeMutationNotifyService.TriggerSearchExtraction();
+        recipeSearchExportStatusRepository.SignalSearchExtractionWork();
         return new SuccessResult<RecipeDao>(DbObjectToRecipeDao(recipe, true));
     }
 
@@ -548,5 +550,39 @@ internal sealed class RecipesService(
         return await dbContext
             .Recipes.Where(r => r.RecipeSearchExtraction == null && r.IsDeleted)
             .ExecuteDeleteAsync(ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<int> PurgeDeletedUnreferencedRecipesAsync(long bookId, CancellationToken ct)
+    {
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+        return await dbContext
+            .Recipes.Where(r =>
+                r.RecipeSearchExtraction == null && r.IsDeleted && r.RecipeBookFk == bookId
+            )
+            .ExecuteDeleteAsync(ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<int> QueueRecipesInBookForDeletion(long bookId, CancellationToken ct)
+    {
+        long now = clock.NowUtcUnixSeconds();
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+        return await dbContext
+            .Recipes.Where(r => r.RecipeBookFk == bookId && !r.IsDeleted)
+            .ExecuteUpdateAsync(
+                s =>
+                    s.SetProperty(r => r.IsDeleted, true)
+                        .SetProperty(r => r.LastModified, now)
+                        .SetProperty(r => r.ConcurrencyTag, concurrencyTagProvider.NextTag()),
+                ct
+            );
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> AnyRecipesInBookAsync(long bookId, CancellationToken ct)
+    {
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+        return await dbContext.Recipes.Where(r => r.RecipeBookFk == bookId).AnyAsync(ct);
     }
 }

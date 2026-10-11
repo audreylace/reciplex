@@ -11,6 +11,7 @@ using Reciplex.Server.Database.SearchExporter;
 using Reciplex.Server.Database.SearchExporter.HostedServices;
 using Reciplex.Server.Database.SearchExporter.Repositories;
 using Reciplex.Server.Database.SearchExporter.SearchBackgroundTasks;
+using Reciplex.Server.Database.SearchIndexTrackingDomain;
 using Reciplex.Server.Database.UsersDomain;
 using Reciplex.Server.Meilisearch;
 

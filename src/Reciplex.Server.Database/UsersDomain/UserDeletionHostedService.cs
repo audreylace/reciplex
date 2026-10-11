@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Reciplex.Server.Abstractions;
 using Reciplex.Server.Database.RecipeBooksDomain;
 using Reciplex.Server.Database.Results;
-using Reciplex.Server.Database.SearchExporter;
 
 namespace Reciplex.Server.Database.UsersDomain;
 

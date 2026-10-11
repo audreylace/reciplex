@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reciplex.Server.Abstraction
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reciplex.Server.Meilisearch", "src\Reciplex.Server.Meilisearch\Reciplex.Server.Meilisearch.csproj", "{9B8BF064-B5F0-4EB7-8325-19FECFC317D0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reciplex.Server.SearchExporter", "src\Reciplex.Server.SearchExporter\Reciplex.Server.SearchExporter.csproj", "{EBD089B3-109A-4006-9F68-08276AF2C1EF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,6 +73,18 @@ Global
 		{9B8BF064-B5F0-4EB7-8325-19FECFC317D0}.Release|x64.Build.0 = Release|Any CPU
 		{9B8BF064-B5F0-4EB7-8325-19FECFC317D0}.Release|x86.ActiveCfg = Release|Any CPU
 		{9B8BF064-B5F0-4EB7-8325-19FECFC317D0}.Release|x86.Build.0 = Release|Any CPU
+		{EBD089B3-109A-4006-9F68-08276AF2C1EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EBD089B3-109A-4006-9F68-08276AF2C1EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EBD089B3-109A-4006-9F68-08276AF2C1EF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{EBD089B3-109A-4006-9F68-08276AF2C1EF}.Debug|x64.Build.0 = Debug|Any CPU
+		{EBD089B3-109A-4006-9F68-08276AF2C1EF}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{EBD089B3-109A-4006-9F68-08276AF2C1EF}.Debug|x86.Build.0 = Debug|Any CPU
+		{EBD089B3-109A-4006-9F68-08276AF2C1EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EBD089B3-109A-4006-9F68-08276AF2C1EF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EBD089B3-109A-4006-9F68-08276AF2C1EF}.Release|x64.ActiveCfg = Release|Any CPU
+		{EBD089B3-109A-4006-9F68-08276AF2C1EF}.Release|x64.Build.0 = Release|Any CPU
+		{EBD089B3-109A-4006-9F68-08276AF2C1EF}.Release|x86.ActiveCfg = Release|Any CPU
+		{EBD089B3-109A-4006-9F68-08276AF2C1EF}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -80,5 +94,6 @@ Global
 		{E30E8577-4970-4E35-BCF2-4C2D8824ECA7} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{24E726CF-9475-446F-A945-2B726086C5F8} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{9B8BF064-B5F0-4EB7-8325-19FECFC317D0} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{EBD089B3-109A-4006-9F68-08276AF2C1EF} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

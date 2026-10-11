@@ -1,6 +1,7 @@
 using System.Data;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
+using System.Threading.Channels;
 using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -9,7 +10,6 @@ using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Abstractions.StringIdProvider;
 using Reciplex.Server.Database.DbObjects;
 using Reciplex.Server.Database.Results;
-using Reciplex.Server.Database.SearchExporter;
 using Reciplex.Server.Database.UsersDomain;
 
 namespace Reciplex.Server.Database.RecipeBooksDomain;
@@ -18,10 +18,32 @@ internal sealed class RecipeBooksService(
     IClock clock,
     IConcurrencyTagProvider concurrencyTagProvider,
     IDbContextFactory<ApplicationDbContext> dbFactory,
-    IStringIdProvider stringIdProvider,
-    IRecipeMutationNotifyService recipeMutationNotifyService
+    IStringIdProvider stringIdProvider
 ) : IRecipeBooksService
 {
+    /// <summary>
+    /// Bounded channel used like a conditional variable
+    /// </summary>
+    private readonly Channel<long> _bookDeletionSignal = Channel.CreateBounded<long>(
+        new BoundedChannelOptions(1)
+        {
+            SingleReader = true,
+            FullMode = BoundedChannelFullMode.DropWrite,
+        }
+    );
+
+    /// <inheritdoc />
+    public void SignalDeletion()
+    {
+        _bookDeletionSignal.Writer.TryWrite(0);
+    }
+
+    /// <inheritdoc />
+    public Task WaitForDeleteSignal(TimeSpan timeout, CancellationToken ct)
+    {
+        return _bookDeletionSignal.WaitOnChannel(timeout, ct);
+    }
+
     /// <inheritdoc />
     public async Task<
         DatabaseResultVariant<
@@ -134,7 +156,7 @@ internal sealed class RecipeBooksService(
             return new ConflictResult();
         }
 
-        recipeMutationNotifyService.TriggerBookDelete();
+        SignalDeletion();
 
         return new EmptySuccessResult();
     }
@@ -997,7 +1019,7 @@ internal sealed class RecipeBooksService(
                 ct
             );
 
-        recipeMutationNotifyService.TriggerBookDelete();
+        SignalDeletion();
 
         return new EmptySuccessResult();
     }
@@ -1056,7 +1078,7 @@ internal sealed class RecipeBooksService(
         return new SuccessResult<RecipeBookDeletionQueueEntry>(
             new RecipeBookDeletionQueueEntry()
             {
-                Id = stringIdProvider.AsString(book.Id),
+                Id = book.Id,
                 ConcurrencyTag = book.ConcurrencyTag,
             }
         );
@@ -1065,16 +1087,11 @@ internal sealed class RecipeBooksService(
     public async Task<
         DatabaseResultVariant<EmptySuccessResult, ConflictResult>
     > RequeueRecipesBooksForDeletionAsync(
-        string bookKey,
+        long bookId,
         string concurrencyToken,
         CancellationToken ct
     )
     {
-        if (!stringIdProvider.TryParseStringKey(bookKey, out long bookId))
-        {
-            return new ConflictResult();
-        }
-
         using var dbContext = await dbFactory.CreateDbContextAsync(ct);
         var queryData = await dbContext
             .RecipeBooks.WithBookId(bookId)
@@ -1111,12 +1128,8 @@ internal sealed class RecipeBooksService(
 
     public async Task<
         DatabaseResultVariant<EmptySuccessResult, ConflictResult>
-    > PurgeRecipeBookAsync(string bookKey, string concurrencyToken, CancellationToken ct)
+    > PurgeRecipeBookAsync(long bookId, string concurrencyToken, CancellationToken ct)
     {
-        if (!stringIdProvider.TryParseStringKey(bookKey, out long bookId))
-        {
-            return new ConflictResult();
-        }
         using var dbContext = await dbFactory.CreateDbContextAsync(ct);
 
         // check if the books exists, has matching concurrency token,
@@ -1127,61 +1140,6 @@ internal sealed class RecipeBooksService(
                 .IsDeleted()
                 .WithConcurrencyTag(concurrencyToken)
                 .AnyAsync(ct)
-        )
-        {
-            return new ConflictResult();
-        }
-
-        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
-
-        // flag recipes deleted so they stop showing up while background cleanup is in progress
-        bool anyRecipesDeleted =
-            await dbContext
-                .Recipes.Where(r => r.RecipeBookFk == bookId && !r.IsDeleted)
-                .ExecuteUpdateAsync(
-                    s =>
-                        s.SetProperty(r => r.IsDeleted, true)
-                            .SetProperty(r => r.LastModified, now)
-                            .SetProperty(r => r.ConcurrencyTag, concurrencyTagProvider.NextTag()),
-                    ct
-                ) > 0;
-
-        // populate search extraction entries to start search cleanup
-        bool anySearchEntriesQueued =
-            await dbContext
-                .RecipeSearchExtractionStatusEntries.Where(r =>
-                    r.RecipeBookFk == bookId
-                    && r.ExtractionStatus != SearchExtractionStatus.PendingDelete
-                )
-                .ExecuteUpdateAsync(
-                    s =>
-                        s.SetProperty(r => r.RetryCount, 0)
-                            .SetProperty(
-                                r => r.ExtractionStatus,
-                                SearchExtractionStatus.PendingDelete
-                            )
-                            .SetProperty(r => r.NextRetryTime, (long?)null)
-                            .SetProperty(r => r.LeaseToken, (string?)null)
-                            .SetProperty(r => r.LeaseExpireTime, (long?)null),
-                    ct
-                ) > 0;
-
-        if (anyRecipesDeleted || anySearchEntriesQueued)
-        {
-            recipeMutationNotifyService.TriggerSearchIndexDelete();
-            recipeMutationNotifyService.TriggerRecipeDelete();
-        }
-        else
-        {
-            await dbContext
-                .Recipes.Where(r => r.RecipeBookFk == bookId && r.RecipeSearchExtraction == null)
-                .ExecuteDeleteAsync(ct);
-        }
-
-        if (
-            anyRecipesDeleted
-            || anySearchEntriesQueued
-            || await dbContext.Recipes.Where(r => r.RecipeBookFk == bookId).AnyAsync(ct)
         )
         {
             return new ConflictResult();

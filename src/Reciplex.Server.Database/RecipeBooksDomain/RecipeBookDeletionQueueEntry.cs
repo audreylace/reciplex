@@ -5,7 +5,7 @@ public class RecipeBookDeletionQueueEntry
     /// <summary>
     /// Books primary key.
     /// </summary>
-    public required string Id { get; init; }
+    public required long Id { get; init; }
 
     /// <summary>
     /// The concurrency tag. MUST be transportable via ETAG header.
