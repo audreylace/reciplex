@@ -173,7 +173,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
             DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>,
             ValidationFailureResult,
             Database.Results.ConflictResult
-        > deleteResult = await recipeBookService.DeleteRecipeBookAsync(
+        > deleteResult = await recipeBookService.QueueRecipeBookDeleteAsync(
             bookKey,
             userKey,
             ifMatch.Value,

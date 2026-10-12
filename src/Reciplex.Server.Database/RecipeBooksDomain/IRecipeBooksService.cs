@@ -62,7 +62,43 @@ public interface IRecipeBooksService
             ValidationFailureResult,
             ConflictResult
         >
-    > DeleteRecipeBookAsync(string bookKey, string userKey, string ocTag, CancellationToken ct);
+    > QueueRecipeBookDeleteAsync(
+        string bookKey,
+        string userKey,
+        string ocTag,
+        CancellationToken ct
+    );
+
+    Task<
+        DatabaseResultVariant<EmptySuccessResult, ConflictResult>
+    > RequeueRecipesBooksForDeletionAsync(
+        long bookId,
+        string concurrencyToken,
+        CancellationToken ct
+    );
+
+    Task<
+        DatabaseResultVariant<EmptySuccessResult, UserNotFoundResult>
+    > QueueRecipesBooksOwnedByUserForDeletionAsync(string userKey, CancellationToken ct);
+
+    Task<
+        DatabaseResultVariant<EmptySuccessResult, UserNotFoundResult>
+    > DeleteRecipesBookAccessEntriesOwnedByUserAsync(string userKey, CancellationToken ct);
+
+    Task<DatabaseResultVariant<SuccessResult<bool>, UserNotFoundResult>> HasAnyBooksAsync(
+        string userKey,
+        CancellationToken ct
+    );
+
+    Task<
+        DatabaseResultVariant<EmptySuccessResult, SuccessResult<RecipeBookDeletionQueueEntry>>
+    > GetNextBookQueuedForDeletionAsync(CancellationToken ct);
+
+    Task<DatabaseResultVariant<EmptySuccessResult, ConflictResult>> PurgeRecipeBookAsync(
+        long bookId,
+        string concurrencyToken,
+        CancellationToken ct
+    );
 
     /// <summary>
     /// Creates a recipe book
@@ -214,4 +250,17 @@ public interface IRecipeBooksService
         > entriesToAddUpdateOrDelete,
         CancellationToken ct
     );
+
+    /// <summary>
+    /// Signals to background processes that there is work related to books being deleted
+    /// </summary>
+    void SignalDeletion();
+
+    /// <summary>
+    /// Internal background processes wait on this for a singla that there
+    /// is work to do related to books being deleted.
+    /// </summary>
+    /// <param name="timeout">how long to wait</param>
+    /// <param name="ct">cancels the operation</param>
+    public Task WaitForDeleteSignal(TimeSpan timeout, CancellationToken ct);
 }

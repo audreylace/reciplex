@@ -3,6 +3,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
 using NodaTime;
+using Reciplex.Server.Abstractions;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Abstractions.StringIdProvider;
 using Reciplex.Server.Database.DbObjects;
@@ -13,13 +14,16 @@ namespace Reciplex.Server.Database.UsersDomain;
 /// <summary>
 /// Implements <see cref="IUsersService"/>
 /// </summary>
-/// <param name="applicationDbContext">the database connection</param>
+/// <param name="dbFactory">database connection factory</param>
 /// <param name="concurrencyTagProvider">provider for generating concurrency tags</param>
+/// <param name="stringIdProvider">provider for marshalling user keys to and from strings</param>
+/// <param name="userDeletionNotify">service for notifying the background deletion worker to wake up</param>
 /// <param name="clock">clock for getting time</param>
 public class UsersService(
-    ApplicationDbContext applicationDbContext,
+    IDbContextFactory<ApplicationDbContext> dbFactory,
     IConcurrencyTagProvider concurrencyTagProvider,
     IStringIdProvider stringIdProvider,
+    IUserDeletionSignal userDeletionNotify,
     IClock clock
 ) : IUsersService
 {
@@ -35,7 +39,7 @@ public class UsersService(
             return new ValidationFailureResult(validationResult.ToDictionary());
         }
 
-        long now = Now();
+        long now = clock.NowUtcUnixSeconds();
         UserDbObject u = new()
         {
             ConcurrencyTag = concurrencyTagProvider.NextTag(),
@@ -45,6 +49,9 @@ public class UsersService(
             Subject = args.Subject,
             Authority = args.Authority,
         };
+
+        await using ApplicationDbContext applicationDbContext =
+            await dbFactory.CreateDbContextAsync(ct);
 
         applicationDbContext.Add(u);
         await applicationDbContext.SaveChangesAsync(ct);
@@ -62,19 +69,22 @@ public class UsersService(
     /// <inheritdoc />
     public async Task<
         DatabaseResultVariant<EmptySuccessResult, ConflictResult, UserNotFoundResult>
-    > DeleteUserAsync(string userKey, string concurrencyToken, CancellationToken ct)
+    > QueueUserDeleteAsync(string userKey, string concurrencyToken, CancellationToken ct)
     {
         if (!stringIdProvider.TryParseStringKey(userKey, out long userId))
         {
             return new UserNotFoundResult(userKey);
         }
 
+        await using ApplicationDbContext applicationDbContext =
+            await dbFactory.CreateDbContextAsync(ct);
+
         UserDbObject? userRecord = await applicationDbContext
             .Users.WithId(userId)
             .UserNotDeleted()
             .FirstOrDefaultAsync(ct);
 
-        if (userRecord is null || userRecord.Deleted != null)
+        if (userRecord is null || userRecord.IsDeleted)
         {
             return new UserNotFoundResult(userKey);
         }
@@ -84,10 +94,11 @@ public class UsersService(
             return new ConflictResult();
         }
 
-        long now = Now();
+        long now = clock.NowUtcUnixSeconds();
         userRecord.ConcurrencyTag = concurrencyTagProvider.NextTag();
         userRecord.LastModified = now;
-        userRecord.Deleted = now;
+        userRecord.IsDeleted = true;
+        userRecord.DeletedTime = now;
 
         try
         {
@@ -97,6 +108,8 @@ public class UsersService(
         {
             return new ConflictResult();
         }
+
+        userDeletionNotify.SignalDeletion();
 
         return new EmptySuccessResult();
     }
@@ -111,6 +124,8 @@ public class UsersService(
             return new UserNotFoundResult(userKey);
         }
 
+        await using ApplicationDbContext applicationDbContext =
+            await dbFactory.CreateDbContextAsync(cancellationToken);
         var result = await applicationDbContext
             .Users.AsNoTracking()
             .WithId(userId)
@@ -137,6 +152,8 @@ public class UsersService(
         CancellationToken ct
     )
     {
+        await using ApplicationDbContext applicationDbContext =
+            await dbFactory.CreateDbContextAsync(ct);
         return await applicationDbContext
             .Users.AsNoTracking()
             .Where(u => u.Authority == authority && u.Subject == subject)
@@ -165,6 +182,8 @@ public class UsersService(
             return new UserNotFoundResult(userKey);
         }
 
+        await using ApplicationDbContext applicationDbContext =
+            await dbFactory.CreateDbContextAsync(ct);
         var user = await applicationDbContext
             .Users.AsNoTracking()
             .WithId(userId)
@@ -219,12 +238,14 @@ public class UsersService(
             return new ValidationFailureResult(validationResult.ToDictionary());
         }
 
+        await using ApplicationDbContext applicationDbContext =
+            await dbFactory.CreateDbContextAsync(ct);
         UserDbObject? u = await applicationDbContext
             .Users.WithId(userId)
             .UserNotDeleted()
             .FirstOrDefaultAsync(ct);
 
-        if (u is null || u.Deleted != null)
+        if (u is null || u.IsDeleted)
         {
             return new UserNotFoundResult(userKey);
         }
@@ -234,7 +255,7 @@ public class UsersService(
             return new ConflictResult();
         }
 
-        long now = Now();
+        long now = clock.NowUtcUnixSeconds();
         u.ConcurrencyTag = concurrencyTagProvider.NextTag();
         u.LastModified = now;
         u.DisplayName = args.DisplayName;
@@ -258,12 +279,129 @@ public class UsersService(
         );
     }
 
-    /// <summary>
-    /// Now as a long 64 but unix time stamp with second resolution
-    /// </summary>
-    /// <returns>the value</returns>
-    private long Now()
+    /// <inheritdoc />
+    public async Task<
+        DatabaseResultVariant<EmptySuccessResult, SuccessResult<UserDao>>
+    > GetNextUserQueuedForDeletionAsync(CancellationToken ct)
     {
-        return clock.GetCurrentInstant().ToUnixTimeSeconds();
+        long now = clock.NowUtcUnixSeconds();
+        await using ApplicationDbContext applicationDbContext =
+            await dbFactory.CreateDbContextAsync(ct);
+        var queryData = await applicationDbContext
+            .Users.Where(u => u.IsDeleted && u.NextDeletePoll < now)
+            .Select(u => new
+            {
+                u.Id,
+                u.DisplayName,
+                u.ConcurrencyTag,
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (queryData is null)
+        {
+            return new EmptySuccessResult();
+        }
+
+        return new SuccessResult<UserDao>(
+            new()
+            {
+                Id = stringIdProvider.AsString(queryData.Id),
+                DisplayName = queryData.DisplayName,
+                ConcurrencyTag = queryData.ConcurrencyTag,
+            }
+        );
+    }
+
+    /// <inheritdoc />
+    public async Task<
+        DatabaseResultVariant<EmptySuccessResult, ConflictResult, ValidationFailureResult>
+    > RequeueUserForDeletionAsync(string userKey, string concurrencyToken, CancellationToken ct)
+    {
+        if (!stringIdProvider.TryParseStringKey(userKey, out long userId))
+        {
+            return BadUserKey();
+        }
+
+        long now = clock.NowUtcUnixSeconds();
+        await using ApplicationDbContext applicationDbContext =
+            await dbFactory.CreateDbContextAsync(ct);
+        var queryData = await applicationDbContext
+            .Users.Where(u => u.IsDeleted && u.Id == userId && u.ConcurrencyTag == concurrencyToken)
+            .Select(u => new { u.NextDeletePoll, u.NextDeletePollCounter })
+            .FirstOrDefaultAsync(ct);
+
+        if (queryData is null)
+        {
+            return new ConflictResult();
+        }
+
+        // otherwise work is still pending revisit book with backoff
+        var nextPollCounter = Math.Min(16, queryData.NextDeletePollCounter + 1);
+        var nextPollTs = now + (1 << (int)queryData.NextDeletePollCounter);
+        var newTag = concurrencyTagProvider.NextTag();
+
+        if (
+            await applicationDbContext
+                .Users.Where(u =>
+                    u.IsDeleted && u.Id == userId && u.ConcurrencyTag == concurrencyToken
+                )
+                .ExecuteUpdateAsync(
+                    p =>
+                        p.SetProperty(u => u.NextDeletePoll, nextPollTs)
+                            .SetProperty(u => u.LastModified, now)
+                            .SetProperty(u => u.ConcurrencyTag, newTag)
+                            .SetProperty(u => u.NextDeletePollCounter, nextPollCounter),
+                    ct
+                ) > 0
+        )
+        {
+            return new EmptySuccessResult();
+        }
+
+        return new ConflictResult();
+    }
+
+    private static DatabaseResultVariant<
+        EmptySuccessResult,
+        ConflictResult,
+        ValidationFailureResult
+    > BadUserKey()
+    {
+        return new ValidationFailureResult(
+            new Dictionary<string, string[]>() { { "userKey", ["invalid user key"] } }
+        );
+    }
+
+    /// <inheritdoc />
+    public async Task<
+        DatabaseResultVariant<EmptySuccessResult, ConflictResult, ValidationFailureResult>
+    > PurgeUserFromDatabaseAsync(string userKey, string concurrencyToken, CancellationToken ct)
+    {
+        if (!stringIdProvider.TryParseStringKey(userKey, out long userId))
+        {
+            return BadUserKey();
+        }
+
+        await using ApplicationDbContext applicationDbContext =
+            await dbFactory.CreateDbContextAsync(ct);
+        try
+        {
+            if (
+                await applicationDbContext
+                    .Users.Where(u =>
+                        u.IsDeleted && u.Id == userId && u.ConcurrencyTag == concurrencyToken
+                    )
+                    .ExecuteDeleteAsync(ct) < 1
+            )
+            {
+                return new ConflictResult();
+            }
+        }
+        catch (DbUpdateException)
+        {
+            return new ConflictResult();
+        }
+
+        return new EmptySuccessResult();
     }
 }

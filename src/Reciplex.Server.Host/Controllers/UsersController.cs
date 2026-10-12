@@ -196,7 +196,11 @@ public class UsersController(IUsersService userServiceRepository) : ControllerBa
                     EmptySuccessResult,
                     Database.Results.ConflictResult,
                     UserNotFoundResult
-                > result = await userServiceRepository.DeleteUserAsync(userKey, ifMatch.Value, ct);
+                > result = await userServiceRepository.QueueUserDeleteAsync(
+                    userKey,
+                    ifMatch.Value,
+                    ct
+                );
 
                 return result.Result switch
                 {

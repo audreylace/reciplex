@@ -15,7 +15,7 @@ internal static class UserServiceQueryExtensions
     /// </summary>
     public static IQueryable<UserDbObject> UserNotDeleted(this IQueryable<UserDbObject> query)
     {
-        return query.Where(u => u.Deleted == null);
+        return query.Where(u => !u.IsDeleted);
     }
 
     /// <summary>

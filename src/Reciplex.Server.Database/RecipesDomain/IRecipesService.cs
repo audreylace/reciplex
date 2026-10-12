@@ -19,7 +19,7 @@ public interface IRecipesService
     > GetRecipeAsync(string recipeKey, string userKey, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Deletes a recipe
+    /// Queues a recipe's deletion
     /// </summary>
     /// <param name="recipeKey">the recipe id</param>
     /// <param name="userKey">id of the requesting user for access control</param>
@@ -34,7 +34,7 @@ public interface IRecipesService
             UserNotFoundResult,
             ConflictResult
         >
-    > DeleteRecipeAsync(
+    > QueueRecipeDeleteAsync(
         string recipeKey,
         string userKey,
         string concurrencyTag,
@@ -101,4 +101,55 @@ public interface IRecipesService
         ListRecipesArgs args,
         CancellationToken cancellationToken = default
     );
+
+    /// <summary>
+    /// Looks for recipes using the search backend. This is an optional feature and is not always enabled.
+    /// </summary>
+    /// <param name="userKey">The key of the acting user</param>
+    /// <param name="searchString">the user's search string</param>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>result of the operation</returns>
+    Task<
+        DatabaseResultVariant<
+            SuccessResult<List<RecipeListEntryDao>>,
+            FeatureNotEnabledResult,
+            BookNotFoundResult,
+            UserNotFoundResult,
+            ValidationFailureResult
+        >
+    > SearchRecipesAsync(string userKey, SearchRecipesArgs args, CancellationToken ct);
+
+    /// <summary>
+    /// Removes recipes with the delete status from the database that do not have associated dependent
+    /// records.
+    /// </summary>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>number of rows dropped</returns>
+    Task<int> PurgeDeletedUnreferencedRecipesAsync(CancellationToken ct);
+
+    /// <summary>
+    /// Removes recipes with the delete status from the database that do not have associated dependent
+    /// records.
+    /// </summary>
+    /// <param name="bookId">the book to scope to</param>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>number of rows dropped</returns>
+    Task<int> PurgeDeletedUnreferencedRecipesAsync(long bookId, CancellationToken ct);
+
+    /// <summary>
+    /// Marks recipes in book as deleted. Caller needs to invoke <see cref="IRecipeSearchExportStatusRepository.MarkExtractionStatusForBookAsPendingDeleteAsync"/>
+    /// to trigger search cleanup.
+    /// </summary>
+    /// <param name="bookId">the id of the book.</param>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>number of rows queued</returns>
+    Task<int> QueueRecipesInBookForDeletion(long bookId, CancellationToken ct);
+
+    /// <summary>
+    /// Checks if there are any recipes in the book both deleted and undeleted
+    /// </summary>
+    /// <param name="bookId">the id of the book</param>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>result of the check</returns>
+    Task<bool> AnyRecipesInBookAsync(long bookId, CancellationToken ct);
 }

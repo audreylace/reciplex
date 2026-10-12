@@ -1,6 +1,7 @@
 using System.Data;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
+using System.Threading.Channels;
 using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -16,10 +17,33 @@ namespace Reciplex.Server.Database.RecipeBooksDomain;
 internal sealed class RecipeBooksService(
     IClock clock,
     IConcurrencyTagProvider concurrencyTagProvider,
-    ApplicationDbContext dbContext,
+    IDbContextFactory<ApplicationDbContext> dbFactory,
     IStringIdProvider stringIdProvider
 ) : IRecipeBooksService
 {
+    /// <summary>
+    /// Bounded channel used like a conditional variable
+    /// </summary>
+    private readonly Channel<long> _bookDeletionSignal = Channel.CreateBounded<long>(
+        new BoundedChannelOptions(1)
+        {
+            SingleReader = true,
+            FullMode = BoundedChannelFullMode.DropWrite,
+        }
+    );
+
+    /// <inheritdoc />
+    public void SignalDeletion()
+    {
+        _bookDeletionSignal.Writer.TryWrite(0);
+    }
+
+    /// <inheritdoc />
+    public Task WaitForDeleteSignal(TimeSpan timeout, CancellationToken ct)
+    {
+        return _bookDeletionSignal.WaitOnChannel(timeout, ct);
+    }
+
     /// <inheritdoc />
     public async Task<
         DatabaseResultVariant<
@@ -29,6 +53,7 @@ internal sealed class RecipeBooksService(
         >
     > CreateRecipeBookAsync(string userKey, CreateRecipeBookArgs createArgs, CancellationToken ct)
     {
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (
             !stringIdProvider.TryParseStringKey(userKey, out long userId)
             || !await dbContext.Users.UserExistsNotDeletedAsync(userId, ct)
@@ -70,7 +95,7 @@ internal sealed class RecipeBooksService(
             ValidationFailureResult,
             ConflictResult
         >
-    > DeleteRecipeBookAsync(string bookKey, string userKey, string ocTag, CancellationToken ct)
+    > QueueRecipeBookDeleteAsync(string bookKey, string userKey, string ocTag, CancellationToken ct)
     {
         DatabaseResultVariant<UserNotFoundResult, NotFoundResult>? error = ParseBookAndUser(
             bookKey,
@@ -93,6 +118,7 @@ internal sealed class RecipeBooksService(
             };
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return (DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>)
@@ -120,7 +146,8 @@ internal sealed class RecipeBooksService(
 
         long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
         MarkBookDirty(book, now);
-        book.Deleted = now;
+        book.IsDeleted = true;
+        book.DeletedTime = now;
         try
         {
             await dbContext.SaveChangesAsync(ct);
@@ -129,6 +156,8 @@ internal sealed class RecipeBooksService(
         {
             return new ConflictResult();
         }
+
+        SignalDeletion();
 
         return new EmptySuccessResult();
     }
@@ -160,6 +189,7 @@ internal sealed class RecipeBooksService(
             };
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return new UserNotFoundResult(userKey);
@@ -193,6 +223,7 @@ internal sealed class RecipeBooksService(
             return new UserNotFoundResult(userKey);
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return new UserNotFoundResult(userKey);
@@ -291,6 +322,7 @@ internal sealed class RecipeBooksService(
             };
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return (DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>)
@@ -378,6 +410,7 @@ internal sealed class RecipeBooksService(
             };
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return (DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>)
@@ -451,6 +484,7 @@ internal sealed class RecipeBooksService(
             };
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return new UserNotFoundResult(userKey);
@@ -470,21 +504,10 @@ internal sealed class RecipeBooksService(
             return new ForbiddenResult();
         }
 
-        return new SuccessResult<List<RecipeBookUserPermissionsDao>>(
-            await ToBookPermissionEnumerable(bookId, ct).ToListAsync(ct)
-        );
-    }
-
-    private async IAsyncEnumerable<RecipeBookUserPermissionsDao> ToBookPermissionEnumerable(
-        long bookId,
-        [EnumeratorCancellation] CancellationToken ct
-    )
-    {
-        string bookKey = stringIdProvider.AsString(bookId);
+        List<RecipeBookUserPermissionsDao> result = [];
         await foreach (
             var row in dbContext
                 .RecipeBookAccessEntries.AsNoTracking()
-                .NotDeleted()
                 .ScopeToBook(bookId)
                 .Select(u => new
                 {
@@ -498,16 +521,20 @@ internal sealed class RecipeBooksService(
                 .WithCancellation(ct)
         )
         {
-            yield return new()
-            {
-                UserKey = stringIdProvider.AsString(row.UserFk),
-                BookKey = bookKey,
-                MayEditBook = row.MayEditBook,
-                MayViewBook = row.MayViewBook,
-                UserDisplayName = row.DisplayName,
-                Reviewed = row.Reviewed,
-            };
+            result.Add(
+                new()
+                {
+                    UserKey = stringIdProvider.AsString(row.UserFk),
+                    BookKey = bookKey,
+                    MayEditBook = row.MayEditBook,
+                    MayViewBook = row.MayViewBook,
+                    UserDisplayName = row.DisplayName,
+                    Reviewed = row.Reviewed,
+                }
+            );
         }
+
+        return new SuccessResult<List<RecipeBookUserPermissionsDao>>(result);
     }
 
     /// <inheritdoc />
@@ -546,6 +573,7 @@ internal sealed class RecipeBooksService(
             };
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return (DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>)
@@ -593,7 +621,6 @@ internal sealed class RecipeBooksService(
 
             var existingRow = await dbContext
                 .RecipeBookAccessEntries.ScopeToBook(bookId)
-                .NotDeleted()
                 .WithUserId(userEntryId)
                 .FirstOrDefaultAsync(ct);
 
@@ -678,6 +705,7 @@ internal sealed class RecipeBooksService(
             };
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return new UserNotFoundResult(userKey);
@@ -759,6 +787,7 @@ internal sealed class RecipeBooksService(
             };
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return new UserNotFoundResult(userKey);
@@ -859,6 +888,7 @@ internal sealed class RecipeBooksService(
             };
         }
 
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
         {
             return new UserNotFoundResult(userKey);
@@ -903,7 +933,7 @@ internal sealed class RecipeBooksService(
     }
 
     /// <summary>
-    /// Helper method to mark a book as dirt
+    /// Helper method to mark a book as dirty
     /// </summary>
     /// <param name="book">the book to mark</param>
     /// <param name="now">the now instant if one is already in use for the whole operation</param>
@@ -966,5 +996,170 @@ internal sealed class RecipeBooksService(
         }
 
         return null;
+    }
+
+    public async Task<
+        DatabaseResultVariant<EmptySuccessResult, UserNotFoundResult>
+    > QueueRecipesBooksOwnedByUserForDeletionAsync(string userKey, CancellationToken ct)
+    {
+        if (!stringIdProvider.TryParseStringKey(userKey, out long userId))
+        {
+            return new UserNotFoundResult(userKey);
+        }
+
+        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        string token = concurrencyTagProvider.NextTag();
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+        await dbContext
+            .RecipeBooks.Where(b => b.OwnerFk == userId && !b.IsDeleted)
+            .ExecuteUpdateAsync(
+                p =>
+                    p.SetProperty(p => p.IsDeleted, true)
+                        .SetProperty(p => p.DeletedTime, now)
+                        .SetProperty(p => p.LastModified, now)
+                        .SetProperty(p => p.ConcurrencyTag, token),
+                ct
+            );
+
+        SignalDeletion();
+
+        return new EmptySuccessResult();
+    }
+
+    public async Task<
+        DatabaseResultVariant<EmptySuccessResult, UserNotFoundResult>
+    > DeleteRecipesBookAccessEntriesOwnedByUserAsync(string userKey, CancellationToken ct)
+    {
+        if (!stringIdProvider.TryParseStringKey(userKey, out long userId))
+        {
+            return new UserNotFoundResult(userKey);
+        }
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+        await dbContext
+            .RecipeBookAccessEntries.Where(acl => acl.UserFk == userId)
+            .ExecuteDeleteAsync(ct);
+
+        return new EmptySuccessResult();
+    }
+
+    public async Task<
+        DatabaseResultVariant<SuccessResult<bool>, UserNotFoundResult>
+    > HasAnyBooksAsync(string userKey, CancellationToken ct)
+    {
+        if (!stringIdProvider.TryParseStringKey(userKey, out long userId))
+        {
+            return new UserNotFoundResult(userKey);
+        }
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+        return new SuccessResult<bool>(
+            await dbContext.RecipeBooks.Where(b => b.OwnerFk == userId).AnyAsync(ct)
+        );
+    }
+
+    public async Task<
+        DatabaseResultVariant<EmptySuccessResult, SuccessResult<RecipeBookDeletionQueueEntry>>
+    > GetNextBookQueuedForDeletionAsync(CancellationToken ct)
+    {
+        var now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+
+        // get next book off the delete queue
+        var book = await dbContext
+            .RecipeBooks.IsDeleted()
+            .Where(book => book.NextDeletePoll < now)
+            .OrderBy(r => r.NextDeletePoll)
+            .ThenBy(r => r.Id)
+            .Select(b => new { b.Id, b.ConcurrencyTag })
+            .FirstOrDefaultAsync(ct);
+
+        if (book is null)
+        {
+            return new EmptySuccessResult();
+        }
+
+        return new SuccessResult<RecipeBookDeletionQueueEntry>(
+            new RecipeBookDeletionQueueEntry()
+            {
+                Id = book.Id,
+                ConcurrencyTag = book.ConcurrencyTag,
+            }
+        );
+    }
+
+    public async Task<
+        DatabaseResultVariant<EmptySuccessResult, ConflictResult>
+    > RequeueRecipesBooksForDeletionAsync(
+        long bookId,
+        string concurrencyToken,
+        CancellationToken ct
+    )
+    {
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+        var queryData = await dbContext
+            .RecipeBooks.WithBookId(bookId)
+            .IsDeleted()
+            .WithConcurrencyTag(concurrencyToken)
+            .Select(b => new { b.NextDeletePoll, b.NextDeletePollCounter })
+            .FirstOrDefaultAsync(ct);
+
+        if (queryData is null)
+        {
+            return new ConflictResult();
+        }
+
+        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        var nextDeletePollCounter = Math.Min(16, queryData.NextDeletePollCounter + 1);
+        var nextDeletePoll = now + (1 << (int)queryData.NextDeletePollCounter);
+        var nextConcurrencyTag = concurrencyTagProvider.NextTag();
+
+        return
+            await dbContext
+                .RecipeBooks.WithBookId(bookId)
+                .IsDeleted()
+                .WithConcurrencyTag(concurrencyToken)
+                .ExecuteUpdateAsync(
+                    p =>
+                        p.SetProperty(b => b.NextDeletePoll, nextDeletePoll)
+                            .SetProperty(b => b.ConcurrencyTag, nextConcurrencyTag)
+                            .SetProperty(b => b.LastModified, now),
+                    ct
+                ) > 0
+            ? new EmptySuccessResult()
+            : new ConflictResult();
+    }
+
+    public async Task<
+        DatabaseResultVariant<EmptySuccessResult, ConflictResult>
+    > PurgeRecipeBookAsync(long bookId, string concurrencyToken, CancellationToken ct)
+    {
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+
+        // check if the books exists, has matching concurrency token,
+        // and is deleted
+        if (
+            !await dbContext
+                .RecipeBooks.WithBookId(bookId)
+                .IsDeleted()
+                .WithConcurrencyTag(concurrencyToken)
+                .AnyAsync(ct)
+        )
+        {
+            return new ConflictResult();
+        }
+
+        await dbContext
+            .RecipeBookAccessEntries.Where(access => access.RecipeBookFk == bookId)
+            .ExecuteDeleteAsync(ct);
+
+        try
+        {
+            await dbContext.RecipeBooks.WithBookId(bookId).ExecuteDeleteAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            return new ConflictResult();
+        }
+
+        return new EmptySuccessResult();
     }
 }

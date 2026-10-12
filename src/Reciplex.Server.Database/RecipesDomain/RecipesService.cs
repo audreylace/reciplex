@@ -1,10 +1,14 @@
+using System.Threading.Channels;
 using Microsoft.EntityFrameworkCore;
 using NodaTime;
+using Reciplex.Server.Abstractions;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Abstractions.StringIdProvider;
 using Reciplex.Server.Database.DbObjects;
 using Reciplex.Server.Database.RecipeBooksDomain;
 using Reciplex.Server.Database.Results;
+using Reciplex.Server.Database.SearchIndexDomain;
+using Reciplex.Server.Database.SearchIndexTrackingDomain;
 using Reciplex.Server.Database.UsersDomain;
 
 namespace Reciplex.Server.Database.RecipesDomain;
@@ -12,15 +16,19 @@ namespace Reciplex.Server.Database.RecipesDomain;
 /// <summary>
 /// Implements <see cref="IRecipeService"/>
 /// </summary>
-/// <param name="dbContext">database connection</param>
+/// <param name="dbFactory">database connection factory</param>
 /// <param name="clock">time provider</param>
 /// <param name="concurrencyTagProvider">concurrency token provider</param>
 /// <param name="stringIdProvider">string id marshaller</param>
+/// <param name="recipeSearchExportStatusRepository">repository for tracking recipe search export status</param>
+/// <param name="searchIndexRepository">repository for searching for recipes</param>
 internal sealed class RecipesService(
-    ApplicationDbContext dbContext,
+    IDbContextFactory<ApplicationDbContext> dbFactory,
     IClock clock,
     IConcurrencyTagProvider concurrencyTagProvider,
-    IStringIdProvider stringIdProvider
+    IStringIdProvider stringIdProvider,
+    IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository,
+    ISearchIndexRepository searchIndexRepository
 ) : IRecipesService
 {
     /// <inheritdoc />
@@ -34,6 +42,7 @@ internal sealed class RecipesService(
         >
     > CreateRecipeAsync(string bookKey, string userKey, CreateRecipeArgs args, CancellationToken ct)
     {
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (
             !stringIdProvider.TryParseStringKey(userKey, out long userId)
             || !await dbContext.Users.UserExistsNotDeletedAsync(userId, ct)
@@ -67,7 +76,8 @@ internal sealed class RecipesService(
             return new ForbiddenResult();
         }
 
-        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        long now = clock.NowUtcUnixSeconds();
+
         RecipeDbObject recipeDbObject = new()
         {
             RecipeBookFk = bookLookup.Book.Id,
@@ -77,9 +87,18 @@ internal sealed class RecipesService(
             Created = now,
             LastModified = now,
             ConcurrencyTag = concurrencyTagProvider.NextTag(),
+            RecipeSearchExtraction = new(),
         };
+        recipeDbObject.RecipeSearchExtraction = new RecipeSearchWorkerStateDbObject
+        {
+            RecipeFk = recipeDbObject.Id,
+            RecipeBookFk = bookLookup.Book.Id,
+        };
+
         dbContext.Add(recipeDbObject);
         await dbContext.SaveChangesAsync(ct);
+
+        recipeSearchExportStatusRepository.SignalSearchExtractionWork();
         return new SuccessResult<RecipeDao>(DbObjectToRecipeDao(recipeDbObject, true));
     }
 
@@ -92,13 +111,14 @@ internal sealed class RecipesService(
             UserNotFoundResult,
             ConflictResult
         >
-    > DeleteRecipeAsync(
+    > QueueRecipeDeleteAsync(
         string recipeKey,
         string userKey,
         string concurrencyTag,
         CancellationToken ct
     )
     {
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (
             !stringIdProvider.TryParseStringKey(userKey, out long userId)
             || !await dbContext.Users.UserExistsNotDeletedAsync(userId, ct)
@@ -114,7 +134,8 @@ internal sealed class RecipesService(
 
         RecipeDbObject? recipe = await dbContext
             .Recipes.WithRecipeId(recipeId)
-            .DeleteFieldNull()
+            .NotDeleted()
+            .Include(r => r.RecipeSearchExtraction)
             .FirstOrDefaultAsync(ct);
 
         if (recipe is null)
@@ -140,10 +161,12 @@ internal sealed class RecipesService(
             return new ConflictResult();
         }
 
-        long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        long now = clock.NowUtcUnixSeconds();
         recipe.LastModified = now;
-        recipe.Deleted = now;
+        recipe.IsDeleted = true;
         recipe.ConcurrencyTag = concurrencyTagProvider.NextTag();
+        recipe.RecipeSearchExtraction?.ResetTrackingStatus(SearchExtractionStatus.PendingDelete);
+        recipe.DeletedTime = now;
         try
         {
             await dbContext.SaveChangesAsync(ct);
@@ -152,6 +175,7 @@ internal sealed class RecipesService(
         {
             return new ConflictResult();
         }
+        recipeSearchExportStatusRepository.SignalSearchDeleteWork();
         return new EmptySuccessResult();
     }
 
@@ -160,6 +184,7 @@ internal sealed class RecipesService(
         DatabaseResultVariant<SuccessResult<RecipeDao>, NotFoundResult, UserNotFoundResult>
     > GetRecipeAsync(string recipeKey, string userKey, CancellationToken ct)
     {
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (
             !stringIdProvider.TryParseStringKey(userKey, out long userId)
             || !await dbContext.Users.UserExistsNotDeletedAsync(userId, ct)
@@ -176,7 +201,7 @@ internal sealed class RecipesService(
         RecipeDbObject? recipe = await dbContext
             .Recipes.AsNoTracking()
             .WithRecipeId(recipeId)
-            .DeleteFieldNull()
+            .NotDeleted()
             .FirstOrDefaultAsync(ct);
 
         if (recipe is null)
@@ -207,6 +232,7 @@ internal sealed class RecipesService(
         >
     > ListRecipesAsync(string userKey, ListRecipesArgs args, CancellationToken ct)
     {
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (
             !stringIdProvider.TryParseStringKey(userKey, out long userId)
             || !await dbContext.Users.UserExistsNotDeletedAsync(userId, ct)
@@ -220,7 +246,7 @@ internal sealed class RecipesService(
             .NotDeleted()
             .UserHasAccess(userId)
             .SelectMany(b => b.Recipes)
-            .DeleteFieldNull();
+            .NotDeleted();
 
         if (!string.IsNullOrWhiteSpace(args.RecipeBookKey))
         {
@@ -319,6 +345,7 @@ internal sealed class RecipesService(
         CancellationToken ct
     )
     {
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
         if (
             !stringIdProvider.TryParseStringKey(userKey, out long userId)
             || !await dbContext.Users.UserExistsNotDeletedAsync(userId, ct)
@@ -341,7 +368,8 @@ internal sealed class RecipesService(
 
         RecipeDbObject? recipe = await dbContext
             .Recipes.WithRecipeId(recipeId)
-            .DeleteFieldNull()
+            .NotDeleted()
+            .Include(r => r.RecipeSearchExtraction)
             .FirstOrDefaultAsync(ct);
 
         if (recipe is null)
@@ -370,8 +398,11 @@ internal sealed class RecipesService(
         recipe.Name = args.Name;
         recipe.ShortDescription = args.ShortDescription;
         recipe.Details = args.Details;
-        recipe.LastModified = clock.GetCurrentInstant().ToUnixTimeSeconds();
+        recipe.LastModified = clock.NowUtcUnixSeconds();
         recipe.ConcurrencyTag = concurrencyTagProvider.NextTag();
+        recipe.RecipeSearchExtraction?.ResetTrackingStatus(
+            SearchExtractionStatus.PendingExtraction
+        );
         try
         {
             await dbContext.SaveChangesAsync(ct);
@@ -381,6 +412,7 @@ internal sealed class RecipesService(
             return new ConflictResult();
         }
 
+        recipeSearchExportStatusRepository.SignalSearchExtractionWork();
         return new SuccessResult<RecipeDao>(DbObjectToRecipeDao(recipe, true));
     }
 
@@ -397,4 +429,151 @@ internal sealed class RecipesService(
             Details = recipeDbObject.Details,
             MayEdit = mayEdit,
         };
+
+    public async Task<
+        DatabaseResultVariant<
+            SuccessResult<List<RecipeListEntryDao>>,
+            FeatureNotEnabledResult,
+            BookNotFoundResult,
+            UserNotFoundResult,
+            ValidationFailureResult
+        >
+    > SearchRecipesAsync(string userKey, SearchRecipesArgs args, CancellationToken ct)
+    {
+        SearchRecipesArgsValidator validator = new();
+        var validationResult = await validator.ValidateAsync(args, ct);
+        if (!validationResult.IsValid)
+        {
+            return new ValidationFailureResult(validationResult.ToDictionary());
+        }
+
+        if (searchIndexRepository is null || !searchIndexRepository.IsEnabled())
+        {
+            return new FeatureNotEnabledResult();
+        }
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
+
+        if (
+            !stringIdProvider.TryParseStringKey(userKey, out long userId)
+            || !await dbContext.Users.UserExistsNotDeletedAsync(userId, ct)
+        )
+        {
+            return new UserNotFoundResult(userKey);
+        }
+
+        List<long> bookIds = [];
+        if (args.Books.Count > 0)
+        {
+            foreach (string bookKey in args.Books)
+            {
+                if (!stringIdProvider.TryParseStringKey(bookKey, out long bookId))
+                {
+                    return new BookNotFoundResult(bookKey);
+                }
+                BookWithMaterializedPermissions? bookLookup = await dbContext
+                    .RecipeBooks.AsNoTracking()
+                    .GetBookAndPermissionsAsync(bookId, userId, ct);
+
+                if (bookLookup is null || !bookLookup.PermissionFlags.MayViewBook)
+                {
+                    return new BookNotFoundResult(bookKey);
+                }
+
+                bookIds.Add(bookId);
+            }
+        }
+        else
+        {
+            bookIds = await dbContext
+                .RecipeBooks.AsNoTracking()
+                .NotDeleted()
+                .UserHasAccess(userId)
+                .OrderBy(book => book.Id)
+                .Select(book => book.Id)
+                .Take(args.MaxBooks)
+                .ToListAsync(ct);
+        }
+
+        if (bookIds.Count < 1) // no books - nothing to search...
+        {
+            return new SuccessResult<List<RecipeListEntryDao>>([]);
+        }
+
+        var matchesFromSearchIndex = await searchIndexRepository.SearchRecipesAsync(
+            new()
+            {
+                SearchString = args.SearchString,
+                BookIds = bookIds,
+                MaxResults = args.MaxResults,
+            },
+            ct
+        );
+
+        List<RecipeListEntryDao> entries = [];
+        foreach (var r in matchesFromSearchIndex)
+        {
+            if (
+                r is { RecipeId: long id, Kind: RecipeBookSearchIndexDocumentKind.Recipe }
+                && await dbContext.Recipes.WithRecipeId(id).NotDeleted().AnyAsync(ct)
+            )
+            {
+                entries.Add(
+                    new RecipeListEntryDao()
+                    {
+                        Id = stringIdProvider.AsString(id),
+                        Name = r.Name,
+                        ShortDescription = r.ShortDescription,
+                        BookId = stringIdProvider.AsString(r.RecipeBookId),
+                    }
+                );
+            }
+        }
+
+        return new SuccessResult<List<RecipeListEntryDao>>(entries);
+    }
+
+    /// <inheritdoc />
+    public async Task<int> PurgeDeletedUnreferencedRecipesAsync(CancellationToken ct)
+    {
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+        return await dbContext
+            .Recipes.Where(r => r.RecipeSearchExtraction == null && r.IsDeleted)
+            .ExecuteDeleteAsync(ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<int> PurgeDeletedUnreferencedRecipesAsync(long bookId, CancellationToken ct)
+    {
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+        return await dbContext
+            .Recipes.Where(r =>
+                r.RecipeSearchExtraction == null && r.IsDeleted && r.RecipeBookFk == bookId
+            )
+            .ExecuteDeleteAsync(ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<int> QueueRecipesInBookForDeletion(long bookId, CancellationToken ct)
+    {
+        long now = clock.NowUtcUnixSeconds();
+        string token = concurrencyTagProvider.NextTag();
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+        return await dbContext
+            .Recipes.Where(r => r.RecipeBookFk == bookId && !r.IsDeleted)
+            .ExecuteUpdateAsync(
+                s =>
+                    s.SetProperty(r => r.IsDeleted, true)
+                        .SetProperty(r => r.DeletedTime, now)
+                        .SetProperty(r => r.LastModified, now)
+                        .SetProperty(r => r.ConcurrencyTag, token),
+                ct
+            );
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> AnyRecipesInBookAsync(long bookId, CancellationToken ct)
+    {
+        using var dbContext = await dbFactory.CreateDbContextAsync(ct);
+        return await dbContext.Recipes.Where(r => r.RecipeBookFk == bookId).AnyAsync(ct);
+    }
 }
