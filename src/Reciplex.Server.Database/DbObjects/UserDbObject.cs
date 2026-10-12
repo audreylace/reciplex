@@ -18,8 +18,19 @@ namespace Reciplex.Server.Database.DbObjects;
 [Index(nameof(IsDeleted))]
 public class UserDbObject
 {
+    /// <summary>
+    /// Max length for <see cref="DisplayName"/>
+    /// </summary>
     public const int DisplayNameMaxLength = 64;
+
+    /// <summary>
+    /// Max length for <see cref="Subject"/>
+    /// </summary>
     public const int SubjectMaxLength = 128;
+
+    /// <summary>
+    /// Max length for <see cref="Authority"/>
+    /// </summary>
     public const int AuthorityMaxLength = 1024;
 
     /// <summary>

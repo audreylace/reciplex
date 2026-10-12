@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -7,13 +6,8 @@ using Reciplex.Server.Abstractions;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Database.RecipeBooksDomain;
 using Reciplex.Server.Database.RecipesDomain;
-using Reciplex.Server.Database.SearchExporter;
-using Reciplex.Server.Database.SearchExporter.HostedServices;
-using Reciplex.Server.Database.SearchExporter.Repositories;
-using Reciplex.Server.Database.SearchExporter.SearchBackgroundTasks;
 using Reciplex.Server.Database.SearchIndexTrackingDomain;
 using Reciplex.Server.Database.UsersDomain;
-using Reciplex.Server.Meilisearch;
 
 namespace Reciplex.Server.Database;
 
@@ -40,75 +34,19 @@ public static partial class WebApplicationBuilderExtensions
         builder.Services.AddSingleton<IRecipesService, RecipesService>();
         builder.Services.AddHostedService<RecipeDeletionHostedService>();
 
-        builder.Services.AddSingleton<IRecipeBooksService, RecipeBooksService>();
         builder.Services.AddRandomNumberGeneratorConcurrencyTagProvider();
-        builder.Services.AddHostedService<RecipeDeletionHostedService>();
 
-        ConfigureSearch(builder);
+        // recipe books
+        builder.Services.AddSingleton<IRecipeBooksService, RecipeBooksService>();
+        builder.Services.AddHostedService<RecipeBookDeletionWorkerHostedService>();
+
+        // search index
+        builder.Services.AddSingleton<
+            IRecipeSearchExportStatusRepository,
+            RecipeSearchExportStatusRepository
+        >();
 
         return builder;
-    }
-
-    private static void ConfigureSearch(WebApplicationBuilder builder)
-    {
-        builder.Services.AddSingleton<IRecipeMutationNotifyService, RecipeMutationNotifyService>();
-
-        builder.Services.Configure<SearchExporterOptions>(
-            builder.Configuration.GetSection(SearchExporterOptions.SectionPath)
-        );
-
-        SearchExporterOptions configOptions = new();
-        builder.Configuration.GetSection(SearchExporterOptions.SectionPath).Bind(configOptions);
-
-        if (configOptions.Enable)
-        {
-            builder.Services.AddSingleton<IMeilisearchClient, MeilisearchClient>();
-            builder
-                .Services.AddHttpClient<IMeilisearchClient, MeilisearchClient>(client =>
-                {
-                    if (!configOptions.Enable)
-                    {
-                        return;
-                    }
-
-                    client.BaseAddress = new Uri(configOptions.Host);
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-                        "Bearer",
-                        configOptions.AuthenticationToken
-                    );
-                })
-                .AddStandardResilienceHandler();
-
-            builder.Services.AddHostedService<RecipeSearchHostedBackgroundService>();
-
-            builder.Services.AddSingleton<
-                IRecipeSearchExportStatusRepository,
-                RecipeSearchExportStatusRepository
-            >();
-            builder.Services.AddSingleton<
-                ISearchIndexExporterScopeFactory,
-                SearchIndexExporterScopeFactory
-            >();
-            builder.Services.AddScoped<ISearchIndexExporterScope, SearchIndexExporterScope>();
-            builder.Services.AddSingleton<ISearchIndexRepository, MeilisearchIndexRepository>();
-            builder.Services.AddSingleton<LeaseRenewer>();
-            builder.Services.AddSingleton<RecipeSearchIndexExporterStrategy>();
-            builder.Services.AddSingleton<ResiliencePipelineBuilderFactory>();
-            builder.Services.AddScoped<ISearchBackgroundTask, RecipeDeletionSearchBackgroundTask>();
-
-            builder.Services.AddScoped<
-                ISearchBackgroundTask,
-                RecipeLeaseBreakerSearchBackgroundTask
-            >();
-            builder.Services.AddScoped<
-                ISearchBackgroundTask,
-                ChangedRecipeExporterSearchBackgroundTask
-            >();
-            builder.Services.AddScoped<
-                ISearchBackgroundTask,
-                RecipesThatFailToDeleteSearchBackgroundTask
-            >();
-        }
     }
 
     /// <summary>

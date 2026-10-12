@@ -1,5 +1,8 @@
 namespace Reciplex.Server.Database.SearchIndexDomain;
 
+/// <summary>
+/// Outcome of a search index mutation
+/// </summary>
 public enum IndexMutationOperationOutcome
 {
     /// <summary>

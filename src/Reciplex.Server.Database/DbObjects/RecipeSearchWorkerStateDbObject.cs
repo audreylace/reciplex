@@ -8,6 +8,15 @@ namespace Reciplex.Server.Database.DbObjects;
 /// <summary>
 /// Search extraction record
 /// </summary>
+/// <remarks>
+/// <list>
+/// <item>Has index on ( <see cref="LeaseToken"/>, <see cref="LeaseExpireToken"/> )</item>
+/// <item>Has index on <see cref="LeaseExpireTime"/></item>
+/// <item>Has index on ( <see cref="ExtractionStatus"/>, <see cref="LeaseExpireTime"/>, <see cref="NextRetryTime"/>, <see cref="RetryCount"/> )</item>
+/// <item>Has index on ( <see cref="RecipeFk"/>, <see cref="ExtractionStatus"/> )</item>
+/// <item>Has index on ( <see cref="RecipeBookFk"/>, <see cref="ExtractionStatus"/> )</item>
+/// </list>
+/// </remarks>
 [Index(nameof(LeaseToken), nameof(LeaseExpireTime))]
 [Index(nameof(LeaseExpireTime))]
 [Index(
@@ -48,7 +57,6 @@ public class RecipeSearchWorkerStateDbObject
     /// <summary>
     /// Database FK to <see cref="RecipeBookDbObject"/> for property <see cref="Book"/>
     /// </summary>
-    [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.None)]
     public long RecipeBookFk { get; init; }
 

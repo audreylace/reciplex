@@ -38,10 +38,27 @@ public sealed class RecipeBookSearchIndexDocument
     /// </summary>
     public required long RecipeBookId { get; set; }
 
+    /// <summary>
+    /// Converts a <paramref name="recipeId"/> to a unique id string for storage in the search index
+    /// </summary>
+    /// <param name="recipeId">the id</param>
+    /// <returns>the computed string</returns>
     public static string AsRecipeId(long recipeId) => $"r_{recipeId}";
 
+    /// <summary>
+    /// Converts a <paramref name="bookId"/> to a unique id string for storage in the search index
+    /// </summary>
+    /// <param name="bookId">the id</param>
+    /// <returns>the computed string</returns>
     public static string AsBookId(long bookId) => $"b_{bookId}";
 
+    /// <summary>
+    /// Builds a book document for the search index
+    /// </summary>
+    /// <param name="bookId">id of the book to store</param>
+    /// <param name="name">name of the book</param>
+    /// <param name="description">the book's description</param>
+    /// <returns>the book document for storage in the search index</returns>
     public static RecipeBookSearchIndexDocument ForBook(
         long bookId,
         string name,
@@ -57,6 +74,14 @@ public sealed class RecipeBookSearchIndexDocument
             ShortDescription = description,
         };
 
+    /// <summary>
+    /// Builds a recipe document for the search index
+    /// </summary>
+    /// <param name="recipeId">id of the recipe to store</param>
+    /// <param name="bookId">id of the book the recipe belongs to</param>
+    /// <param name="name">recipe name</param>
+    /// <param name="description">recipe description</param>
+    /// <returns>the recipe document for storage in the search index</returns>
     public static RecipeBookSearchIndexDocument ForRecipe(
         long recipeId,
         long bookId,

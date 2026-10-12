@@ -9,13 +9,11 @@ public interface IRecipeSearchExportStatusRepository
     /// <summary>
     /// Breaks up to <paramref name="batchSize"/> leases that have expired.
     /// </summary>
-    /// <param name="batchSize">number of leases to break</param>
     /// <param name="leaseMaxLookBack">How far in the past from now to consider leases still valid.</param>
     /// <param name="leaseMaxLookAhead">How far in the future from now to consider leases still valid.</param>
     /// <param name="ct">async cancellation token</param>
     /// <returns>number of leases broken</returns>
     public Task<int> BreakLeasesAsync(
-        int batchSize,
         TimeSpan leaseMaxLookBack,
         TimeSpan leaseMaxLookAhead,
         CancellationToken ct
@@ -126,7 +124,6 @@ public interface IRecipeSearchExportStatusRepository
         CancellationToken ct
     );
     public Task<int> PurgeRecipeSearchEntriesWithTooManyDeleteRetries(
-        int batchSize,
         int maxRetries,
         CancellationToken ct
     );

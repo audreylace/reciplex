@@ -37,11 +37,6 @@ public class SearchExporterOptions
     public int SearchDeleteBatchSize { get; set; } = 20;
 
     /// <summary>
-    /// Max number of lease records to break in one batch
-    /// </summary>
-    public int LeaseBreakBatchSize { get; set; } = 100;
-
-    /// <summary>
     /// How long a lease is valid for
     /// </summary>
     public int LeaseLifetime { get; set; } = 5 * 60;
@@ -56,9 +51,4 @@ public class SearchExporterOptions
     /// record from the tracking index
     /// </summary>
     public int MaxRecipeDeleteAttempts { get; set; } = 20;
-
-    /// <summary>
-    /// Size of the purge batch
-    /// </summary>
-    public int RecipesFailedToDeletePurgeSize { get; set; } = 100;
 }

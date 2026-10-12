@@ -8,12 +8,29 @@ namespace Reciplex.Server.Database.DbObjects;
 /// <summary>
 /// A recipe held inside of a <see cref="RecipeBookDbObject"/>
 /// </summary>
+/// <remarks>
+/// <list type="bullet">
+/// <item>Index on <see cref="RecipeBookFk"/></item>
+/// <item>Index on <see cref="IsDeleted"/></item>
+/// </list>
+/// </remarks>
 [Index(nameof(RecipeBookFk))]
 [Index(nameof(IsDeleted))]
 public class RecipeDbObject
 {
+    /// <summary>
+    /// Max length for <see cref="Name"/>
+    /// </summary>
     public const int NameMaxLength = 128;
+
+    /// <summary>
+    /// Max length for <see cref="ShortDescription"/>
+    /// </summary>
     public const int ShortDescriptionMaxLength = 256;
+
+    /// <summary>
+    /// Max length for <see cref="Details"/>
+    /// </summary>
     public const int DetailsMaxLength = 1024 * 1024; // 1MB
 
     /// <summary>

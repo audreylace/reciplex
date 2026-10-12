@@ -6,6 +6,11 @@ using Reciplex.Server.Database.DbObjects;
 
 namespace Reciplex.Server.Database.SearchIndexTrackingDomain;
 
+/// <summary>
+/// Implements <see cref="IRecipeSearchExportStatusRepository"/>
+/// </summary>
+/// <param name="dbFactory">db connection factory</param>
+/// <param name="clock">clock for getting utc time</param>
 sealed class RecipeSearchExportStatusRepository(
     IDbContextFactory<ApplicationDbContext> dbFactory,
     IClock clock
@@ -45,11 +50,13 @@ sealed class RecipeSearchExportStatusRepository(
         return _searchIndexSyncHasWork.WaitOnChannel(timeout, ct);
     }
 
+    /// <inheritdoc />
     public void SignalSearchDeleteWork()
     {
         _searchIndexSyncHasDeleteWork.Writer.TryWrite(0);
     }
 
+    /// <inheritdoc />
     public Task WaitForSearchDeleteWorkAsync(TimeSpan timeout, CancellationToken ct)
     {
         return _searchIndexSyncHasDeleteWork.WaitOnChannel(timeout, ct);
@@ -57,7 +64,6 @@ sealed class RecipeSearchExportStatusRepository(
 
     /// <inheritdoc />
     public async Task<int> BreakLeasesAsync(
-        int max,
         TimeSpan leaseMaxLookBack,
         TimeSpan leaseMaxLookAhead,
         CancellationToken ct
@@ -67,76 +73,17 @@ sealed class RecipeSearchExportStatusRepository(
         long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
         long before = (long)(now - leaseMaxLookBack.TotalSeconds);
         long after = (long)(now + leaseMaxLookAhead.TotalSeconds);
-        var entries = await db
+        return await db
             .RecipeSearchExtractionStatusEntries.Where(e =>
                 (
                     e.LeaseExpireTime != null
                     && (e.LeaseExpireTime < before || e.LeaseExpireTime > after)
                 )
             )
-            .Select(e => new
-            {
-                e.RecipeFk,
-                e.LeaseToken,
-                e.LeaseExpireTime,
-            })
-            .OrderBy(e => e.RecipeFk)
-            .Take(max)
-            .ToListAsync(ct);
-
-        if (entries.Count < 1)
-        {
-            return 0;
-        }
-
-        var parameter = Expression.Parameter(typeof(RecipeSearchWorkerStateDbObject), "e");
-        Expression? combinedPredicate = null;
-
-        foreach (var c in entries)
-        {
-            // Build: e.RecipeFk == c.RecipeFk && e.LeaseToken == c.LeaseToken && e.LeaseExpireTime == c.LeaseExpireTime
-            var fkMatch = Expression.Equal(
-                Expression.Property(parameter, nameof(RecipeSearchWorkerStateDbObject.RecipeFk)),
-                Expression.Constant(c.RecipeFk)
-            );
-
-            var tokenMatch = Expression.Equal(
-                Expression.Property(parameter, nameof(RecipeSearchWorkerStateDbObject.LeaseToken)),
-                Expression.Constant(c.LeaseToken, typeof(string))
-            );
-
-            var expireMatch = Expression.Equal(
-                Expression.Property(
-                    parameter,
-                    nameof(RecipeSearchWorkerStateDbObject.LeaseExpireTime)
-                ),
-                Expression.Constant(c.LeaseExpireTime, typeof(long?))
-            );
-
-            var rowMatch = Expression.AndAlso(fkMatch, Expression.AndAlso(tokenMatch, expireMatch));
-
-            combinedPredicate =
-                combinedPredicate == null
-                    ? rowMatch
-                    : Expression.OrElse(combinedPredicate, rowMatch);
-        }
-
-        if (combinedPredicate is null)
-        {
-            return 0;
-        }
-
-        var lambda = Expression.Lambda<Func<RecipeSearchWorkerStateDbObject, bool>>(
-            combinedPredicate,
-            parameter
-        );
-
-        return await db
-            .RecipeSearchExtractionStatusEntries.Where(lambda)
             .ExecuteUpdateAsync(
                 s =>
-                    s.SetProperty(e => e.LeaseExpireTime, (long?)null)
-                        .SetProperty(e => e.LeaseToken, (string?)null),
+                    s.SetProperty(l => l.LeaseExpireTime, (long?)null)
+                        .SetProperty(l => l.LeaseToken, (string?)null),
                 ct
             );
     }
@@ -205,6 +152,7 @@ sealed class RecipeSearchExportStatusRepository(
             .ToListAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task<List<long>> GetRecipesToExtractAsync(
         int batchSize,
         int maxRetries,
@@ -234,6 +182,7 @@ sealed class RecipeSearchExportStatusRepository(
             .ToListAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task<int> MarkRecipeAsExtractedAndReleaseAsync(
         long id,
         string leaseToken,
@@ -280,6 +229,7 @@ sealed class RecipeSearchExportStatusRepository(
             .ExecuteUpdateAsync(s => s.SetProperty(e => e.LeaseExpireTime, expireTime), ct);
     }
 
+    /// <inheritdoc />
     public async Task<int> MarkRecipeExtractionFailedAndReleaseAsync(
         long id,
         string leaseToken,
@@ -306,6 +256,7 @@ sealed class RecipeSearchExportStatusRepository(
             );
     }
 
+    /// <inheritdoc />
     public async Task<List<long>> GetRecipesToDeleteAsync(
         int batchSize,
         int maxRetries,
@@ -328,6 +279,7 @@ sealed class RecipeSearchExportStatusRepository(
             .ToListAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task<int> DeleteRecipeSearchEntries(
         List<long> ids,
         string leaseToken,
@@ -347,41 +299,23 @@ sealed class RecipeSearchExportStatusRepository(
         return count;
     }
 
+    /// <inheritdoc />
     public async Task<int> PurgeRecipeSearchEntriesWithTooManyDeleteRetries(
-        int batchSize,
         int maxRetries,
         CancellationToken ct
     )
     {
         await using ApplicationDbContext db = await dbFactory.CreateDbContextAsync(ct);
-        var entries = await db
+        return await db
             .RecipeSearchExtractionStatusEntries.Where(e =>
                 e.ExtractionStatus == SearchExtractionStatus.PendingDelete
                 && e.LeaseExpireTime == null
                 && e.RetryCount >= maxRetries
             )
-            .OrderBy(e => e.RecipeFk)
-            .Select(e => e.RecipeFk)
-            .Take(batchSize)
-            .ToListAsync(ct);
-
-        if (entries.Count < 1)
-        {
-            return 0;
-        }
-
-        int count = await db
-            .RecipeSearchExtractionStatusEntries.Where(e =>
-                entries.Contains(e.RecipeFk)
-                && e.ExtractionStatus == SearchExtractionStatus.PendingDelete
-                && e.RetryCount >= maxRetries
-                && e.LeaseExpireTime == null
-            )
             .ExecuteDeleteAsync(ct);
-
-        return count;
     }
 
+    /// <inheritdoc />
     public async Task<List<long>> GetClaimedRecipes(string leaseToken, CancellationToken ct)
     {
         await using ApplicationDbContext db = await dbFactory.CreateDbContextAsync(ct);
@@ -393,6 +327,7 @@ sealed class RecipeSearchExportStatusRepository(
             .ToListAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task<int> MarkRecipesDeletionFailedAndReleaseAsync(
         List<long> recipeIds,
         string leaseToken,
@@ -419,6 +354,7 @@ sealed class RecipeSearchExportStatusRepository(
             );
     }
 
+    /// <inheritdoc />
     public async Task<int> PurgeMarkedForDeletionAsync(CancellationToken ct)
     {
         using var dbContext = await dbFactory.CreateDbContextAsync(ct);
@@ -429,6 +365,7 @@ sealed class RecipeSearchExportStatusRepository(
             .ExecuteDeleteAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task<int> MarkExtractionStatusForBookAsPendingDeleteAsync(
         long bookId,
         CancellationToken ct

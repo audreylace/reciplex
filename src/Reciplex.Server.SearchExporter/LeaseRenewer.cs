@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Reciplex.Server.Database.SearchIndexTrackingDomain;
+using Reciplex.Server.SearchExporter.Loggers;
 
 namespace Reciplex.Server.SearchExporter;
 

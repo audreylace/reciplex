@@ -1,5 +1,8 @@
 namespace Reciplex.Server.Database.SearchIndexDomain;
 
+/// <summary>
+/// Public object representing a recipe in the search index
+/// </summary>
 public sealed class RecipeSearchDao
 {
     /// <summary>

@@ -14,7 +14,7 @@ namespace Reciplex.Server.Database.RecipesDomain;
 /// <param name="recipesService">repository holding recipes</param>
 /// <param name="recipeSearchExportStatusRepository">repository for recipe search extraction status</param>
 /// <param name="logger">logger for this instance</param>
-class RecipeDeletionHostedService(
+sealed class RecipeDeletionHostedService(
     IRecipesService recipesService,
     IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository,
     ILogger<RecipeDeletionHostedService> logger

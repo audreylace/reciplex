@@ -1,60 +1,55 @@
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Reciplex.Server.Abstractions;
 using Reciplex.Server.Database.SearchIndexDomain;
-using Reciplex.Server.Database.SearchIndexTrackingDomain;
 using Reciplex.Server.SearchExporter.Loggers;
 using Reciplex.Server.SearchExporter.Options;
 using Reciplex.Server.SearchExporter.SearchBackgroundTasks;
 
-namespace Reciplex.Server.SearchExporter;
+namespace Reciplex.Server.SearchExporter.HostedServices;
 
-class SearchIndexExporterScope(
+/// <summary>
+/// Syncs recipe and recipe book changes to the search index.
+/// </summary>
+/// <param name="searchBackgroundTasks">set of tasks to run</param>
+/// <param name="searchIndexRepository">repository tracking the status of search synchronization</param>
+/// <param name="options">search options</param>
+/// <param name="logger">Logger for this instance</param>
+sealed class RecipeSearchHostedBackgroundService(
     IEnumerable<ISearchBackgroundTask> searchBackgroundTasks,
     ISearchIndexRepository searchIndexRepository,
-    ILogger<SearchIndexExporterScope> logger,
     IOptions<SearchExporterOptions> options,
-    IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository
-) : ISearchIndexExporterScope
+    ILogger<RecipeSearchHostedBackgroundService> logger
+) : BackgroundService
 {
-    public async Task ExecuteAsync(CancellationToken ct)
+    /// <inheritdoc />
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!options.Value.Enable)
         {
-            await DeleteUnusedRecipeSearchEntriesLoopAsync(ct);
             return;
         }
 
-        if (options.Value.PauseSync)
-        {
-            return;
-        }
-
-        if (await searchIndexRepository.EnsureSetupCompleteAsync(ct))
-        {
-            await RunTasksAndCheckAsync(ct);
-        }
-    }
-
-    private async Task DeleteUnusedRecipeSearchEntriesLoopAsync(CancellationToken ct)
-    {
-        while (!ct.IsCancellationRequested)
+        while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                await recipeSearchExportStatusRepository.WaitForSearchDeleteWorkAsync(
-                    TimeSpan.FromMinutes(1),
-                    ct
-                );
-                await recipeSearchExportStatusRepository.PurgeMarkedForDeletionAsync(ct);
+                if (await searchIndexRepository.EnsureSetupCompleteAsync(stoppingToken))
+                {
+                    await RunTasksAndCheckAsync(stoppingToken);
+                }
             }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
-                return;
+                return; // shutdown of host
             }
             catch (Exception ex)
             {
-                logger.Error_SearchEntryDeletionFailed(ex);
+                logger.Error_MainLoopCaughtException(ex);
             }
+
+            await SafeDelay.DelayAsync(TimeSpan.FromMinutes(1), stoppingToken);
         }
     }
 
@@ -81,9 +76,8 @@ class SearchIndexExporterScope(
             // normal shutdown
         }
         catch (Exception ex)
-            when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
-            logger.Error_BackgroundTaskMonitorFailed(ex);
+            logger.Error_SearchIndexMonitorThrew(ex);
         }
         finally
         {
@@ -97,7 +91,7 @@ class SearchIndexExporterScope(
                 catch (OperationCanceledException) { }
                 catch (Exception ex)
                 {
-                    logger.Error_BackgroundTaskFailed(ex);
+                    logger.Error_MainLoopCaughtException(ex);
                 }
             }
         }

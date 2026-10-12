@@ -12,6 +12,7 @@ using Reciplex.Server.Abstractions.StringIdProvider;
 using Reciplex.Server.Database;
 using Reciplex.Server.Host.AccessControl;
 using Reciplex.Server.Host.Options;
+using Reciplex.Server.SearchExporter;
 using Sqids;
 using DataProtectionOptions = Reciplex.Server.Host.Options.DataProtectionOptions;
 
@@ -49,6 +50,7 @@ public class Program
         AddAntiforgery(builder);
 
         builder.AddSqlite3ApplicationDbContext();
+        builder.AddSearch();
 
         builder.Services.Configure<RoutingOptions>(
             builder.Configuration.GetSection(RoutingOptions.SectionPath)

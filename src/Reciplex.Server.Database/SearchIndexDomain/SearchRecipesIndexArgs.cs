@@ -15,5 +15,8 @@ public sealed class SearchRecipesIndexArgs
     /// </summary>
     public List<long>? BookIds { get; init; }
 
+    /// <summary>
+    /// Max number of results from the search index
+    /// </summary>
     public int? MaxResults { get; init; }
 }

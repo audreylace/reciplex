@@ -8,11 +8,24 @@ namespace Reciplex.Server.Database.DbObjects;
 /// <summary>
 /// Recipe book database object
 /// </summary>
+/// <remarks>
+/// <list type="bullet">
+/// <item>Index on <see cref="OwnerFk"/></item>
+/// <item>Index on ( <see cref="IsDeleted"/>, <see cref="NextDeletePoll"/> ) </item>
+/// </list>
+/// </remarks>
 [Index(nameof(OwnerFk))]
 [Index(nameof(IsDeleted), nameof(NextDeletePoll))]
 public class RecipeBookDbObject
 {
+    /// <summary>
+    /// Max name length: <see cref="Name"/>
+    /// </summary>
     public const int NameMaxLength = 128;
+
+    /// <summary>
+    /// Max length for short description: <see cref="ShortDescription"/>
+    /// </summary>
     public const int ShortDescriptionMaxLength = 256;
 
     /// <summary>
@@ -88,6 +101,13 @@ public class RecipeBookDbObject
     /// </summary>
     public long? DeletedTime { get; set; }
 
+    /// <summary>
+    /// Next time to check for complete deletion of related entities
+    /// </summary>
     public long NextDeletePoll { get; set; }
+
+    /// <summary>
+    /// Counter used to compute the backoff for <see cref="NextDeletePoll"/>
+    /// </summary>
     public long NextDeletePollCounter { get; set; }
 }

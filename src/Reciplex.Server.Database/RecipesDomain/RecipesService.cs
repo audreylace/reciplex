@@ -78,8 +78,6 @@ internal sealed class RecipesService(
 
         long now = clock.NowUtcUnixSeconds();
 
-        await using var transaction = await dbContext.Database.BeginTransactionAsync(ct);
-
         RecipeDbObject recipeDbObject = new()
         {
             RecipeBookFk = bookLookup.Book.Id,
@@ -91,24 +89,15 @@ internal sealed class RecipesService(
             ConcurrencyTag = concurrencyTagProvider.NextTag(),
             RecipeSearchExtraction = new(),
         };
-        try
+        recipeDbObject.RecipeSearchExtraction = new RecipeSearchWorkerStateDbObject
         {
-            dbContext.Add(recipeDbObject);
-            await dbContext.SaveChangesAsync(ct);
+            RecipeFk = recipeDbObject.Id,
+            RecipeBookFk = bookLookup.Book.Id,
+        };
 
-            recipeDbObject.RecipeSearchExtraction = new RecipeSearchWorkerStateDbObject
-            {
-                RecipeFk = recipeDbObject.Id,
-                RecipeBookFk = bookLookup.Book.Id,
-            };
-            await dbContext.SaveChangesAsync(ct);
-            await transaction.CommitAsync(ct);
-        }
-        catch
-        {
-            await transaction.RollbackAsync(ct);
-            throw;
-        }
+        dbContext.Add(recipeDbObject);
+        await dbContext.SaveChangesAsync(ct);
+
         recipeSearchExportStatusRepository.SignalSearchExtractionWork();
         return new SuccessResult<RecipeDao>(DbObjectToRecipeDao(recipeDbObject, true));
     }

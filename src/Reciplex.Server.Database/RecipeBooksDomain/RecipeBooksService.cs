@@ -147,6 +147,7 @@ internal sealed class RecipeBooksService(
         long now = clock.GetCurrentInstant().ToUnixTimeSeconds();
         MarkBookDirty(book, now);
         book.IsDeleted = true;
+        book.DeletedTime = now;
         try
         {
             await dbContext.SaveChangesAsync(ct);

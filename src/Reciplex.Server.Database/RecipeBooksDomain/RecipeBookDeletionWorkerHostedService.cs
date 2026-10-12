@@ -12,7 +12,7 @@ namespace Reciplex.Server.Database.RecipeBooksDomain;
 /// </summary>
 /// <param name="logger">logger for this instance</param>
 /// <param name="booksService">service for manipulating database objects</param>
-class RecipeBookDeletionWorkerHostedService(
+sealed class RecipeBookDeletionWorkerHostedService(
     ILogger<RecipeBookDeletionWorkerHostedService> logger,
     IRecipeBooksService booksService,
     IRecipesService recipesService,

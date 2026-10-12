@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using Reciplex.Server.Abstractions;
-using Reciplex.Server.Database.SearchExporter.Repositories;
 using Reciplex.Server.Database.SearchIndexDomain;
 using Reciplex.Server.Database.SearchIndexTrackingDomain;
 using Reciplex.Server.SearchExporter.Loggers;
