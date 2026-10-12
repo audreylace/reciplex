@@ -136,6 +136,20 @@ public interface IRecipesService
     /// <returns>number of rows dropped</returns>
     Task<int> PurgeDeletedUnreferencedRecipesAsync(long bookId, CancellationToken ct);
 
+    /// <summary>
+    /// Marks recipes in book as deleted. Caller needs to invoke <see cref="IRecipeSearchExportStatusRepository.MarkExtractionStatusForBookAsPendingDeleteAsync"/>
+    /// to trigger search cleanup.
+    /// </summary>
+    /// <param name="bookId">the id of the book.</param>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>number of rows queued</returns>
     Task<int> QueueRecipesInBookForDeletion(long bookId, CancellationToken ct);
+
+    /// <summary>
+    /// Checks if there are any recipes in the book both deleted and undeleted
+    /// </summary>
+    /// <param name="bookId">the id of the book</param>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>result of the check</returns>
     Task<bool> AnyRecipesInBookAsync(long bookId, CancellationToken ct);
 }

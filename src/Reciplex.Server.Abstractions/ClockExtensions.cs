@@ -3,7 +3,7 @@ using NodaTime;
 namespace Reciplex.Server.Abstractions;
 
 /// <summary>
-/// Extensions on Nodatime <see cref="IClock"/>
+/// Extensions on NodaTime <see cref="IClock"/>
 /// </summary>
 public static class ClockExtensions
 {

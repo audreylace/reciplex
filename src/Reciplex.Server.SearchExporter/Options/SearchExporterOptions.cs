@@ -13,11 +13,6 @@ public class SearchExporterOptions
     public bool Enable { get; set; }
 
     /// <summary>
-    /// When true, syncing is paused
-    /// </summary>
-    public bool PauseSync { get; set; }
-
-    /// <summary>
     /// Authentication token for interfacing with the search index
     /// </summary>
     public string AuthenticationToken { get; set; } = "";

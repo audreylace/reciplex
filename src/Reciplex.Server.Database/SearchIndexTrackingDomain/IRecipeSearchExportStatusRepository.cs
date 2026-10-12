@@ -167,4 +167,13 @@ public interface IRecipeSearchExportStatusRepository
     /// <param name="timeout">how long to wait</param>
     /// <param name="ct">cancels the operation</param>
     Task WaitForSearchDeleteWorkAsync(TimeSpan timeout, CancellationToken ct);
+
+    /// <summary>
+    /// Cross syncs recipe deletion status setting recipes search index
+    /// entries to pending delete as needed. This is used as a backup to guard
+    /// against persistent data corruption.
+    /// </summary>
+    /// <param name="ct">cancels the operation</param>
+    /// <returns>number of entries updated</returns>
+    Task<int> CrossSyncRecipesDeletionStatusAsync(CancellationToken ct);
 }

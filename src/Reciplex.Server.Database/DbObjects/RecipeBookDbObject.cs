@@ -83,6 +83,11 @@ public class RecipeBookDbObject
     /// </summary>
     public bool IsDeleted { get; set; }
 
+    /// <summary>
+    /// Timestamp of deletion
+    /// </summary>
+    public long? DeletedTime { get; set; }
+
     public long NextDeletePoll { get; set; }
     public long NextDeletePollCounter { get; set; }
 }

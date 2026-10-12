@@ -16,6 +16,8 @@ namespace Reciplex.Server.Database.DbObjects;
     nameof(NextRetryTime),
     nameof(RetryCount)
 )]
+[Index(nameof(RecipeFk), nameof(ExtractionStatus))]
+[Index(nameof(RecipeBookFk), nameof(ExtractionStatus))]
 public class RecipeSearchWorkerStateDbObject
 {
     /// <summary>

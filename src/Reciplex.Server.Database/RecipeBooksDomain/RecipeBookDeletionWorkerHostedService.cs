@@ -88,7 +88,9 @@ class RecipeBookDeletionWorkerHostedService(
 
             await recipesService.PurgeDeletedUnreferencedRecipesAsync(queueEntry.Id, ct);
 
-            if (waitOnRecipeDeleteQueue || waitOnSearchExtractionStatus)
+            bool hasPendingRecipes = await recipesService.AnyRecipesInBookAsync(queueEntry.Id, ct);
+
+            if (waitOnRecipeDeleteQueue || waitOnSearchExtractionStatus || hasPendingRecipes)
             {
                 await booksService.RequeueRecipesBooksForDeletionAsync(
                     queueEntry.Id,

@@ -20,7 +20,7 @@ namespace Reciplex.Server.Database.RecipesDomain;
 /// <param name="clock">time provider</param>
 /// <param name="concurrencyTagProvider">concurrency token provider</param>
 /// <param name="stringIdProvider">string id marshaller</param>
-/// <param name="recipeMutationNotifyService">notifies interested parties on recipe addition or deletion</param>
+/// <param name="recipeSearchExportStatusRepository">repository for tracking recipe search export status</param>
 /// <param name="searchIndexRepository">repository for searching for recipes</param>
 internal sealed class RecipesService(
     IDbContextFactory<ApplicationDbContext> dbFactory,
@@ -567,14 +567,16 @@ internal sealed class RecipesService(
     public async Task<int> QueueRecipesInBookForDeletion(long bookId, CancellationToken ct)
     {
         long now = clock.NowUtcUnixSeconds();
+        string token = concurrencyTagProvider.NextTag();
         using var dbContext = await dbFactory.CreateDbContextAsync(ct);
         return await dbContext
             .Recipes.Where(r => r.RecipeBookFk == bookId && !r.IsDeleted)
             .ExecuteUpdateAsync(
                 s =>
                     s.SetProperty(r => r.IsDeleted, true)
+                        .SetProperty(r => r.DeletedTime, now)
                         .SetProperty(r => r.LastModified, now)
-                        .SetProperty(r => r.ConcurrencyTag, concurrencyTagProvider.NextTag()),
+                        .SetProperty(r => r.ConcurrencyTag, token),
                 ct
             );
     }

@@ -1,6 +1,9 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using NodaTime.Extensions;
 using Reciplex.Server.Abstractions;
+using Reciplex.Server.Database.SearchIndexTrackingDomain;
 
 namespace Reciplex.Server.Database.RecipesDomain;
 
@@ -9,9 +12,11 @@ namespace Reciplex.Server.Database.RecipesDomain;
 /// </summary>
 /// <param name="dbFactory">factory for getting database connections</param>
 /// <param name="recipesService">repository holding recipes</param>
+/// <param name="recipeSearchExportStatusRepository">repository for recipe search extraction status</param>
 /// <param name="logger">logger for this instance</param>
 class RecipeDeletionHostedService(
     IRecipesService recipesService,
+    IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository,
     ILogger<RecipeDeletionHostedService> logger
 ) : BackgroundService
 {
@@ -20,11 +25,21 @@ class RecipeDeletionHostedService(
     {
         logger.Info_StartingRecipePurgeWorker();
         using PeriodicTimer periodicTimer = new(TimeSpan.FromMinutes(1));
+        Stopwatch stopwatch = new();
+        stopwatch.Start();
 
         while (await periodicTimer.WaitForNextTickAsync(stoppingToken))
         {
             try
             {
+                if (stopwatch.Elapsed > TimeSpan.FromMinutes(10))
+                {
+                    stopwatch.Restart();
+                    await recipeSearchExportStatusRepository.CrossSyncRecipesDeletionStatusAsync(
+                        stoppingToken
+                    );
+                }
+
                 await recipesService.PurgeDeletedUnreferencedRecipesAsync(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

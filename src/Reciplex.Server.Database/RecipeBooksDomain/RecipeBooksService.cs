@@ -1014,6 +1014,7 @@ internal sealed class RecipeBooksService(
             .ExecuteUpdateAsync(
                 p =>
                     p.SetProperty(p => p.IsDeleted, true)
+                        .SetProperty(p => p.DeletedTime, now)
                         .SetProperty(p => p.LastModified, now)
                         .SetProperty(p => p.ConcurrencyTag, token),
                 ct

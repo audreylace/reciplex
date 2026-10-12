@@ -459,4 +459,30 @@ sealed class RecipeSearchExportStatusRepository(
 
         return count;
     }
+
+    /// <inheritdoc />
+    public async Task<int> CrossSyncRecipesDeletionStatusAsync(CancellationToken ct)
+    {
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
+        int count = await dbContext
+            .RecipeSearchExtractionStatusEntries.Where(e =>
+                e.Recipe!.IsDeleted && e.ExtractionStatus != SearchExtractionStatus.PendingDelete
+            )
+            .ExecuteUpdateAsync(
+                s =>
+                    s.SetProperty(e => e.RetryCount, 0)
+                        .SetProperty(e => e.ExtractionStatus, SearchExtractionStatus.PendingDelete)
+                        .SetProperty(e => e.NextRetryTime, (long?)null)
+                        .SetProperty(e => e.LeaseToken, (string?)null)
+                        .SetProperty(e => e.LeaseExpireTime, (long?)null),
+                ct
+            );
+
+        if (count > 0)
+        {
+            SignalSearchDeleteWork();
+        }
+
+        return count;
+    }
 }
