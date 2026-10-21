@@ -18,7 +18,7 @@ export function DeleteRecipePage() {
   return (
     <>
       <BrowserTitle title="Deleting Recipe" />
-      <DeleteRecipePageBody recipeId={recipeId} />;
+      <DeleteRecipePageBody recipeId={recipeId} />
     </>
   );
 }

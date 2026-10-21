@@ -9,12 +9,12 @@ public class RecipeBookUserPermissionsDao
     /// <summary>
     /// User key
     /// </summary>
-    public required string UserKey { get; init; }
+    public required long UserId { get; init; }
 
     /// <summary>
     /// Books primary key.
     /// </summary>
-    public required string BookKey { get; init; }
+    public required long BookId { get; init; }
 
     /// <summary>
     /// User has access to the book. If false

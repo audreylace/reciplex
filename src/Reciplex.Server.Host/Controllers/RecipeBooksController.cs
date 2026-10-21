@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Reciplex.Server.Abstractions.StringIdProvider;
 using Reciplex.Server.Database.RecipeBooksDomain;
 using Reciplex.Server.Database.Results;
 using Reciplex.Server.Host.AccessControl;
@@ -13,11 +14,14 @@ namespace Reciplex.Server.Host.Controllers;
 /// Endpoints for working with a recipe book
 /// </summary>
 /// <param name="recipeBookService">Provides services for manipulating recipe books</param>
-/// <param name="userService">Provides services for getting user data</param>
+/// <param name="stringIdProvider">service for marshalling ids to and from strings</param>
 [ApiController]
 [Route("recipe-books")]
 [Authorize]
-public class RecipeBooksController(IRecipeBooksService recipeBookService) : ControllerBase
+public class RecipeBooksController(
+    IRecipeBooksService recipeBookService,
+    IStringIdProvider stringIdProvider
+) : ControllerBase
 {
     private const string OrderIdIncreasing = "id-increasing";
     private const string OrderIdDecreasing = "id-decreasing";
@@ -43,25 +47,33 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
         CancellationToken cancellationToken
     )
     {
-        if (!await HttpContext.RequestHasAccessToUserKey(userKey, cancellationToken))
+        if (stringIdProvider.AsLong(userKey) is not long userId || userId < 0)
         {
             return TypedResults.Forbid();
+        }
+
+        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
+        {
+            return TypedResults.Forbid();
+        }
+
+        if (stringIdProvider.AsLong(bookKey) is not long bookId || bookId < 0)
+        {
+            return TypedResults.NotFound();
         }
 
         DatabaseResultVariant<
             SuccessResult<RecipeBookDao>,
             Database.Results.NotFoundResult,
-            ValidationFailureResult,
             UserNotFoundResult
-        > result = await recipeBookService.GetRecipeBookAsync(bookKey, userKey, cancellationToken);
+        > result = await recipeBookService.GetRecipeBookAsync(bookId, userId, cancellationToken);
 
         return result.Result switch
         {
             UserNotFoundResult => TypedResults.NotFound(),
             Database.Results.NotFoundResult => TypedResults.NotFound(),
-            ValidationFailureResult error => TypedResults.ValidationProblem(error.Errors),
             SuccessResult<RecipeBookDao> { Value: RecipeBookDao book } => TypedResults.Ok(
-                new RecipeBookJsonResponse(book)
+                ToJson(book)
             ),
             _ => throw new NotImplementedException(),
         };
@@ -89,7 +101,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
     [ValidateAntiForgeryToken]
     public async Task<
         Results<
-            ValidationProblem,
+            BadRequest,
             Ok<RecipeBookJsonResponse>,
             ForbidHttpResult,
             NotFound,
@@ -103,9 +115,19 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
         CancellationToken cancellationToken
     )
     {
-        if (!await HttpContext.RequestHasAccessToUserKey(userKey, cancellationToken))
+        if (stringIdProvider.AsLong(userKey) is not long userId || userId < 0)
         {
             return TypedResults.Forbid();
+        }
+
+        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
+        {
+            return TypedResults.Forbid();
+        }
+
+        if (stringIdProvider.AsLong(bookKey) is not long bookId || bookId < 0)
+        {
+            return TypedResults.NotFound();
         }
 
         DatabaseResultVariant<
@@ -115,8 +137,8 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
             ValidationFailureResult,
             Database.Results.ConflictResult
         > updateResult = await recipeBookService.UpdateRecipeBookAsync(
-            bookKey,
-            userKey,
+            bookId,
+            userId,
             new()
             {
                 Name = requestBody.Name,
@@ -128,13 +150,11 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
 
         return updateResult.Result switch
         {
-            SuccessResult<RecipeBookDao> success => TypedResults.Ok(
-                new RecipeBookJsonResponse(success.Value)
-            ),
+            SuccessResult<RecipeBookDao> success => TypedResults.Ok(ToJson(success.Value)),
             Database.Results.NotFoundResult => TypedResults.NotFound(),
             DatabaseResultVariant<ForbiddenResult, UserNotFoundResult> => TypedResults.Forbid(),
             Database.Results.ConflictResult => new PreconditionFailedHttpResult("If-Match"),
-            ValidationFailureResult failure => TypedResults.ValidationProblem(failure.Errors),
+            ValidationFailureResult failure => TypedResults.BadRequest(),
             _ => throw new NotImplementedException(),
         };
     }
@@ -154,7 +174,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
     [HttpDelete("{bookKey}")]
     [ValidateAntiForgeryToken]
     public async Task<
-        Results<Ok, PreconditionFailedHttpResult, ForbidHttpResult, NotFound, ValidationProblem>
+        Results<Ok, PreconditionFailedHttpResult, ForbidHttpResult, NotFound>
     > DeleteRecipeBookById(
         [FromRoute] string bookKey,
         [BindRequired] [FromHeader(Name = "If-Match")] EtagValue ifMatch,
@@ -162,20 +182,30 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
         CancellationToken cancellationToken
     )
     {
-        if (!await HttpContext.RequestHasAccessToUserKey(userKey, cancellationToken))
+        if (stringIdProvider.AsLong(userKey) is not long userId || userId < 0)
         {
             return TypedResults.Forbid();
+        }
+
+        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
+        {
+            return TypedResults.Forbid();
+        }
+
+        if (stringIdProvider.AsLong(bookKey) is not long bookId || bookId < 0)
+        {
+            return TypedResults.NotFound();
         }
 
         DatabaseResultVariant<
             EmptySuccessResult,
             Database.Results.NotFoundResult,
-            DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>,
-            ValidationFailureResult,
+            ForbiddenResult,
+            UserNotFoundResult,
             Database.Results.ConflictResult
-        > deleteResult = await recipeBookService.DeleteRecipeBookAsync(
-            bookKey,
-            userKey,
+        > deleteResult = await recipeBookService.QueueRecipeBookDeleteAsync(
+            bookId,
+            userId,
             ifMatch.Value,
             cancellationToken
         );
@@ -185,7 +215,6 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
             EmptySuccessResult => TypedResults.Ok(),
             Database.Results.NotFoundResult => TypedResults.NotFound(),
             DatabaseResultVariant<ForbiddenResult, UserNotFoundResult> => TypedResults.Forbid(),
-            ValidationFailureResult error => TypedResults.ValidationProblem(error.Errors),
             Database.Results.ConflictResult => new PreconditionFailedHttpResult("If-Match"),
             _ => throw new NotImplementedException(),
         };
@@ -209,14 +238,19 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<
-        Results<ForbidHttpResult, Created<RecipeBookJsonResponse>, ValidationProblem>
+        Results<ForbidHttpResult, Created<RecipeBookJsonResponse>, BadRequest>
     > CreateBook(
         [FromQuery(Name = "user")] [BindRequired] string userKey,
         [FromBody] RecipeBookJsonRequest requestBody,
         CancellationToken cancellationToken
     )
     {
-        if (!await HttpContext.RequestHasAccessToUserKey(userKey, cancellationToken))
+        if (stringIdProvider.AsLong(userKey) is not long userId || userId < 0)
+        {
+            return TypedResults.Forbid();
+        }
+
+        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
         {
             return TypedResults.Forbid();
         }
@@ -226,7 +260,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
             UserNotFoundResult,
             ValidationFailureResult
         > createResult = await recipeBookService.CreateRecipeBookAsync(
-            userKey,
+            userId,
             new() { Name = requestBody.Name, ShortDescription = requestBody.ShortDescription },
             cancellationToken
         );
@@ -236,11 +270,9 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
             UserNotFoundResult => TypedResults.Forbid(),
             SuccessResult<RecipeBookDao> success => TypedResults.Created(
                 (string?)null,
-                new RecipeBookJsonResponse(success.Value)
+                ToJson(success.Value)
             ),
-            ValidationFailureResult validationError => TypedResults.ValidationProblem(
-                validationError.Errors
-            ),
+            ValidationFailureResult => TypedResults.BadRequest(),
             _ => throw new NotImplementedException(),
         };
     }
@@ -268,25 +300,45 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
     /// <param name="cancellationToken">token that cancels when the connection is closed</param>
     /// <returns>Task that resolves to the HTTP response</returns>
     [HttpGet]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(
-        "Design",
-        "CA1068:CancellationToken parameters must come last",
-        Justification = "This is a ASP.NET controller method"
-    )]
     public async Task<
-        Results<ValidationProblem, ForbidHttpResult, Ok<IEnumerable<RecipeBookJsonResponse>>>
+        Results<BadRequest, ForbidHttpResult, Ok<IEnumerable<RecipeBookJsonResponse>>>
     > GetBooks(
         [FromQuery(Name = "user")] string userKey,
-        CancellationToken cancellationToken,
-        [FromQuery(Name = "after-id")] string? afterId,
-        [FromQuery(Name = "before-id")] string? beforeId,
+        [FromQuery(Name = "after-id")] string? afterIdString,
+        [FromQuery(Name = "before-id")] string? beforeIdString,
         [FromQuery(Name = "result-ordering")] string? resultOrdering,
+        CancellationToken cancellationToken,
         [FromQuery(Name = "page-size")] int pageSize = 50
     )
     {
-        if (!await HttpContext.RequestHasAccessToUserKey(userKey, cancellationToken))
+        if (stringIdProvider.AsLong(userKey) is not long userId || userId < 0)
         {
             return TypedResults.Forbid();
+        }
+
+        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
+        {
+            return TypedResults.Forbid();
+        }
+
+        long? afterId = null;
+        if (!string.IsNullOrWhiteSpace(afterIdString))
+        {
+            afterId = stringIdProvider.AsLong(afterIdString);
+            if (afterId is null || afterId < 0)
+            {
+                return TypedResults.BadRequest();
+            }
+        }
+
+        long? beforeId = null;
+        if (!string.IsNullOrWhiteSpace(beforeIdString))
+        {
+            beforeId = stringIdProvider.AsLong(beforeIdString);
+            if (beforeId is null || beforeId < 0)
+            {
+                return TypedResults.BadRequest();
+            }
         }
 
         Database.RecordOrdering? recordOrdering = resultOrdering switch
@@ -298,12 +350,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
 
         if (recordOrdering is null)
         {
-            return TypedResults.ValidationProblem(
-                new Dictionary<string, string[]>()
-                {
-                    { "result-ordering", [$"value '{resultOrdering}' is not valid"] },
-                }
-            );
+            return TypedResults.BadRequest();
         }
 
         DatabaseResultVariant<
@@ -311,7 +358,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
             ValidationFailureResult,
             UserNotFoundResult
         > result = await recipeBookService.ListRecipeBooksAsync(
-            userKey,
+            userId,
             new()
             {
                 AfterBookKey = afterId,
@@ -325,9 +372,9 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
         return result.Result switch
         {
             SuccessResult<List<RecipeBookDao>> success => TypedResults.Ok(
-                success.Value.Select(r => new RecipeBookJsonResponse(r))
+                success.Value.Select(ToJson)
             ),
-            ValidationFailureResult validation => TypedResults.ValidationProblem(validation.Errors),
+            ValidationFailureResult validation => TypedResults.BadRequest(),
             UserNotFoundResult => TypedResults.Forbid(),
             _ => throw new NotImplementedException(),
         };
@@ -353,7 +400,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
     [ValidateAntiForgeryToken]
     public async Task<
         Results<
-            ValidationProblem,
+            BadRequest,
             ForbidHttpResult,
             NotFound,
             Ok<RecipeBookJsonResponse>,
@@ -367,9 +414,19 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
         CancellationToken cancellationToken
     )
     {
-        if (!await HttpContext.RequestHasAccessToUserKey(userKey, cancellationToken))
+        if (stringIdProvider.AsLong(userKey) is not long userId || userId < 0)
         {
             return TypedResults.Forbid();
+        }
+
+        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
+        {
+            return TypedResults.Forbid();
+        }
+
+        if (stringIdProvider.AsLong(bookKey) is not long bookId || bookId < 0)
+        {
+            return TypedResults.NotFound();
         }
 
         BookShareKeyUpdateKind bookShareKeyUpdateKind;
@@ -382,14 +439,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
                 bookShareKeyUpdateKind = BookShareKeyUpdateKind.Clear;
                 break;
             default:
-                return TypedResults.ValidationProblem([
-                    new KeyValuePair<string, string[]>(
-                        "kind",
-                        [
-                            $"kind must be either 'clear' or 'regenerate'. Value '{kind}' is not valid.",
-                        ]
-                    ),
-                ]);
+                return TypedResults.BadRequest();
         }
 
         DatabaseResultVariant<
@@ -399,8 +449,8 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
             ValidationFailureResult,
             Database.Results.ConflictResult
         > result = await recipeBookService.UpdateShareKeyAsync(
-            bookKey,
-            userKey,
+            bookId,
+            userId,
             ifMatch.Value,
             bookShareKeyUpdateKind,
             cancellationToken
@@ -408,13 +458,11 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
 
         return result.Result switch
         {
-            SuccessResult<RecipeBookDao> success => TypedResults.Ok(
-                new RecipeBookJsonResponse(success.Value)
-            ),
+            SuccessResult<RecipeBookDao> success => TypedResults.Ok(ToJson(success.Value)),
             Database.Results.NotFoundResult => TypedResults.NotFound(),
             DatabaseResultVariant<ForbiddenResult, UserNotFoundResult> => TypedResults.Forbid(),
             Database.Results.ConflictResult => new PreconditionFailedHttpResult("If-Match"),
-            ValidationFailureResult validation => TypedResults.ValidationProblem(validation.Errors),
+            ValidationFailureResult validation => TypedResults.BadRequest(),
             _ => throw new NotImplementedException(),
         };
     }
@@ -433,7 +481,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
         Results<
             NotFound,
             ForbidHttpResult,
-            ValidationProblem,
+            BadRequest,
             Ok<IEnumerable<RecipeBookUserPermissionsJsonResponse>>
         >
     > GetSharedAccess(
@@ -442,25 +490,30 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
         CancellationToken cancellationToken
     )
     {
-        if (!await HttpContext.RequestHasAccessToUserKey(userKey, cancellationToken))
+        if (stringIdProvider.AsLong(userKey) is not long userId || userId < 0)
         {
             return TypedResults.Forbid();
+        }
+        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
+        {
+            return TypedResults.Forbid();
+        }
+        if (stringIdProvider.AsLong(bookKey) is not long bookId || bookId < 0)
+        {
+            return TypedResults.NotFound();
         }
 
         DatabaseResultVariant<
             SuccessResult<RecipeBookDao>,
             Database.Results.NotFoundResult,
-            ValidationFailureResult,
             UserNotFoundResult
-        > result = await recipeBookService.GetRecipeBookAsync(bookKey, userKey, cancellationToken);
+        > result = await recipeBookService.GetRecipeBookAsync(bookId, userId, cancellationToken);
         switch (result.Result)
         {
             case UserNotFoundResult:
                 return TypedResults.Forbid();
             case Database.Results.NotFoundResult:
                 return TypedResults.NotFound();
-            case ValidationFailureResult error:
-                return TypedResults.ValidationProblem(error.Errors);
             case SuccessResult<RecipeBookDao> success:
                 if (!success.Value.MayManageAccess)
                 {
@@ -478,19 +531,36 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
             UserNotFoundResult,
             ForbiddenResult
         > listResult = await recipeBookService.ListUsersWithAccess(
-            bookKey,
-            userKey,
+            bookId,
+            userId,
             cancellationToken
         );
 
         return listResult.Result switch
         {
             SuccessResult<List<RecipeBookUserPermissionsDao>> successResult => TypedResults.Ok(
-                successResult.Value.Select(k => new RecipeBookUserPermissionsJsonResponse(k))
+                successResult.Value.Select(ToPermissionJson)
             ),
             ForbiddenResult or UserNotFoundResult => TypedResults.Forbid(),
             Database.Results.NotFoundResult => TypedResults.NotFound(),
             _ => throw new NotImplementedException(),
+        };
+    }
+
+    /// <summary>
+    /// Constructs JSON response from <see cref="RecipeBookUserPermissionsDao"/>
+    /// </summary>
+    /// <param name="dao">the dao to convert</param>
+    public RecipeBookUserPermissionsJsonResponse ToPermissionJson(RecipeBookUserPermissionsDao dao)
+    {
+        return new RecipeBookUserPermissionsJsonResponse()
+        {
+            UserKey = stringIdProvider.AsString(dao.UserId),
+            BookKey = stringIdProvider.AsString(dao.BookId),
+            MayViewBook = dao.MayViewBook,
+            MayEditBook = dao.MayEditBook,
+            Reviewed = dao.Reviewed,
+            UserDisplayName = dao.UserDisplayName,
         };
     }
 
@@ -515,7 +585,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
     [HttpPatch("{bookKey}/shared-access")]
     [ValidateAntiForgeryToken]
     public async Task<
-        Results<NotFound, ForbidHttpResult, NoContent, Conflict, ValidationProblem>
+        Results<NotFound, ForbidHttpResult, NoContent, Conflict, BadRequest>
     > PatchSharedAccess(
         [FromQuery(Name = "user")] string userKey,
         [FromRoute] string bookKey,
@@ -523,17 +593,52 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
         CancellationToken cancellationToken
     )
     {
-        if (!await HttpContext.RequestHasAccessToUserKey(userKey, cancellationToken))
+        if (stringIdProvider.AsLong(userKey) is not long userId || userId < 0)
         {
             return TypedResults.Forbid();
+        }
+        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
+        {
+            return TypedResults.Forbid();
+        }
+        if (stringIdProvider.AsLong(bookKey) is not long bookId || bookId < 0)
+        {
+            return TypedResults.NotFound();
+        }
+
+        List<KeyValuePair<long, UpdateRecipeBookUserPermissionArgs?>> entriesToPatch = [];
+        foreach (var kv in body)
+        {
+            if (stringIdProvider.AsLong(kv.Key) is not long userIdKey || userIdKey < 0)
+            {
+                return TypedResults.BadRequest();
+            }
+
+            entriesToPatch.Add(
+                new(
+                    userIdKey,
+                    kv.Value is not null
+                        ? new UpdateRecipeBookUserPermissionArgs()
+                        {
+                            MayViewBook = kv.Value.MayViewBook,
+                            MayEditBook = kv.Value.MayEditBook,
+                            Reviewed = kv.Value.Reviewed,
+                        }
+                        : null
+                )
+            );
+        }
+
+        if (entriesToPatch.Count < 1)
+        {
+            return TypedResults.NoContent();
         }
 
         DatabaseResultVariant<
             SuccessResult<RecipeBookDao>,
             Database.Results.NotFoundResult,
-            ValidationFailureResult,
             UserNotFoundResult
-        > result = await recipeBookService.GetRecipeBookAsync(bookKey, userKey, cancellationToken);
+        > result = await recipeBookService.GetRecipeBookAsync(bookId, userId, cancellationToken);
 
         switch (result.Result)
         {
@@ -541,8 +646,6 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
                 return TypedResults.Forbid();
             case Database.Results.NotFoundResult:
                 return TypedResults.NotFound();
-            case ValidationFailureResult error:
-                return TypedResults.ValidationProblem(error.Errors);
             case SuccessResult<RecipeBookDao> success:
                 if (!success.Value.MayManageAccess)
                 {
@@ -555,19 +658,9 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
                     ValidationFailureResult,
                     Database.Results.ConflictResult
                 > updateResult = await recipeBookService.UpdateUsersAccessAsync(
-                    bookKey,
-                    userKey,
-                    body.Select(kv => new KeyValuePair<string, UpdateRecipeBookUserPermissionArgs?>(
-                        kv.Key,
-                        kv.Value is null
-                            ? null
-                            : new UpdateRecipeBookUserPermissionArgs()
-                            {
-                                MayViewBook = kv.Value.MayViewBook,
-                                MayEditBook = kv.Value.MayEditBook,
-                                Reviewed = kv.Value.Reviewed,
-                            }
-                    )),
+                    bookId,
+                    userId,
+                    entriesToPatch,
                     cancellationToken
                 );
 
@@ -578,9 +671,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
                     DatabaseResultVariant<ForbiddenResult, UserNotFoundResult> =>
                         TypedResults.Forbid(),
                     Database.Results.ConflictResult => TypedResults.Conflict(),
-                    ValidationFailureResult validation => TypedResults.ValidationProblem(
-                        validation.Errors
-                    ),
+                    ValidationFailureResult => TypedResults.BadRequest(),
                     _ => throw new NotImplementedException(),
                 };
             default:
@@ -605,7 +696,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
             NotFound,
             ForbidHttpResult,
             Ok<RequestAccessToRecipeBookStatusJsonResponse>,
-            ValidationProblem,
+            BadRequest,
             Conflict
         >
     > PostSelfServiceSharedAccess(
@@ -615,9 +706,17 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
         CancellationToken cancellationToken
     )
     {
-        if (!await HttpContext.RequestHasAccessToUserKey(userKey, cancellationToken))
+        if (stringIdProvider.AsLong(userKey) is not long userId || userId < 0)
         {
             return TypedResults.Forbid();
+        }
+        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
+        {
+            return TypedResults.Forbid();
+        }
+        if (stringIdProvider.AsLong(bookKey) is not long bookId || bookId < 0)
+        {
+            return TypedResults.NotFound();
         }
 
         DatabaseResultVariant<
@@ -627,8 +726,8 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
             Database.Results.ConflictResult,
             UserNotFoundResult
         > result = await recipeBookService.RequestAccessAsync(
-            bookKey,
-            userKey,
+            bookId,
+            userId,
             shareKey,
             cancellationToken
         );
@@ -638,7 +737,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
             Database.Results.UserNotFoundResult => TypedResults.Forbid(),
             Database.Results.ConflictResult => TypedResults.Conflict(),
             Database.Results.NotFoundResult => TypedResults.NotFound(),
-            ValidationFailureResult error => TypedResults.ValidationProblem(error.Errors),
+            ValidationFailureResult error => TypedResults.BadRequest(),
             SuccessResult<RecipeBookAccessRequestStatus>
             {
                 Value: RecipeBookAccessRequestStatus value
@@ -667,16 +766,24 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
     [HttpDelete("{bookKey}/shared-access/{userKey}")]
     [ValidateAntiForgeryToken]
     public async Task<
-        Results<NotFound, ForbidHttpResult, Ok, ValidationProblem, Conflict>
+        Results<NotFound, ForbidHttpResult, Ok, BadRequest, Conflict>
     > DeleteSelfServiceSharedAccess(
         [FromRoute] string userKey,
         [FromRoute] string bookKey,
         CancellationToken cancellationToken
     )
     {
-        if (!await HttpContext.RequestHasAccessToUserKey(userKey, cancellationToken))
+        if (stringIdProvider.AsLong(userKey) is not long userId || userId < 0)
         {
             return TypedResults.Forbid();
+        }
+        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
+        {
+            return TypedResults.Forbid();
+        }
+        if (stringIdProvider.AsLong(bookKey) is not long bookId || bookId < 0)
+        {
+            return TypedResults.NotFound();
         }
 
         DatabaseResultVariant<
@@ -685,7 +792,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
             ValidationFailureResult,
             UserNotFoundResult,
             Database.Results.ConflictResult
-        > result = await recipeBookService.WithdrawAccessAsync(bookKey, userKey, cancellationToken);
+        > result = await recipeBookService.WithdrawAccessAsync(bookId, userId, cancellationToken);
 
         return result.Result switch
         {
@@ -693,7 +800,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
             Database.Results.ConflictResult => TypedResults.Conflict(),
             Database.Results.NotFoundResult => TypedResults.NotFound(),
             EmptySuccessResult => TypedResults.Ok(),
-            ValidationFailureResult error => TypedResults.ValidationProblem(error.Errors),
+            ValidationFailureResult error => TypedResults.BadRequest(),
             _ => throw new NotImplementedException(),
         };
     }
@@ -711,7 +818,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
     public async Task<
         Results<
             NotFound,
-            ValidationProblem,
+            BadRequest,
             ForbidHttpResult,
             Ok<RequestAccessToRecipeBookStatusJsonResponse>
         >
@@ -722,9 +829,17 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
         CancellationToken cancellationToken
     )
     {
-        if (!await HttpContext.RequestHasAccessToUserKey(userKey, cancellationToken))
+        if (stringIdProvider.AsLong(userKey) is not long userId || userId < 0)
         {
             return TypedResults.Forbid();
+        }
+        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
+        {
+            return TypedResults.Forbid();
+        }
+        if (stringIdProvider.AsLong(bookKey) is not long bookId || bookId < 0)
+        {
+            return TypedResults.NotFound();
         }
 
         DatabaseResultVariant<
@@ -733,8 +848,8 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
             ValidationFailureResult,
             UserNotFoundResult
         > result = await recipeBookService.GetAccessStatusAsync(
-            bookKey,
-            userKey,
+            bookId,
+            userId,
             shareKey,
             cancellationToken
         );
@@ -742,7 +857,7 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
         return result.Result switch
         {
             UserNotFoundResult => TypedResults.Forbid(),
-            ValidationFailureResult failure => TypedResults.ValidationProblem(failure.Errors),
+            ValidationFailureResult failure => TypedResults.BadRequest(),
             Database.Results.NotFoundResult => TypedResults.NotFound(),
             SuccessResult<RecipeBookAccessRequestStatus>
             {
@@ -761,4 +876,27 @@ public class RecipeBooksController(IRecipeBooksService recipeBookService) : Cont
     }
 
     #endregion Recipe Book Share Endpoints
+
+    /// <summary>
+    /// Builds an instance of <see cref="RecipeBookJsonResponse"/>
+    /// </summary>
+    /// <param name="book">the dao data to convert</param>
+    private RecipeBookJsonResponse ToJson(RecipeBookDao book)
+    {
+        return new RecipeBookJsonResponse()
+        {
+            BookKey = stringIdProvider.AsString(book.Id),
+            Name = book.Name,
+            ShortDescription = book.ShortDescription,
+            OwningUserKey = stringIdProvider.AsString(book.OwningUserId),
+            Created = book.Created,
+            LastModified = book.LastModified,
+            ConcurrencyTag = book.ConcurrencyTag,
+            MayEdit = book.MayEditBook,
+            MayDelete = book.MayDeleteBook,
+            MayShare = book.MayShareBook,
+            MayManageAccess = book.MayManageAccess,
+            ShareKey = book.MayShareBook ? book.ShareKey : null,
+        };
+    }
 }

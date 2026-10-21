@@ -8,7 +8,7 @@ public class UserDao
     /// <summary>
     /// Unique id of the user record
     /// </summary>
-    public required string Id { get; init; }
+    public required long Id { get; init; }
 
     /// <summary>
     /// The user's display name
