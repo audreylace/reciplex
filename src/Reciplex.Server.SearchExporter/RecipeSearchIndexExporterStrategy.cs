@@ -87,14 +87,53 @@ sealed class RecipeSearchIndexExporterStrategy(
         }
         catch (Exception ex)
         {
-            await CleanupAsync(
-                leaseToken,
-                idsToUnlock,
-                cancellationTokenSource,
-                renewerTask,
-                maxExportAttempts,
-                ct
-            );
+            if (!cancellationTokenSource.IsCancellationRequested)
+            {
+                try
+                {
+                    await cancellationTokenSource.CancelAsync();
+                }
+                catch (Exception innerEx)
+                {
+                    logger.Error_CancelAsyncFailed(innerEx);
+                }
+            }
+
+            try
+            {
+                await renewerTask;
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception innerEx)
+            {
+                logger.Error_RenewTaskFailed(innerEx);
+            }
+
+            try
+            {
+                if (ct.IsCancellationRequested) // release locks on shutdown
+                {
+                    using CancellationTokenSource fiveSecondCancellationSource = new();
+                    fiveSecondCancellationSource.CancelAfter(TimeSpan.FromSeconds(5));
+                    await UpdateSearchRowsAsync(
+                        leaseToken,
+                        rowIds,
+                        [],
+                        [],
+                        maxExportAttempts,
+                        fiveSecondCancellationSource.Token
+                    );
+                }
+                else
+                {
+                    await UpdateSearchRowsAsync(leaseToken, rowIds, [], [], maxExportAttempts, ct);
+                }
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception innerEx)
+            {
+                logger.Error_LeaseReleaseFailed(innerEx);
+            }
 
             if (ex is not OperationCanceledException && ct.IsCancellationRequested)
             {
@@ -143,68 +182,26 @@ sealed class RecipeSearchIndexExporterStrategy(
         };
     }
 
-    private async Task CleanupAsync(
-        string leaseToken,
-        List<long> rowIds,
-        CancellationTokenSource cancellationTokenSource,
-        Task renewerTask,
-        int maxExportAttempts,
-        CancellationToken ct
-    )
-    {
-        try
-        {
-            try
-            {
-                if (!cancellationTokenSource.IsCancellationRequested)
-                {
-                    await cancellationTokenSource.CancelAsync();
-                }
-            }
-            catch (ObjectDisposedException) { }
-
-            await renewerTask;
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex)
-        {
-            logger.Error_RenewTaskFailed(ex);
-        }
-
-        try
-        {
-            if (ct.IsCancellationRequested) // release locks on shutdown
-            {
-                using CancellationTokenSource fiveSecondCancellationSource = new();
-                fiveSecondCancellationSource.CancelAfter(TimeSpan.FromSeconds(5));
-                await UpdateSearchRowsAsync(
-                    leaseToken,
-                    rowIds,
-                    [],
-                    [],
-                    maxExportAttempts,
-                    fiveSecondCancellationSource.Token
-                );
-            }
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex)
-        {
-            logger.Error_LeaseReleaseFailed(ex);
-        }
-    }
-
+    /// <summary>
+    /// Extracts records in serial
+    /// </summary>
+    /// <param name="extractedRowData">the extracted row data</param>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>Tuple where the first is the set of ids to unlock. These were not attempted and should be retried without incrementing their failure count again.
+    /// Second tuple value is the ids that were extracted.
+    /// Third and final tuple value is the ids that failed to extract.
+    /// </returns>
     private async Task<(
         List<long> IdsToUnlock,
         List<long> IdsExtracted,
         List<long> IdsFailed
-    )> ExtractInSerial(List<IExtractedSearchRow> data, CancellationToken ct)
+    )> ExtractInSerial(List<IExtractedSearchRow> extractedRowData, CancellationToken ct)
     {
-        HashSet<long> idsToUnlock = [.. data.Select(d => d.RowId)];
+        HashSet<long> idsToUnlock = [.. extractedRowData.Select(d => d.RowId)];
         List<long> idsExtracted = [];
         List<long> idsFailed = [];
 
-        foreach (IExtractedSearchRow row in data)
+        foreach (IExtractedSearchRow row in extractedRowData)
         {
             if (ct.IsCancellationRequested)
             {
@@ -255,11 +252,6 @@ sealed class RecipeSearchIndexExporterStrategy(
                 idsFailed.Add(row.RowId);
                 idsToUnlock.Remove(row.RowId);
                 await SafeDelay.DelayAsync(TimeSpan.FromMilliseconds(100), ct);
-
-                if (ct.IsCancellationRequested)
-                {
-                    break;
-                }
             }
         }
 
@@ -301,7 +293,10 @@ sealed class RecipeSearchIndexExporterStrategy(
                     await cancellationTokenSource.CancelAsync();
                 }
             }
-            catch (ObjectDisposedException) { }
+            catch (Exception ex)
+            {
+                logger.Error_CancelAsyncFailed(ex);
+            }
         }
     }
 

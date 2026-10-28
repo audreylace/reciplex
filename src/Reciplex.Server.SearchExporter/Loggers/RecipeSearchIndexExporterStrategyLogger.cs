@@ -24,6 +24,12 @@ static partial class RecipeSearchIndexExporterStrategyLogger
         Exception ex
     );
 
+    [LoggerMessage(LogLevel.Error, "Cancel async operation failed")]
+    public static partial void Error_CancelAsyncFailed(
+        this ILogger<RecipeSearchIndexExporterStrategy> logger,
+        Exception ex
+    );
+
     [LoggerMessage(LogLevel.Error, "Failed to clear one or more recipe search leases")]
     public static partial void Error_LeaseReleaseFailed(
         this ILogger<RecipeSearchIndexExporterStrategy> logger,
