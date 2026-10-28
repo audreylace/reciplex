@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Reciplex.Server.Abstractions;
 using Reciplex.Server.Database.SearchIndexTrackingDomain;
 using Reciplex.Server.SearchExporter.Loggers;
 using Reciplex.Server.SearchExporter.Options;
@@ -48,6 +49,7 @@ sealed class PurgeMarkedForDeletionHostedService(
             catch (Exception ex)
             {
                 logger.Error_GotException(ex);
+                await SafeDelay.DelayAsync(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }
 
