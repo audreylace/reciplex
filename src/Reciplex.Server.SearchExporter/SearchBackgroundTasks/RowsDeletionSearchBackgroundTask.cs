@@ -151,17 +151,10 @@ sealed class RowsDeletionSearchBackgroundTask(
             delay = true;
         }
 
+        await CancelSourceAsync(cancellationTokenSource);
+
         try
         {
-            try
-            {
-                if (!cancellationTokenSource.IsCancellationRequested)
-                {
-                    await cancellationTokenSource.CancelAsync();
-                }
-            }
-            catch (ObjectDisposedException) { }
-
             await renewerTask;
         }
         catch (Exception ex)
@@ -169,7 +162,7 @@ sealed class RowsDeletionSearchBackgroundTask(
             logger.Error_RenewTaskFailed(ex);
         }
 
-        if (ct.IsCancellationRequested || delay) // release locks on shutdown or error
+        if (ct.IsCancellationRequested) // release locks on shutdown or error
         {
             using CancellationTokenSource cancellation = new();
             cancellation.CancelAfter(TimeSpan.FromSeconds(5));
@@ -184,6 +177,25 @@ sealed class RowsDeletionSearchBackgroundTask(
         if (delay && !ct.IsCancellationRequested)
         {
             await SafeDelay.DelayAsync(TimeSpan.FromSeconds(5), ct);
+        }
+    }
+
+    /// <summary>
+    /// Cancels <paramref name="cancellationTokenSource"/> handling and errors
+    /// </summary>
+    /// <param name="cancellationTokenSource">token source to cancel</param>
+    private async Task CancelSourceAsync(CancellationTokenSource cancellationTokenSource)
+    {
+        try
+        {
+            if (!cancellationTokenSource.IsCancellationRequested)
+            {
+                await cancellationTokenSource.CancelAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.Error_FailedToCancelTokenSource(ex);
         }
     }
 
@@ -215,14 +227,7 @@ sealed class RowsDeletionSearchBackgroundTask(
         { }
         finally
         {
-            try
-            {
-                if (!cancellationTokenSource.IsCancellationRequested)
-                {
-                    await cancellationTokenSource.CancelAsync();
-                }
-            }
-            catch (ObjectDisposedException) { }
+            await CancelSourceAsync(cancellationTokenSource);
         }
     }
 

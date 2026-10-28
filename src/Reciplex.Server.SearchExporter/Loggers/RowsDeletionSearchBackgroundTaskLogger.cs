@@ -63,4 +63,10 @@ static partial class RowsDeletionSearchBackgroundTaskLogger
         long RowId,
         Exception ex
     );
+
+    [LoggerMessage(LogLevel.Error, "Failed to cancel token source because of an exception")]
+    public static partial void Error_FailedToCancelTokenSource(
+        this ILogger<RowsDeletionSearchBackgroundTask> logger,
+        Exception ex
+    );
 }
