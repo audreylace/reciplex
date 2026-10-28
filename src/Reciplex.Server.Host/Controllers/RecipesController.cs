@@ -21,14 +21,11 @@ namespace Reciplex.Server.Host.Controllers;
 public class RecipesController(IRecipesService recipeService, IStringIdProvider stringIdProvider)
     : ControllerBase
 {
-    private const string OrderIdIncreasing = "id-increasing";
-    private const string OrderIdDecreasing = "id-decreasing";
-
     /// <summary>
     /// Gets a recipe by id
     /// <br />
     /// <pre><code>
-    /// GET /recipes/{recipeKey}
+    /// GET /recipes/{recipeKey}?user={userKey}
     ///
     /// </code></pre>
     /// </summary>
@@ -37,7 +34,7 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
     /// <param name="cancellationToken">token that cancels when the user closes the connection</param>
     /// <returns>Task resolving to the response to send back</returns>
     [HttpGet("{recipeKey}")]
-    public async Task<Results<Ok<RecipeJsonResponse>, ForbidHttpResult, NotFound>> GetRecipeById(
+    public async Task<Results<Ok<RecipeJsonResponse>, NotFound>> GetRecipeById(
         [FromRoute] string recipeKey,
         [FromQuery(Name = "user")] string userKey,
         CancellationToken cancellationToken
@@ -45,15 +42,15 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
     {
         if (stringIdProvider.AsLong(userKey) is not long userId || userId < 0)
         {
-            return TypedResults.Forbid();
-        }
-
-        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
-        {
-            return TypedResults.Forbid();
+            return TypedResults.NotFound();
         }
 
         if (stringIdProvider.AsLong(recipeKey) is not long recipeId || recipeId < 0)
+        {
+            return TypedResults.NotFound();
+        }
+
+        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
         {
             return TypedResults.NotFound();
         }
@@ -66,8 +63,8 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
 
         return result.Result switch
         {
-            Database.Results.NotFoundResult => TypedResults.NotFound(),
-            UserNotFoundResult => TypedResults.Forbid(),
+            Database.Results.NotFoundResult or UserNotFoundResult => TypedResults.NotFound(),
+
             SuccessResult<RecipeDao> success => TypedResults.Ok(ToJson(success.Value)),
             _ => throw new NotImplementedException(),
         };
@@ -77,7 +74,7 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
     /// Deletes a recipe by id
     /// <br />
     /// <pre><code>
-    /// DELETE /recipes/{recipeKeys}
+    /// DELETE /recipes/{recipeKeys}?user={userKey}
     /// If-Match: {ifMatch}
     ///
     /// </code></pre>
@@ -90,7 +87,7 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
     [HttpDelete("{recipeKey}")]
     [ValidateAntiForgeryToken]
     public async Task<
-        Results<Ok, ForbidHttpResult, NoContent, NotFound, PreconditionFailedHttpResult>
+        Results<Ok, NoContent, NotFound, PreconditionFailedHttpResult>
     > DeleteRecipeById(
         [FromRoute] string recipeKey,
         [BindRequired] [FromHeader(Name = "If-Match")] EtagValue ifMatch,
@@ -100,15 +97,15 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
     {
         if (stringIdProvider.AsLong(userKey) is not long userId || userId < 0)
         {
-            return TypedResults.Forbid();
-        }
-
-        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
-        {
-            return TypedResults.Forbid();
+            return TypedResults.NotFound();
         }
 
         if (stringIdProvider.AsLong(recipeKey) is not long recipeId || recipeId < 0)
+        {
+            return TypedResults.NotFound();
+        }
+
+        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
         {
             return TypedResults.NotFound();
         }
@@ -129,8 +126,10 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
         return deleteResult.Result switch
         {
             EmptySuccessResult => TypedResults.NoContent(),
-            Database.Results.NotFoundResult => TypedResults.NotFound(),
-            ForbiddenResult or UserNotFoundResult => TypedResults.Forbid(),
+
+            Database.Results.NotFoundResult or ForbiddenResult or UserNotFoundResult =>
+                TypedResults.NotFound(),
+
             Database.Results.ConflictResult => new PreconditionFailedHttpResult("If-Match"),
             _ => throw new NotImplementedException(),
         };
@@ -140,7 +139,7 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
     /// Updates a recipe by id
     /// <br />
     /// <pre><code>
-    /// PUT /recipes/{recipeKey}
+    /// PUT /recipes/{recipeKey}?user={userKey}
     /// If-Match: {ifMatch}
     ///
     /// {
@@ -161,7 +160,6 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
     public async Task<
         Results<
             NoContent,
-            ForbidHttpResult,
             BadRequest,
             Ok<RecipeJsonResponse>,
             PreconditionFailedHttpResult,
@@ -177,15 +175,15 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
     {
         if (stringIdProvider.AsLong(userKey) is not long userId || userId < 0)
         {
-            return TypedResults.Forbid();
-        }
-
-        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
-        {
-            return TypedResults.Forbid();
+            return TypedResults.NotFound();
         }
 
         if (stringIdProvider.AsLong(recipeKey) is not long recipeId || recipeId < 0)
+        {
+            return TypedResults.NotFound();
+        }
+
+        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
         {
             return TypedResults.NotFound();
         }
@@ -213,10 +211,14 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
         return updateResult.Result switch
         {
             Database.Results.ConflictResult => new PreconditionFailedHttpResult("If-Match"),
-            Database.Results.NotFoundResult => TypedResults.NotFound(),
-            ForbiddenResult or UserNotFoundResult => TypedResults.Forbid(),
+
+            Database.Results.NotFoundResult or ForbiddenResult or UserNotFoundResult =>
+                TypedResults.NotFound(),
+
             ValidationFailureResult => TypedResults.BadRequest(),
+
             SuccessResult<RecipeDao> success => TypedResults.Ok(ToJson(success.Value)),
+
             _ => throw new NotImplementedException(),
         };
     }
@@ -225,7 +227,7 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
     /// Creates a recipe
     /// <br />
     /// <pre><code>
-    /// POST /recipes?book={book id}
+    /// POST /recipes?book={bookKey}&user={userKey}
     ///
     /// {
     ///     "name": "... recipe name ...",
@@ -240,9 +242,7 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
     /// <returns>Task resolving to the response to send back</returns>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<
-        Results<NotFound, BadRequest, Created<RecipeJsonResponse>, ForbidHttpResult>
-    > CreateRecipe(
+    public async Task<Results<NotFound, BadRequest, Created<RecipeJsonResponse>>> CreateRecipe(
         [FromBody] RecipeJsonRequest body,
         [BindRequired] [FromQuery(Name = "book")] string bookKey,
         [FromQuery(Name = "user")] string userKey,
@@ -251,15 +251,15 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
     {
         if (stringIdProvider.AsLong(userKey) is not long userId || userId < 0)
         {
-            return TypedResults.Forbid();
-        }
-
-        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
-        {
-            return TypedResults.Forbid();
+            return TypedResults.NotFound();
         }
 
         if (stringIdProvider.AsLong(bookKey) is not long bookId || bookId < 0)
+        {
+            return TypedResults.NotFound();
+        }
+
+        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
         {
             return TypedResults.NotFound();
         }
@@ -284,13 +284,16 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
 
         return createRecipeResult.Result switch
         {
-            Database.Results.NotFoundResult => TypedResults.NotFound(),
-            ForbiddenResult or UserNotFoundResult => TypedResults.Forbid(),
+            Database.Results.NotFoundResult or ForbiddenResult or UserNotFoundResult =>
+                TypedResults.NotFound(),
+
             ValidationFailureResult => TypedResults.BadRequest(),
+
             SuccessResult<RecipeDao> success => TypedResults.Created(
                 (string?)null,
                 ToJson(success.Value)
             ),
+
             _ => throw new NotImplementedException(),
         };
     }
@@ -298,24 +301,13 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
     /// <summary>
     /// Path to get previous or next page:
     /// <pre><code>
-    /// GET /recipes?index={page index from last query}&amp;going={forward | backward}&amp;book-id={book id}
-    /// </code></pre>
-    /// <br />
-    /// Path to get first page:
-    /// <pre><code>
-    /// GET /recipes?book-id={book id}
+    /// GET /recipes?book={book id}
     /// </code></pre>
     /// </summary>
     /// <param name="userKey">Key of the user performing the action</param>
     [HttpGet]
     public async Task<
-        Results<
-            BadRequest,
-            NotFound,
-            ForbidHttpResult,
-            InternalServerError,
-            Ok<IEnumerable<RecipeListEntryJsonResponse>>
-        >
+        Results<BadRequest, NotFound, Ok<IEnumerable<RecipeListEntryJsonResponse>>>
     > GetRecipes(
         [FromQuery(Name = "user")] string userKey,
         [FromQuery(Name = "after-id")] string? afterIdString,
@@ -328,12 +320,12 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
     {
         if (stringIdProvider.AsLong(userKey) is not long userId || userId < 0)
         {
-            return TypedResults.Forbid();
+            return TypedResults.NotFound();
         }
 
         if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
         {
-            return TypedResults.Forbid();
+            return TypedResults.NotFound();
         }
 
         long? afterId = null;
@@ -366,6 +358,9 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
             }
         }
 
+        const string OrderIdIncreasing = "id-increasing";
+        const string OrderIdDecreasing = "id-decreasing";
+
         Database.RecordOrdering? recordOrdering = resultOrdering switch
         {
             OrderIdDecreasing => Database.RecordOrdering.ByIdDecreasing,
@@ -397,11 +392,12 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
 
         return result.Result switch
         {
-            Database.Results.NotFoundResult => TypedResults.NotFound(),
-            UserNotFoundResult => TypedResults.Forbid(),
+            Database.Results.NotFoundResult or UserNotFoundResult => TypedResults.NotFound(),
+
             SuccessResult<List<RecipeListEntryDao>> successResult => TypedResults.Ok(
                 successResult.Value.Select(ToListEntryJson)
             ),
+
             _ => throw new NotImplementedException(),
         };
     }
@@ -410,7 +406,7 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
     /// Creates a recipe json model from a <see cref="RecipeListEntryDao"/>
     /// </summary>
     /// <param name="recipe">the source recipe data used to populate this model</param>
-    public RecipeListEntryJsonResponse ToListEntryJson(RecipeListEntryDao recipe)
+    private RecipeListEntryJsonResponse ToListEntryJson(RecipeListEntryDao recipe)
     {
         return new RecipeListEntryJsonResponse()
         {
@@ -424,8 +420,8 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
     /// <summary>
     /// Creates a recipe json model from a <see cref="RecipeDao"/>
     /// </summary>
-    /// <param name="recipe">the source recipe data used to populate <see cref="RecipeJsonResponse"/> </param>
-    public RecipeJsonResponse ToJson(RecipeDao recipe)
+    /// <param name="recipe">the source recipe data used to populate <see cref="RecipeJsonResponse"/></param>
+    private RecipeJsonResponse ToJson(RecipeDao recipe)
     {
         return new RecipeJsonResponse()
         {
