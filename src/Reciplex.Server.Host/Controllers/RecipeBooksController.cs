@@ -578,7 +578,7 @@ public class RecipeBooksController(
     [HttpPatch("{bookKey}/shared-access")]
     [ValidateAntiForgeryToken]
     public async Task<
-        Results<NotFound, ForbidHttpResult, NoContent, Conflict, BadRequest>
+        Results<NotFound, ForbidHttpResult, NoContent, Conflict, BadRequest, ValidationProblem>
     > PatchSharedAccess(
         [FromQuery(Name = "user")] string userKey,
         [FromRoute] string bookKey,
@@ -605,6 +605,16 @@ public class RecipeBooksController(
             if (stringIdProvider.AsLong(kv.Key) is not long userIdKey || userIdKey < 0)
             {
                 return TypedResults.NotFound();
+            }
+
+            if (entriesToPatch.Count > 50)
+            {
+                return TypedResults.ValidationProblem(
+                    new Dictionary<string, string[]>()
+                    {
+                        { "body", ["body can have at most 50 entries at once"] },
+                    }
+                );
             }
 
             entriesToPatch.Add(
