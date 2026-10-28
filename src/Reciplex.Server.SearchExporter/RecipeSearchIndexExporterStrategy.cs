@@ -43,6 +43,9 @@ sealed class RecipeSearchIndexExporterStrategy(
         }
 
         List<long> idsToUnlock = [.. dataToExport.Select(d => d.RowId)];
+        // set of row ids whose rows should have their lease freed when exception is caught
+        List<long> initialsToUnlockOnFailure = [.. idsToUnlock];
+
         using CancellationTokenSource cancellationTokenSource =
             CancellationTokenSource.CreateLinkedTokenSource(ct);
         var renewerTask = RenewIdsPeriodicallyAsync(
@@ -117,7 +120,7 @@ sealed class RecipeSearchIndexExporterStrategy(
                     fiveSecondCancellationSource.CancelAfter(TimeSpan.FromSeconds(5));
                     await UpdateSearchRowsAsync(
                         leaseToken,
-                        rowIds,
+                        initialsToUnlockOnFailure,
                         [],
                         [],
                         maxExportAttempts,
@@ -126,7 +129,14 @@ sealed class RecipeSearchIndexExporterStrategy(
                 }
                 else
                 {
-                    await UpdateSearchRowsAsync(leaseToken, rowIds, [], [], maxExportAttempts, ct);
+                    await UpdateSearchRowsAsync(
+                        leaseToken,
+                        initialsToUnlockOnFailure,
+                        [],
+                        [],
+                        maxExportAttempts,
+                        ct
+                    );
                 }
             }
             catch (OperationCanceledException) { }
