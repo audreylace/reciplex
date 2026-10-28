@@ -34,11 +34,11 @@ sealed class PurgeMarkedForDeletionHostedService(
         {
             try
             {
-                await recipeSearchExportStatusRepository.WaitForDeletionWorkAsync(
-                    TimeSpan.FromMinutes(1),
+                await recipeSearchExportStatusRepository.PurgeAllRowsMarkedForDeletionAsync(
                     stoppingToken
                 );
-                await recipeSearchExportStatusRepository.PurgeAllRowsMarkedForDeletionAsync(
+                await recipeSearchExportStatusRepository.WaitForDeletionWorkAsync(
+                    TimeSpan.FromMinutes(10),
                     stoppingToken
                 );
             }
