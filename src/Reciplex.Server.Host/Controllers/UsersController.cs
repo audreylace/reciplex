@@ -10,6 +10,11 @@ using Reciplex.Server.Host.Models;
 
 namespace Reciplex.Server.Host.Controllers;
 
+/// <summary>
+/// Controller for users http api
+/// </summary>
+/// <param name="userServiceRepository">internal repository for user database objects</param>
+/// <param name="stringIdProvider">service for marshaling ids to and from strings</param>
 [ApiController]
 [Route("users")]
 [Authorize]
@@ -21,6 +26,7 @@ public class UsersController(
     /// <summary>
     /// Returns list of accounts the current user has access to
     /// </summary>
+    /// <param name="ct">request async cancellation token</param>
     /// <returns>List of use accounts</returns>
     [HttpGet]
     public async Task<Ok<IEnumerable<UserJsonResponse>>> HttpGetAccounts(CancellationToken ct)
@@ -33,6 +39,13 @@ public class UsersController(
         );
     }
 
+    /// <summary>
+    /// Gets information about a user
+    /// </summary>
+    /// <param name="userKey">the user string key</param>
+    /// <param name="ct">request async cancellation token</param>
+    /// <returns>controller http response</returns>
+    /// <exception cref="NotImplementedException">thrown when the repository returns a response that is not handled</exception>
     [HttpGet("{userKey}")]
     public async Task<Results<Ok<UserJsonResponse>, NotFound>> HttpGetUser(
         [FromRoute] string userKey,
@@ -43,6 +56,7 @@ public class UsersController(
         {
             return TypedResults.NotFound();
         }
+
         DatabaseResultVariant<SuccessResult<UserDao>, UserNotFoundResult> result =
             await userServiceRepository.GetUserAsync(userId, ct);
 
@@ -56,6 +70,13 @@ public class UsersController(
         };
     }
 
+    /// <summary>
+    /// Creates a new user associated with the authenticated credentials
+    /// </summary>
+    /// <param name="userJsonBody">the new user body</param>
+    /// <param name="ct">request async cancellation token</param>
+    /// <returns>controller response</returns>
+    /// <exception cref="NotImplementedException">thrown when the user service returns a result that this controller does not know how to handle</exception>
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<Results<Created<UserJsonResponse>, BadRequest>> HttpPostUser(
@@ -86,6 +107,15 @@ public class UsersController(
         };
     }
 
+    /// <summary>
+    /// Updates a user owned by this authenticated request
+    /// </summary>
+    /// <param name="userKey">the key of the user record to update</param>
+    /// <param name="userJsonBody">the new values for the body</param>
+    /// <param name="ifMatch">etag for opportunistic concurrency control</param>
+    /// <param name="ct">request async cancellation token</param>
+    /// <returns>controller response</returns>
+    /// <exception cref="NotImplementedException">thrown when a response is returned by the user repository that this controller does not know how to handle</exception>
     [HttpPut("{userKey}")]
     [ValidateAntiForgeryToken]
     public async Task<
@@ -124,8 +154,6 @@ public class UsersController(
         switch (hasAccessCheck.Result)
         {
             case ForbiddenResult:
-                return TypedResults.NotFound();
-
             case UserNotFoundResult:
                 return TypedResults.NotFound();
 
@@ -162,6 +190,14 @@ public class UsersController(
         }
     }
 
+    /// <summary>
+    /// Deletes the user record keyed by <paramref name="userKey"/>. The user record must be owned by the identify of the authenticated request.
+    /// </summary>
+    /// <param name="userKey">the user key of the record to delete</param>
+    /// <param name="ifMatch">etag for opportunistic concurrency control</param>
+    /// <param name="ct">request async cancellation token</param>
+    /// <returns>controller response</returns>
+    /// <exception cref="NotImplementedException">thrown when the user service returns a result that this controller does not know how to handle</exception>
     [HttpDelete("{userKey}")]
     [ValidateAntiForgeryToken]
     public async Task<
