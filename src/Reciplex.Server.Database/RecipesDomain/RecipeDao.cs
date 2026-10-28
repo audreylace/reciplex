@@ -10,7 +10,7 @@ public class RecipeDao
     /// <summary>
     /// Recipe primary key.
     /// </summary>
-    public required string Id { get; init; }
+    public required long Id { get; init; }
 
     /// <summary>
     /// Name of the recipe
@@ -45,7 +45,7 @@ public class RecipeDao
     /// <summary>
     /// The book this recipe is contained in
     /// </summary>
-    public required string BookId { get; init; }
+    public required long BookId { get; init; }
 
     /// <summary>
     /// The long, freeform, markdown recipe data

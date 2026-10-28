@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Reciplex.Server.Abstractions.StringIdProvider;
 using Reciplex.Server.Database.Results;
 using Reciplex.Server.Database.UsersDomain;
 using Reciplex.Server.Host.AccessControl;
@@ -9,14 +10,23 @@ using Reciplex.Server.Host.Models;
 
 namespace Reciplex.Server.Host.Controllers;
 
+/// <summary>
+/// Controller for users http api
+/// </summary>
+/// <param name="userServiceRepository">internal repository for user database objects</param>
+/// <param name="stringIdProvider">service for marshaling ids to and from strings</param>
 [ApiController]
 [Route("users")]
 [Authorize]
-public class UsersController(IUsersService userServiceRepository) : ControllerBase
+public class UsersController(
+    IUsersService userServiceRepository,
+    IStringIdProvider stringIdProvider
+) : ControllerBase
 {
     /// <summary>
     /// Returns list of accounts the current user has access to
     /// </summary>
+    /// <param name="ct">request async cancellation token</param>
     /// <returns>List of use accounts</returns>
     [HttpGet]
     public async Task<Ok<IEnumerable<UserJsonResponse>>> HttpGetAccounts(CancellationToken ct)
@@ -24,35 +34,55 @@ public class UsersController(IUsersService userServiceRepository) : ControllerBa
         (string Authority, string Subject) = HttpContext.RequireOpenIdConnectCredentials();
         return TypedResults.Ok(
             (await userServiceRepository.GetUsersBySubjectAsync(Authority, Subject, ct)).Select(
-                u => new UserJsonResponse(u)
+                ToUserJson
             )
         );
     }
 
+    /// <summary>
+    /// Gets information about a user
+    /// </summary>
+    /// <param name="userKey">the user string key</param>
+    /// <param name="ct">request async cancellation token</param>
+    /// <returns>controller http response</returns>
+    /// <exception cref="NotImplementedException">thrown when the repository returns a response that is not handled</exception>
     [HttpGet("{userKey}")]
     public async Task<Results<Ok<UserJsonResponse>, NotFound>> HttpGetUser(
         [FromRoute] string userKey,
         CancellationToken ct
     )
     {
+        if (stringIdProvider.AsLong(userKey) is not long userId || userId < 0)
+        {
+            return TypedResults.NotFound();
+        }
+
         DatabaseResultVariant<SuccessResult<UserDao>, UserNotFoundResult> result =
-            await userServiceRepository.GetUserAsync(userKey, ct);
+            await userServiceRepository.GetUserAsync(userId, ct);
 
         return result.Result switch
         {
             UserNotFoundResult => TypedResults.NotFound(),
             SuccessResult<UserDao> successResult => TypedResults.Ok(
-                new UserJsonResponse(successResult.Value)
+                ToUserJson(successResult.Value)
             ),
             _ => throw new NotImplementedException(),
         };
     }
 
+    /// <summary>
+    /// Creates a new user associated with the authenticated credentials
+    /// </summary>
+    /// <param name="userJsonBody">the new user body</param>
+    /// <param name="ct">request async cancellation token</param>
+    /// <returns>controller response</returns>
+    /// <exception cref="NotImplementedException">thrown when the user service returns a result that this controller does not know how to handle</exception>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<
-        Results<Created<UserJsonResponse>, NotFound, InternalServerError, ValidationProblem>
-    > HttpPostUser([FromBody] UserJsonRequest userJsonBody, CancellationToken ct)
+    public async Task<Results<Created<UserJsonResponse>, BadRequest>> HttpPostUser(
+        [FromBody] UserJsonRequest userJsonBody,
+        CancellationToken ct
+    )
     {
         var (Authority, Subject) = HttpContext.RequireOpenIdConnectCredentials();
         DatabaseResultVariant<SuccessResult<UserDao>, ValidationFailureResult> createResult =
@@ -68,25 +98,31 @@ public class UsersController(IUsersService userServiceRepository) : ControllerBa
 
         return createResult.Result switch
         {
-            ValidationFailureResult validationFailure => TypedResults.ValidationProblem(
-                validationFailure.Errors
-            ),
+            ValidationFailureResult => TypedResults.BadRequest(),
             SuccessResult<UserDao> success => TypedResults.Created(
                 (string?)null,
-                new UserJsonResponse(success.Value)
+                ToUserJson(success.Value)
             ),
             _ => throw new NotImplementedException(),
         };
     }
 
+    /// <summary>
+    /// Updates a user owned by this authenticated request
+    /// </summary>
+    /// <param name="userKey">the key of the user record to update</param>
+    /// <param name="userJsonBody">the new values for the body</param>
+    /// <param name="ifMatch">etag for opportunistic concurrency control</param>
+    /// <param name="ct">request async cancellation token</param>
+    /// <returns>controller response</returns>
+    /// <exception cref="NotImplementedException">thrown when a response is returned by the user repository that this controller does not know how to handle</exception>
     [HttpPut("{userKey}")]
     [ValidateAntiForgeryToken]
     public async Task<
         Results<
             Ok<UserJsonResponse>,
             NotFound,
-            InternalServerError,
-            ValidationProblem,
+            BadRequest,
             PreconditionFailedHttpResult,
             ForbidHttpResult
         >
@@ -99,6 +135,11 @@ public class UsersController(IUsersService userServiceRepository) : ControllerBa
     {
         (string Authority, string Subject) = HttpContext.RequireOpenIdConnectCredentials();
 
+        if (stringIdProvider.AsLong(userKey) is not long userId || userId < 0)
+        {
+            return TypedResults.NotFound();
+        }
+
         DatabaseResultVariant<
             SuccessResult<UserDao>,
             UserNotFoundResult,
@@ -106,15 +147,13 @@ public class UsersController(IUsersService userServiceRepository) : ControllerBa
         > hasAccessCheck = await userServiceRepository.CheckAuthorizationAsync(
             Authority,
             Subject,
-            userKey,
+            userId,
             ct
         );
 
         switch (hasAccessCheck.Result)
         {
             case ForbiddenResult:
-                return TypedResults.Forbid();
-
             case UserNotFoundResult:
                 return TypedResults.NotFound();
 
@@ -131,7 +170,7 @@ public class UsersController(IUsersService userServiceRepository) : ControllerBa
                     UserNotFoundResult,
                     Database.Results.ConflictResult
                 > updateResult = await userServiceRepository.UpdateUserAsync(
-                    userKey,
+                    userId,
                     ifMatch.Value,
                     new() { DisplayName = userJsonBody.DisplayName },
                     ct
@@ -139,11 +178,8 @@ public class UsersController(IUsersService userServiceRepository) : ControllerBa
 
                 return updateResult.Result switch
                 {
-                    SuccessResult<UserDao> success => TypedResults.Ok(
-                        new UserJsonResponse(success.Value)
-                    ),
-                    ValidationFailureResult validationFailureResult =>
-                        TypedResults.ValidationProblem(validationFailureResult.Errors),
+                    SuccessResult<UserDao> success => TypedResults.Ok(ToUserJson(success.Value)),
+                    ValidationFailureResult => TypedResults.BadRequest(),
                     UserNotFoundResult => TypedResults.NotFound(),
                     Database.Results.ConflictResult => new PreconditionFailedHttpResult("If-Match"),
                     _ => throw new NotImplementedException(),
@@ -154,10 +190,18 @@ public class UsersController(IUsersService userServiceRepository) : ControllerBa
         }
     }
 
+    /// <summary>
+    /// Deletes the user record keyed by <paramref name="userKey"/>. The user record must be owned by the identify of the authenticated request.
+    /// </summary>
+    /// <param name="userKey">the user key of the record to delete</param>
+    /// <param name="ifMatch">etag for opportunistic concurrency control</param>
+    /// <param name="ct">request async cancellation token</param>
+    /// <returns>controller response</returns>
+    /// <exception cref="NotImplementedException">thrown when the user service returns a result that this controller does not know how to handle</exception>
     [HttpDelete("{userKey}")]
     [ValidateAntiForgeryToken]
     public async Task<
-        Results<Ok, NotFound, ForbidHttpResult, PreconditionFailedHttpResult, InternalServerError>
+        Results<Ok, NotFound, ForbidHttpResult, PreconditionFailedHttpResult>
     > HttpDeleteUser(
         [FromRoute] string userKey,
         [BindRequired] [FromHeader(Name = "If-Match")] EtagValue ifMatch,
@@ -166,6 +210,11 @@ public class UsersController(IUsersService userServiceRepository) : ControllerBa
     {
         (string Authority, string Subject) = HttpContext.RequireOpenIdConnectCredentials();
 
+        if (stringIdProvider.AsLong(userKey) is not long userId || userId < 0)
+        {
+            return TypedResults.NotFound();
+        }
+
         DatabaseResultVariant<
             SuccessResult<UserDao>,
             UserNotFoundResult,
@@ -173,14 +222,14 @@ public class UsersController(IUsersService userServiceRepository) : ControllerBa
         > hasAccessCheck = await userServiceRepository.CheckAuthorizationAsync(
             Authority,
             Subject,
-            userKey,
+            userId,
             ct
         );
 
         switch (hasAccessCheck.Result)
         {
             case ForbiddenResult:
-                return TypedResults.Forbid();
+                return TypedResults.NotFound();
 
             case UserNotFoundResult:
                 return TypedResults.NotFound();
@@ -196,7 +245,11 @@ public class UsersController(IUsersService userServiceRepository) : ControllerBa
                     EmptySuccessResult,
                     Database.Results.ConflictResult,
                     UserNotFoundResult
-                > result = await userServiceRepository.DeleteUserAsync(userKey, ifMatch.Value, ct);
+                > result = await userServiceRepository.QueueUserDeleteAsync(
+                    userId,
+                    ifMatch.Value,
+                    ct
+                );
 
                 return result.Result switch
                 {
@@ -209,5 +262,20 @@ public class UsersController(IUsersService userServiceRepository) : ControllerBa
             default:
                 throw new NotImplementedException();
         }
+    }
+
+    /// <summary>
+    /// Converts a <see cref="IUserDao"/> into <see cref="UserJsonResponse"/>
+    /// </summary>
+    /// <param name="user">The <see cref="IUserDao"/> that will be converted into <see cref="UserJsonResponse"/></param>
+    /// <returns>The resulting <see cref="UserJsonResponse"/></returns>
+    public UserJsonResponse ToUserJson(UserDao user)
+    {
+        return new UserJsonResponse()
+        {
+            DisplayName = user.DisplayName,
+            UserKey = stringIdProvider.AsString(user.Id),
+            ConcurrencyTag = user.ConcurrencyTag,
+        };
     }
 }

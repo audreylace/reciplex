@@ -10,19 +10,19 @@ public interface IRecipesService
     /// <summary>
     /// Gets a recipe by Id
     /// </summary>
-    /// <param name="recipeKey">the recipe id</param>
-    /// <param name="userKey">id of the requesting user for access control</param>
+    /// <param name="recipeId">the recipe id</param>
+    /// <param name="userId">id of the requesting user for access control</param>
     /// <param name="cancellationToken">cancels the async action</param>
     /// <returns>the recipe if found. null if not found or if the user does not have access</returns>
     public Task<
         DatabaseResultVariant<SuccessResult<RecipeDao>, NotFoundResult, UserNotFoundResult>
-    > GetRecipeAsync(string recipeKey, string userKey, CancellationToken cancellationToken);
+    > GetRecipeAsync(long recipeId, long userId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Deletes a recipe
+    /// Queues a recipe's deletion
     /// </summary>
-    /// <param name="recipeKey">the recipe id</param>
-    /// <param name="userKey">id of the requesting user for access control</param>
+    /// <param name="recipeId">the recipe id</param>
+    /// <param name="userId">id of the requesting user for access control</param>
     /// <param name="concurrencyTag">recipe concurrency tag to ensure the remote is deleting the recipe they observed</param>
     /// <param name="cancellationToken">cancels the async action</param>
     /// <returns>task that resolves to the outcome of the async operation</returns>
@@ -34,9 +34,9 @@ public interface IRecipesService
             UserNotFoundResult,
             ConflictResult
         >
-    > DeleteRecipeAsync(
-        string recipeKey,
-        string userKey,
+    > QueueRecipeDeleteAsync(
+        long recipeId,
+        long userId,
         string concurrencyTag,
         CancellationToken cancellationToken
     );
@@ -44,8 +44,8 @@ public interface IRecipesService
     /// <summary>
     /// Updates a recipe
     /// </summary>
-    /// <param name="recipeKey">the recipe id</param>
-    /// <param name="userKey">id of the requesting user for access control</param>
+    /// <param name="recipeId">the recipe id</param>
+    /// <param name="userId">id of the requesting user for access control</param>
     /// <param name="concurrencyTag">recipe concurrency tag to ensure the remote is deleting the recipe they observed</param>
     /// <param name="args">Additional recipe data</param>
     /// <param name="cancellationToken">cancels the async action</param>
@@ -60,8 +60,8 @@ public interface IRecipesService
             ConflictResult
         >
     > UpdateRecipeAsync(
-        string recipeKey,
-        string userKey,
+        long recipeId,
+        long userId,
         string concurrencyTag,
         UpdateRecipeArgs args,
         CancellationToken cancellationToken
@@ -70,8 +70,8 @@ public interface IRecipesService
     /// <summary>
     /// Creates a recipe
     /// </summary>
-    /// <param name="bookKey">the recipe book that the recipe will get added to</param>
-    /// <param name="userKey">id of the requesting user for access control</param>
+    /// <param name="bookId">the recipe book that the recipe will get added to</param>
+    /// <param name="userId">id of the requesting user for access control</param>
     /// <param name="args">Additional recipe data</param>
     /// <param name="cancellationToken">cancels the async action</param>
     /// <returns>task that resolves to the outcome of the async operation</returns>
@@ -84,8 +84,8 @@ public interface IRecipesService
             ValidationFailureResult
         >
     > CreateRecipeAsync(
-        string bookKey,
-        string userKey,
+        long bookId,
+        long userId,
         CreateRecipeArgs args,
         CancellationToken cancellationToken
     );
@@ -93,12 +93,62 @@ public interface IRecipesService
         DatabaseResultVariant<
             SuccessResult<List<RecipeListEntryDao>>,
             NotFoundResult,
-            UserNotFoundResult,
-            ValidationFailureResult
+            UserNotFoundResult
         >
     > ListRecipesAsync(
-        string userKey,
+        long userId,
         ListRecipesArgs args,
         CancellationToken cancellationToken = default
     );
+
+    /// <summary>
+    /// Looks for recipes using the search backend. This is an optional feature and is not always enabled.
+    /// </summary>
+    /// <param name="userId">The key of the acting user</param>
+    /// <param name="searchString">the user's search string</param>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>result of the operation</returns>
+    Task<
+        DatabaseResultVariant<
+            SuccessResult<List<RecipeListEntryDao>>,
+            FeatureNotEnabledResult,
+            BookNotFoundResult,
+            UserNotFoundResult,
+            ValidationFailureResult
+        >
+    > SearchRecipesAsync(long userId, SearchRecipesArgs args, CancellationToken ct);
+
+    /// <summary>
+    /// Removes recipes with the delete status from the database that do not have associated dependent
+    /// records.
+    /// </summary>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>number of rows dropped</returns>
+    Task<int> PurgeAllDeletedUnreferencedRecipesAsync(CancellationToken ct);
+
+    /// <summary>
+    /// Removes recipes with the delete status from the database that do not have associated dependent
+    /// records.
+    /// </summary>
+    /// <param name="bookId">the book to scope to</param>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>number of rows dropped</returns>
+    Task<int> PurgeAllDeletedUnreferencedRecipesInBookAsync(long bookId, CancellationToken ct);
+
+    /// <summary>
+    /// Marks recipes in book as deleted. Caller needs to invoke <see cref="IRecipeSearchExportStatusRepository.MarkExtractionStatusForBookAsPendingDeleteAsync"/>
+    /// to trigger search cleanup.
+    /// </summary>
+    /// <param name="bookId">the id of the book.</param>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>number of rows queued</returns>
+    Task<int> QueueAllRecipesInBookForDeletion(long bookId, CancellationToken ct);
+
+    /// <summary>
+    /// Checks if there are any recipes in the book both deleted and undeleted
+    /// </summary>
+    /// <param name="bookId">the id of the book</param>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>result of the check</returns>
+    Task<bool> AnyRecipesInBookAsync(long bookId, CancellationToken ct);
 }

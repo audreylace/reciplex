@@ -13,9 +13,11 @@ internal static class UserServiceQueryExtensions
     /// <summary>
     /// Limits results to only undeleted <see cref="UserDbObject"/> objects
     /// </summary>
+    /// <param name="query">the query to chain the condition to</param>
+    /// <returns><paramref name="query"/> with the condition chained</returns>
     public static IQueryable<UserDbObject> UserNotDeleted(this IQueryable<UserDbObject> query)
     {
-        return query.Where(u => u.Deleted == null);
+        return query.Where(u => !u.IsDeleted);
     }
 
     /// <summary>
