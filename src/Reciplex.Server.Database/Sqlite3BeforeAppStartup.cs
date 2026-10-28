@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Reciplex.Server.Abstractions;
 
@@ -8,6 +7,8 @@ namespace Reciplex.Server.Database;
 /// <summary>
 /// Runs logic specific to SQLite3 on startup
 /// </summary>
+/// <param name="dbFactory">factory for creating <see cref="ApplicationDbContext"/></param>
+/// <param name="options">options for the sqlite3 database</param>
 public class Sqlite3BeforeAppStartup(
     IDbContextFactory<ApplicationDbContext> dbFactory,
     IOptions<SqliteApplicationDbContextOptions> options
