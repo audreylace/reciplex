@@ -273,7 +273,7 @@ public class RecipeBooksController(
 
     #endregion CRUD Endpoints for Recipe Book
 
-    #region Recipe Book Search Endpoints
+    #region Recipe Book List Endpoint
 
     /// <summary>
     /// Gets the user's books
@@ -377,7 +377,7 @@ public class RecipeBooksController(
         };
     }
 
-    #endregion Recipe Book Search Endpoints
+    #endregion Recipe Book List Endpoint
 
     #region Recipe Book Share Endpoints
 

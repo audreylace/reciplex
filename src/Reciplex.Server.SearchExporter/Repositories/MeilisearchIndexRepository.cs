@@ -175,19 +175,47 @@ sealed class MeilisearchIndexRepository(
     )
     {
         StringBuilder filterString = new();
+        bool setAnd = false;
+
+        if (args.Limit is not null && args.Limit <= 0)
+        {
+            throw new ArgumentException(
+                "'Limit' must be at least 1 or greater",
+                nameof(args),
+                null
+            );
+        }
+
+        if (args.Offset is not null && args.Offset < 0)
+        {
+            throw new ArgumentException(
+                "'Offset' must be at least 0 or greater",
+                nameof(args),
+                null
+            );
+        }
 
         // builds filter that looks like this:
-        //   with books
+        //   with books and kind
         // kind = 2 AND ( recipeBookId = 1 OR recipeBookId = 2 )
         //   without books
         // kind = 2
-        filterString.Append("kind = ");
-        filterString.Append((int)RecipeBookSearchIndexDocumentKind.Recipe);
+        if (args.LimitToKind is RecipeBookSearchIndexDocumentKind kindFilter)
+        {
+            filterString.Append("kind = ");
+            filterString.Append((int)kindFilter);
+            setAnd = true;
+        }
+
         if (args.BookIds?.Count > 0)
         {
             bool first = true;
 
-            filterString.Append(" AND ( ");
+            if (setAnd)
+            {
+                filterString.Append(" AND  ");
+            }
+            filterString.Append(" ( ");
             foreach (long id in args.BookIds)
             {
                 if (!first)
@@ -199,13 +227,19 @@ sealed class MeilisearchIndexRepository(
                 filterString.Append("recipeBookId = ");
                 filterString.Append(id);
             }
-            filterString.Append(") ");
+            filterString.Append(" ) ");
         }
 
         SearchQueryResponse<RecipeBookSearchIndexDocument>? result =
             await searchClient.SearchByPostAsync<RecipeBookSearchIndexDocument>(
                 RecipesSearchIndexUid,
-                new() { SearchString = args.SearchString, FilterString = filterString.ToString() },
+                new()
+                {
+                    SearchString = args.SearchString,
+                    FilterString = filterString.ToString(),
+                    Limit = args.Limit,
+                    Offset = args.Offset,
+                },
                 ct
             );
 

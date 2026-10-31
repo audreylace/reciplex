@@ -294,4 +294,20 @@ public interface IRecipeBooksService
     /// <param name="timeout">how long to wait</param>
     /// <param name="ct">cancels the operation</param>
     public Task WaitForDeleteSignal(TimeSpan timeout, CancellationToken ct);
+
+    /// <summary>
+    /// Searches books using the search index
+    /// </summary>
+    /// <param name="userId">the id of the user for access control</param>
+    /// <param name="args">search arguments</param>
+    /// <param name="ct">cancels the operation</param>
+    /// <returns>result of the search</returns>
+    Task<
+        DatabaseResultVariant<
+            SuccessResult<List<RecipeBookDao>>,
+            FeatureNotEnabledResult,
+            UserNotFoundResult,
+            ValidationFailureResult
+        >
+    > SearchBooksAsync(long userId, SearchBooksArgs args, CancellationToken ct);
 }

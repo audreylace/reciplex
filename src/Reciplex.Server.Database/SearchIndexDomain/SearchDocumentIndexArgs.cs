@@ -18,5 +18,15 @@ public sealed class SearchDocumentIndexArgs
     /// <summary>
     /// Max number of results from the search index
     /// </summary>
-    public int? MaxResults { get; init; }
+    public int? Limit { get; init; }
+
+    /// <summary>
+    /// When set limits search to documents of this kind only
+    /// </summary>
+    public RecipeBookSearchIndexDocumentKind? LimitToKind { get; init; }
+
+    /// <summary>
+    /// Offset in the search, used for paging
+    /// </summary>
+    public int? Offset { get; init; }
 }

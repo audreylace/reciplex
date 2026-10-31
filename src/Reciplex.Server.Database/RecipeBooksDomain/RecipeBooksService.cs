@@ -9,6 +9,7 @@ using Reciplex.Server.Abstractions;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Database.DbObjects;
 using Reciplex.Server.Database.Results;
+using Reciplex.Server.Database.SearchIndexDomain;
 using Reciplex.Server.Database.SearchIndexTrackingDomain;
 using Reciplex.Server.Database.UsersDomain;
 
@@ -21,11 +22,13 @@ namespace Reciplex.Server.Database.RecipeBooksDomain;
 /// <param name="concurrencyTagProvider">service for generating concurrency tags</param>
 /// <param name="dbFactory">db connection factory</param>
 /// <param name="recipeSearchExportStatusRepository">repository for getting search status entries</param>
+/// <param name="searchIndexRepository">repository for searching for recipe books</param>
 internal sealed class RecipeBooksService(
     IClock clock,
     IConcurrencyTagProvider concurrencyTagProvider,
     IDbContextFactory<ApplicationDbContext> dbFactory,
-    IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository
+    IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository,
+    ISearchIndexRepository searchIndexRepository
 ) : IRecipeBooksService
 {
     /// <summary>
@@ -966,5 +969,84 @@ internal sealed class RecipeBooksService(
         }
 
         return new EmptySuccessResult();
+    }
+
+    /// <inheritdoc />
+    public async Task<
+        DatabaseResultVariant<
+            SuccessResult<List<RecipeBookDao>>,
+            FeatureNotEnabledResult,
+            UserNotFoundResult,
+            ValidationFailureResult
+        >
+    > SearchBooksAsync(long userId, SearchBooksArgs args, CancellationToken ct)
+    {
+        if (!searchIndexRepository.IsEnabled())
+        {
+            return new FeatureNotEnabledResult();
+        }
+
+        SearchRecipeBooksArgsValidator validator = new();
+        ValidationResult validationResult = await validator.ValidateAsync(args, ct);
+        if (!validationResult.IsValid)
+        {
+            return new ValidationFailureResult();
+        }
+
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
+        if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
+        {
+            return new UserNotFoundResult(userId);
+        }
+
+        // access control, have to inform the index what books
+        // the user has access to
+        List<long> bookIds = await dbContext
+            .RecipeBooks.AsNoTracking()
+            .NotDeleted()
+            .UserHasAccess(userId)
+            .OrderBy(book => book.Id)
+            .Select(book => book.Id)
+            .Take(args.MaxBooks)
+            .ToListAsync(ct);
+
+        if (bookIds.Count < 1) // no books - nothing to search...
+        {
+            return new SuccessResult<List<RecipeBookDao>>([]);
+        }
+
+        List<RecipeBookSearchIndexDocument> matchesFromSearchIndex =
+            await searchIndexRepository.SearchDocumentsAsync(
+                new()
+                {
+                    SearchString = args.SearchString,
+                    BookIds = bookIds,
+                    Limit = args.Limit,
+                    Offset = args.Offset,
+                    LimitToKind = RecipeBookSearchIndexDocumentKind.RecipeBook,
+                },
+                ct
+            );
+
+        List<RecipeBookDao> entries = [];
+        foreach (RecipeBookSearchIndexDocument document in matchesFromSearchIndex)
+        {
+            if (
+                document is
+                { RecipeBookId: long bookId, Kind: RecipeBookSearchIndexDocumentKind.RecipeBook }
+            )
+            {
+                BookWithMaterializedPermissions? queryResult =
+                    await dbContext.GetBookWithUserPermissionsAsync(bookId, userId, ct);
+                if (queryResult is null || !queryResult.PermissionFlags.MayViewBook)
+                {
+                    continue;
+                }
+
+                entries.Add(ToRecipeBookDao(queryResult.Book, queryResult.PermissionFlags));
+            }
+        }
+
+        return new SuccessResult<List<RecipeBookDao>>(entries);
     }
 }

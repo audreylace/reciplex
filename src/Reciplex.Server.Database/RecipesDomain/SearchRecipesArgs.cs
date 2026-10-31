@@ -27,5 +27,10 @@ public class SearchRecipesArgs
     /// <summary>
     /// Max number of results to return
     /// </summary>
-    public int MaxResults { get; init; } = 100;
+    public int Limit { get; init; } = 100;
+
+    /// <summary>
+    /// Offset in the search, used for paging
+    /// </summary>
+    public int Offset { get; init; }
 }

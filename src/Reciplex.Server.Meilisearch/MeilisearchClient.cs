@@ -275,6 +275,8 @@ public class MeilisearchClient(
         {
             Filter = args.FilterString,
             SearchString = args.SearchString,
+            Limit = args.Limit is null || args.Limit is <= 0 ? null : args.Limit,
+            Offset = args.Offset is null || args.Offset is <= 0 ? null : args.Offset,
         };
 
         if (env.IsDevelopment() && logger.IsEnabled(LogLevel.Information))

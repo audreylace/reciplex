@@ -87,6 +87,8 @@ sealed class RecipeSearchIndexExporterStrategy(
                     );
                     break;
             }
+
+            await cancellationTokenSource.CancelAsync();
         }
         catch (Exception ex)
         {
@@ -151,6 +153,16 @@ sealed class RecipeSearchIndexExporterStrategy(
             }
 
             throw;
+        }
+
+        try
+        {
+            await renewerTask;
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception innerEx)
+        {
+            logger.Error_RenewTaskFailed(innerEx);
         }
 
         await UpdateSearchRowsAsync(

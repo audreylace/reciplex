@@ -381,6 +381,11 @@ internal sealed class RecipesService(
         >
     > SearchRecipesAsync(long userId, SearchRecipesArgs args, CancellationToken ct)
     {
+        if (!searchIndexRepository.IsEnabled())
+        {
+            return new FeatureNotEnabledResult();
+        }
+
         SearchRecipesArgsValidator validator = new();
         ValidationResult validationResult = await validator.ValidateAsync(args, ct);
         if (!validationResult.IsValid)
@@ -388,10 +393,6 @@ internal sealed class RecipesService(
             return new ValidationFailureResult();
         }
 
-        if (searchIndexRepository is null || !searchIndexRepository.IsEnabled())
-        {
-            return new FeatureNotEnabledResult();
-        }
         await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
 
         if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
@@ -438,7 +439,9 @@ internal sealed class RecipesService(
                 {
                     SearchString = args.SearchString,
                     BookIds = bookIds,
-                    MaxResults = args.MaxResults,
+                    Limit = args.Limit,
+                    Offset = args.Offset,
+                    LimitToKind = RecipeBookSearchIndexDocumentKind.Recipe,
                 },
                 ct
             );
