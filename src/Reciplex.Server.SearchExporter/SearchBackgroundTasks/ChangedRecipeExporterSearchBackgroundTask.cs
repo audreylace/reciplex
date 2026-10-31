@@ -59,7 +59,7 @@ sealed class ChangedRecipeExporterSearchBackgroundTask(
                 else
                 {
                     await exportStatusRepository.WaitForExtractionWorkAsync(
-                        TimeSpan.FromMinutes(1),
+                        TimeSpan.FromMilliseconds(options.Value.WorkSleepMs),
                         stoppingToken
                     );
                 }

@@ -45,7 +45,7 @@ sealed class RowsDeletionSearchBackgroundTask(
                 if (entries.Count < 1)
                 {
                     await exportStatusRepo.WaitForDeletionWorkAsync(
-                        TimeSpan.FromMinutes(1),
+                        TimeSpan.FromMilliseconds(options.Value.WorkSleepMs),
                         stoppingToken
                     );
                 }

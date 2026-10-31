@@ -37,11 +37,6 @@ public class SearchExporterOptions
     public int SearchDeleteBatchSize { get; set; } = 20;
 
     /// <summary>
-    /// How long a lease is valid for
-    /// </summary>
-    public int LeaseLifetime { get; set; } = 5 * 60;
-
-    /// <summary>
     /// Max time to attempt an export to the search index.
     /// </summary>
     public int MaxExportAttempts { get; set; } = 20;
@@ -51,4 +46,17 @@ public class SearchExporterOptions
     /// record from the tracking index
     /// </summary>
     public int MaxRecipeDeleteAttempts { get; set; } = 20;
+
+    /// <summary>
+    /// The time to sleep before checking for work. Higher frequency
+    /// increases database load but reduces the chance that work could get
+    /// missed.
+    /// </summary>
+    public int WorkSleepMs { get; set; } = 1000 * 60 * 10; // 10 minutes
+
+    /// <summary>
+    /// The frequency to break leases. Defines how long in MS
+    /// to wait between checking for leases to break.
+    /// </summary>
+    public int LeaseBreakSleepMs { get; set; } = 1000 * 60; // 1 minutes
 }

@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Reciplex.Server.Abstractions;
 using Reciplex.Server.Database.SearchIndexTrackingDomain;
 using Reciplex.Server.SearchExporter.Loggers;
+using Reciplex.Server.SearchExporter.Options;
 
 namespace Reciplex.Server.SearchExporter.SearchBackgroundTasks;
 
@@ -12,14 +14,16 @@ namespace Reciplex.Server.SearchExporter.SearchBackgroundTasks;
 /// <param name="logger">logger for the hosted service</param>
 sealed class RecipeLeaseBreakerSearchBackgroundTask(
     IRecipeSearchExportStatusRepository repo,
-    ILogger<RecipeLeaseBreakerSearchBackgroundTask> logger
+    ILogger<RecipeLeaseBreakerSearchBackgroundTask> logger,
+    IOptions<SearchExporterOptions> options
 ) : ISearchBackgroundTask
 {
     /// <inheritdoc />
     public async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using PeriodicTimer periodicTimer = new(TimeSpan.FromMinutes(1));
-
+        using PeriodicTimer periodicTimer = new(
+            TimeSpan.FromMinutes(options.Value.LeaseBreakSleepMs)
+        );
         while (!stoppingToken.IsCancellationRequested)
         {
             try

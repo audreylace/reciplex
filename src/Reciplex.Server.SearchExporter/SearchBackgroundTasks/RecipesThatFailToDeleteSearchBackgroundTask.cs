@@ -24,7 +24,9 @@ sealed class RecipesThatFailToDeleteSearchBackgroundTask(
     /// <inheritdoc />
     public async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using PeriodicTimer periodicTimer = new(TimeSpan.FromMinutes(1));
+        using PeriodicTimer periodicTimer = new(
+            TimeSpan.FromMilliseconds(options.Value.WorkSleepMs)
+        );
         while (!stoppingToken.IsCancellationRequested)
         {
             try
