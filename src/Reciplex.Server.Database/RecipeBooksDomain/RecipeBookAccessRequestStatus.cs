@@ -11,19 +11,19 @@ public class RecipeBookAccessRequestStatus()
     /// <summary>
     /// Constructor
     /// </summary>
-    /// <param name="bookKey">the book string key</param>
+    /// <param name="bookId">the book string key</param>
     /// <param name="book">the book object</param>
     /// <param name="userAccessEntry">the access entry if this book is not owned by the current user</param>
     /// <exception cref="ArgumentException">Thrown if <paramref name="userAccessEntry"/> does not grant access to the book</exception>
     [SetsRequiredMembers]
     internal RecipeBookAccessRequestStatus(
-        string bookKey,
+        long bookId,
         RecipeBookDbObject book,
         AdditionalBookUserAccessDbObject? userAccessEntry
     )
         : this()
     {
-        BookKey = bookKey;
+        BookId = bookId;
         Name = book.Name;
         ShortDescription = book.ShortDescription;
         Status = userAccessEntry switch
@@ -51,7 +51,7 @@ public class RecipeBookAccessRequestStatus()
     /// <summary>
     /// The book key
     /// </summary>
-    public required string BookKey { get; init; }
+    public required long BookId { get; init; }
 
     /// <summary>
     /// Status of the request

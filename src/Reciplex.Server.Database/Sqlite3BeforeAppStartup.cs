@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Reciplex.Server.Abstractions;
 
@@ -8,9 +7,10 @@ namespace Reciplex.Server.Database;
 /// <summary>
 /// Runs logic specific to SQLite3 on startup
 /// </summary>
-/// <param name="app">the application</param>
+/// <param name="dbFactory">factory for creating <see cref="ApplicationDbContext"/></param>
+/// <param name="options">options for the sqlite3 database</param>
 public class Sqlite3BeforeAppStartup(
-    IServiceProvider serviceProvider,
+    IDbContextFactory<ApplicationDbContext> dbFactory,
     IOptions<SqliteApplicationDbContextOptions> options
 ) : IRunBeforeAppStartup
 {
@@ -22,12 +22,9 @@ public class Sqlite3BeforeAppStartup(
             return;
         }
 
-        using var scope = serviceProvider.CreateScope();
-        IServiceProvider services = scope.ServiceProvider;
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
 
-        ApplicationDbContext context = services.GetRequiredService<ApplicationDbContext>();
-
-        using var connection = context.Database.GetDbConnection();
+        using var connection = dbContext.Database.GetDbConnection();
         connection.Open();
         using var command = connection.CreateCommand();
         command.CommandText = "PRAGMA journal_mode=WAL;";
@@ -36,7 +33,11 @@ public class Sqlite3BeforeAppStartup(
         if (options.Value.EnableMigrations)
         {
             // Applies any pending migrations and creates the database if it doesn't exist
-            await context.Database.MigrateAsync(ct);
+            await dbContext.Database.MigrateAsync(ct);
+        }
+        else if (options.Value.Dangerous_UseEnsureCreation)
+        {
+            await dbContext.Database.EnsureCreatedAsync(ct);
         }
     }
 };

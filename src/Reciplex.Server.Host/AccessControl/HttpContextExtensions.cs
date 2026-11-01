@@ -69,12 +69,12 @@ static class HttpContextExtensions
     /// Checks if the request credentials grants access to <paramref name="userKey"/>
     /// </summary>
     /// <param name="context">the current request context</param>
-    /// <param name="userKey">the requested key</param>
+    /// <param name="userId">the requested user id</param>
     /// <param name="ct">cancellation token</param>
     /// <returns>result of the check</returns>
     public static async Task<bool> RequestHasAccessToUserKey(
         this HttpContext context,
-        string userKey,
+        long userId,
         CancellationToken ct
     )
     {
@@ -85,7 +85,7 @@ static class HttpContextExtensions
             ForbiddenResult
         > userCheck = await context
             .RequestServices.GetRequiredService<IUsersService>()
-            .CheckAuthorizationAsync(authority, subject, userKey, ct);
+            .CheckAuthorizationAsync(authority, subject, userId, ct);
 
         return userCheck.Result switch
         {

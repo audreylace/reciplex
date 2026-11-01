@@ -20,11 +20,11 @@ internal static class RecipeQueryExtensions
     }
 
     /// <summary>
-    /// Narrows query to only those recipes with <see cref="RecipeDbObject.Deleted"/> still null
+    /// Narrows query to only those recipes that still exist
     /// </summary>
-    public static IQueryable<RecipeDbObject> DeleteFieldNull(this IQueryable<RecipeDbObject> query)
+    public static IQueryable<RecipeDbObject> NotDeleted(this IQueryable<RecipeDbObject> query)
     {
-        return query.Where(recipe => recipe.Deleted == null);
+        return query.Where(recipe => !recipe.IsDeleted);
     }
 
     /// <summary>

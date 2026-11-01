@@ -29,30 +29,4 @@ public class RecipeBookJsonResponse
     /// The key used to create share links for the recipe book
     /// </summary>
     public required string? ShareKey { get; init; }
-
-    /// <summary>
-    /// Default constructor
-    /// </summary>
-    public RecipeBookJsonResponse() { }
-
-    /// <summary>
-    /// Builds an instance of this object from <paramref name="book"/>
-    /// </summary>
-    /// <param name="book">the dao data to transfer</param>
-    [SetsRequiredMembers]
-    public RecipeBookJsonResponse(RecipeBookDao book)
-    {
-        BookKey = book.Id;
-        Name = book.Name;
-        ShortDescription = book.ShortDescription;
-        OwningUserKey = book.OwningUserKey;
-        Created = book.Created;
-        LastModified = book.LastModified;
-        ConcurrencyTag = book.ConcurrencyTag;
-        MayEdit = book.MayEditBook;
-        MayDelete = book.MayDeleteBook;
-        MayShare = book.MayShareBook;
-        MayManageAccess = book.MayManageAccess;
-        ShareKey = book.MayShareBook ? book.ShareKey : null;
-    }
 }

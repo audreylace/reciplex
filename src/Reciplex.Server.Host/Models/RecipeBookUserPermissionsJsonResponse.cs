@@ -39,24 +39,4 @@ public class RecipeBookUserPermissionsJsonResponse
     /// If the owner has reviewed this entry yet.
     /// </summary>
     public required bool Reviewed { get; init; }
-
-    /// <summary>
-    /// Default constructor
-    /// </summary>
-    public RecipeBookUserPermissionsJsonResponse() { }
-
-    /// <summary>
-    /// Constructs JSON response from dao
-    /// </summary>
-    /// <param name="dao">the dao</param>
-    [SetsRequiredMembers]
-    public RecipeBookUserPermissionsJsonResponse(RecipeBookUserPermissionsDao dao)
-    {
-        UserKey = dao.UserKey;
-        BookKey = dao.BookKey;
-        MayViewBook = dao.MayViewBook;
-        MayEditBook = dao.MayEditBook;
-        Reviewed = dao.Reviewed;
-        UserDisplayName = dao.UserDisplayName;
-    }
 }

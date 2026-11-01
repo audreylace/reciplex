@@ -4,9 +4,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Reciplex.Server.Abstractions;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
-using Reciplex.Server.Database.DeletionWorker;
 using Reciplex.Server.Database.RecipeBooksDomain;
 using Reciplex.Server.Database.RecipesDomain;
+using Reciplex.Server.Database.SearchIndexTrackingDomain;
 using Reciplex.Server.Database.UsersDomain;
 
 namespace Reciplex.Server.Database;
@@ -25,12 +25,25 @@ public static partial class WebApplicationBuilderExtensions
         this WebApplicationBuilder builder
     )
     {
-        builder.Services.AddScoped<IUsersService, UsersService>();
-        builder.Services.AddScoped<IRecipesService, RecipesService>();
-        builder.Services.AddScoped<IRecipeBooksService, RecipeBooksService>();
+        // user services
+        builder.Services.AddSingleton<IUsersService, UsersService>();
+        builder.Services.AddHostedService<UserDeletionHostedService>();
+
+        // recipes
+        builder.Services.AddSingleton<IRecipesService, RecipesService>();
+        builder.Services.AddHostedService<RecipeDeletionHostedService>();
+
         builder.Services.AddRandomNumberGeneratorConcurrencyTagProvider();
-        builder.Services.AddHostedService<DeletionWorkerService>();
-        builder.Services.AddSingleton<DeletionWorkerServiceMetrics>();
+
+        // recipe books
+        builder.Services.AddSingleton<IRecipeBooksService, RecipeBooksService>();
+        builder.Services.AddHostedService<RecipeBookDeletionWorkerHostedService>();
+
+        // search index
+        builder.Services.AddSingleton<
+            IRecipeSearchExportStatusRepository,
+            RecipeSearchExportStatusRepository
+        >();
 
         return builder;
     }
@@ -66,7 +79,7 @@ public static partial class WebApplicationBuilderExtensions
             builder.Configuration.GetSection(SqliteApplicationDbContextOptions.SectionPath)
         );
 
-        builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
             options.UseSqlite(
                 configOptions.DatabaseConnection,
                 b =>

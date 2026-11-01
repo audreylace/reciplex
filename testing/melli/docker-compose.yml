@@ -1,0 +1,11 @@
+services:
+  melli:
+    image: getmeili/meilisearch:latest
+    container_name: melli
+    ports:
+      - "7700:7700"
+    volumes:
+      - mellidata:/meili_data
+    restart: always
+volumes:
+  mellidata:

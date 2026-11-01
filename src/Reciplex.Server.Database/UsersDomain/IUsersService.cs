@@ -8,13 +8,13 @@ namespace Reciplex.Server.Database.UsersDomain;
 public interface IUsersService
 {
     /// <summary>
-    /// Looks up a user by <paramref name="userKey"/>
+    /// Looks up a user by <paramref name="userId"/>
     /// </summary>
-    /// <param name="userKey">the user identifier</param>
+    /// <param name="userId">the user identifier</param>
     /// <param name="cancellationToken">async cancellation token</param>
     /// <returns>information about the user or null if the user does not exist</returns>
     Task<DatabaseResultVariant<SuccessResult<UserDao>, UserNotFoundResult>> GetUserAsync(
-        string userKey,
+        long userId,
         CancellationToken cancellationToken
     );
 
@@ -41,37 +41,78 @@ public interface IUsersService
     /// </summary>
     /// <param name="authority">the authority</param>
     /// <param name="subject">the user subject</param>
-    /// <param name="userKey">the user to check</param>
+    /// <param name="userId">the user to check</param>
     /// <param name="ct">cancellation token for the async operation</param>
-    /// <returns>true if the pair grant access to <paramref name="userKey"/></returns>
+    /// <returns>true if the pair grant access to <paramref name="userId"/></returns>
     /// <remarks>
     /// A given subject and authority grants access to a set of users. This API is used
     /// to determine if the pair would allow access as the specified user.
     /// </remarks>
     Task<
         DatabaseResultVariant<SuccessResult<UserDao>, UserNotFoundResult, ForbiddenResult>
-    > CheckAuthorizationAsync(
-        string authority,
-        string subject,
-        string userKey,
-        CancellationToken ct
-    );
+    > CheckAuthorizationAsync(string authority, string subject, long userId, CancellationToken ct);
 
     /// <summary>
-    /// Deletes a user
+    /// Queues a user for deletion
     /// </summary>
-    /// <param name="userKey">the user key to delete</param>
+    /// <param name="userId">the user key to delete</param>
     /// <param name="concurrencyToken">the concurrency token</param>
     /// <param name="ct">cancellation token for the async operation</param>
     /// <returns>task that resolves on operation completion with information on the outcome</returns>
     Task<
         DatabaseResultVariant<EmptySuccessResult, ConflictResult, UserNotFoundResult>
-    > DeleteUserAsync(string userKey, string concurrencyToken, CancellationToken ct);
+    > QueueUserDeleteAsync(long userId, string concurrencyToken, CancellationToken ct);
+
+    /// <summary>
+    /// Gets the next user record queue for deletion
+    /// </summary>
+    /// <param name="ct">cancellation token for the async operation</param>
+    /// <returns>
+    /// <see cref="EmptySuccessResult"/> when
+    /// there is no user to delete. Success result with the user to delete.
+    /// </returns>
+    Task<
+        DatabaseResultVariant<EmptySuccessResult, SuccessResult<UserDao>>
+    > GetNextUserQueuedForDeletionAsync(CancellationToken ct);
+
+    /// <summary>
+    /// Requeues a user for deletion
+    /// </summary>
+    /// <param name="userId">the user key to requeue</param>
+    /// <param name="concurrencyToken">the concurrency token</param>
+    /// <param name="ct">cancellation token for the async operation</param>
+    /// <returns>
+    /// <see cref="EmptySuccessResult"/> on success.
+    /// <see cref="ConflictResult"/> if the record was modified.
+    /// <see cref="ValidationFailureResult"/> is <paramref name="userId"/> is invalid.
+    /// </returns>
+    Task<DatabaseResultVariant<EmptySuccessResult, ConflictResult>> RequeueUserForDeletionAsync(
+        long userId,
+        string concurrencyToken,
+        CancellationToken ct
+    );
+
+    /// <summary>
+    /// Purges the user data from the database
+    /// </summary>
+    /// <param name="userId">the user key of the user to purge from the database</param>
+    /// <param name="concurrencyToken">the concurrency token</param>
+    /// <param name="ct">cancellation token for the async operation</param>
+    /// <returns>
+    /// <see cref="EmptySuccessResult"/> on success.
+    /// <see cref="ConflictResult"/> if the record was modified.
+    /// <see cref="ValidationFailureResult"/> is <paramref name="userId"/> is invalid.
+    /// </returns>
+    Task<DatabaseResultVariant<EmptySuccessResult, ConflictResult>> PurgeUserFromDatabaseAsync(
+        long userId,
+        string concurrencyToken,
+        CancellationToken ct
+    );
 
     /// <summary>
     /// Updates a user
     /// </summary>
-    /// <param name="userKey">the key of the user to update</param>
+    /// <param name="userId">the key of the user to update</param>
     /// <param name="concurrencyToken">the concurrency token</param>
     /// <param name="args">arguments for the update operation</param>
     /// <param name="ct">cancellation token for the async operation</param>
@@ -84,7 +125,7 @@ public interface IUsersService
             ConflictResult
         >
     > UpdateUserAsync(
-        string userKey,
+        long userId,
         string concurrencyToken,
         UpdateUserArgs args,
         CancellationToken ct
@@ -100,4 +141,16 @@ public interface IUsersService
         CreateUserArgs args,
         CancellationToken ct
     );
+
+    /// <summary>
+    /// Signals that a user was deleted so there is now work to do
+    /// </summary>
+    void SignalDeletion();
+
+    /// <summary>
+    /// Waits for a deletion signal up to <paramref name="timeout"/>
+    /// </summary>
+    /// <param name="timeout">how long to wait</param>
+    /// <param name="ct">async cancellation token</param>
+    Task WaitForSignal(TimeSpan timeout, CancellationToken ct);
 }

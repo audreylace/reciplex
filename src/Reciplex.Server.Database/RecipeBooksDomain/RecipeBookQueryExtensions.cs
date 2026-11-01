@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using Microsoft.EntityFrameworkCore;
 using Reciplex.Server.Database.DbObjects;
 
@@ -10,13 +9,38 @@ namespace Reciplex.Server.Database.RecipeBooksDomain;
 static class RecipeBookQueryExtensions
 {
     /// <summary>
-    /// Limits query to books that are not deleted. Filters out books whose owner is deleted.
+    /// Limits query to books that are not deleted.
     /// </summary>
+    /// <param name="query">the query instance to modify</param>
+    /// <returns>the query the filter applied</returns>
     public static IQueryable<RecipeBookDbObject> NotDeleted(
         this IQueryable<RecipeBookDbObject> query
     )
     {
-        return query.Where(book => book.Deleted == null && book.Owner!.Deleted == null);
+        return query.Where(book => !book.IsDeleted);
+    }
+
+    /// <summary>
+    /// Limits query to books that are deleted.
+    /// </summary>
+    /// <returns>the query the filter applied</returns>
+    public static IQueryable<RecipeBookDbObject> IsDeleted(
+        this IQueryable<RecipeBookDbObject> query
+    )
+    {
+        return query.Where(book => book.IsDeleted);
+    }
+
+    /// <summary>
+    /// Limits query to books that are deleted.
+    /// </summary>
+    /// <returns>the query with the filter applied</returns>
+    public static IQueryable<RecipeBookDbObject> WithConcurrencyTag(
+        this IQueryable<RecipeBookDbObject> query,
+        string concurrencyTag
+    )
+    {
+        return query.Where(book => book.ConcurrencyTag == concurrencyTag);
     }
 
     /// <summary>
@@ -24,6 +48,7 @@ static class RecipeBookQueryExtensions
     /// or <see cref="BookPermissionFlags.MayViewBook"/> is true
     /// </summary>
     /// <param name="userId">the id of the user to scope access to</param>
+    /// <returns>the query with the filter applied</returns>
     public static IQueryable<RecipeBookDbObject> UserHasAccess(
         this IQueryable<RecipeBookDbObject> query,
         long userId
@@ -40,7 +65,9 @@ static class RecipeBookQueryExtensions
     /// <summary>
     /// Filters query down to book with primary key <paramref name="bookId"/>
     /// </summary>
+    /// <param name="query">the query to modify</param>
     /// <param name="bookId">the book primary key</param>
+    /// <returns>the query with the filter applied</returns>
     public static IQueryable<RecipeBookDbObject> WithBookId(
         this IQueryable<RecipeBookDbObject> query,
         long bookId
@@ -50,91 +77,13 @@ static class RecipeBookQueryExtensions
     }
 
     /// <summary>
-    /// Returns the first book from the query and computes its permissions for user <paramref name="userId"/>
+    /// Converts the db model into the application model
     /// </summary>
-    /// <param name="userId">the user ID to compute permissions for</param>
-    /// <param name="ct">token to cancel the operation</param>
-    public static async Task<BookWithMaterializedPermissions?> MaterializeWithPermissionsFirstOrDefaultAsync(
-        this IQueryable<RecipeBookDbObject> query,
-        long userId,
-        CancellationToken ct = default
-    )
-    {
-        var queryResult = await query
-            .Select(b => new
-            {
-                Book = b,
-                AdditionalBookUserAccessDbObject = b.OwnerFk == userId
-                    ? null
-                    : b.AdditionalUsers.FirstOrDefault(u => u.UserFk == userId),
-            })
-            .FirstOrDefaultAsync(ct);
-
-        if (queryResult is null)
-        {
-            return null;
-        }
-
-        return MaterializeBookAndPermissions(
-            queryResult.Book,
-            userId,
-            queryResult.AdditionalBookUserAccessDbObject
-        );
-    }
-
-    /// <summary>
-    /// Returns a series of books with computed permissions information
-    /// </summary>
-    /// <param name="userId">the user ID to compute permissions for</param>
-    /// <param name="ct">token to cancel the operation</param>
-    public static async IAsyncEnumerable<BookWithMaterializedPermissions> MaterializeWithPermissionsAsyncEnumerable(
-        this IQueryable<RecipeBookDbObject> query,
-        long userId,
-        [EnumeratorCancellation] CancellationToken ct = default
-    )
-    {
-        await foreach (
-            var queryResult in query
-                .Select(b => new
-                {
-                    Book = b,
-                    AdditionalBookUserAccessDbObject = b.OwnerFk == userId
-                        ? null
-                        : b.AdditionalUsers.FirstOrDefault(u => u.UserFk == userId),
-                })
-                .AsAsyncEnumerable()
-                .WithCancellation(ct)
-        )
-        {
-            yield return MaterializeBookAndPermissions(
-                queryResult.Book,
-                userId,
-                queryResult.AdditionalBookUserAccessDbObject
-            );
-        }
-    }
-
-    /// <summary>
-    /// Gets a book only if it is not deleted. Determines user's access if any.
-    /// </summary>
-    /// <param name="bookId">the book id</param>
+    /// <param name="book">the book db object</param>
     /// <param name="userId">the user id</param>
-    /// <param name="ct">async cancellation token</param>
-    /// <returns>Book is returned if it is not deleted. Calling code still needs to do manual access checks.</returns>
-    public static Task<BookWithMaterializedPermissions?> GetBookAndPermissionsAsync(
-        this IQueryable<RecipeBookDbObject> query,
-        long bookId,
-        long userId,
-        CancellationToken ct
-    )
-    {
-        return query
-            .NotDeleted()
-            .WithBookId(bookId)
-            .MaterializeWithPermissionsFirstOrDefaultAsync(userId, ct);
-    }
-
-    private static BookWithMaterializedPermissions MaterializeBookAndPermissions(
+    /// <param name="shareEntry">the share entry db object</param>
+    /// <returns>the application model created from the db object</returns>
+    internal static BookWithMaterializedPermissions MaterializeBookAndPermissions(
         RecipeBookDbObject book,
         long userId,
         AdditionalBookUserAccessDbObject? shareEntry
@@ -151,5 +100,40 @@ static class RecipeBookQueryExtensions
         }
 
         return new(book, BookPermissionFlags.SharedPermissions(shareEntry.MayEditBook), shareEntry);
+    }
+
+    /// <summary>
+    /// Gets books with associated user permission entries
+    /// </summary>
+    /// <param name="dbContext">the db connection</param>
+    /// <param name="bookId">book id</param>
+    /// <param name="userId">user id</param>
+    /// <param name="ct">async cancellation token</param>
+    /// <param name="withTracking">set to true if tracking should be enabled. Defaults to false.</param>
+    /// <returns>the result data</returns>
+    internal static async Task<BookWithMaterializedPermissions?> GetBookWithUserPermissionsAsync(
+        this ApplicationDbContext dbContext,
+        long bookId,
+        long userId,
+        CancellationToken ct,
+        bool withTracking = false
+    )
+    {
+        var accesses = dbContext.RecipeBookAccessEntries.Where(a =>
+            a.UserFk == userId && a.RecipeBookFk == bookId
+        );
+        var books = dbContext.RecipeBooks.Where(b => b.Id == bookId && !b.IsDeleted);
+
+        var bookQuery =
+            from book in books
+            join access in accesses on book.Id equals access.RecipeBookFk into accessGroup
+            from access in accessGroup.DefaultIfEmpty()
+            select new { Book = book, Access = access };
+
+        var bookData = await bookQuery.ConditionalTracking(withTracking).FirstOrDefaultAsync(ct);
+
+        return bookData is not null
+            ? MaterializeBookAndPermissions(bookData.Book, userId, bookData.Access)
+            : null;
     }
 }
