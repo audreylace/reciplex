@@ -37,7 +37,7 @@ public class RecipeBooksSearchController(
     > Search(
         [FromQuery(Name = "user")] string userKey,
         [BindRequired] [FromQuery(Name = "q")] string searchString,
-        [FromQuery(Name = "max")] int? maxNullable,
+        [FromQuery(Name = "limit")] int? maxNullable,
         [FromQuery(Name = "offset")] int? offsetNullable,
         CancellationToken cancellationToken
     )

@@ -43,7 +43,7 @@ public class RecipesSearchController(
     > Search(
         [FromQuery(Name = "user")] string userKey,
         [BindRequired] [FromQuery(Name = "q")] string searchString,
-        [FromQuery(Name = "max")] int? maxNullable,
+        [FromQuery(Name = "limit")] int? maxNullable,
         [FromQuery(Name = "offset")] int? offsetNullable,
         [FromQuery(Name = "book")] string? bookIdString,
         CancellationToken cancellationToken
@@ -97,7 +97,8 @@ public class RecipesSearchController(
             targetBook = stringIdProvider.AsLong(bookIdString);
             if (targetBook is null || targetBook < 0)
             {
-                return TypedResults.BadRequest();
+                // return not found, allows UI to handle bad links gracefully
+                return TypedResults.NotFound();
             }
         }
 
