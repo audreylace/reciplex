@@ -66,6 +66,16 @@ public class RecipesSearchController(
             );
         }
 
+        if (searchString.Length > 100)
+        {
+            return TypedResults.ValidationProblem(
+                new Dictionary<string, string[]>()
+                {
+                    { "q", ["Expect 'q' to be no longer then 100 characters"] },
+                }
+            );
+        }
+
         if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
         {
             return TypedResults.BadRequest();

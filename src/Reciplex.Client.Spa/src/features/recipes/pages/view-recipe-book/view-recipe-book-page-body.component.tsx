@@ -5,12 +5,14 @@ import { RecipeTable } from "../../components/recipe-table/recipe-table.componen
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
 import { useGetRecipesInBookQuery } from "../../hooks/useGetRecipesInBookQuery.hook";
 import { useRecipeClientStateContext } from "../../hooks/useRecipeClientStateContext.hook";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
 import { BookMenuButton } from "../../components/book-menu-button/book-menu-button.component";
 import { useActiveUserKey } from "../../../auth/hooks/useActiveUser.hook";
 import { SharedRecipeBookIndicator } from "../../components/shared-recipe-book-indicator/shared-recipe-book-indicator.component";
 import { BrowserTitle } from "../../../core/components/browser-title/browser-title.component";
+import { useSearchRecipesInBook } from "../../hooks/useSearchRecipesInBook.hook";
+import type { IRecipeListEntryJsonResponse } from "../../services/recipe-types";
 
 export function ViewRecipeBookPageBody({
   bookId,
@@ -18,64 +20,54 @@ export function ViewRecipeBookPageBody({
   at,
 }: {
   bookId: string;
-  source: "next" | "previous";
+  source: RecipeListCursorType;
   at?: string;
 }) {
   const selectedSize = useRecipeClientStateContext(
     (state) => state.recipeListPageSize,
   );
   const currentUser = useActiveUserKey();
-  const {
-    data: book,
-    isError: getRecipeBookError,
-    isPending: bookPending,
-  } = useGetRecipeBookById(bookId);
+  const [searchValue, setSearchValue] = useState<string>("");
+  const bookQuery = useGetRecipeBookById(bookId);
 
-  const {
-    isError: getRecipesError,
-    isPending: getRecipesPending,
-    data: recipeList,
-    isSuccess: recipeListSuccess,
-  } = useGetRecipesInBookQuery(bookId, source, at, selectedSize);
+  // Select UI mode based on if the
+  // search input box is set.
+  const uiMode =
+    searchValue && searchValue.trim()
+      ? ComponentDataMode.recipeSearch
+      : ComponentDataMode.recipeList;
 
-  let nextQueryPos;
-  let previousQueryPos;
-  if (recipeListSuccess && recipeList) {
-    if (source !== "next" || recipeList.length > 0) {
-      nextQueryPos = recipeList[recipeList.length - 1]?.recipeKey ?? at;
-    }
-    if (source !== "previous" || recipeList.length > 0) {
-      previousQueryPos = recipeList[0]?.recipeKey ?? at;
-    }
-  }
-
-  const {
-    data: nextRecipe,
-    isSuccess: nextRecipeSuccess,
-    isPending: nextRecipePending,
-    isEnabled: nextRecipeEnabled,
-  } = useGetRecipesInBookQuery(
+  const recipeListQuery = useGetRecipesInBookQuery(
     bookId,
-    "next",
-    nextQueryPos,
+    source,
+    at,
     selectedSize,
-    !!nextQueryPos,
+    uiMode === ComponentDataMode.recipeList,
   );
-  const {
-    data: previousRecipe,
-    isSuccess: previousRecipeSuccess,
-    isPending: previousRecipePending,
-    isEnabled: previousRecipeEnabled,
-  } = useGetRecipesInBookQuery(
-    bookId,
-    "previous",
-    previousQueryPos,
-    selectedSize,
-    !!previousQueryPos,
-  );
+  const searchQuery = useSearchRecipesInBook({
+    disable: uiMode !== ComponentDataMode.recipeSearch,
+    searchString: searchValue,
+    limit: selectedSize,
+    bookId: bookId,
+  });
+
+  const listPageEdgesQuery = useRecipeListPageCursors({
+    enable:
+      uiMode === ComponentDataMode.recipeList && recipeListQuery.isSuccess,
+    selectedSize: selectedSize,
+    bookId: bookId,
+    source,
+    at,
+    recipeData: recipeListQuery.data ?? undefined,
+  });
 
   const tablePaperRef = useRef<HTMLDivElement>(null);
   const firstMountRef = useRef<boolean>(true);
+
+  const [componentData, setComponentData] = useState<
+    IRecipeListEntryJsonResponse[] | undefined
+  >(undefined);
+
   useEffect(() => {
     if (firstMountRef.current) {
       firstMountRef.current = false;
@@ -88,22 +80,53 @@ export function ViewRecipeBookPageBody({
     }
   }, [bookId, source, at]);
 
-  if (getRecipesError || getRecipeBookError) {
+  // book loading failed
+  if (bookQuery.error) {
     return <LoadingFailedAlert />;
   }
-
-  if (bookPending) {
+  // book is loading
+  else if (bookQuery.isPending) {
     return <LoadingIndicator />;
   }
-
-  if (
-    !book ||
-    // show loading table once the book loads in
-    (!getRecipesPending && !recipeList)
-  ) {
+  // book was not found
+  else if (!bookQuery.data) {
     return <RecipeBookNotFoundBanner />;
   }
 
+  let nextListAt, prevListAt;
+  let nextLoading = false;
+  let previousLoading = false;
+  let showPendingUi = false;
+
+  switch (uiMode) {
+    case ComponentDataMode.recipeList:
+      showPendingUi = recipeListQuery.isPending;
+
+      if (
+        recipeListQuery.isSuccess &&
+        (recipeListQuery.data ?? undefined) !== componentData
+      ) {
+        setComponentData(recipeListQuery.data ?? undefined);
+      }
+
+      nextLoading = listPageEdgesQuery.nextPending;
+      previousLoading = listPageEdgesQuery.previousPending;
+      nextListAt = listPageEdgesQuery.nextQueryPos;
+      prevListAt = listPageEdgesQuery.previousQueryPos;
+
+      break;
+    case ComponentDataMode.recipeSearch:
+      showPendingUi = searchQuery.isPending;
+      if (
+        searchQuery.isSuccess &&
+        (searchQuery.data ?? undefined) !== componentData
+      ) {
+        setComponentData(searchQuery.data ?? undefined);
+      }
+      break;
+  }
+
+  const book = bookQuery.data;
   return (
     <>
       <BrowserTitle title={book.name ? book.name : "View Book"} />
@@ -124,26 +147,112 @@ export function ViewRecipeBookPageBody({
       />
       <RecipeTable
         ref={tablePaperRef}
-        pending={getRecipesPending}
-        recipes={recipeList ?? undefined}
-        nextLoading={nextRecipeEnabled && nextRecipePending}
+        pending={showPendingUi}
+        hideHeader={!componentData || componentData.length < 1}
+        recipes={componentData}
+        nextLoading={nextLoading}
         mayEdit={book.mayEdit ?? false}
-        next={
-          nextRecipeEnabled &&
-          nextRecipeSuccess &&
-          (nextRecipe?.length ?? 0) > 0
-            ? nextQueryPos
-            : undefined
-        }
-        previousLoading={previousRecipeEnabled && previousRecipePending}
-        previous={
-          previousRecipeEnabled &&
-          previousRecipeSuccess &&
-          (previousRecipe?.length ?? 0) > 0
-            ? previousQueryPos
-            : undefined
-        }
+        next={nextListAt}
+        previousLoading={previousLoading}
+        previous={prevListAt}
+        showSearch
+        searchValue={searchValue}
+        searchOnChange={setSearchValue}
       />
     </>
   );
+}
+
+/**
+ * Component data mode of the component
+ */
+const ComponentDataMode = {
+  /** use the list recipes endpoint */
+  recipeList: 1,
+  /** use the search recipe endpoint */
+  recipeSearch: 2,
+};
+
+/**
+ * the cursor type. Encodes if the user went forward or backwards.
+ */
+type RecipeListCursorType = "next" | "previous";
+
+function useRecipeListPageCursors({
+  enable,
+  selectedSize,
+  bookId,
+  source,
+  at,
+  recipeData,
+}: {
+  enable: boolean;
+  selectedSize: number;
+  bookId: string;
+  source: RecipeListCursorType;
+  at: string | undefined;
+  recipeData: IRecipeListEntryJsonResponse[] | undefined;
+}): IUseRecipeListPageCursors {
+  let nextQueryPos;
+  let previousQueryPos;
+  if (recipeData && enable) {
+    if (source !== "next" || recipeData.length > 0) {
+      nextQueryPos = recipeData[recipeData.length - 1]?.recipeKey ?? at;
+    }
+    if (source !== "previous" || recipeData.length > 0) {
+      previousQueryPos = recipeData[0]?.recipeKey ?? at;
+    }
+  }
+
+  const {
+    data: nextRecipe,
+    isSuccess: nextRecipeSuccess,
+    isPending: nextRecipePending,
+  } = useGetRecipesInBookQuery(
+    bookId,
+    "next",
+    nextQueryPos,
+    selectedSize,
+    !!nextQueryPos && enable,
+  );
+  const {
+    data: previousRecipeData,
+    isSuccess: previousRecipeSuccess,
+    isPending: previousRecipePending,
+  } = useGetRecipesInBookQuery(
+    bookId,
+    "previous",
+    previousQueryPos,
+    selectedSize,
+    !!previousQueryPos && enable,
+  );
+
+  const hasNext = !!(nextRecipeSuccess && nextRecipe && nextRecipe.length > 0);
+  const hasPrevious = !!(
+    previousRecipeSuccess &&
+    previousRecipeData &&
+    previousRecipeData.length > 0
+  );
+  return {
+    previousPending: enable && previousRecipePending,
+    previousSuccess: previousRecipeSuccess,
+    hasPrevious: hasPrevious,
+    previousQueryPos: hasPrevious ? previousQueryPos : undefined,
+
+    nextPending: enable && nextRecipePending,
+    nextSuccess: nextRecipeSuccess,
+    hasNext,
+    nextQueryPos: hasNext ? nextQueryPos : undefined,
+  };
+}
+
+interface IUseRecipeListPageCursors {
+  previousSuccess: boolean;
+  previousPending: boolean;
+  hasPrevious: boolean;
+  nextSuccess: boolean;
+  nextPending: boolean;
+  hasNext: boolean;
+  nextQueryPos?: string;
+  previousQueryPos?: string;
 }

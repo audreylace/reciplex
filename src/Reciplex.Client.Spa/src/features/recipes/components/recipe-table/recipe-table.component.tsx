@@ -20,6 +20,10 @@ function RecipeTableInner(
     nextLoading,
     previousLoading,
     mayEdit,
+    searchOnChange,
+    searchValue,
+    showSearch,
+    hideHeader,
   }: IRecipeTableProps,
   ref?: Ref<HTMLDivElement>,
 ) {
@@ -31,7 +35,12 @@ function RecipeTableInner(
     <Paper ref={ref}>
       <TableContainer>
         <Table>
-          <RecipeTableHeader pending={pending} />
+          <RecipeTableHeader
+            hideHeader={hideHeader}
+            showSearch={showSearch}
+            searchOnChange={searchOnChange}
+            searchValue={searchValue}
+          />
           <RecipeTableBody recipes={recipes} mayEdit={mayEdit} />
         </Table>
       </TableContainer>
@@ -64,4 +73,12 @@ export interface IRecipeTableProps {
   previousLoading?: boolean;
   /** if the user can edit recipes in this book */
   mayEdit: boolean;
+  /** fired when the search input changes */
+  searchOnChange?: (s: string) => void;
+  /** value for the search form */
+  searchValue?: string;
+  /** if the search feature is enabled */
+  showSearch?: boolean;
+  /** if true, the table header is hidden */
+  hideHeader?: boolean;
 }

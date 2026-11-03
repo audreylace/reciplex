@@ -1,0 +1,12 @@
+.searchFormWrapper {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.tableTitle {
+  align-items: center;
+}
+
+.flexGrow {
+  flex: 1 0;
+}

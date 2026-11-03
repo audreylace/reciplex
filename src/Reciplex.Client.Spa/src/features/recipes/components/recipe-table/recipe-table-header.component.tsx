@@ -3,15 +3,25 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import { RecipeTableTitle } from "./recipe-table-title.component";
 
-export function RecipeTableHeader({ pending }: IRecipeTableHeaderProps) {
+/** component for rendering the recipe list table header */
+export function RecipeTableHeader({
+  hideHeader,
+  searchOnChange,
+  searchValue,
+  showSearch,
+}: IRecipeTableHeaderProps) {
   return (
     <TableHead>
       <TableRow>
         <TableCell colSpan={3}>
-          <RecipeTableTitle />
+          <RecipeTableTitle
+            onChange={searchOnChange}
+            value={searchValue}
+            showSearch={showSearch}
+          />
         </TableCell>
       </TableRow>
-      {!pending && (
+      {!hideHeader && (
         <TableRow>
           <TableCell>Name</TableCell>
           <TableCell>Description</TableCell>
@@ -27,6 +37,12 @@ export function RecipeTableHeader({ pending }: IRecipeTableHeaderProps) {
  * @see RecipeTableHeader
  */
 export interface IRecipeTableHeaderProps {
-  /** true when data is loading */
-  pending?: boolean;
+  /** if true, the table header is hidden */
+  hideHeader?: boolean;
+  /** fired when the search input changes */
+  searchOnChange?: (s: string) => void;
+  /** value for the search form */
+  searchValue?: string;
+  /** if the search feature is enabled */
+  showSearch?: boolean;
 }

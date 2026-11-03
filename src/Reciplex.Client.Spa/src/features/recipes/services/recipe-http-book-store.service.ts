@@ -568,7 +568,7 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
 
     if (args) {
       if (args.bookId) {
-        queryParams.push(["book", searchString.trim()]);
+        queryParams.push(["book", args.bookId]);
       }
       if (args.limit && args.limit > 0) {
         queryParams.push(["limit", args.limit.toString()]);
