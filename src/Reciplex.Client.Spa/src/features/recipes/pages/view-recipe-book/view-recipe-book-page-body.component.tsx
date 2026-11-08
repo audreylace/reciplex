@@ -3,7 +3,6 @@ import { LoadingIndicator } from "../../../core/components/loading-indicator/loa
 import { RecipeBookNotFoundBanner } from "../../components/recipe-book-not-found-banner/recipe-book-not-found-banner.component";
 import { RecipeTable } from "../../components/recipe-table/recipe-table.component";
 import { useGetRecipeBookById } from "../../hooks/useGetRecipeBookById.hook";
-import { useGetRecipesInBookQuery } from "../../hooks/useGetRecipesInBookQuery.hook";
 import { useRecipeClientStateContext } from "../../hooks/useRecipeClientStateContext.hook";
 import { useEffect, useRef, useState } from "react";
 import { PageHeader } from "../../../core/components/page-header/page-header.component";
@@ -12,7 +11,16 @@ import { useActiveUserKey } from "../../../auth/hooks/useActiveUser.hook";
 import { SharedRecipeBookIndicator } from "../../components/shared-recipe-book-indicator/shared-recipe-book-indicator.component";
 import { BrowserTitle } from "../../../core/components/browser-title/browser-title.component";
 import { useSearchRecipesInBook } from "../../hooks/useSearchRecipesInBook.hook";
-import type { IRecipeListEntryJsonResponse } from "../../services/recipe-types";
+import type {
+  IRecipeBookModel,
+  IRecipeListEntryJsonResponse,
+} from "../../services/recipe-types";
+import {
+  useListRecipesInBook,
+  type RecipeListCursorType,
+} from "./useBrowseRecipesInBookAsList.hook";
+import { useSearchParams } from "react-router";
+import { BrowseRecipesByBook } from "./browse-recipes-by-book.component";
 
 export function ViewRecipeBookPageBody({
   bookId,
@@ -37,13 +45,6 @@ export function ViewRecipeBookPageBody({
       ? ComponentDataMode.recipeSearch
       : ComponentDataMode.recipeList;
 
-  const recipeListQuery = useGetRecipesInBookQuery(
-    bookId,
-    source,
-    at,
-    selectedSize,
-    uiMode === ComponentDataMode.recipeList,
-  );
   const searchQuery = useSearchRecipesInBook({
     disable: uiMode !== ComponentDataMode.recipeSearch,
     searchString: searchValue,
@@ -51,14 +52,12 @@ export function ViewRecipeBookPageBody({
     bookId: bookId,
   });
 
-  const listPageEdgesQuery = useRecipeListPageCursors({
-    enable:
-      uiMode === ComponentDataMode.recipeList && recipeListQuery.isSuccess,
+  const recipeListInBook = useListRecipesInBook({
+    enable: uiMode === ComponentDataMode.recipeList,
     selectedSize: selectedSize,
     bookId: bookId,
     source,
     at,
-    recipeData: recipeListQuery.data ?? undefined,
   });
 
   const tablePaperRef = useRef<HTMLDivElement>(null);
@@ -100,19 +99,19 @@ export function ViewRecipeBookPageBody({
 
   switch (uiMode) {
     case ComponentDataMode.recipeList:
-      showPendingUi = recipeListQuery.isPending;
+      showPendingUi = recipeListInBook.dataPending;
 
       if (
-        recipeListQuery.isSuccess &&
-        (recipeListQuery.data ?? undefined) !== componentData
+        recipeListInBook.dataSuccess &&
+        (recipeListInBook.data ?? undefined) !== componentData
       ) {
-        setComponentData(recipeListQuery.data ?? undefined);
+        setComponentData(recipeListInBook.data ?? undefined);
       }
 
-      nextLoading = listPageEdgesQuery.nextPending;
-      previousLoading = listPageEdgesQuery.previousPending;
-      nextListAt = listPageEdgesQuery.nextQueryPos;
-      prevListAt = listPageEdgesQuery.previousQueryPos;
+      nextLoading = recipeListInBook.nextPending;
+      previousLoading = recipeListInBook.previousPending;
+      nextListAt = recipeListInBook.nextQueryPos;
+      prevListAt = recipeListInBook.previousQueryPos;
 
       break;
     case ComponentDataMode.recipeSearch:
@@ -161,98 +160,4 @@ export function ViewRecipeBookPageBody({
       />
     </>
   );
-}
-
-/**
- * Component data mode of the component
- */
-const ComponentDataMode = {
-  /** use the list recipes endpoint */
-  recipeList: 1,
-  /** use the search recipe endpoint */
-  recipeSearch: 2,
-};
-
-/**
- * the cursor type. Encodes if the user went forward or backwards.
- */
-type RecipeListCursorType = "next" | "previous";
-
-function useRecipeListPageCursors({
-  enable,
-  selectedSize,
-  bookId,
-  source,
-  at,
-  recipeData,
-}: {
-  enable: boolean;
-  selectedSize: number;
-  bookId: string;
-  source: RecipeListCursorType;
-  at: string | undefined;
-  recipeData: IRecipeListEntryJsonResponse[] | undefined;
-}): IUseRecipeListPageCursors {
-  let nextQueryPos;
-  let previousQueryPos;
-  if (recipeData && enable) {
-    if (source !== "next" || recipeData.length > 0) {
-      nextQueryPos = recipeData[recipeData.length - 1]?.recipeKey ?? at;
-    }
-    if (source !== "previous" || recipeData.length > 0) {
-      previousQueryPos = recipeData[0]?.recipeKey ?? at;
-    }
-  }
-
-  const {
-    data: nextRecipe,
-    isSuccess: nextRecipeSuccess,
-    isPending: nextRecipePending,
-  } = useGetRecipesInBookQuery(
-    bookId,
-    "next",
-    nextQueryPos,
-    selectedSize,
-    !!nextQueryPos && enable,
-  );
-  const {
-    data: previousRecipeData,
-    isSuccess: previousRecipeSuccess,
-    isPending: previousRecipePending,
-  } = useGetRecipesInBookQuery(
-    bookId,
-    "previous",
-    previousQueryPos,
-    selectedSize,
-    !!previousQueryPos && enable,
-  );
-
-  const hasNext = !!(nextRecipeSuccess && nextRecipe && nextRecipe.length > 0);
-  const hasPrevious = !!(
-    previousRecipeSuccess &&
-    previousRecipeData &&
-    previousRecipeData.length > 0
-  );
-  return {
-    previousPending: enable && previousRecipePending,
-    previousSuccess: previousRecipeSuccess,
-    hasPrevious: hasPrevious,
-    previousQueryPos: hasPrevious ? previousQueryPos : undefined,
-
-    nextPending: enable && nextRecipePending,
-    nextSuccess: nextRecipeSuccess,
-    hasNext,
-    nextQueryPos: hasNext ? nextQueryPos : undefined,
-  };
-}
-
-interface IUseRecipeListPageCursors {
-  previousSuccess: boolean;
-  previousPending: boolean;
-  hasPrevious: boolean;
-  nextSuccess: boolean;
-  nextPending: boolean;
-  hasNext: boolean;
-  nextQueryPos?: string;
-  previousQueryPos?: string;
 }

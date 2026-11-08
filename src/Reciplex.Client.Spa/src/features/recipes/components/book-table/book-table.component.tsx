@@ -32,8 +32,8 @@ function BookTableInner(
         </Table>
       </TableContainer>
       <TablePageControls
-        next={next}
-        previous={previous}
+        goNext={next}
+        goPrevious={previous}
         nextLoading={nextLoading}
         previousLoading={previousLoading}
         setPageSize={setPageSize}

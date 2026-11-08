@@ -3,17 +3,26 @@ import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import Typography from "@mui/material/Typography";
 import SearchIcon from "@mui/icons-material/Search";
-import { useId } from "react";
+import { useEffect, useId, useRef } from "react";
 import TextField from "@mui/material/TextField";
 import css from "./recipe-table-title.module.css";
 
 /** renders the recipe table title component */
 export function RecipeTableTitle({
-  onChange,
-  value,
+  searchValue,
+  setSearchValue,
   showSearch,
+  focusSearch,
 }: IRecipeTableTitleProps) {
   const inputId = useId();
+  const textRef = useRef<HTMLInputElement>(null);
+  const firstFocusRef = useRef(true);
+  useEffect(() => {
+    if (firstFocusRef.current && textRef.current && focusSearch) {
+      textRef.current.focus();
+    }
+    firstFocusRef.current = false;
+  }, [focusSearch]);
   return (
     <Box>
       <Typography variant="h5" component="div">
@@ -23,13 +32,14 @@ export function RecipeTableTitle({
             <>
               <div className={css.flexGrow}></div>
               <TextField
+                inputRef={textRef}
                 label="search"
                 id={inputId}
                 size="small"
                 variant="outlined"
-                value={value}
+                value={searchValue}
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                  onChange?.(event.target.value);
+                  setSearchValue?.(event.target.value);
                 }}
                 slotProps={{
                   htmlInput: {
@@ -58,11 +68,17 @@ export function RecipeTableTitle({
  * props for `RecipeTableTitle` component
  * @see RecipeTableTitle
  */
-interface IRecipeTableTitleProps {
-  /** fired when the input changes */
-  onChange?: (s: string) => void;
-  /** value for the form */
-  value?: string;
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface IRecipeTableTitleProps extends IRecipeTableSearchProps {}
+
+/** props specific to searching */
+export interface IRecipeTableSearchProps {
   /** if the search feature is enabled */
-  showSearch?: boolean;
+  showSearch: boolean;
+  /** the value for the search box */
+  searchValue: string;
+  /** invoked when a value is typed into the search box */
+  setSearchValue: (value: string) => void;
+  /** if we should focus search */
+  focusSearch?: boolean;
 }
