@@ -206,6 +206,14 @@ export const router = createBrowserRouter([
         lazy: invitePageComponent,
       },
       {
+        path: "/books-search",
+        lazy: async () => {
+          const Component =
+            await import("./features/recipes/pages/search/search-page.component");
+          return { Component: Component.SearchPage };
+        },
+      },
+      {
         path: "/",
         lazy: async () => {
           const Component = await import("./pages/home/home-page.component");
