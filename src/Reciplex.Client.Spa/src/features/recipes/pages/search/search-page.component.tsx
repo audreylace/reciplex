@@ -5,6 +5,7 @@ import { useSearchParams } from "react-router";
 import { useSearchRecipesInBook } from "../../hooks/useSearchRecipesInBook.hook";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
+import { BrowserTitle } from "../../../core/components/browser-title/browser-title.component";
 /**
  * Page used to search for recipes and books
  */
@@ -12,9 +13,11 @@ export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const searchString = searchParams.get("q") ?? "";
   const query = useSearchRecipesInBook({ searchString, bookId: "bXHoXJcY" });
+  const title = searchString ? `${searchString} - Search` : "Search";
 
   return (
     <>
+      <BrowserTitle title={title} />
       <Stack spacing={2}>
         <SearchField
           value={searchString}
