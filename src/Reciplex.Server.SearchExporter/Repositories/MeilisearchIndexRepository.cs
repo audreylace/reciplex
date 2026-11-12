@@ -169,14 +169,41 @@ sealed class MeilisearchIndexRepository(
     public bool IsEnabled() => options.Value.Enable;
 
     /// <inheritdoc />
-    public async Task<List<RecipeBookSearchIndexDocument>> SearchDocumentsAsync(
+    public async Task<List<RecipeBookSearchIndexDocument>> SearchForDocumentsAsync(
         SearchDocumentIndexArgs args,
         CancellationToken ct
     )
     {
-        StringBuilder filterString = new();
-        bool setAnd = false;
+        ThrowIfSearchDocumentIndexArgsInvalid(args);
 
+        SearchQueryResponse<RecipeBookSearchIndexDocument>? result =
+            await searchClient.SearchByPostAsync<RecipeBookSearchIndexDocument>(
+                RecipesSearchIndexUid,
+                new()
+                {
+                    SearchString = args.SearchString,
+                    FilterString = BuildFilterString(args),
+                    Limit = args.Limit,
+                    Offset = args.Offset,
+                },
+                ct
+            );
+
+        if (result is null)
+        {
+            return [];
+        }
+
+        return result.Hits;
+    }
+
+    /// <summary>
+    /// Validates <paramref name="args"/> and throws if they are wrong
+    /// </summary>
+    /// <param name="args">the argument value to validate</param>
+    /// <exception cref="ArgumentException">the exception thrown when <paramref name="args"/> is invalid/exception>
+    private static void ThrowIfSearchDocumentIndexArgsInvalid(SearchDocumentIndexArgs args)
+    {
         if (args.Limit is not null && args.Limit <= 0)
         {
             throw new ArgumentException(
@@ -194,7 +221,17 @@ sealed class MeilisearchIndexRepository(
                 null
             );
         }
+    }
 
+    /// <summary>
+    /// Constructs a filter string from <paramref name="args"/>
+    /// </summary>
+    /// <param name="args">the args to construct the filter from</param>
+    /// <returns>the constructed filter string</returns>
+    private static string BuildFilterString(SearchDocumentIndexArgs args)
+    {
+        bool setAnd = false;
+        StringBuilder filterString = new();
         // builds filter that looks like this:
         //   with books and kind
         // kind = 2 AND ( recipeBookId = 1 OR recipeBookId = 2 )
@@ -230,15 +267,27 @@ sealed class MeilisearchIndexRepository(
             filterString.Append(" ) ");
         }
 
-        SearchQueryResponse<RecipeBookSearchIndexDocument>? result =
-            await searchClient.SearchByPostAsync<RecipeBookSearchIndexDocument>(
+        return filterString.ToString();
+    }
+
+    /// <inheritdoc />
+    public async Task<List<SearchIndexDocumentPointer>> SearchForDocumentPointersAsync(
+        SearchDocumentIndexArgs args,
+        CancellationToken ct
+    )
+    {
+        ThrowIfSearchDocumentIndexArgsInvalid(args);
+
+        SearchQueryResponse<SearchIndexDocumentPointerResponse>? result =
+            await searchClient.SearchByPostAsync<SearchIndexDocumentPointerResponse>(
                 RecipesSearchIndexUid,
                 new()
                 {
                     SearchString = args.SearchString,
-                    FilterString = filterString.ToString(),
+                    FilterString = BuildFilterString(args),
                     Limit = args.Limit,
                     Offset = args.Offset,
+                    AttributesToRetrieve = ["id", "recipeId", "recipeBookId", "kind"],
                 },
                 ct
             );
@@ -247,8 +296,38 @@ sealed class MeilisearchIndexRepository(
         {
             return [];
         }
+        List<SearchIndexDocumentPointer> convertedResults = [];
+        foreach (SearchIndexDocumentPointerResponse r in result.Hits)
+        {
+            switch (r.Kind)
+            {
+                case RecipeBookSearchIndexDocumentKind.RecipeBook:
+                    convertedResults.Add(
+                        new SearchIndexBookDocumentPointers()
+                        {
+                            BookId = r.RecipeBookId,
+                            RowId = r.Id,
+                        }
+                    );
+                    break;
+                case RecipeBookSearchIndexDocumentKind.Recipe:
 
-        return result.Hits;
+                    if (r.RecipeId is long rId)
+                    {
+                        convertedResults.Add(
+                            new SearchIndexRecipeDocumentPointers()
+                            {
+                                BookId = r.RecipeBookId,
+                                RecipeId = rId,
+                                RowId = r.Id,
+                            }
+                        );
+                    }
+                    break;
+            }
+        }
+
+        return convertedResults;
     }
 
     #endregion ISearchIndexRepository Implementation

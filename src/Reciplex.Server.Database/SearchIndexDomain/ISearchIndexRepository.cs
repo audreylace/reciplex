@@ -41,12 +41,23 @@ public interface ISearchIndexRepository
     public bool IsEnabled();
 
     /// <summary>
-    /// Runs a document search
+    /// Runs a search and returns the index documents
     /// </summary>
     /// <param name="args">args for the search</param>
     /// <param name="ct">async cancellation token</param>
     /// <returns>list of search results</returns>
-    public Task<List<RecipeBookSearchIndexDocument>> SearchDocumentsAsync(
+    public Task<List<RecipeBookSearchIndexDocument>> SearchForDocumentsAsync(
+        SearchDocumentIndexArgs args,
+        CancellationToken ct
+    );
+
+    /// <summary>
+    /// Runs a search but only returns enough information to locate the source document in the database
+    /// </summary>
+    /// <param name="args">search args</param>
+    /// <param name="ct">cancellation token</param>
+    /// <returns>the search pointer</returns>
+    public Task<List<SearchIndexDocumentPointer>> SearchForDocumentPointersAsync(
         SearchDocumentIndexArgs args,
         CancellationToken ct
     );

@@ -1016,7 +1016,7 @@ internal sealed class RecipeBooksService(
         }
 
         List<RecipeBookSearchIndexDocument> matchesFromSearchIndex =
-            await searchIndexRepository.SearchDocumentsAsync(
+            await searchIndexRepository.SearchForDocumentsAsync(
                 new()
                 {
                     SearchString = args.SearchString,

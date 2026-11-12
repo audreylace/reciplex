@@ -40,4 +40,10 @@ sealed class SearchQueryRequestBody
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? Limit { get; init; }
+
+    /// <summary>
+    /// The list of properties to return from each search document
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<string>? AttributesToRetrieve { get; set; }
 }
