@@ -23,7 +23,7 @@ public sealed class SearchDocumentIndexArgs
     /// <summary>
     /// When set limits search to documents of this kind only
     /// </summary>
-    public RecipeBookSearchIndexDocumentKind? LimitToKind { get; init; }
+    public List<RecipeBookSearchIndexDocumentKind>? LimitToKind { get; init; }
 
     /// <summary>
     /// Offset in the search, used for paging

@@ -14,9 +14,11 @@ public interface IRecipeBooksService
     /// <param name="userId">The key of the user performing the operation</param>
     /// <param name="ct">token to stop the async operation</param>
     /// <returns>Task holding the book if it exists</returns>
-    Task<
-        DatabaseResultVariant<SuccessResult<RecipeBookDao>, NotFoundResult, UserNotFoundResult>
-    > GetRecipeBookAsync(long bookId, long userId, CancellationToken ct);
+    Task<DatabaseResultVariant<SuccessResult<RecipeBookDao>, NotFoundResult>> GetRecipeBookAsync(
+        long bookId,
+        long userId,
+        CancellationToken ct
+    );
 
     /// <summary>
     /// Updates a recipe book
@@ -30,7 +32,7 @@ public interface IRecipeBooksService
         DatabaseResultVariant<
             SuccessResult<RecipeBookDao>,
             NotFoundResult,
-            DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>,
+            ForbiddenResult,
             ValidationFailureResult,
             ConflictResult
         >
@@ -50,13 +52,7 @@ public interface IRecipeBooksService
     /// <param name="ct">token to stop the async operation</param>
     /// <returns>Task that resolves to the outcome of the operation</returns>
     Task<
-        DatabaseResultVariant<
-            EmptySuccessResult,
-            NotFoundResult,
-            ForbiddenResult,
-            UserNotFoundResult,
-            ConflictResult
-        >
+        DatabaseResultVariant<EmptySuccessResult, NotFoundResult, ForbiddenResult, ConflictResult>
     > QueueRecipeBookDeleteAsync(long bookId, long userId, string ocTag, CancellationToken ct);
 
     /// <summary>
@@ -139,11 +135,7 @@ public interface IRecipeBooksService
     /// <param name="ct">cancellation token</param>
     /// <returns>result of the operation</returns>
     Task<
-        DatabaseResultVariant<
-            SuccessResult<RecipeBookDao>,
-            UserNotFoundResult,
-            ValidationFailureResult
-        >
+        DatabaseResultVariant<SuccessResult<RecipeBookDao>, ValidationFailureResult>
     > CreateRecipeBookAsync(long userId, CreateRecipeBookArgs createArgs, CancellationToken ct);
 
     /// <summary>
@@ -154,11 +146,7 @@ public interface IRecipeBooksService
     /// <param name="ct"></param>
     /// <returns></returns>
     Task<
-        DatabaseResultVariant<
-            SuccessResult<List<RecipeBookDao>>,
-            ValidationFailureResult,
-            UserNotFoundResult
-        >
+        DatabaseResultVariant<SuccessResult<List<RecipeBookDao>>, ValidationFailureResult>
     > ListRecipeBooksAsync(long userId, ListRecipeBooksArgs args, CancellationToken ct);
 
     /// <summary>
@@ -174,7 +162,7 @@ public interface IRecipeBooksService
         DatabaseResultVariant<
             SuccessResult<RecipeBookDao>,
             NotFoundResult,
-            DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>,
+            ForbiddenResult,
             ValidationFailureResult,
             ConflictResult
         >
@@ -198,10 +186,9 @@ public interface IRecipeBooksService
         DatabaseResultVariant<
             SuccessResult<RecipeBookAccessRequestStatus>,
             NotFoundResult,
-            ValidationFailureResult,
-            UserNotFoundResult
+            ValidationFailureResult
         >
-    > GetAccessStatusAsync(long bookId, long userId, string? shareKey, CancellationToken ct);
+    > GetShareAccessStatusAsync(long bookId, long userId, string? shareKey, CancellationToken ct);
 
     /// <summary>
     /// Requests access to the book if an entry does not already exist
@@ -216,10 +203,9 @@ public interface IRecipeBooksService
             SuccessResult<RecipeBookAccessRequestStatus>,
             NotFoundResult,
             ValidationFailureResult,
-            ConflictResult,
-            UserNotFoundResult
+            ConflictResult
         >
-    > RequestAccessAsync(long bookId, long userId, string shareKey, CancellationToken ct);
+    > RequestShareAccessAsync(long bookId, long userId, string shareKey, CancellationToken ct);
 
     /// <summary>
     /// Withdraws access to the book
@@ -233,10 +219,9 @@ public interface IRecipeBooksService
             EmptySuccessResult,
             NotFoundResult,
             ValidationFailureResult,
-            UserNotFoundResult,
             ConflictResult
         >
-    > WithdrawAccessAsync(long bookId, long userId, CancellationToken ct);
+    > WithdrawShareAccessAsync(long bookId, long userId, CancellationToken ct);
 
     /// <summary>
     /// Lists all the users with access to the recipe book who are not the owner
@@ -252,10 +237,9 @@ public interface IRecipeBooksService
         DatabaseResultVariant<
             NotFoundResult,
             SuccessResult<List<RecipeBookUserPermissionsDao>>,
-            UserNotFoundResult,
             ForbiddenResult
         >
-    > ListUsersWithAccess(long bookId, long userId, CancellationToken ct);
+    > ListUsersWithShareAccess(long bookId, long userId, CancellationToken ct);
 
     /// <summary>
     /// Adds, updates, or removes user access entries
@@ -269,11 +253,12 @@ public interface IRecipeBooksService
         DatabaseResultVariant<
             EmptySuccessResult,
             NotFoundResult,
-            DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>,
+            ForbiddenResult,
+            UserNotFoundResult,
             ValidationFailureResult,
             ConflictResult
         >
-    > UpdateUsersAccessAsync(
+    > UpdateUsersShareAccessAsync(
         long bookId,
         long userId,
         IEnumerable<
@@ -296,18 +281,20 @@ public interface IRecipeBooksService
     public Task WaitForDeleteSignal(TimeSpan timeout, CancellationToken ct);
 
     /// <summary>
-    /// Searches books using the search index
+    /// If the book exists and the user has access
     /// </summary>
-    /// <param name="userId">the id of the user for access control</param>
-    /// <param name="args">search arguments</param>
+    /// <param name="userId">the id of the user</param>
+    /// <param name="bookId">the id of the book</param>
     /// <param name="ct">cancels the operation</param>
-    /// <returns>result of the search</returns>
-    Task<
-        DatabaseResultVariant<
-            SuccessResult<List<RecipeBookDao>>,
-            FeatureNotEnabledResult,
-            UserNotFoundResult,
-            ValidationFailureResult
-        >
-    > SearchBooksAsync(long userId, SearchBooksArgs args, CancellationToken ct);
+    /// <returns>result of the operation</returns>
+    public Task<bool> HasViewAccessAsync(long userId, long bookId, CancellationToken ct);
+
+    /// <summary>
+    /// Returns a list of books for <paramref name="userId"/>
+    /// </summary>
+    /// <param name="userId">the id of the user</param>
+    /// <param name="max">max number of books</param>
+    /// <param name="ct">cancels the operation</param>
+    /// <returns>list of ids</returns>
+    public Task<List<long>> ListBooksByIdAsync(long userId, int max, CancellationToken ct);
 }

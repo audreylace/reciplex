@@ -377,4 +377,15 @@ public class UsersService(
     {
         return _user.WaitOnChannel(timeout, ct);
     }
+
+    /// <inheritdoc />
+    public async Task<bool> UserExistsNotDeleted(long userId, CancellationToken ct)
+    {
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
+        if (!await dbContext.Users.UserNotDeleted().WithId(userId).AnyAsync(ct))
+        {
+            return false;
+        }
+        return true;
+    }
 }

@@ -234,13 +234,30 @@ sealed class MeilisearchIndexRepository(
         StringBuilder filterString = new();
         // builds filter that looks like this:
         //   with books and kind
-        // kind = 2 AND ( recipeBookId = 1 OR recipeBookId = 2 )
+        // ( kind = 2 ) AND ( recipeBookId = 1 OR recipeBookId = 2 )
         //   without books
-        // kind = 2
-        if (args.LimitToKind is RecipeBookSearchIndexDocumentKind kindFilter)
+        // ( kind = 2 )
+        if (
+            args.LimitToKind is List<RecipeBookSearchIndexDocumentKind> kindFilter
+            && kindFilter.Count > 0
+        )
         {
-            filterString.Append("kind = ");
-            filterString.Append((int)kindFilter);
+            bool first = true;
+            HashSet<RecipeBookSearchIndexDocumentKind> deDuped = [.. args.LimitToKind];
+            filterString.Append("( ");
+            foreach (long id in args.LimitToKind.Select(v => (long)v))
+            {
+                if (!first)
+                {
+                    filterString.Append(" OR ");
+                }
+
+                first = false;
+                filterString.Append("kind = ");
+                filterString.Append(id);
+            }
+            filterString.Append(" ) ");
+
             setAnd = true;
         }
 

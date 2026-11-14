@@ -5,7 +5,7 @@ namespace Reciplex.Server.SearchExporter.Repositories;
 /// <summary>
 /// Raw response when doing a search index pointer lookup
 /// </summary>
-class SearchIndexDocumentPointerResponse
+sealed class SearchIndexDocumentPointerResponse
 {
     /// <summary>
     /// The id of the entry.

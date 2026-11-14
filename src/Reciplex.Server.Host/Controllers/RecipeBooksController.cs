@@ -60,13 +60,11 @@ public class RecipeBooksController(
 
         DatabaseResultVariant<
             SuccessResult<RecipeBookDao>,
-            Database.Results.NotFoundResult,
-            UserNotFoundResult
+            Database.Results.NotFoundResult
         > result = await recipeBookService.GetRecipeBookAsync(bookId, userId, cancellationToken);
 
         return result.Result switch
         {
-            UserNotFoundResult => TypedResults.NotFound(),
             Database.Results.NotFoundResult => TypedResults.NotFound(),
             SuccessResult<RecipeBookDao> { Value: RecipeBookDao book } => TypedResults.Ok(
                 ToJson(book)
@@ -124,7 +122,7 @@ public class RecipeBooksController(
         DatabaseResultVariant<
             SuccessResult<RecipeBookDao>,
             Database.Results.NotFoundResult,
-            DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>,
+            ForbiddenResult,
             ValidationFailureResult,
             Database.Results.ConflictResult
         > updateResult = await recipeBookService.UpdateRecipeBookAsync(
@@ -143,9 +141,7 @@ public class RecipeBooksController(
         {
             SuccessResult<RecipeBookDao> success => TypedResults.Ok(ToJson(success.Value)),
 
-            Database.Results.NotFoundResult
-            or DatabaseResultVariant<ForbiddenResult, UserNotFoundResult> =>
-                TypedResults.NotFound(),
+            Database.Results.NotFoundResult or ForbiddenResult => TypedResults.NotFound(),
 
             Database.Results.ConflictResult => new PreconditionFailedHttpResult("If-Match"),
 
@@ -195,7 +191,6 @@ public class RecipeBooksController(
             EmptySuccessResult,
             Database.Results.NotFoundResult,
             ForbiddenResult,
-            UserNotFoundResult,
             Database.Results.ConflictResult
         > deleteResult = await recipeBookService.QueueRecipeBookDeleteAsync(
             bookId,
@@ -207,8 +202,7 @@ public class RecipeBooksController(
         return deleteResult.Result switch
         {
             EmptySuccessResult => TypedResults.Ok(),
-            DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>
-            or Database.Results.NotFoundResult => TypedResults.NotFound(),
+            ForbiddenResult or Database.Results.NotFoundResult => TypedResults.NotFound(),
             Database.Results.ConflictResult => new PreconditionFailedHttpResult("If-Match"),
             _ => throw new NotImplementedException(),
         };
@@ -249,19 +243,15 @@ public class RecipeBooksController(
             return TypedResults.Forbid();
         }
 
-        DatabaseResultVariant<
-            SuccessResult<RecipeBookDao>,
-            UserNotFoundResult,
-            ValidationFailureResult
-        > createResult = await recipeBookService.CreateRecipeBookAsync(
-            userId,
-            new() { Name = requestBody.Name, ShortDescription = requestBody.ShortDescription },
-            cancellationToken
-        );
+        DatabaseResultVariant<SuccessResult<RecipeBookDao>, ValidationFailureResult> createResult =
+            await recipeBookService.CreateRecipeBookAsync(
+                userId,
+                new() { Name = requestBody.Name, ShortDescription = requestBody.ShortDescription },
+                cancellationToken
+            );
 
         return createResult.Result switch
         {
-            UserNotFoundResult => TypedResults.Forbid(),
             SuccessResult<RecipeBookDao> success => TypedResults.Created(
                 (string?)null,
                 ToJson(success.Value)
@@ -350,21 +340,18 @@ public class RecipeBooksController(
             return TypedResults.BadRequest();
         }
 
-        DatabaseResultVariant<
-            SuccessResult<List<RecipeBookDao>>,
-            ValidationFailureResult,
-            UserNotFoundResult
-        > result = await recipeBookService.ListRecipeBooksAsync(
-            userId,
-            new()
-            {
-                AfterBookKey = afterId,
-                BeforeBookKey = beforeId,
-                ResultOrder = recordOrdering.Value,
-                ResultCount = Math.Min(100, Math.Max(1, pageSize)),
-            },
-            cancellationToken
-        );
+        DatabaseResultVariant<SuccessResult<List<RecipeBookDao>>, ValidationFailureResult> result =
+            await recipeBookService.ListRecipeBooksAsync(
+                userId,
+                new()
+                {
+                    AfterBookKey = afterId,
+                    BeforeBookKey = beforeId,
+                    ResultOrder = recordOrdering.Value,
+                    ResultCount = Math.Min(100, Math.Max(1, pageSize)),
+                },
+                cancellationToken
+            );
 
         return result.Result switch
         {
@@ -372,7 +359,7 @@ public class RecipeBooksController(
                 success.Value.Select(ToJson)
             ),
             ValidationFailureResult validation => TypedResults.BadRequest(),
-            UserNotFoundResult => TypedResults.Forbid(),
+
             _ => throw new NotImplementedException(),
         };
     }
@@ -436,7 +423,7 @@ public class RecipeBooksController(
         DatabaseResultVariant<
             SuccessResult<RecipeBookDao>,
             Database.Results.NotFoundResult,
-            DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>,
+            ForbiddenResult,
             ValidationFailureResult,
             Database.Results.ConflictResult
         > result = await recipeBookService.UpdateShareKeyAsync(
@@ -451,8 +438,7 @@ public class RecipeBooksController(
         {
             SuccessResult<RecipeBookDao> success => TypedResults.Ok(ToJson(success.Value)),
 
-            Database.Results.NotFoundResult
-            or DatabaseResultVariant<ForbiddenResult, UserNotFoundResult> =>
+            Database.Results.NotFoundResult or ForbiddenResult or UserNotFoundResult =>
                 TypedResults.NotFound(),
 
             Database.Results.ConflictResult => new PreconditionFailedHttpResult("If-Match"),
@@ -496,13 +482,11 @@ public class RecipeBooksController(
 
         DatabaseResultVariant<
             SuccessResult<RecipeBookDao>,
-            Database.Results.NotFoundResult,
-            UserNotFoundResult
+            Database.Results.NotFoundResult
         > result = await recipeBookService.GetRecipeBookAsync(bookId, userId, cancellationToken);
         switch (result.Result)
         {
             case Database.Results.NotFoundResult:
-            case UserNotFoundResult:
                 return TypedResults.NotFound();
 
             case SuccessResult<RecipeBookDao> success:
@@ -519,9 +503,8 @@ public class RecipeBooksController(
         DatabaseResultVariant<
             Database.Results.NotFoundResult,
             SuccessResult<List<RecipeBookUserPermissionsDao>>,
-            UserNotFoundResult,
             ForbiddenResult
-        > listResult = await recipeBookService.ListUsersWithAccess(
+        > listResult = await recipeBookService.ListUsersWithShareAccess(
             bookId,
             userId,
             cancellationToken
@@ -533,8 +516,7 @@ public class RecipeBooksController(
                 successResult.Value.Select(ToPermissionJson)
             ),
 
-            ForbiddenResult or UserNotFoundResult or Database.Results.NotFoundResult =>
-                TypedResults.NotFound(),
+            ForbiddenResult or Database.Results.NotFoundResult => TypedResults.NotFound(),
 
             _ => throw new NotImplementedException(),
         };
@@ -639,13 +621,11 @@ public class RecipeBooksController(
 
         DatabaseResultVariant<
             SuccessResult<RecipeBookDao>,
-            Database.Results.NotFoundResult,
-            UserNotFoundResult
+            Database.Results.NotFoundResult
         > result = await recipeBookService.GetRecipeBookAsync(bookId, userId, cancellationToken);
 
         switch (result.Result)
         {
-            case UserNotFoundResult:
             case Database.Results.NotFoundResult:
                 return TypedResults.NotFound();
             case SuccessResult<RecipeBookDao> success:
@@ -656,10 +636,11 @@ public class RecipeBooksController(
                 DatabaseResultVariant<
                     EmptySuccessResult,
                     Database.Results.NotFoundResult,
-                    DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>,
+                    ForbiddenResult,
+                    UserNotFoundResult,
                     ValidationFailureResult,
                     Database.Results.ConflictResult
-                > updateResult = await recipeBookService.UpdateUsersAccessAsync(
+                > updateResult = await recipeBookService.UpdateUsersShareAccessAsync(
                     bookId,
                     userId,
                     entriesToPatch,
@@ -669,8 +650,7 @@ public class RecipeBooksController(
                 return updateResult.Result switch
                 {
                     EmptySuccessResult => TypedResults.NoContent(),
-                    Database.Results.NotFoundResult
-                    or DatabaseResultVariant<ForbiddenResult, UserNotFoundResult> =>
+                    Database.Results.NotFoundResult or ForbiddenResult or UserNotFoundResult =>
                         TypedResults.NotFound(),
 
                     Database.Results.ConflictResult => TypedResults.Conflict(),
@@ -722,9 +702,8 @@ public class RecipeBooksController(
             SuccessResult<RecipeBookAccessRequestStatus>,
             Database.Results.NotFoundResult,
             ValidationFailureResult,
-            Database.Results.ConflictResult,
-            UserNotFoundResult
-        > result = await recipeBookService.RequestAccessAsync(
+            Database.Results.ConflictResult
+        > result = await recipeBookService.RequestShareAccessAsync(
             bookId,
             userId,
             shareKey,
@@ -733,7 +712,6 @@ public class RecipeBooksController(
 
         return result.Result switch
         {
-            UserNotFoundResult => TypedResults.NotFound(),
             Database.Results.ConflictResult => TypedResults.Conflict(),
             Database.Results.NotFoundResult => TypedResults.NotFound(),
             ValidationFailureResult => TypedResults.BadRequest(),
@@ -789,13 +767,15 @@ public class RecipeBooksController(
             EmptySuccessResult,
             Database.Results.NotFoundResult,
             ValidationFailureResult,
-            UserNotFoundResult,
             Database.Results.ConflictResult
-        > result = await recipeBookService.WithdrawAccessAsync(bookId, userId, cancellationToken);
+        > result = await recipeBookService.WithdrawShareAccessAsync(
+            bookId,
+            userId,
+            cancellationToken
+        );
 
         return result.Result switch
         {
-            UserNotFoundResult => TypedResults.NotFound(),
             Database.Results.ConflictResult => TypedResults.Conflict(),
             Database.Results.NotFoundResult => TypedResults.NotFound(),
             EmptySuccessResult => TypedResults.Ok(),
@@ -839,9 +819,8 @@ public class RecipeBooksController(
         DatabaseResultVariant<
             SuccessResult<RecipeBookAccessRequestStatus>,
             Database.Results.NotFoundResult,
-            ValidationFailureResult,
-            UserNotFoundResult
-        > result = await recipeBookService.GetAccessStatusAsync(
+            ValidationFailureResult
+        > result = await recipeBookService.GetShareAccessStatusAsync(
             bookId,
             userId,
             shareKey,
@@ -850,7 +829,6 @@ public class RecipeBooksController(
 
         return result.Result switch
         {
-            UserNotFoundResult => TypedResults.NotFound(),
             ValidationFailureResult failure => TypedResults.BadRequest(),
             Database.Results.NotFoundResult => TypedResults.NotFound(),
             SuccessResult<RecipeBookAccessRequestStatus>

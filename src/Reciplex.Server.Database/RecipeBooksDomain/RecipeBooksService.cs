@@ -9,7 +9,6 @@ using Reciplex.Server.Abstractions;
 using Reciplex.Server.Abstractions.ConcurrencyTagProvider;
 using Reciplex.Server.Database.DbObjects;
 using Reciplex.Server.Database.Results;
-using Reciplex.Server.Database.SearchIndexDomain;
 using Reciplex.Server.Database.SearchIndexTrackingDomain;
 using Reciplex.Server.Database.UsersDomain;
 
@@ -22,13 +21,12 @@ namespace Reciplex.Server.Database.RecipeBooksDomain;
 /// <param name="concurrencyTagProvider">service for generating concurrency tags</param>
 /// <param name="dbFactory">db connection factory</param>
 /// <param name="recipeSearchExportStatusRepository">repository for getting search status entries</param>
-/// <param name="searchIndexRepository">repository for searching for recipe books</param>
 internal sealed class RecipeBooksService(
     IClock clock,
     IConcurrencyTagProvider concurrencyTagProvider,
     IDbContextFactory<ApplicationDbContext> dbFactory,
     IRecipeSearchExportStatusRepository recipeSearchExportStatusRepository,
-    ISearchIndexRepository searchIndexRepository
+    IUsersService usersService
 ) : IRecipeBooksService
 {
     /// <summary>
@@ -56,18 +54,10 @@ internal sealed class RecipeBooksService(
 
     /// <inheritdoc />
     public async Task<
-        DatabaseResultVariant<
-            SuccessResult<RecipeBookDao>,
-            UserNotFoundResult,
-            ValidationFailureResult
-        >
+        DatabaseResultVariant<SuccessResult<RecipeBookDao>, ValidationFailureResult>
     > CreateRecipeBookAsync(long userId, CreateRecipeBookArgs createArgs, CancellationToken ct)
     {
         await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
-        if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
-        {
-            return new UserNotFoundResult(userId);
-        }
 
         CreateRecipeBookArgsValidator validation = new();
         ValidationResult validationResult = await validation.ValidateAsync(createArgs, ct);
@@ -102,21 +92,10 @@ internal sealed class RecipeBooksService(
 
     /// <inheritdoc />
     public async Task<
-        DatabaseResultVariant<
-            EmptySuccessResult,
-            NotFoundResult,
-            ForbiddenResult,
-            UserNotFoundResult,
-            ConflictResult
-        >
+        DatabaseResultVariant<EmptySuccessResult, NotFoundResult, ForbiddenResult, ConflictResult>
     > QueueRecipeBookDeleteAsync(long bookId, long userId, string ocTag, CancellationToken ct)
     {
         await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
-        if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
-        {
-            return new UserNotFoundResult(userId);
-        }
-
         BookWithMaterializedPermissions? bookQuery =
             await dbContext.GetBookWithUserPermissionsAsync(bookId, userId, ct, withTracking: true);
         if (bookQuery is null || !bookQuery.PermissionFlags.MayViewBook)
@@ -187,14 +166,10 @@ internal sealed class RecipeBooksService(
 
     /// <inheritdoc />
     public async Task<
-        DatabaseResultVariant<SuccessResult<RecipeBookDao>, NotFoundResult, UserNotFoundResult>
+        DatabaseResultVariant<SuccessResult<RecipeBookDao>, NotFoundResult>
     > GetRecipeBookAsync(long bookId, long userId, CancellationToken ct)
     {
         await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
-        if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
-        {
-            return new UserNotFoundResult(userId);
-        }
 
         BookWithMaterializedPermissions? bookQuery =
             await dbContext.GetBookWithUserPermissionsAsync(bookId, userId, ct);
@@ -210,18 +185,10 @@ internal sealed class RecipeBooksService(
 
     /// <inheritdoc />
     public async Task<
-        DatabaseResultVariant<
-            SuccessResult<List<RecipeBookDao>>,
-            ValidationFailureResult,
-            UserNotFoundResult
-        >
+        DatabaseResultVariant<SuccessResult<List<RecipeBookDao>>, ValidationFailureResult>
     > ListRecipeBooksAsync(long userId, ListRecipeBooksArgs listArgs, CancellationToken ct)
     {
         await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
-        if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
-        {
-            return new UserNotFoundResult(userId);
-        }
 
         IQueryable<AdditionalBookUserAccessDbObject> accesses =
             dbContext.RecipeBookAccessEntries.Where(a => a.UserFk == userId);
@@ -288,7 +255,7 @@ internal sealed class RecipeBooksService(
         DatabaseResultVariant<
             SuccessResult<RecipeBookDao>,
             NotFoundResult,
-            DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>,
+            ForbiddenResult,
             ValidationFailureResult,
             ConflictResult
         >
@@ -300,11 +267,6 @@ internal sealed class RecipeBooksService(
     )
     {
         await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
-        if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
-        {
-            return (DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>)
-                new UserNotFoundResult(userId);
-        }
 
         UpdateRecipeBookArgsValidator validation = new();
         ValidationResult validationResult = await validation.ValidateAsync(updateArgs, ct);
@@ -322,8 +284,7 @@ internal sealed class RecipeBooksService(
 
         if (!bookQuery.PermissionFlags.MayEditBook)
         {
-            return (DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>)
-                new ForbiddenResult();
+            return new ForbiddenResult();
         }
 
         RecipeBookDbObject book = bookQuery.Book;
@@ -364,7 +325,7 @@ internal sealed class RecipeBooksService(
         DatabaseResultVariant<
             SuccessResult<RecipeBookDao>,
             NotFoundResult,
-            DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>,
+            ForbiddenResult,
             ValidationFailureResult,
             ConflictResult
         >
@@ -377,11 +338,6 @@ internal sealed class RecipeBooksService(
     )
     {
         await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
-        if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
-        {
-            return (DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>)
-                new UserNotFoundResult(userId);
-        }
 
         BookWithMaterializedPermissions? bookQuery =
             await dbContext.GetBookWithUserPermissionsAsync(bookId, userId, ct, withTracking: true);
@@ -392,8 +348,7 @@ internal sealed class RecipeBooksService(
 
         if (!bookQuery.PermissionFlags.MayManageAccess)
         {
-            return (DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>)
-                new ForbiddenResult();
+            return new ForbiddenResult();
         }
 
         RecipeBookDbObject book = bookQuery.Book;
@@ -424,16 +379,11 @@ internal sealed class RecipeBooksService(
         DatabaseResultVariant<
             NotFoundResult,
             SuccessResult<List<RecipeBookUserPermissionsDao>>,
-            UserNotFoundResult,
             ForbiddenResult
         >
-    > ListUsersWithAccess(long bookId, long userId, CancellationToken ct)
+    > ListUsersWithShareAccess(long bookId, long userId, CancellationToken ct)
     {
         await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
-        if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
-        {
-            return new UserNotFoundResult(userId);
-        }
 
         BookWithMaterializedPermissions? bookQuery =
             await dbContext.GetBookWithUserPermissionsAsync(bookId, userId, ct);
@@ -486,11 +436,12 @@ internal sealed class RecipeBooksService(
         DatabaseResultVariant<
             EmptySuccessResult,
             NotFoundResult,
-            DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>,
+            ForbiddenResult,
+            UserNotFoundResult,
             ValidationFailureResult,
             ConflictResult
         >
-    > UpdateUsersAccessAsync(
+    > UpdateUsersShareAccessAsync(
         long bookId,
         long userId,
         IEnumerable<KeyValuePair<long, UpdateRecipeBookUserPermissionArgs?>> args,
@@ -498,12 +449,6 @@ internal sealed class RecipeBooksService(
     )
     {
         await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
-        if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
-        {
-            return (DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>)
-                new UserNotFoundResult(userId);
-        }
-
         BookWithMaterializedPermissions? bookQuery =
             await dbContext.GetBookWithUserPermissionsAsync(bookId, userId, ct);
 
@@ -514,8 +459,7 @@ internal sealed class RecipeBooksService(
 
         if (!bookQuery.PermissionFlags.MayManageAccess)
         {
-            return (DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>)
-                new ForbiddenResult();
+            return new ForbiddenResult();
         }
 
         long now = clock.NowUtcUnixSeconds();
@@ -527,10 +471,9 @@ internal sealed class RecipeBooksService(
                 return new ValidationFailureResult();
             }
 
-            if (!await dbContext.Users.UserExistsNotDeletedAsync(kv.Key, ct))
+            if (!await usersService.UserExistsNotDeleted(kv.Key, ct))
             {
-                return (DatabaseResultVariant<ForbiddenResult, UserNotFoundResult>)
-                    new UserNotFoundResult(kv.Key);
+                return new UserNotFoundResult(kv.Key);
             }
 
             AdditionalBookUserAccessDbObject? existingRow = await dbContext
@@ -593,17 +536,11 @@ internal sealed class RecipeBooksService(
         DatabaseResultVariant<
             SuccessResult<RecipeBookAccessRequestStatus>,
             NotFoundResult,
-            ValidationFailureResult,
-            UserNotFoundResult
+            ValidationFailureResult
         >
-    > GetAccessStatusAsync(long bookId, long userId, string? shareKey, CancellationToken ct)
+    > GetShareAccessStatusAsync(long bookId, long userId, string? shareKey, CancellationToken ct)
     {
         await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
-        if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
-        {
-            return new UserNotFoundResult(userId);
-        }
-
         BookWithMaterializedPermissions? queryResult =
             await dbContext.GetBookWithUserPermissionsAsync(bookId, userId, ct);
 
@@ -649,10 +586,9 @@ internal sealed class RecipeBooksService(
             SuccessResult<RecipeBookAccessRequestStatus>,
             NotFoundResult,
             ValidationFailureResult,
-            ConflictResult,
-            UserNotFoundResult
+            ConflictResult
         >
-    > RequestAccessAsync(long bookId, long userId, string shareKey, CancellationToken ct)
+    > RequestShareAccessAsync(long bookId, long userId, string shareKey, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(shareKey))
         {
@@ -660,10 +596,6 @@ internal sealed class RecipeBooksService(
         }
 
         await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
-        if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
-        {
-            return new UserNotFoundResult(userId);
-        }
 
         BookWithMaterializedPermissions? queryResult =
             await dbContext.GetBookWithUserPermissionsAsync(bookId, userId, ct);
@@ -733,16 +665,11 @@ internal sealed class RecipeBooksService(
             EmptySuccessResult,
             NotFoundResult,
             ValidationFailureResult,
-            UserNotFoundResult,
             ConflictResult
         >
-    > WithdrawAccessAsync(long bookId, long userId, CancellationToken ct)
+    > WithdrawShareAccessAsync(long bookId, long userId, CancellationToken ct)
     {
         await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
-        if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
-        {
-            return new UserNotFoundResult(userId);
-        }
 
         BookWithMaterializedPermissions? queryResult =
             await dbContext.GetBookWithUserPermissionsAsync(bookId, userId, ct, withTracking: true);
@@ -972,81 +899,24 @@ internal sealed class RecipeBooksService(
     }
 
     /// <inheritdoc />
-    public async Task<
-        DatabaseResultVariant<
-            SuccessResult<List<RecipeBookDao>>,
-            FeatureNotEnabledResult,
-            UserNotFoundResult,
-            ValidationFailureResult
-        >
-    > SearchBooksAsync(long userId, SearchBooksArgs args, CancellationToken ct)
+    public async Task<bool> HasViewAccessAsync(long userId, long bookId, CancellationToken ct)
     {
-        if (!searchIndexRepository.IsEnabled())
-        {
-            return new FeatureNotEnabledResult();
-        }
-
-        SearchRecipeBooksArgsValidator validator = new();
-        ValidationResult validationResult = await validator.ValidateAsync(args, ct);
-        if (!validationResult.IsValid)
-        {
-            return new ValidationFailureResult();
-        }
-
         await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
-        if (!await dbContext.Users.UserExistsNotDeletedAsync(userId, ct))
-        {
-            return new UserNotFoundResult(userId);
-        }
 
-        // access control, have to inform the index what books
-        // the user has access to
-        List<long> bookIds = await dbContext
+        return await dbContext.RecipeBooks.WithBookId(bookId).UserHasAccess(userId).AnyAsync(ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<List<long>> ListBooksByIdAsync(long userId, int max, CancellationToken ct)
+    {
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
+        return await dbContext
             .RecipeBooks.AsNoTracking()
             .NotDeleted()
             .UserHasAccess(userId)
             .OrderBy(book => book.Id)
             .Select(book => book.Id)
-            .Take(args.MaxBooks)
+            .Take(max)
             .ToListAsync(ct);
-
-        if (bookIds.Count < 1) // no books - nothing to search...
-        {
-            return new SuccessResult<List<RecipeBookDao>>([]);
-        }
-
-        List<RecipeBookSearchIndexDocument> matchesFromSearchIndex =
-            await searchIndexRepository.SearchForDocumentsAsync(
-                new()
-                {
-                    SearchString = args.SearchString,
-                    BookIds = bookIds,
-                    Limit = args.Limit,
-                    Offset = args.Offset,
-                    LimitToKind = RecipeBookSearchIndexDocumentKind.RecipeBook,
-                },
-                ct
-            );
-
-        List<RecipeBookDao> entries = [];
-        foreach (RecipeBookSearchIndexDocument document in matchesFromSearchIndex)
-        {
-            if (
-                document is
-                { RecipeBookId: long bookId, Kind: RecipeBookSearchIndexDocumentKind.RecipeBook }
-            )
-            {
-                BookWithMaterializedPermissions? queryResult =
-                    await dbContext.GetBookWithUserPermissionsAsync(bookId, userId, ct);
-                if (queryResult is null || !queryResult.PermissionFlags.MayViewBook)
-                {
-                    continue;
-                }
-
-                entries.Add(ToRecipeBookDao(queryResult.Book, queryResult.PermissionFlags));
-            }
-        }
-
-        return new SuccessResult<List<RecipeBookDao>>(entries);
     }
 }

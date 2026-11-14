@@ -153,4 +153,12 @@ public interface IUsersService
     /// <param name="timeout">how long to wait</param>
     /// <param name="ct">async cancellation token</param>
     Task WaitForSignal(TimeSpan timeout, CancellationToken ct);
+
+    /// <summary>
+    /// Checks if a user exists and is not deleted
+    /// </summary>
+    /// <param name="userId">the id of the user</param>
+    /// <param name="ct">async cancellation token</param>
+    /// <returns>result of the check</returns>
+    Task<bool> UserExistsNotDeleted(long userId, CancellationToken ct);
 }

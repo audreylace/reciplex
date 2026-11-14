@@ -5,21 +5,23 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Reciplex.Server.Abstractions.StringIdProvider;
 using Reciplex.Server.Database.RecipesDomain;
 using Reciplex.Server.Database.Results;
+using Reciplex.Server.Database.SearchIndexDomain;
 using Reciplex.Server.Host.AccessControl;
 using Reciplex.Server.Host.Models;
+using Reciplex.Server.SearchExporter;
 
 namespace Reciplex.Server.Host.Controllers;
 
 /// <summary>
-/// API for searching recipes
+/// API for searching recipes and books
 /// </summary>
-/// <param name="recipeService">service for getting recipes</param>
+/// <param name="searchIndexFacade">facade for running the search</param>
 /// <param name="stringIdProvider">service for marshaling longs to and from strings</param>
 [ApiController]
-[Route("search/recipes")]
+[Route("search")]
 [Authorize]
-public class RecipesSearchController(
-    IRecipesService recipeService,
+public class SearchController(
+    ISearchIndexFacade searchIndexFacade,
     IStringIdProvider stringIdProvider
 ) : ControllerBase
 {
@@ -45,7 +47,8 @@ public class RecipesSearchController(
         [BindRequired] [FromQuery(Name = "q")] string searchString,
         [FromQuery(Name = "limit")] int? maxNullable,
         [FromQuery(Name = "offset")] int? offsetNullable,
-        [FromQuery(Name = "book")] string? bookIdString,
+        [FromQuery(Name = "book")] List<string>? bookIdsNullable,
+        [FromQuery(Name = "kind")] List<string>? documentKindNullable,
         CancellationToken cancellationToken
     )
     {
@@ -101,31 +104,49 @@ public class RecipesSearchController(
             );
         }
 
-        long? targetBook = null;
-        if (!string.IsNullOrWhiteSpace(bookIdString))
+        List<long> booksToTarget = [];
+        if (bookIdsNullable is List<string> bookIdKeys)
         {
-            targetBook = stringIdProvider.AsLong(bookIdString);
-            if (targetBook is null || targetBook < 0)
+            foreach (string bookIdKey in bookIdKeys)
             {
-                // return not found, allows UI to handle bad links gracefully
-                return TypedResults.NotFound();
+                long? bookId = stringIdProvider.AsLong(bookIdKey);
+                if (bookId is null || bookId < 0)
+                {
+                    return TypedResults.NotFound();
+                }
+
+                booksToTarget.Add(bookId.Value);
             }
         }
 
-        DatabaseResultVariant<
-            SuccessResult<List<RecipeListEntryDao>>,
-            FeatureNotEnabledResult,
-            BookNotFoundResult,
-            UserNotFoundResult,
-            ValidationFailureResult
-        > result = await recipeService.SearchRecipesAsync(
+        List<RecipeBookSearchIndexDocumentKind> documentKindsToTarget = [];
+        if (documentKindNullable is List<string> documentKindsStr)
+        {
+            foreach (string documentKindTargetStr in documentKindsStr)
+            {
+                switch (documentKindTargetStr)
+                {
+                    case "recipe":
+                        documentKindsToTarget.Add(RecipeBookSearchIndexDocumentKind.Recipe);
+                        break;
+                    case "book":
+                        documentKindsToTarget.Add(RecipeBookSearchIndexDocumentKind.RecipeBook);
+                        break;
+                    default:
+                        return TypedResults.BadRequest();
+                }
+            }
+        }
+
+        var result = await searchIndexFacade.SearchAsync(
             userId,
             new()
             {
                 SearchString = searchString,
-                Books = targetBook is not null ? [targetBook.Value] : [],
+                BookIds = booksToTarget,
                 Limit = max,
                 Offset = offset,
+                DocumentKinds = documentKindsToTarget,
             },
             cancellationToken
         );

@@ -55,16 +55,12 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
             return TypedResults.NotFound();
         }
 
-        DatabaseResultVariant<
-            SuccessResult<RecipeDao>,
-            Database.Results.NotFoundResult,
-            UserNotFoundResult
-        > result = await recipeService.GetRecipeAsync(recipeId, userId, cancellationToken);
+        DatabaseResultVariant<SuccessResult<RecipeDao>, Database.Results.NotFoundResult> result =
+            await recipeService.GetRecipeAsync(recipeId, userId, cancellationToken);
 
         return result.Result switch
         {
-            Database.Results.NotFoundResult or UserNotFoundResult => TypedResults.NotFound(),
-
+            Database.Results.NotFoundResult => TypedResults.NotFound(),
             SuccessResult<RecipeDao> success => TypedResults.Ok(ToJson(success.Value)),
             _ => throw new NotImplementedException(),
         };
@@ -114,7 +110,6 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
             EmptySuccessResult,
             Database.Results.NotFoundResult,
             ForbiddenResult,
-            UserNotFoundResult,
             Database.Results.ConflictResult
         > deleteResult = await recipeService.QueueRecipeDeleteAsync(
             recipeId,
@@ -127,8 +122,7 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
         {
             EmptySuccessResult => TypedResults.NoContent(),
 
-            Database.Results.NotFoundResult or ForbiddenResult or UserNotFoundResult =>
-                TypedResults.NotFound(),
+            Database.Results.NotFoundResult or ForbiddenResult => TypedResults.NotFound(),
 
             Database.Results.ConflictResult => new PreconditionFailedHttpResult("If-Match"),
             _ => throw new NotImplementedException(),
@@ -192,7 +186,6 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
             SuccessResult<RecipeDao>,
             ForbiddenResult,
             Database.Results.NotFoundResult,
-            UserNotFoundResult,
             ValidationFailureResult,
             Database.Results.ConflictResult
         > updateResult = await recipeService.UpdateRecipeAsync(
@@ -212,8 +205,7 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
         {
             Database.Results.ConflictResult => new PreconditionFailedHttpResult("If-Match"),
 
-            Database.Results.NotFoundResult or ForbiddenResult or UserNotFoundResult =>
-                TypedResults.NotFound(),
+            Database.Results.NotFoundResult or ForbiddenResult => TypedResults.NotFound(),
 
             ValidationFailureResult => TypedResults.BadRequest(),
 
@@ -268,7 +260,6 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
             SuccessResult<RecipeDao>,
             ForbiddenResult,
             Database.Results.NotFoundResult,
-            UserNotFoundResult,
             ValidationFailureResult
         > createRecipeResult = await recipeService.CreateRecipeAsync(
             bookId,
@@ -284,8 +275,7 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
 
         return createRecipeResult.Result switch
         {
-            Database.Results.NotFoundResult or ForbiddenResult or UserNotFoundResult =>
-                TypedResults.NotFound(),
+            Database.Results.NotFoundResult or ForbiddenResult => TypedResults.NotFound(),
 
             ValidationFailureResult => TypedResults.BadRequest(),
 
@@ -375,8 +365,7 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
 
         DatabaseResultVariant<
             SuccessResult<List<RecipeListEntryDao>>,
-            Database.Results.NotFoundResult,
-            UserNotFoundResult
+            Database.Results.NotFoundResult
         > result = await recipeService.ListRecipesAsync(
             userId,
             new()
@@ -392,7 +381,7 @@ public class RecipesController(IRecipesService recipeService, IStringIdProvider 
 
         return result.Result switch
         {
-            Database.Results.NotFoundResult or UserNotFoundResult => TypedResults.NotFound(),
+            Database.Results.NotFoundResult => TypedResults.NotFound(),
 
             SuccessResult<List<RecipeListEntryDao>> successResult => TypedResults.Ok(
                 successResult.Value.Select(ToListEntryJson)
