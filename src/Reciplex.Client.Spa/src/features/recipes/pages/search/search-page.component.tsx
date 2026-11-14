@@ -6,19 +6,21 @@ import { useSearchRecipesAndBooks } from "../../hooks/useSearchRecipesAndBooks.h
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import { BrowserTitle } from "../../../core/components/browser-title/browser-title.component";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   IRecipeBookModel,
   IRecipeListEntryJsonResponse,
 } from "../../services/recipe-types";
 import { BookResult } from "./book-result.component";
 import { useActiveUserKey } from "../../../auth/hooks/useActiveUser.hook";
+
 /**
  * Page used to search for recipes and books
  */
 export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const searchString = searchParams.get("q") ?? "";
+  const [fieldV, setFieldV] = useState(searchString);
   const query = useSearchRecipesAndBooks({ searchString });
   const title = searchString ? `${searchString} - Search` : "Search";
   const userId = useActiveUserKey();
@@ -50,6 +52,16 @@ export function SearchPage() {
     return hitsData;
   }, [query.data?.books, query.data?.hits, query.data?.recipes]);
 
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      if (searchString !== fieldV) {
+        setSearchParams({ q: fieldV });
+      }
+    }, 100);
+
+    return () => clearTimeout(handle);
+  }, [fieldV, searchString, setSearchParams]);
+
   const mapper = (d: TaggedHitUnionType) =>
     d.kind === "recipe" ? (
       <RecipeResult
@@ -76,11 +88,13 @@ export function SearchPage() {
       <BrowserTitle title={title} />
       <Stack spacing={2}>
         <SearchField
-          value={searchString}
+          value={fieldV}
           onChange={(s) => {
-            setSearchParams({ q: s });
+            setFieldV(s);
           }}
-          loading={!!(query.isPending && searchString)}
+          loading={
+            !!(query.isPending && searchString) || searchString !== fieldV
+          }
         />
         {listToRender.map(mapper)}
         {searchString && listToRender && listToRender.length < 1 && (
