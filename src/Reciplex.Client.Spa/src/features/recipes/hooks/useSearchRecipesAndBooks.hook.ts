@@ -4,7 +4,7 @@ import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
 import { recipeQueryKeyRoot } from "../utils/recipe-queries/recipe-query-key-factory";
 
 /** args for the `useSearchRecipesInBook` hook which is used to search recipe records in a book */
-export interface IUseSearchRecipeInBookArgs {
+export interface IUseSearchRecipesAndBooksArgs {
   /** set to true to disable the query. By default the query is enabled */
   disable?: boolean;
   /** the user search string, if not set or empty then the search is disabled */
@@ -13,8 +13,8 @@ export interface IUseSearchRecipeInBookArgs {
   offset?: number;
   /** number of entries to return in a single search page */
   limit?: number;
-  /** the id of the book, if not set, then the search is disabled */
-  bookId?: string;
+  /** the id of the books to limit the search to */
+  books?: string[];
 }
 
 /**
@@ -22,12 +22,11 @@ export interface IUseSearchRecipeInBookArgs {
  * @param args hook arguments
  * @returns query result
  */
-export function useSearchRecipesInBook(args?: IUseSearchRecipeInBookArgs) {
+export function useSearchRecipesAndBooks(args?: IUseSearchRecipesAndBooksArgs) {
   const searchString = (args?.searchString ?? "").trim();
   const disable = !!args?.disable;
   const offset = args?.offset ?? 0;
   const limit = args?.limit ?? 10; // default to 10 results
-  const bookId = (args?.bookId ?? "").trim();
 
   if (offset < 0 || limit < 0) {
     throw new Error("offset and limit, when set, must be 0 or positive");
@@ -36,9 +35,9 @@ export function useSearchRecipesInBook(args?: IUseSearchRecipeInBookArgs) {
   const userKey = useActiveUserKey();
   const recipeStore = useRecipeStoreContext();
 
-  const isEnabled = !!(!disable && searchString && bookId && userKey);
+  const isEnabled = !!(!disable && searchString && userKey);
   return useQuery({
-    queryKey: searchRecipesQueryKey(userKey ?? "", bookId, {
+    queryKey: searchRecipesQueryKey(userKey ?? "", args?.books ?? [], {
       limit,
       offset,
       searchString,
@@ -48,8 +47,8 @@ export function useSearchRecipesInBook(args?: IUseSearchRecipeInBookArgs) {
       if (!isEnabled) {
         throw Error("query is not enabled");
       }
-      return recipeStore.searchRecipes(userKey, searchString, {
-        bookId,
+      return recipeStore.search(userKey, searchString, {
+        books: args?.books,
         offset,
         limit,
       });
@@ -69,13 +68,13 @@ const recipeSearchCacheKeyBranch = "search-recipes";
  */
 function searchRecipesQueryKey(
   userKey: string,
-  bookKey: string,
+  books: string[],
   cacheArgs: IUseSearchRecipeInBookCacheArgs,
 ) {
   return [
     recipeQueryKeyRoot(userKey),
     recipeSearchCacheKeyBranch,
-    bookKey,
+    books,
     cacheArgs,
   ];
 }

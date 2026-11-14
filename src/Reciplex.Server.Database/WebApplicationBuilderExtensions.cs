@@ -8,6 +8,7 @@ using Reciplex.Server.Database.RecipeBooksDomain;
 using Reciplex.Server.Database.RecipesDomain;
 using Reciplex.Server.Database.SearchIndexTrackingDomain;
 using Reciplex.Server.Database.UsersDomain;
+using Reciplex.Server.SearchExporter;
 
 namespace Reciplex.Server.Database;
 
@@ -44,6 +45,8 @@ public static partial class WebApplicationBuilderExtensions
             IRecipeSearchExportStatusRepository,
             RecipeSearchExportStatusRepository
         >();
+
+        builder.Services.AddSingleton<ISearchIndexFacade, SearchIndexFacade>();
 
         return builder;
     }

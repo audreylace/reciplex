@@ -17,6 +17,6 @@ sealed class SearchIndexAsyncArgsValidator : AbstractValidator<SearchIndexAsyncA
         RuleFor(r => r.MaxBooks).GreaterThan(0);
         RuleFor(r => r.Limit).GreaterThan(0);
         RuleFor(r => r.Offset).GreaterThanOrEqualTo(0);
-        RuleFor(r => r.DocumentKinds).IsInEnum();
+        //RuleFor(r => r.DocumentKinds).IsInEnum();
     }
 }

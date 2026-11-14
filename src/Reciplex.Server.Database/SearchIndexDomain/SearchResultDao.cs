@@ -16,7 +16,7 @@ public class SearchResultDao
     /// <summary>
     /// The set of recipes
     /// </summary>
-    public List<RecipeDao> Recipes { get; init; } = [];
+    public List<RecipeListEntryDao> Recipes { get; init; } = [];
 
     /// <summary>
     /// the set of books

@@ -27,7 +27,7 @@ sealed class SearchIndexFacade(
         >
     > SearchAsync(long userId, SearchIndexAsyncArgs args, CancellationToken ct)
     {
-        if (searchRepo.IsEnabled())
+        if (!searchRepo.IsEnabled())
         {
             return new FeatureNotEnabledResult();
         }
@@ -101,12 +101,12 @@ sealed class SearchIndexFacade(
                     )
                 )
                 {
-                    var recipeResult = await recipesService.GetRecipeAsync(
+                    var recipeResult = await recipesService.GetRecipeListEntryAsync(
                         recipeDocumentPtr.RecipeId,
                         userId,
                         ct
                     );
-                    if (recipeResult.Result is SuccessResult<RecipeDao> recipe)
+                    if (recipeResult.Result is SuccessResult<RecipeListEntryDao> recipe)
                     {
                         searchResultDao.Recipes.Add(recipe.Value);
                         searchResultDao.Hits.Add(

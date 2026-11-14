@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Reciplex.Server.Abstractions.StringIdProvider;
+using Reciplex.Server.Database.RecipeBooksDomain;
 using Reciplex.Server.Database.RecipesDomain;
 using Reciplex.Server.Database.Results;
 using Reciplex.Server.Database.SearchIndexDomain;
@@ -36,12 +37,7 @@ public class SearchController(
     /// <returns>the http result to send back to the caller</returns>
     [HttpGet]
     public async Task<
-        Results<
-            Ok<IEnumerable<RecipeListEntryJsonResponse>>,
-            NotFound,
-            BadRequest,
-            ValidationProblem
-        >
+        Results<Ok<SearchJsonResponse>, NotFound, BadRequest, ValidationProblem>
     > Search(
         [FromQuery(Name = "user")] string userKey,
         [BindRequired] [FromQuery(Name = "q")] string searchString,
@@ -112,7 +108,7 @@ public class SearchController(
                 long? bookId = stringIdProvider.AsLong(bookIdKey);
                 if (bookId is null || bookId < 0)
                 {
-                    return TypedResults.NotFound();
+                    return TypedResults.BadRequest();
                 }
 
                 booksToTarget.Add(bookId.Value);
@@ -138,7 +134,12 @@ public class SearchController(
             }
         }
 
-        var result = await searchIndexFacade.SearchAsync(
+        DatabaseResultVariant<
+            BookNotFoundResult,
+            ValidationFailureResult,
+            FeatureNotEnabledResult,
+            SuccessResult<SearchResultDao>
+        > result = await searchIndexFacade.SearchAsync(
             userId,
             new()
             {
@@ -153,10 +154,9 @@ public class SearchController(
         return result.Result switch
         {
             FeatureNotEnabledResult => TypedResults.NotFound(),
-            BookNotFoundResult or UserNotFoundResult or ValidationFailureResult =>
-                TypedResults.BadRequest(),
-            SuccessResult<List<RecipeListEntryDao>> successResult => TypedResults.Ok(
-                successResult.Value.Select(ToListEntryJson)
+            BookNotFoundResult or ValidationFailureResult => TypedResults.BadRequest(),
+            SuccessResult<SearchResultDao> successResult => TypedResults.Ok(
+                ToSearchJsonResponse(successResult.Value)
             ),
             _ => throw new NotImplementedException(),
         };
@@ -174,6 +174,50 @@ public class SearchController(
             Name = recipe.Name,
             ShortDescription = recipe.ShortDescription,
             BookKey = stringIdProvider.AsString(recipe.BookId),
+        };
+    }
+
+    /// <summary>
+    /// Builds an instance of <see cref="RecipeBookJsonResponse"/>
+    /// </summary>
+    /// <param name="book">the dao data to convert</param>
+    private RecipeBookJsonResponse ToBookJson(RecipeBookDao book)
+    {
+        return new RecipeBookJsonResponse()
+        {
+            BookKey = stringIdProvider.AsString(book.Id),
+            Name = book.Name,
+            ShortDescription = book.ShortDescription,
+            OwningUserKey = stringIdProvider.AsString(book.OwningUserId),
+            Created = book.Created,
+            LastModified = book.LastModified,
+            ConcurrencyTag = book.ConcurrencyTag,
+            MayEdit = book.MayEditBook,
+            MayDelete = book.MayDeleteBook,
+            MayShare = book.MayShareBook,
+            MayManageAccess = book.MayManageAccess,
+            ShareKey = book.MayShareBook ? book.ShareKey : null,
+        };
+    }
+
+    private SearchJsonResponse ToSearchJsonResponse(SearchResultDao dao)
+    {
+        return new SearchJsonResponse()
+        {
+            Books = [.. dao.RecipeBooks.Select(ToBookJson)],
+            Recipes = [.. dao.Recipes.Select(ToListEntryJson)],
+            Hits =
+            [
+                .. dao.Hits.Select(h => new HitsPtrJson(
+                    h.Kind switch
+                    {
+                        RecipeBookSearchIndexDocumentKind.Recipe => "recipe",
+                        RecipeBookSearchIndexDocumentKind.RecipeBook => "book",
+                        _ => throw new NotImplementedException(),
+                    },
+                    stringIdProvider.AsString(h.Id)
+                )),
+            ],
         };
     }
 }

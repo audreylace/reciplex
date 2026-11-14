@@ -20,6 +20,10 @@ public interface IRecipesService
         CancellationToken cancellationToken
     );
 
+    public Task<
+        DatabaseResultVariant<SuccessResult<RecipeListEntryDao>, NotFoundResult>
+    > GetRecipeListEntryAsync(long recipeId, long userId, CancellationToken cancellationToken);
+
     /// <summary>
     /// Queues a recipe's deletion
     /// </summary>

@@ -435,4 +435,39 @@ internal sealed class RecipesService(
             Details = recipeDbObject.Details,
             MayEdit = mayEdit,
         };
+
+    /// <inheritdoc />
+    public async Task<
+        DatabaseResultVariant<SuccessResult<RecipeListEntryDao>, NotFoundResult>
+    > GetRecipeListEntryAsync(long recipeId, long userId, CancellationToken ct)
+    {
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
+        var recipe = await dbContext
+            .Recipes.AsNoTracking()
+            .WithRecipeId(recipeId)
+            .NotDeleted()
+            .Select(r => new RecipeListEntryDao()
+            {
+                Id = r.Id,
+                Name = r.Name,
+                ShortDescription = r.ShortDescription,
+                BookId = r.RecipeBookFk,
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (recipe is null)
+        {
+            return new NotFoundResult();
+        }
+
+        BookWithMaterializedPermissions? bookLookup =
+            await dbContext.GetBookWithUserPermissionsAsync(recipe.BookId, userId, ct);
+
+        if (bookLookup is null || !bookLookup.PermissionFlags.MayViewBook)
+        {
+            return new NotFoundResult();
+        }
+
+        return new SuccessResult<RecipeListEntryDao>(recipe);
+    }
 }

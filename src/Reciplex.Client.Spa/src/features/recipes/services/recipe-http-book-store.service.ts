@@ -12,9 +12,12 @@ import {
   type IRecipeListEntryJsonResponse,
   type IRecipeModel,
   type IRequestAccessToRecipeBookStatus,
-  type ISearchRecipeAdditionalArgs,
+  type ISearchAdditionalArgs,
+  type ISearchResult,
+  type ISearchResultJson,
   type IUpdateRecipeArgs,
   type IUpdateRecipeBookArgs,
+  type SearchResultKind,
 } from "./recipe-types";
 
 /**
@@ -139,6 +142,18 @@ interface IRecipeJson {
 }
 
 /**
+ * Shape of the search response json returned from the server
+ */
+interface ISearchResultJson {
+  /** search hits */
+  hits: { kind: SearchResultKind; documentKey: string }[];
+  /** returned recipes */
+  recipes: IRecipeListEntryJsonResponse[];
+  /** returned books */
+  books: IRecipeBookJson[];
+}
+
+/**
  * Stores and retrieves recipes from a remote HTTP server
  */
 export class RecipeHttpBookStore implements IRecipeBookStore {
@@ -150,10 +165,7 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
   constructor(prefix: string, args?: IHttpClientArgs) {
     this._bookHttpClient = new HttpClient(prefix + "/v1/recipe-books", args);
     this._recipeHttpClient = new HttpClient(prefix + "/v1/recipes", args);
-    this._recipeSearchHttpClient = new HttpClient(
-      prefix + "/v1/search/recipes",
-      args,
-    );
+    this._searchHttpClient = new HttpClient(prefix + "/v1/search", args);
   }
 
   /** Http client for fetching books */
@@ -163,10 +175,9 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
   private readonly _recipeHttpClient: HttpClient;
 
   /**
-   * Http client for the remote search API used to search
-   * recipes.
+   * Http client for the remote search API used to search recipes and books
    */
-  private readonly _recipeSearchHttpClient: HttpClient;
+  private readonly _searchHttpClient: HttpClient;
 
   /** name of the user id query parameter */
   private readonly userQueryParam: string = "user";
@@ -550,25 +561,29 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
   }
 
   /** @inheritdoc */
-  async searchRecipes(
+  public async search(
     userId: string,
     searchString: string,
-    args?: ISearchRecipeAdditionalArgs,
-  ): Promise<IRecipeListEntryJsonResponse[] | null> {
+    args?: ISearchAdditionalArgs,
+  ): Promise<ISearchResult> {
     const queryParams = this.makeQueryParams(userId);
 
     searchString = searchString.trim();
     if (!searchString) {
       // skip calling server if length is empty;
       // also server will reject our call
-      return [];
+      return {
+        hits: [],
+        recipes: [],
+        books: [],
+      };
     }
 
     queryParams.push(["q", searchString]);
 
     if (args) {
-      if (args.bookId) {
-        queryParams.push(["book", args.bookId]);
+      if (args.books) {
+        args.books.forEach((b) => queryParams.push(["book", b]));
       }
       if (args.limit && args.limit > 0) {
         queryParams.push(["limit", args.limit.toString()]);
@@ -579,21 +594,26 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
     }
 
     try {
-      const response = await this._recipeSearchHttpClient.httpGet(
-        "",
-        queryParams,
-      );
-      const recipeJson: IRecipeListEntryJsonResponse[] | undefined | null =
+      const response = await this._searchHttpClient.httpGet("", queryParams);
+      const recipeJson: ISearchResultJson | undefined | null =
         await response.json();
 
       if (!recipeJson) {
-        throw new Error("unexpected recipe json");
+        throw new Error("unexpected json");
       }
 
-      return recipeJson;
+      return {
+        hits: recipeJson.hits,
+        books: recipeJson.books.map((b) => this.decodeRecipeBookJson(b)),
+        recipes: recipeJson.recipes,
+      };
     } catch (error) {
       if (error instanceof HttpError && error.status === 404) {
-        return null;
+        return {
+          hits: [],
+          recipes: [],
+          books: [],
+        };
       }
       throw error;
     }
