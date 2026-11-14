@@ -93,7 +93,8 @@ export function SearchPage() {
             setFieldV(s);
           }}
           loading={
-            !!(query.isPending && searchString) || searchString !== fieldV
+            !!(query.isPending && query.isEnabled && searchString) ||
+            searchString !== fieldV
           }
         />
         {listToRender.map(mapper)}
