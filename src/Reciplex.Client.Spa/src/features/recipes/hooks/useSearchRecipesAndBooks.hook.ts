@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useActiveUserKey } from "../../auth/hooks/useActiveUser.hook";
 import { useRecipeStoreContext } from "./useRecipeStoreContext.hook";
 import { recipeQueryKeyRoot } from "../utils/recipe-queries/recipe-query-key-factory";
+import type { SearchResultKind } from "../services/recipe-types";
 
 /** args for the `useSearchRecipesInBook` hook which is used to search recipe records in a book */
 export interface IUseSearchRecipesAndBooksArgs {
@@ -15,6 +16,8 @@ export interface IUseSearchRecipesAndBooksArgs {
   limit?: number;
   /** the id of the books to limit the search to */
   books?: string[];
+  /** limit to search kind */
+  kind?: SearchResultKind[];
 }
 
 /**
@@ -35,12 +38,13 @@ export function useSearchRecipesAndBooks(args?: IUseSearchRecipesAndBooksArgs) {
   const userKey = useActiveUserKey();
   const recipeStore = useRecipeStoreContext();
 
-  const isEnabled = !!(!disable && searchString && userKey);
+  const isEnabled = !!(!disable && userKey);
   return useQuery({
     queryKey: searchRecipesQueryKey(userKey ?? "", args?.books ?? [], {
       limit,
       offset,
       searchString,
+      kind: args?.kind ?? [],
     }),
     enabled: isEnabled,
     queryFn: async () => {
@@ -87,4 +91,6 @@ interface IUseSearchRecipeInBookCacheArgs {
   offset: number;
   /** the search limit. If not supplied then set to 0. */
   limit: number;
+  /** limit to search kind */
+  kind: SearchResultKind[];
 }

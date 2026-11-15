@@ -4,40 +4,53 @@ import Paper from "@mui/material/Paper";
 import TextField from "@mui/material/TextField";
 import SearchIcon from "@mui/icons-material/Search";
 import CircularProgress from "@mui/material/CircularProgress";
+import Stack from "@mui/material/Stack";
 
 /**
  * Main search field for the search page
  */
-export function SearchField({ value, onChange, loading }: ISearchFieldProps) {
+export function SearchField({
+  value,
+  onChange,
+  loading,
+  settingsDialog,
+}: ISearchFieldProps) {
   return (
     <Paper sx={{ p: 2 }}>
-      <TextField
-        label="Search"
-        variant="outlined"
-        fullWidth
-        value={value}
-        onChange={(e) => {
-          onChange(e.target.value ?? "");
-        }}
-        slotProps={{
-          htmlInput: {
-            maxLength: 100,
-          },
-          input: {
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton type="button" aria-label="search">
-                  {loading ? (
-                    <CircularProgress aria-label="Loading…" />
-                  ) : (
-                    <SearchIcon />
-                  )}
-                </IconButton>
-              </InputAdornment>
-            ),
-          },
-        }}
-      />
+      <Stack direction="row" spacing={1}>
+        <TextField
+          label="Search"
+          variant="outlined"
+          fullWidth
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value ?? "");
+          }}
+          slotProps={{
+            htmlInput: {
+              maxLength: 100,
+            },
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  {settingsDialog}
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton type="button" aria-label="search">
+                    {loading ? (
+                      <CircularProgress aria-label="Loading…" />
+                    ) : (
+                      <SearchIcon />
+                    )}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+      </Stack>
     </Paper>
   );
 }
@@ -59,4 +72,8 @@ export interface ISearchFieldProps {
    * When true, show the loading indicator instead of the button
    */
   loading?: boolean;
+  /**
+   * Settings dialog and its button
+   */
+  settingsDialog: React.ReactNode;
 }

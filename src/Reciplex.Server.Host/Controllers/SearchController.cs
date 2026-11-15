@@ -40,7 +40,7 @@ public class SearchController(
         Results<Ok<SearchJsonResponse>, NotFound, BadRequest, ValidationProblem>
     > Search(
         [FromQuery(Name = "user")] string userKey,
-        [BindRequired] [FromQuery(Name = "q")] string searchString,
+        [FromQuery(Name = "q")] string? searchString,
         [FromQuery(Name = "limit")] int? maxNullable,
         [FromQuery(Name = "offset")] int? offsetNullable,
         [FromQuery(Name = "book")] List<string>? bookIdsNullable,
@@ -55,17 +55,7 @@ public class SearchController(
             return TypedResults.BadRequest();
         }
 
-        if (string.IsNullOrWhiteSpace(searchString))
-        {
-            return TypedResults.ValidationProblem(
-                new Dictionary<string, string[]>()
-                {
-                    { "q", ["Expect 'q' to have a non-empty value"] },
-                }
-            );
-        }
-
-        if (searchString.Length > 100)
+        if (searchString is not null && searchString.Length > 100)
         {
             return TypedResults.ValidationProblem(
                 new Dictionary<string, string[]>()
@@ -143,7 +133,7 @@ public class SearchController(
             userId,
             new()
             {
-                SearchString = searchString,
+                SearchString = searchString ?? "",
                 BookIds = booksToTarget,
                 Limit = max,
                 Offset = offset,

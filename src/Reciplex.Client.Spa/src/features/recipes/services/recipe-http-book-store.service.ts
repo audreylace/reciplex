@@ -569,16 +569,6 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
     const queryParams = this.makeQueryParams(userId);
 
     searchString = searchString.trim();
-    if (!searchString) {
-      // skip calling server if length is empty;
-      // also server will reject our call
-      return {
-        hits: [],
-        recipes: [],
-        books: [],
-      };
-    }
-
     queryParams.push(["q", searchString]);
 
     if (args) {
@@ -590,6 +580,9 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
       }
       if (args.offset && args.offset > 0) {
         queryParams.push(["offset", args.offset.toString()]);
+      }
+      if (args.kind && args.kind.length > 0) {
+        args.kind.forEach((k) => queryParams.push(["kind", k]));
       }
     }
 

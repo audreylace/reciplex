@@ -13,6 +13,7 @@ import type {
 } from "../../services/recipe-types";
 import { BookResult } from "./book-result.component";
 import { useActiveUserKey } from "../../../auth/hooks/useActiveUser.hook";
+import { FilterDialog } from "./filter-dialog";
 
 /**
  * Page used to search for recipes and books
@@ -96,6 +97,7 @@ export function SearchPage() {
             !!(query.isPending && query.isEnabled && searchString) ||
             searchString !== fieldV
           }
+          settingsDialog={<FilterDialog />}
         />
         {listToRender.map(mapper)}
         {searchString && listToRender && listToRender.length < 1 && (

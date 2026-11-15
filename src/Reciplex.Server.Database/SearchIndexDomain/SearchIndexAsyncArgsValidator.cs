@@ -13,7 +13,7 @@ sealed class SearchIndexAsyncArgsValidator : AbstractValidator<SearchIndexAsyncA
     /// </summary>
     public SearchIndexAsyncArgsValidator()
     {
-        RuleFor(r => r.SearchString).MaximumLength(100).NotEmpty();
+        RuleFor(r => r.SearchString).MaximumLength(100).NotNull();
         RuleFor(r => r.MaxBooks).GreaterThan(0);
         RuleFor(r => r.Limit).GreaterThan(0);
         RuleFor(r => r.Offset).GreaterThanOrEqualTo(0);
