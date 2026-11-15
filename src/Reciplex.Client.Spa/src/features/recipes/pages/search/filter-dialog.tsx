@@ -25,7 +25,9 @@ export function FilterDialog({}: IFilterDialogProps) {
   const [open, setOpen] = useState(false);
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
-  const [bookOptions, setBookOptions] = useState<string[]>([]);
+  const [bookOptions, setBookOptions] = useState<
+    { name: string; documentKey: string }[]
+  >([]);
   const [inputValue, setInputValue] = useState<string>("");
   const searchQuery = useSearchRecipesAndBooks({
     searchString: inputValue,
@@ -41,7 +43,10 @@ export function FilterDialog({}: IFilterDialogProps) {
     const results = [];
     for (const book of searchQuery.data?.hits ?? []) {
       if (book.kind === "book" && mapToBuild[book.documentKey]) {
-        results.push(mapToBuild[book.documentKey].name);
+        results.push({
+          documentKey: book.documentKey,
+          name: mapToBuild[book.documentKey].name,
+        });
       }
     }
 
@@ -74,6 +79,7 @@ export function FilterDialog({}: IFilterDialogProps) {
             <Autocomplete
               multiple
               options={bookNames}
+              getOptionLabel={(option) => option.name}
               value={bookOptions}
               onChange={(_, newValue) => {
                 setBookOptions(newValue);
@@ -97,5 +103,3 @@ export function FilterDialog({}: IFilterDialogProps) {
  * Properties for `<FilterDialog />`
  */
 export interface IFilterDialogProps {}
-
-const opts = ["a", "b", "c", "d", "e"];
