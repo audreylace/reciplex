@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import type {
   IRecipeBookModel,
   IRecipeListEntryJsonResponse,
+  SearchResultKind,
 } from "../../services/recipe-types";
 import { BookResult } from "./book-result.component";
 import { useActiveUserKey } from "../../../auth/hooks/useActiveUser.hook";
@@ -19,11 +20,14 @@ import { FilterDialog } from "./filter-dialog";
  * Page used to search for recipes and books
  */
 export function SearchPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const searchString = searchParams.get("q") ?? "";
-  const [fieldV, setFieldV] = useState(searchString);
-  const query = useSearchRecipesAndBooks({ searchString });
-  const title = searchString ? `${searchString} - Search` : "Search";
+  const { state, updateSearchString, updateFilterKind } = usePageSearchState();
+  const query = useSearchRecipesAndBooks({
+    searchString: state.searchString,
+    kind: state.searchResultKind,
+  });
+  const title = state.searchString
+    ? `${state.searchString} - Search`
+    : "Search";
   const userId = useActiveUserKey();
 
   const listToRender = useMemo(() => {
@@ -53,16 +57,6 @@ export function SearchPage() {
     return hitsData;
   }, [query.data?.books, query.data?.hits, query.data?.recipes]);
 
-  useEffect(() => {
-    const handle = setTimeout(() => {
-      if (searchString !== fieldV) {
-        setSearchParams({ q: fieldV });
-      }
-    }, 100);
-
-    return () => clearTimeout(handle);
-  }, [fieldV, searchString, setSearchParams]);
-
   const mapper = (d: TaggedHitUnionType) =>
     d.kind === "recipe" ? (
       <RecipeResult
@@ -89,18 +83,23 @@ export function SearchPage() {
       <BrowserTitle title={title} />
       <Stack spacing={2}>
         <SearchField
-          value={fieldV}
+          value={state.searchString}
           onChange={(s) => {
-            setFieldV(s);
+            updateSearchString(s);
           }}
-          loading={
-            !!(query.isPending && query.isEnabled && searchString) ||
-            searchString !== fieldV
+          loading={!!(query.isPending && query.isEnabled && state.searchString)}
+          settingsDialog={
+            <FilterDialog
+              filterOptions={radioFilterOptions}
+              selectedFilterOption={state.filterKind}
+              onFilterChange={(newValue) => {
+                updateFilterKind(newValue);
+              }}
+            />
           }
-          settingsDialog={<FilterDialog />}
         />
         {listToRender.map(mapper)}
-        {searchString && listToRender && listToRender.length < 1 && (
+        {state.searchString && listToRender && listToRender.length < 1 && (
           <Box sx={{ textAlign: "center", p: 2 }}>
             <Typography variant="h5">No results</Typography>
           </Box>
@@ -117,3 +116,97 @@ type TaggedHitUnionType =
       book: IRecipeBookModel;
     }
   | { kind: "book"; book: IRecipeBookModel };
+
+const radioFilterOptions = [
+  {
+    caption: "All",
+    id: "none",
+  },
+  {
+    caption: "Books",
+    id: "book",
+  },
+  {
+    caption: "Recipes",
+    id: "recipe",
+  },
+];
+
+function usePageSearchState(): IUsePageSearchStateReturn {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const searchQueryString = searchParams.get("q") ?? "";
+  const filterQueryString = searchParams.get("filter");
+
+  const filterAndSearch = mapDocumentKind(filterQueryString ?? "");
+  const [pageState, setPageState] = useState<ISearchPageState>({
+    searchString: searchQueryString,
+    filterKind: filterAndSearch.filterKind,
+    searchResultKind: filterAndSearch.searchResultKind,
+  });
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setSearchParams({
+        q: pageState.searchString,
+        filter: pageState.filterKind,
+      });
+    }, 100);
+
+    return () => clearTimeout(handle);
+  }, [pageState.filterKind, pageState.searchString, setSearchParams]);
+
+  return {
+    state: pageState,
+    updateSearchString: (newValue) => {
+      setPageState((state) => {
+        return { ...state, searchString: newValue };
+      });
+    },
+    updateFilterKind: (newValue) => {
+      setPageState((state) => {
+        const newMappedValue = mapDocumentKind(newValue);
+        return {
+          ...state,
+          filterKind: newMappedValue.filterKind,
+          searchResultKind: newMappedValue.searchResultKind,
+        };
+      });
+    },
+  };
+}
+
+/** state for the search page */
+interface ISearchPageState {
+  /** the current filter string */
+  searchString: string;
+  /** document filter kind */
+  filterKind: FilterKindType;
+  searchResultKind: SearchResultKind[];
+}
+
+interface IUsePageSearchStateReturn {
+  /** the current page state */
+  state: ISearchPageState;
+  updateSearchString: (newValue: string) => void;
+  updateFilterKind: (filterKind: string) => void;
+}
+
+type FilterKindType = "book" | "recipe" | "none";
+
+function mapDocumentKind(filterKindString: string) {
+  let filterKind: FilterKindType = "none";
+  let searchResultKind: SearchResultKind[] = ["recipe", "book"];
+  switch (filterKindString) {
+    case "recipe":
+      filterKind = "recipe";
+      searchResultKind = ["recipe"];
+      break;
+    case "book":
+      filterKind = "book";
+      searchResultKind = ["book"];
+      break;
+  }
+
+  return { filterKind, searchResultKind };
+}

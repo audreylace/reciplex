@@ -7,9 +7,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import DialogContent from "@mui/material/DialogContent";
 import Button from "@mui/material/Button";
-import FormGroup from "@mui/material/FormGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
-import Checkbox from "@mui/material/Checkbox";
 import FormLabel from "@mui/material/FormLabel";
 import FormControl from "@mui/material/FormControl";
 import Stack from "@mui/material/Stack";
@@ -17,11 +15,17 @@ import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 import { useSearchRecipesAndBooks } from "../../hooks/useSearchRecipesAndBooks.hook";
 import type { IRecipeBookModel } from "../../services/recipe-types";
+import RadioGroup from "@mui/material/RadioGroup";
+import Radio from "@mui/material/Radio";
 
 /**
  * Component that opens a search setting filter dialog
  */
-export function FilterDialog({}: IFilterDialogProps) {
+export function FilterDialog({
+  filterOptions,
+  selectedFilterOption,
+  onFilterChange,
+}: IFilterDialogProps) {
   const [open, setOpen] = useState(false);
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
@@ -65,16 +69,27 @@ export function FilterDialog({}: IFilterDialogProps) {
         onClose={() => setOpen(false)}
         open={open}
         fullScreen={fullScreen}
+        maxWidth="sm"
+        fullWidth
       >
         <DialogTitle>Search Filters</DialogTitle>
         <DialogContent>
-          <Stack>
+          <Stack spacing={4} sx={{ mt: 2 }}>
             <FormControl component="fieldset" variant="standard">
               <FormLabel component="legend">Include</FormLabel>
-              <FormGroup>
-                <FormControlLabel control={<Checkbox />} label="Recipes" />
-                <FormControlLabel control={<Checkbox />} label="Books" />
-              </FormGroup>
+              <RadioGroup
+                value={selectedFilterOption}
+                onChange={(e) => onFilterChange(e.target.value)}
+              >
+                {filterOptions.map((option) => (
+                  <FormControlLabel
+                    key={option.id}
+                    control={<Radio />}
+                    label={option.caption}
+                    value={option.id}
+                  />
+                ))}
+              </RadioGroup>
             </FormControl>
             <Autocomplete
               multiple
@@ -102,4 +117,18 @@ export function FilterDialog({}: IFilterDialogProps) {
 /**
  * Properties for `<FilterDialog />`
  */
-export interface IFilterDialogProps {}
+export interface IFilterDialogProps {
+  selectedFilterOption: string;
+  /** filter options and their status */
+  filterOptions: IFilterOptions[];
+  /** fired when the option changes */
+  onFilterChange(newValue: string): void;
+}
+
+/** set of filter options for the search dialog */
+export interface IFilterOptions {
+  /** caption of the filter option */
+  caption: string;
+  /** unique id identifying the option */
+  id: string;
+}

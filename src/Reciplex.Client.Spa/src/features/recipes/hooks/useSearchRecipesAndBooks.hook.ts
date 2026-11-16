@@ -55,6 +55,7 @@ export function useSearchRecipesAndBooks(args?: IUseSearchRecipesAndBooksArgs) {
         books: args?.books,
         offset,
         limit,
+        kind: args?.kind ?? [],
       });
     },
   });
