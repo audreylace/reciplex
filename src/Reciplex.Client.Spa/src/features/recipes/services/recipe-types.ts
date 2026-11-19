@@ -291,6 +291,35 @@ export interface IRecipeBookUserPermissionsJsonRequest {
 }
 
 /**
+ * Possible results from the search index
+ */
+export type SearchResultKind = "recipe" | "book";
+
+/** additional arguments for `IRecipeBookStore.search` */
+export interface ISearchAdditionalArgs {
+  /** the page offset */
+  offset?: number;
+  /** the size of the page */
+  limit?: number;
+  /** limits search to recipes in these books */
+  books?: string[];
+  /** limits search to these kinds */
+  kind?: SearchResultKind[];
+}
+
+/**
+ * Shape of the search response json returned from the server
+ */
+export interface ISearchResult {
+  /** search hits */
+  hits: { kind: SearchResultKind; documentKey: string }[];
+  /** returned recipes */
+  recipes: IRecipeListEntryJsonResponse[];
+  /** returned books */
+  books: IRecipeBookModel[];
+}
+
+/**
  * Store for recipe books and recipe data
  */
 export interface IRecipeBookStore {
@@ -466,4 +495,18 @@ export interface IRecipeBookStore {
       IRecipeBookUserPermissionsJsonRequest | undefined | null,
     ][],
   ): Promise<void>;
+
+  /**
+   * Runs a search for recipes and books
+   * @param userId the acting user id
+   * @param searchString the search string
+   * @param args additional search arguments
+   * @returns promise that resolves to
+   * `ISearchResultJson` with results matching the query
+   */
+  search(
+    userId: string,
+    searchString: string,
+    args?: ISearchAdditionalArgs,
+  ): Promise<ISearchResult>;
 }

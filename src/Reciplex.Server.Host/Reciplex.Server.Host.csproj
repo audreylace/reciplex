@@ -7,6 +7,7 @@
     <UserSecretsId>8460ebc1-c464-44fe-a5b3-d113bc530372</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../Reciplex.Server.SearchExporter/Reciplex.Server.SearchExporter.csproj" />
     <ProjectReference Include="..\Reciplex.Server.Database\Reciplex.Server.Database.csproj" />
   </ItemGroup>
   <ItemGroup>

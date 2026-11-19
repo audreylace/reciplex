@@ -52,27 +52,4 @@ public class RecipeJsonResponse
     /// True when the end user may edit this recipe. This implies the ability to delete this recipe from the book.
     /// </summary>
     public required bool MayEdit { get; init; }
-
-    /// <summary>
-    /// Constructor for creating a recipe json model from a <see cref="RecipeDao"/>
-    /// </summary>
-    /// <param name="recipe">the source recipe data used to populate this model</param>
-    [SetsRequiredMembers]
-    public RecipeJsonResponse(RecipeDao recipe)
-    {
-        RecipeKey = recipe.Id;
-        Name = recipe.Name;
-        ShortDescription = recipe.ShortDescription;
-        Details = recipe.Details;
-        BookKey = recipe.BookId;
-        Created = recipe.Created;
-        LastModified = recipe.LastModified;
-        ConcurrencyTag = recipe.ConcurrencyTag;
-        MayEdit = recipe.MayEdit;
-    }
-
-    /// <summary>
-    /// Default constructor
-    /// </summary>
-    public RecipeJsonResponse() { }
 }
