@@ -46,4 +46,11 @@ sealed class SearchQueryRequestBody
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<string>? AttributesToRetrieve { get; set; }
+
+    /// <summary>
+    /// Set of attributes to search on. If not specified, all attributes in the document are searched including
+    /// internal meta data properties.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<string>? AttributesToSearchOn { get; set; }
 }

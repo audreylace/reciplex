@@ -185,6 +185,7 @@ sealed class MeilisearchIndexRepository(
                     FilterString = BuildFilterString(args),
                     Limit = args.Limit,
                     Offset = args.Offset,
+                    AttributesToSearchOn = ["name", "shortDescription"],
                 },
                 ct
             );
@@ -305,6 +306,7 @@ sealed class MeilisearchIndexRepository(
                     Limit = args.Limit,
                     Offset = args.Offset,
                     AttributesToRetrieve = ["id", "recipeId", "recipeBookId", "kind"],
+                    AttributesToSearchOn = ["name", "shortDescription"],
                 },
                 ct
             );

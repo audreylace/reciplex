@@ -281,6 +281,10 @@ public class MeilisearchClient(
                 args.AttributesToRetrieve is null || args.AttributesToRetrieve.Count < 1
                     ? null
                     : args.AttributesToRetrieve,
+            AttributesToSearchOn =
+                args.AttributesToSearchOn is null || args.AttributesToSearchOn.Count < 1
+                    ? null
+                    : args.AttributesToSearchOn,
         };
 
         if (env.IsDevelopment() && logger.IsEnabled(LogLevel.Information))
