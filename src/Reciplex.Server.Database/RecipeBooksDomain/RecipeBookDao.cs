@@ -10,7 +10,7 @@ public class RecipeBookDao
     /// <summary>
     /// Books primary key.
     /// </summary>
-    public required string Id { get; init; }
+    public required long Id { get; init; }
 
     /// <summary>
     /// Name of the book
@@ -25,7 +25,7 @@ public class RecipeBookDao
     /// <summary>
     /// Id of the user that owns this book.
     /// </summary>
-    public required string OwningUserKey { get; init; }
+    public required long OwningUserId { get; init; }
 
     /// <summary>
     /// The concurrency tag. MUST be transportable via ETAG header.

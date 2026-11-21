@@ -64,6 +64,26 @@ export interface IRecipeBookModel {
 }
 
 /**
+ * Concise version of the recipe book model
+ */
+export interface IConciseRecipeBookModel {
+  /**
+   * Unique ID of the recipe book
+   */
+  id: string;
+  /**
+   * name of the recipe book
+   * @see RecipeBookNameMaxLength Max length of this property
+   */
+  name: string;
+  /**
+   * short description of the recipe book
+   * @see RecipeBookShortDescriptionMaxLength Max length of this property
+   */
+  shortDescription: string;
+}
+
+/**
  * Recipe model
  */
 export interface IRecipeModel {
@@ -291,6 +311,35 @@ export interface IRecipeBookUserPermissionsJsonRequest {
 }
 
 /**
+ * Possible results from the search index
+ */
+export type SearchResultKind = "recipe" | "book";
+
+/** additional arguments for `IRecipeBookStore.search` */
+export interface ISearchAdditionalArgs {
+  /** the page offset */
+  offset?: number;
+  /** the size of the page */
+  limit?: number;
+  /** limits search to recipes in these books */
+  books?: string[];
+  /** limits search to these kinds */
+  kind?: SearchResultKind[];
+}
+
+/**
+ * Shape of the search response json returned from the server
+ */
+export interface ISearchResult {
+  /** search hits */
+  hits: { kind: SearchResultKind; documentKey: string }[];
+  /** returned recipes */
+  recipes: IRecipeListEntryJsonResponse[];
+  /** returned books */
+  books: IConciseRecipeBookModel[];
+}
+
+/**
  * Store for recipe books and recipe data
  */
 export interface IRecipeBookStore {
@@ -466,4 +515,18 @@ export interface IRecipeBookStore {
       IRecipeBookUserPermissionsJsonRequest | undefined | null,
     ][],
   ): Promise<void>;
+
+  /**
+   * Runs a search for recipes and books
+   * @param userId the acting user id
+   * @param searchString the search string
+   * @param args additional search arguments
+   * @returns promise that resolves to
+   * `ISearchResultJson` with results matching the query
+   */
+  search(
+    userId: string,
+    searchString: string,
+    args?: ISearchAdditionalArgs,
+  ): Promise<ISearchResult>;
 }

@@ -8,12 +8,12 @@ public class ListRecipeBooksArgs
     /// <summary>
     /// Only include books if there key comes before this
     /// </summary>
-    public string? BeforeBookKey { get; set; }
+    public long? BeforeBookKey { get; set; }
 
     /// <summary>
     /// Only include books whose key comes after this
     /// </summary>
-    public string? AfterBookKey { get; set; }
+    public long? AfterBookKey { get; set; }
 
     /// <summary>
     /// Ordering of books

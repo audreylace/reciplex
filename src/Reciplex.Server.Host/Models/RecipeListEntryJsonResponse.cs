@@ -1,6 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-using Reciplex.Server.Database.RecipesDomain;
-
 namespace Reciplex.Server.Host.Models;
 
 /// <summary>
@@ -27,22 +24,4 @@ public class RecipeListEntryJsonResponse
     /// The unique key of the book that stores this recipe
     /// </summary>
     public required string BookKey { get; init; }
-
-    /// <summary>
-    /// Constructor for creating a recipe json model from a <see cref="RecipeDao"/>
-    /// </summary>
-    /// <param name="recipe">the source recipe data used to populate this model</param>
-    [SetsRequiredMembers]
-    public RecipeListEntryJsonResponse(RecipeListEntryDao recipe)
-    {
-        RecipeKey = recipe.Id;
-        Name = recipe.Name;
-        ShortDescription = recipe.ShortDescription;
-        BookKey = recipe.BookId;
-    }
-
-    /// <summary>
-    /// Default constructor
-    /// </summary>
-    public RecipeListEntryJsonResponse() { }
 }
