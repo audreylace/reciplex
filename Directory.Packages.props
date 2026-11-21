@@ -28,7 +28,6 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.21.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.21.0" />
     <PackageVersion Include="Sqids" Version="3.2.1" />
-    <PackageVersion Include="Swashbuckle.AspNetCore" Version="11.0.1" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="11.0.0" />
   </ItemGroup>
 </Project>
