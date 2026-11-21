@@ -21,5 +21,5 @@ public class SearchResultDao
     /// <summary>
     /// the set of books
     /// </summary>
-    public List<RecipeBookDao> RecipeBooks { get; init; } = [];
+    public List<RecipeBookConciseDao> RecipeBooks { get; init; } = [];
 }

@@ -3,7 +3,6 @@ import { SearchField } from "./search-field.component";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import { BrowserTitle } from "../../../core/components/browser-title/browser-title.component";
-import { useActiveUserKey } from "../../../auth/hooks/useActiveUser.hook";
 import { FilterDialog } from "./filter-dialog";
 import { useSearchPageData } from "./useSearchPageData.hook";
 import { usePageSearchState } from "./usePageSearchState.hook";
@@ -18,7 +17,6 @@ export function SearchPage() {
   const title = state.searchString
     ? `${state.searchString} - Search`
     : "Search";
-  const userId = useActiveUserKey();
   const { isLoading: searchLoading, data: searchData } = useSearchPageData({
     searchString: state.searchString,
     searchResultKind: state.searchResultKind,
@@ -44,14 +42,9 @@ export function SearchPage() {
             />
           }
         />
-        {userId &&
-          searchData.map((result) => (
-            <ResultMapper
-              data={result}
-              userId={userId}
-              key={result.renderKey}
-            />
-          ))}
+        {searchData.map((result) => (
+          <ResultMapper data={result} key={result.renderKey} />
+        ))}
         {state.searchString && searchData && searchData.length < 1 && (
           <Box sx={{ textAlign: "center", p: 2 }}>
             <Typography variant="h5">No results</Typography>

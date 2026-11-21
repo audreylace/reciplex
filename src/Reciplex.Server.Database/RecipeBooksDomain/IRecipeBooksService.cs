@@ -21,6 +21,17 @@ public interface IRecipeBooksService
     );
 
     /// <summary>
+    /// Gets recipe book data in a concise format
+    /// </summary>
+    /// <param name="bookId">the id of the book</param>
+    /// <param name="userId">the id of the user performing the action</param>
+    /// <param name="ct">token to stop the async operation</param>
+    /// <returns>Tasks holding the concise book data if it exists</returns>
+    Task<
+        DatabaseResultVariant<SuccessResult<RecipeBookConciseDao>, NotFoundResult>
+    > GetRecipeBookConciseAsync(long bookId, long userId, CancellationToken ct);
+
+    /// <summary>
     /// Updates a recipe book
     /// </summary>
     /// <param name="bookId">The id of the book</param>

@@ -1,6 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-using Reciplex.Server.Database.RecipesDomain;
-
 namespace Reciplex.Server.Host.Models;
 
 /// <summary>
@@ -28,12 +25,3 @@ public class RecipeListEntryJsonResponse
     /// </summary>
     public required string BookKey { get; init; }
 }
-
-public class SearchJsonResponse
-{
-    public required List<HitsPtrJson> Hits { get; init; }
-    public required List<RecipeListEntryJsonResponse> Recipes { get; init; }
-    public required List<RecipeBookJsonResponse> Books { get; init; }
-}
-
-public record class HitsPtrJson(string Kind, string DocumentKey);

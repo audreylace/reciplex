@@ -8,14 +8,12 @@ import { ResultCard } from "./result-card.component";
 export function BookResult({
   name,
   shortDescription,
-  shared,
   bookId,
 }: IBookResultsProps) {
   return (
     <ResultCard
       name={name}
       description={shortDescription}
-      shared={shared}
       avatarColor={purple[300]}
       avatarLetter="B"
       path={makeViewRecipeBookPath(bookId)}
@@ -35,10 +33,6 @@ export interface IBookResultsProps {
    * recipe book short description
    */
   shortDescription: string;
-  /**
-   * flag for if the recipe book is shared, not owned by the user
-   */
-  shared?: boolean;
   /**
    * the id of the book
    */

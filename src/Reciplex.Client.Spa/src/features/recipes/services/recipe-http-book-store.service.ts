@@ -14,7 +14,6 @@ import {
   type IRequestAccessToRecipeBookStatus,
   type ISearchAdditionalArgs,
   type ISearchResult,
-  type ISearchResultJson,
   type IUpdateRecipeArgs,
   type IUpdateRecipeBookArgs,
   type SearchResultKind,
@@ -150,7 +149,29 @@ interface ISearchResultJson {
   /** returned recipes */
   recipes: IRecipeListEntryJsonResponse[];
   /** returned books */
-  books: IRecipeBookJson[];
+  books: IConciseRecipeBookJson[];
+}
+
+/**
+ * Json that describes a recipe book with non-essential fields removed.
+ */
+interface IConciseRecipeBookJson {
+  /**
+   * Unique ID of the recipe book
+   */
+  bookKey: string;
+
+  /**
+   * name of the recipe book
+   * @see RecipeBookNameMaxLength Max length of this property
+   */
+  name: string;
+
+  /**
+   * short description of the recipe book
+   * @see RecipeBookShortDescriptionMaxLength Max length of this property
+   */
+  shortDescription: string;
 }
 
 /**
@@ -597,7 +618,13 @@ export class RecipeHttpBookStore implements IRecipeBookStore {
 
       return {
         hits: recipeJson.hits,
-        books: recipeJson.books.map((b) => this.decodeRecipeBookJson(b)),
+        books: recipeJson.books.map((b) => {
+          return {
+            id: b.bookKey,
+            name: b.name,
+            shortDescription: b.shortDescription,
+          };
+        }),
         recipes: recipeJson.recipes,
       };
     } catch (error) {

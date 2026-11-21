@@ -919,4 +919,29 @@ internal sealed class RecipeBooksService(
             .Take(max)
             .ToListAsync(ct);
     }
+
+    /// <inheritdoc />
+    public async Task<
+        DatabaseResultVariant<SuccessResult<RecipeBookConciseDao>, NotFoundResult>
+    > GetRecipeBookConciseAsync(long bookId, long userId, CancellationToken ct)
+    {
+        await using ApplicationDbContext dbContext = await dbFactory.CreateDbContextAsync(ct);
+        RecipeBookConciseDao? result = await dbContext
+            .RecipeBooks.WithBookId(bookId)
+            .UserHasAccess(userId)
+            .Select(b => new RecipeBookConciseDao()
+            {
+                Id = b.Id,
+                Name = b.Name,
+                ShortDescription = b.ShortDescription,
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (result is null)
+        {
+            return new NotFoundResult();
+        }
+
+        return new SuccessResult<RecipeBookConciseDao>(result);
+    }
 }

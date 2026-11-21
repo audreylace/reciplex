@@ -64,6 +64,26 @@ export interface IRecipeBookModel {
 }
 
 /**
+ * Concise version of the recipe book model
+ */
+export interface IConciseRecipeBookModel {
+  /**
+   * Unique ID of the recipe book
+   */
+  id: string;
+  /**
+   * name of the recipe book
+   * @see RecipeBookNameMaxLength Max length of this property
+   */
+  name: string;
+  /**
+   * short description of the recipe book
+   * @see RecipeBookShortDescriptionMaxLength Max length of this property
+   */
+  shortDescription: string;
+}
+
+/**
  * Recipe model
  */
 export interface IRecipeModel {
@@ -316,7 +336,7 @@ export interface ISearchResult {
   /** returned recipes */
   recipes: IRecipeListEntryJsonResponse[];
   /** returned books */
-  books: IRecipeBookModel[];
+  books: IConciseRecipeBookModel[];
 }
 
 /**

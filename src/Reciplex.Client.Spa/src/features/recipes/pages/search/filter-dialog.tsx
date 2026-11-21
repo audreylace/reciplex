@@ -14,7 +14,7 @@ import Stack from "@mui/material/Stack";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 import { useSearchRecipesAndBooks } from "../../hooks/useSearchRecipesAndBooks.hook";
-import type { IRecipeBookModel } from "../../services/recipe-types";
+import type { IConciseRecipeBookModel } from "../../services/recipe-types";
 import RadioGroup from "@mui/material/RadioGroup";
 import Radio from "@mui/material/Radio";
 
@@ -39,7 +39,7 @@ export function FilterDialog({
   });
 
   const bookNames = useMemo(() => {
-    const mapToBuild: Record<string, IRecipeBookModel> = {};
+    const mapToBuild: Record<string, IConciseRecipeBookModel> = {};
     searchQuery.data?.books.forEach((b) => {
       mapToBuild[b.id] = b;
     });

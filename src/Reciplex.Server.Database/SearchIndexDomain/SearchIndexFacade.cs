@@ -1,6 +1,5 @@
 using FluentValidation.Results;
 using Reciplex.Server.Database.RecipeBooksDomain;
-using Reciplex.Server.Database.RecipesDomain;
 using Reciplex.Server.Database.Results;
 using Reciplex.Server.Database.SearchIndexDomain;
 
@@ -10,14 +9,11 @@ namespace Reciplex.Server.SearchExporter;
 /// Implements <see cref="ISearchIndexFacade"/>
 /// </summary>
 /// <param name="searchRepo">repository for running searches</param>
-/// <param name="booksService">service for getting bools</param>
-/// <param name="recipesService">service for getting recipes</param>
-sealed class SearchIndexFacade(
-    ISearchIndexRepository searchRepo,
-    IRecipeBooksService booksService,
-    IRecipesService recipesService
-) : ISearchIndexFacade
+/// <param name="booksService">service for getting books</param>
+sealed class SearchIndexFacade(ISearchIndexRepository searchRepo, IRecipeBooksService booksService)
+    : ISearchIndexFacade
 {
+    /// <inheritdoc />
     public async Task<
         DatabaseResultVariant<
             BookNotFoundResult,
@@ -69,8 +65,8 @@ sealed class SearchIndexFacade(
             );
         }
 
-        List<SearchIndexDocumentPointer> matchesFromSearchIndex =
-            await searchRepo.SearchForDocumentPointersAsync(
+        List<RecipeBookSearchIndexDocument> matchesFromSearchIndex =
+            await searchRepo.SearchForDocumentsAsync(
                 new()
                 {
                     SearchString = args.SearchString,
@@ -83,99 +79,78 @@ sealed class SearchIndexFacade(
             );
 
         SearchResultDao searchResultDao = new();
-        Dictionary<long, bool> bookLookupResult = [];
+
+        // pre-populate the cache index to avoid duplicate book entries.
+        // Where possible, we use the data the search index gave us already instead of hitting
+        // the database.
+        Dictionary<long, bool> bookLookupCache = matchesFromSearchIndex
+            .Where(m => m.Kind == RecipeBookSearchIndexDocumentKind.RecipeBook)
+            .ToDictionary(b => b.RecipeBookId, b => true);
+
         foreach (var match in matchesFromSearchIndex)
         {
             if (
                 match.Kind == RecipeBookSearchIndexDocumentKind.Recipe
-                && match is SearchIndexRecipeDocumentPointers recipeDocumentPtr
+                && match.RecipeId is long recipeId
             )
             {
-                if (
-                    await CheckAndLoadBookAsync(
-                        userId,
-                        searchResultDao,
-                        bookLookupResult,
-                        recipeDocumentPtr.BookId,
-                        ct
-                    )
-                )
+                if (!bookLookupCache.TryGetValue(match.RecipeBookId, out bool lookupResult))
                 {
-                    var recipeResult = await recipesService.GetRecipeListEntryAsync(
-                        recipeDocumentPtr.RecipeId,
+                    DatabaseResultVariant<
+                        SuccessResult<RecipeBookConciseDao>,
+                        NotFoundResult
+                    > dbResult = await booksService.GetRecipeBookConciseAsync(
+                        match.RecipeBookId,
                         userId,
                         ct
                     );
-                    if (recipeResult.Result is SuccessResult<RecipeListEntryDao> recipe)
+                    if (dbResult.Result is SuccessResult<RecipeBookConciseDao> successResult)
                     {
-                        searchResultDao.Recipes.Add(recipe.Value);
-                        searchResultDao.Hits.Add(
-                            new SearchIdPointer(
-                                RecipeBookSearchIndexDocumentKind.Recipe,
-                                recipeDocumentPtr.RecipeId
-                            )
-                        );
+                        searchResultDao.RecipeBooks.Add(successResult.Value);
+                        lookupResult = true;
                     }
+
+                    bookLookupCache[match.RecipeBookId] = lookupResult;
+                }
+
+                if (lookupResult)
+                {
+                    searchResultDao.Recipes.Add(
+                        new()
+                        {
+                            Id = recipeId,
+                            Name = match.Name,
+                            ShortDescription = match.ShortDescription,
+                            BookId = match.RecipeBookId,
+                        }
+                    );
+                    searchResultDao.Hits.Add(
+                        new SearchIdPointer(RecipeBookSearchIndexDocumentKind.Recipe, recipeId)
+                    );
                 }
             }
-            else if (
-                match.Kind == RecipeBookSearchIndexDocumentKind.RecipeBook
-                && match is SearchIndexBookDocumentPointers bookDocPtr
-            )
+            else if (match.Kind == RecipeBookSearchIndexDocumentKind.RecipeBook)
             {
-                if (
-                    await CheckAndLoadBookAsync(
-                        userId,
-                        searchResultDao,
-                        bookLookupResult,
-                        bookDocPtr.BookId,
-                        ct
+                // bookLookupCache is already pre-populated with this book
+                // id at this point so we don't need to mutate it.
+                //
+                searchResultDao.RecipeBooks.Add(
+                    new()
+                    {
+                        Id = match.RecipeBookId,
+                        Name = match.Name,
+                        ShortDescription = match.ShortDescription,
+                    }
+                );
+                searchResultDao.Hits.Add(
+                    new SearchIdPointer(
+                        RecipeBookSearchIndexDocumentKind.RecipeBook,
+                        match.RecipeBookId
                     )
-                )
-                {
-                    searchResultDao.Hits.Add(
-                        new SearchIdPointer(
-                            RecipeBookSearchIndexDocumentKind.RecipeBook,
-                            bookDocPtr.BookId
-                        )
-                    );
-                }
+                );
             }
         }
 
         return new SuccessResult<SearchResultDao>(searchResultDao);
-    }
-
-    private async Task<bool> CheckAndLoadBookAsync(
-        long userId,
-        SearchResultDao searchResultDao,
-        Dictionary<long, bool> bookLookupResult,
-        long bookId,
-        CancellationToken ct
-    )
-    {
-        if (bookLookupResult.TryGetValue(bookId, out bool cachedResult))
-        {
-            if (!cachedResult)
-            {
-                return false;
-            }
-        }
-        else
-        {
-            var dbResult = await booksService.GetRecipeBookAsync(bookId, userId, ct);
-            if (dbResult.Result is SuccessResult<RecipeBookDao> successResult)
-            {
-                searchResultDao.RecipeBooks.Add(successResult.Value);
-                bookLookupResult[bookId] = true;
-            }
-            else
-            {
-                bookLookupResult[bookId] = false;
-                return false;
-            }
-        }
-
-        return true;
     }
 }

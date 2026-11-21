@@ -10,7 +10,6 @@ import style from "./recipe-result.module.css";
 export function RecipeResult({
   name,
   shortDescription,
-  shared,
   bookId,
   recipeId,
   bookTitle,
@@ -19,7 +18,6 @@ export function RecipeResult({
     <ResultCard
       name={name}
       description={shortDescription}
-      shared={shared}
       avatarColor={red[500]}
       avatarLetter="R"
       caption={
@@ -44,10 +42,6 @@ export interface IRecipeResultsProps {
    * recipe short description
    */
   shortDescription: string;
-  /**
-   * flag for if the recipe is shared, not owned by the user
-   */
-  shared?: boolean;
   /**
    * the id of the book holding the recipe
    */

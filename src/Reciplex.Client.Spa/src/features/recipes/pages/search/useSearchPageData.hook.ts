@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useSearchRecipesAndBooks } from "../../hooks/useSearchRecipesAndBooks.hook";
 import type {
-  IRecipeBookModel,
+  IConciseRecipeBookModel,
   IRecipeListEntryJsonResponse,
   SearchResultKind,
 } from "../../services/recipe-types";
@@ -21,7 +21,7 @@ export function useSearchPageData({
   });
   const listToRender = useMemo(() => {
     const hits = query.data?.hits ?? [];
-    const books: Record<string, IRecipeBookModel> = {};
+    const books: Record<string, IConciseRecipeBookModel> = {};
     (query.data?.books ?? []).forEach((b) => (books[b.id] = b));
     const recipes: Record<string, IRecipeListEntryJsonResponse> = {};
     (query.data?.recipes ?? []).forEach((r) => (recipes[r.recipeKey] = r));
@@ -64,10 +64,10 @@ export type TaggedSearchPageDataUnionType =
   | {
       kind: "recipe";
       recipe: IRecipeListEntryJsonResponse;
-      book: IRecipeBookModel;
+      book: IConciseRecipeBookModel;
       renderKey: string;
     }
-  | { kind: "book"; book: IRecipeBookModel; renderKey: string };
+  | { kind: "book"; book: IConciseRecipeBookModel; renderKey: string };
 
 /**
  * shape of the object passed to the `useSearchPageData` hook

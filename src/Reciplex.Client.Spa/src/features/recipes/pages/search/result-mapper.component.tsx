@@ -5,7 +5,7 @@ import type { TaggedSearchPageDataUnionType } from "./useSearchPageData.hook";
 /**
  * Maps a single result to its correct UI component
  */
-export function ResultMapper({ data: d, userId }: IResultMapperProps) {
+export function ResultMapper({ data: d }: IResultMapperProps) {
   if (d.kind === "recipe") {
     return (
       <RecipeResult
@@ -15,7 +15,6 @@ export function ResultMapper({ data: d, userId }: IResultMapperProps) {
         recipeId={d.recipe.recipeKey}
         bookId={d.recipe.bookKey}
         bookTitle={d.book.name}
-        shared={d.book.ownerId !== userId}
       />
     );
   }
@@ -27,7 +26,6 @@ export function ResultMapper({ data: d, userId }: IResultMapperProps) {
         shortDescription={d.book.shortDescription}
         bookId={d.book.id}
         key={"book_" + d.book.id}
-        shared={d.book.ownerId !== userId}
       />
     );
   }
@@ -43,8 +41,4 @@ export interface IResultMapperProps {
    * the data to render
    */
   data: TaggedSearchPageDataUnionType;
-  /**
-   * the id of the active user
-   */
-  userId: string;
 }

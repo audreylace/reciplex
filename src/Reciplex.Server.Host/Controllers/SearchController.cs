@@ -1,10 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Reciplex.Server.Abstractions.StringIdProvider;
-using Reciplex.Server.Database.RecipeBooksDomain;
-using Reciplex.Server.Database.RecipesDomain;
 using Reciplex.Server.Database.Results;
 using Reciplex.Server.Database.SearchIndexDomain;
 using Reciplex.Server.Host.AccessControl;
@@ -31,7 +28,7 @@ public class SearchController(
     /// </summary>
     /// <param name="userKey">the key of the acting user</param>
     /// <param name="searchString">the query string</param>
-    /// <param name="cancellationToken">async cancellation token associated with the request</param>
+    /// <param name="ct">async cancellation token associated with the request</param>
     /// <param name="max">max number of hits to return from the search index</param>
     /// <param name="bookIdString">if supplied, limits te search to just this book</param>
     /// <returns>the http result to send back to the caller</returns>
@@ -45,7 +42,7 @@ public class SearchController(
         [FromQuery(Name = "offset")] int? offsetNullable,
         [FromQuery(Name = "book")] List<string>? bookIdsNullable,
         [FromQuery(Name = "kind")] List<string>? documentKindNullable,
-        CancellationToken cancellationToken
+        CancellationToken ct
     )
     {
         int max = maxNullable ?? 10;
@@ -65,7 +62,7 @@ public class SearchController(
             );
         }
 
-        if (!await HttpContext.RequestHasAccessToUserKey(userId, cancellationToken))
+        if (!await HttpContext.RequestHasAccessToUserKey(userId, ct))
         {
             return TypedResults.BadRequest();
         }
@@ -139,7 +136,7 @@ public class SearchController(
                 Offset = offset,
                 DocumentKinds = documentKindsToTarget,
             },
-            cancellationToken
+            ct
         );
         return result.Result switch
         {
@@ -153,49 +150,33 @@ public class SearchController(
     }
 
     /// <summary>
-    /// Creates a recipe json model from a <see cref="RecipeListEntryDao"/>
+    /// Converts <paramref name="dao"/> to json result
     /// </summary>
-    /// <param name="recipe">the source recipe data used to populate this model</param>
-    private RecipeListEntryJsonResponse ToListEntryJson(RecipeListEntryDao recipe)
-    {
-        return new RecipeListEntryJsonResponse()
-        {
-            RecipeKey = stringIdProvider.AsString(recipe.Id),
-            Name = recipe.Name,
-            ShortDescription = recipe.ShortDescription,
-            BookKey = stringIdProvider.AsString(recipe.BookId),
-        };
-    }
-
-    /// <summary>
-    /// Builds an instance of <see cref="RecipeBookJsonResponse"/>
-    /// </summary>
-    /// <param name="book">the dao data to convert</param>
-    private RecipeBookJsonResponse ToBookJson(RecipeBookDao book)
-    {
-        return new RecipeBookJsonResponse()
-        {
-            BookKey = stringIdProvider.AsString(book.Id),
-            Name = book.Name,
-            ShortDescription = book.ShortDescription,
-            OwningUserKey = stringIdProvider.AsString(book.OwningUserId),
-            Created = book.Created,
-            LastModified = book.LastModified,
-            ConcurrencyTag = book.ConcurrencyTag,
-            MayEdit = book.MayEditBook,
-            MayDelete = book.MayDeleteBook,
-            MayShare = book.MayShareBook,
-            MayManageAccess = book.MayManageAccess,
-            ShareKey = book.MayShareBook ? book.ShareKey : null,
-        };
-    }
-
+    /// <param name="dao">the model to convert to json</param>
+    /// <returns>the json result</returns>
     private SearchJsonResponse ToSearchJsonResponse(SearchResultDao dao)
     {
         return new SearchJsonResponse()
         {
-            Books = [.. dao.RecipeBooks.Select(ToBookJson)],
-            Recipes = [.. dao.Recipes.Select(ToListEntryJson)],
+            Books =
+            [
+                .. dao.RecipeBooks.Select(b => new ConciseRecipeBookJsonResponse()
+                {
+                    BookKey = stringIdProvider.AsString(b.Id),
+                    Name = b.Name,
+                    ShortDescription = b.ShortDescription,
+                }),
+            ],
+            Recipes =
+            [
+                .. dao.Recipes.Select(recipe => new RecipeListEntryJsonResponse()
+                {
+                    RecipeKey = stringIdProvider.AsString(recipe.Id),
+                    Name = recipe.Name,
+                    ShortDescription = recipe.ShortDescription,
+                    BookKey = stringIdProvider.AsString(recipe.BookId),
+                }),
+            ],
             Hits =
             [
                 .. dao.Hits.Select(h => new HitsPtrJson(

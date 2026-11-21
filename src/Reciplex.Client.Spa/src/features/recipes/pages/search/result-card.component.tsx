@@ -5,7 +5,6 @@ import CardActionArea from "@mui/material/CardActionArea";
 import CardContent from "@mui/material/CardContent";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import ShareIcon from "@mui/icons-material/Share";
 import { NavLink } from "react-router";
 // eslint-disable-next-line no-restricted-imports
 import type { StandardCSSProperties } from "@mui/system";
@@ -17,7 +16,6 @@ import type { ReactNode } from "react";
 export function ResultCard({
   name,
   description,
-  shared,
   path,
   caption,
   avatarLetter,
@@ -34,15 +32,6 @@ export function ResultCard({
             <Stack>
               <Typography variant="h4" component="div">
                 {name}
-                {shared && (
-                  <>
-                    {" "}
-                    <ShareIcon
-                      fontSize="small"
-                      sx={{ color: "text.secondary" }}
-                    />
-                  </>
-                )}
               </Typography>
               {caption && (
                 <Typography
@@ -75,10 +64,6 @@ export interface IResultCardProps {
    * result description
    */
   description: string;
-  /**
-   * flag for if the result is shared, not owned by the user
-   */
-  shared?: boolean;
   /**
    * path to open on click
    */
